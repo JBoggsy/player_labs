@@ -15,7 +15,7 @@
 # so building the league's current tag is enough for analysis.
 set -euo pipefail
 
-PW_RELEASE_TAG="coworld-v0.3.65"   # 7b2b19f5, the release the docs are verified against
+PW_RELEASE_TAG="coworld-v0.3.68"   # ef82196, the release the docs are verified against
 TAG="${1:-$PW_RELEASE_TAG}"
 LAB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CLONE="${PW_CLONE:-$HOME/coding/coworlds/paintbot-pw}"

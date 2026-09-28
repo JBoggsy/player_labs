@@ -13,7 +13,14 @@ paintbot_pw_lab/tools/build_tools.sh                    # engine binaries at the
 ```
 
 Everything below is verified at `Metta-AI/paintbot-pw` `7b2b19f5` (tag `coworld-v0.3.65`,
-rules 45), 2026-09-28, unless marked otherwise. Where the maintainer's guide and the code
+rules 45), 2026-09-28, unless marked otherwise, and re-checked at `ab597b35` (0.3.67, the
+same day): that release changes only art, terrain generation, `jev.bas` loop bounds and the
+glory-heart pair count on big maps. `mechanics.nim`, `bots.nim`, `game.nim` and `basic.nim`
+are unchanged; `sim.nim` citations past line 941 shift by +3. 0.3.68 (`ef82196`, live the
+same evening) is a refactor with no rules change: config parsing moved from `game.nim` to
+`match_config.nim` and `LiveRules = 45` was added, so `game.nim` and `sim.nim` line numbers
+shift a little more. The onboarding report is
+[`docs/reports/paintbot-pw-onboarding-2026-09-28.html`](../docs/reports/paintbot-pw-onboarding-2026-09-28.html). Where the maintainer's guide and the code
 disagree, the code wins; the known mismatches are listed in
 [mechanics.md §8](docs/mechanics.md).
 

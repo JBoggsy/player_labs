@@ -42,6 +42,10 @@ unchanged as the baseline and measure it against each current champion with pinn
 
 ## Open constraints
 
+- 2026-09-28 evening: a third league, Heartland Big (`league_c463b65f-99f1-43ae-bb03-2d4f7f094f1b`),
+  appeared, and paintbot-pw `main` has a commit (`f0c9e6f`) that publishes Heartland as its own
+  coworld. Once that ships, Heartland's source and tags can differ from the teams game; add
+  Heartland Big to `tools/deployed_ref.py` if it becomes a target.
 - Releases ship several times a day and the league lags the newest tag (round 2237 still
   ran 0.3.64 when 0.3.65 was tagged). Record `coworld_version` per episode and never pool
   rules versions in one comparison.

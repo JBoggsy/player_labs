@@ -168,8 +168,9 @@ Units: 1 unit = 1 cm; `Radius` (body) = 55 (`sim.nim:17`).
 - `shootAt` with cooldown 0 starts a **5-tick windup**. The aim is locked at the order as a
   vector relative to the shooter; the ray leaves from wherever the shooter stands when the windup
   ends.
-- Cooldown 24 ticks (1 shot/s), **tripled to 72** if the shooter has armor, is in a trench, or
-  carries a heart at the moment of the order (`mechanics.nim:725-727`).
+- Cooldown 24 ticks (1 shot/s), **tripled to 72** if the shooter has armor or is in a trench
+  at the moment of the order (`mechanics.nim:725-727`). The check also reads `carrying`, which
+  nothing sets under rules 45.
 - Hitscan: samples every 20 units out to 5,250 units (FFA-kin 2,000); stops at cover or the map
   edge; the **first** body within 55 units of the ray with a clear sight line takes 1 damage.
   **Friendly fire is on**: teammates block and take hits (`mechanics.nim:704-714`).
@@ -192,7 +193,7 @@ Units: 1 unit = 1 cm; `Radius` (body) = 55 (`sim.nim:17`).
 ### Grenade (`mechanics.nim:655-664`, `472-496`)
 
 - Carry one. `chargeGrenade(1)` adds 1 charge per tick, up to 24. The tick you stop charging (charge
-  > 0), it is thrown along your aim: range `150 + 1130 * charge / 24`, so 150 to 1,280 units.
+  > 0), it is thrown along your aim: range `150 + 1130 * charge / 24` with charge clamped to at least 1, so about 197 to 1,280 units (`mechanics.nim:474-475`).
   It flies over walls and lands 10 ticks later.
 - Blast: every body within 360 + 55 units takes 3 damage in the open, 6 if in the trench it
   landed in, 2 if in a different trench. **Includes allies and the thrower.**

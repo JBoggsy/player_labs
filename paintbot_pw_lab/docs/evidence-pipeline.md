@@ -113,8 +113,8 @@ All three ended by elimination at 11–28% of the 14,400-tick limit, which fits 
   `waitForCollection` (`pw:coworld.nim:214-233`), so `local.py` hangs until its
   10-minute deadline. Compare **staging** failures (a WASM upload, a hash mismatch),
   which forfeit only that seat and put an idle stub in its place
-  (`pw:coworld/paintbot/runtime/host.py:110-123`). Compile-check every `.bas`
-  locally before any upload.
+  (`pw:coworld/paintbot/runtime/host.py:110-123`). A hosted compile failure shows up
+  as failed episodes; treat that as the signal (see the lab AGENTS rules).
 - Combined game log: "optional, unavailable" for these episodes. The local `game.log`
   holds `ticks=… captures=[…] hash=…` and, with `PW_BASIC_PEAKS=1`, per-seat peak
   instructions, work units, strings and neural ops (`pw:game.nim:429-436`).

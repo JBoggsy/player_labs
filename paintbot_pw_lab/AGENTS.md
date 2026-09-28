@@ -57,7 +57,7 @@ BASIC dialect, different game and host API.
 - **A BASIC compile error fails the whole episode** (no results, no data from that
   eval slot); it shows up as failed hosted episodes, which is the signal to read. When
   the platform attributes a failure to one policy, Elo scores that side as a forfeit loss
-  (`elo.py:170-175`) and 3 consecutive failures disqualify a league entry, so only submit
+  (`elo.py:171-176`) and 3 consecutive failures disqualify a league entry, so only submit
   a version with completed hosted episodes. A runtime error or budget overrun disables
   only that seat for the rest of the episode.
 - **Budgets are 50,000 instructions and 125,000 work units per decision**

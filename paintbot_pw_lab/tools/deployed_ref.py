@@ -25,7 +25,7 @@ LEAGUES = {
     "Heartland (ffa_kin)": "league_40996eb3-4a80-457d-86d5-866f72882995",
 }
 SOURCE_REPO = "https://github.com/Metta-AI/paintbot-pw"
-DOCS_SHA = "7b2b19f5"   # the deployed commit the current docs were checked against (coworld 0.3.65)
+DOCS_SHA = "ef82196"   # the deployed commit the current docs were checked against (coworld 0.3.68)
 
 
 def release_tags():
