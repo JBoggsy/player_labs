@@ -61,3 +61,6 @@ gods_of_the_arena_lab/tools/.cache/
 gods_of_the_arena_lab/tools/bin/
 paintbot_pw_lab/tools/.cache/
 paintbot_pw_lab/tools/bin/
+# paintbot_pw_lab caches/reports written next to local .replay files
+*.pw_cache/
+*.pw_report/

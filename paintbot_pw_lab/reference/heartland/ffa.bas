@@ -19,23 +19,27 @@
 '   5. Late game (no neutral heart left): go to a ready great heart and wait there while three
 '      or more cogs live; otherwise walk into the nearest stranger-owned heart to steal it.
 ' Movement, aim lead, dodge legs and the dry-route detour are base.bas's. Every loop is bounded by
-' the 16 seats, the heart count or a fixed count; the heaviest tick stays far under the budget.
-dim oldX(16)
-dim oldY(16)
-dim oldHp(16)
-dim lastSeen(16)
-dim hurtUntil(16)
-dim spokeX(16)
-dim spokeY(16)
-dim spokeTick(16)
-dim capBy(16)
-dim taken(16)
-dim avoidUntil(16)
-dim pickupMemoryX(32)
-dim pickupMemoryY(32)
-dim pickupMemoryKind(32)
-dim pickupMemoryTick(32)
+' seatCount() (16, or 50 in Heartland Big), the heart count or a fixed count; the heaviest tick
+' stays far under the budget.
+dim oldX(256)
+dim oldY(256)
+dim oldHp(256)
+dim lastSeen(256)
+dim hurtUntil(256)
+dim spokeX(256)
+dim spokeY(256)
+dim spokeTick(256)
+dim capBy(256)
+dim kinK(256)
+dim taken(64)
+dim avoidUntil(64)
+dim pickupMemoryX(64)
+dim pickupMemoryY(64)
+dim pickupMemoryKind(64)
+dim pickupMemoryTick(64)
 dim drF(6)
+' Seat arrays hold up to 256 seats (the engine's most); loops run to the match's seat count.
+nSeats = seatCount()
 
 ' Integer square root by Newton's method from above. 23170^2 exceeds any squared map distance.
 sub isqrt(n)
@@ -143,8 +147,8 @@ sub kinInLine(ex, ey)
   reach = root
   if reach > 0 then
     k = 0
-    while k < 16
-      if k <> selfId and kin(k) >= 25 and visible(k) then
+    while k < nSeats
+      if k <> selfId and kinK(k) >= 25 and visible(k) then
         kinAt(playerX(k) - selfX, playerY(k) - selfY)
       end if
       k = k + 1
@@ -152,8 +156,8 @@ sub kinInLine(ex, ey)
     ' Relatives beside or behind us are outside the vision cone; where they last spoke from, in
     ' the past six ticks, stands in for where they are.
     k = 0
-    while k < 16
-      if k <> selfId and spokeTick(k) > 0 and worldTick - spokeTick(k) <= 6 and kin(k) >= 25 and not visible(k) then
+    while k < nSeats
+      if k <> selfId and spokeTick(k) > 0 and worldTick - spokeTick(k) <= 6 and kinK(k) >= 25 and not visible(k) then
         kinAt(spokeX(k) - selfX, spokeY(k) - selfY)
       end if
       k = k + 1
@@ -161,8 +165,8 @@ sub kinInLine(ex, ey)
     ' And where we last saw them, in the past second (they walk under 900 units in that time,
     ' so this only catches the ones who just left the cone).
     k = 0
-    while k < 16
-      if k <> selfId and lastSeen(k) > 0 and worldTick - lastSeen(k) <= 24 and kin(k) >= 25 and not visible(k) then
+    while k < nSeats
+      if k <> selfId and lastSeen(k) > 0 and worldTick - lastSeen(k) <= 24 and kinK(k) >= 25 and not visible(k) then
         kinAt(oldX(k) - selfX, oldY(k) - selfY)
       end if
       k = k + 1
@@ -194,11 +198,24 @@ if started = 0 then
   lastY = selfY
   lastHp = selfHp + armorHp
   i = 0
-  while i < 16
+  while i < nSeats
     spokeTick(i) = -100
+    kinK(i) = -1
     i = i + 1
   wend
 end if
+' Kinship is known only for cogs in view (rules 48, the FFA-kin fog of war: the kin host
+' function reads -1 for a cog we cannot see). Genes never change within a match, so a cog seen
+' once stays known: kinK holds the last kin read, -1 (treated as a stranger) until then. Under
+' older rules every kin read is known and kinK is exactly it.
+kinI = 0
+while kinI < nSeats
+  kinV = kin(kinI)
+  if kinV >= 0 then
+    kinK(kinI) = kinV
+  end if
+  kinI = kinI + 1
+wend
 myVX = selfX - lastX
 myVY = selfY - lastY
 if gunWait > 0 then
@@ -211,7 +228,7 @@ end if
 if worldTick mod 72 = 0 then
   dx = selfX - progressX
   dy = selfY - progressY
-  if dx * dx + dy * dy < 40000 and objective >= 0 and objective < 16 then
+  if dx * dx + dy * dy < 40000 and objective >= 0 and objective < 64 then
     ex = controlX(objective) - selfX
     ey = controlY(objective) - selfY
     if ex * ex + ey * ey > 22500 then
@@ -243,11 +260,11 @@ end if
 i = 0
 while i < heardCount() and i < 24
   s = heardSlot(i)
-  if s >= 0 and s < 16 then
+  if s >= 0 and s < nSeats then
     spokeX(s) = heardX(i)
     spokeY(s) = heardY(i)
     spokeTick(s) = worldTick
-    if kin(s) >= 25 and strEq(heardText(i), strNew("hurt")) then
+    if kinK(s) >= 25 and strEq(heardText(i), strNew("hurt")) then
       hurtX = heardX(i)
       hurtY = heardY(i)
     end if
@@ -255,8 +272,8 @@ while i < heardCount() and i < 24
   i = i + 1
 wend
 i = 0
-while i < 16
-  if i <> selfId and kin(i) >= 25 and visible(i) then
+while i < nSeats
+  if i <> selfId and kinK(i) >= 25 and visible(i) then
     if lastSeen(i) = worldTick - 1 and playerHp(i) < oldHp(i) then
       hurtX = playerX(i)
       hurtY = playerY(i)
@@ -269,8 +286,8 @@ if hurtX >= 0 then
   culprit = -1
   culpritD = 36000000
   i = 0
-  while i < 16
-    if i <> selfId and kin(i) < 25 and visible(i) then
+  while i < nSeats
+    if i <> selfId and kinK(i) < 25 and visible(i) then
       dx = playerX(i) - hurtX
       dy = playerY(i) - hurtY
       d2 = dx * dx + dy * dy
@@ -288,8 +305,12 @@ end if
 
 ' Hearts. capBy(m) = 1 while seat m is capturing something; mine = hearts we own.
 i = 0
-while i < 16
+while i < nSeats
   capBy(i) = 0
+  i = i + 1
+wend
+i = 0
+while i < 64
   taken(i) = 0
   i = i + 1
 wend
@@ -300,9 +321,9 @@ defend = -1
 defendD = 9000000
 objective = -1
 j = 0
-while j < heartCount() and j < 16
+while j < heartCount() and j < 64
   c = controlCaptureTeam(j)
-  if c >= 0 and c < 16 then
+  if c >= 0 and c < nSeats then
     capBy(c) = 1
   end if
   if c = selfId then
@@ -319,8 +340,8 @@ while j < heartCount() and j < 16
       nearestMineD = d2
     end if
     ' A stranger is taking one of our hearts: go back and stand on it.
-    if c >= 0 and c < 16 then
-      if kin(c) < 50 and d2 < defendD then
+    if c >= 0 and c < nSeats then
+      if kinK(c) < 50 and d2 < defendD then
         defend = j
         defendD = d2
       end if
@@ -336,25 +357,25 @@ if objective < 0 and mine < 2 then
   rank = 0
   i = 0
   while i < selfId
-    if kin(i) >= 50 and seatAlive(i) and capBy(i) = 0 then
+    if kinK(i) >= 50 and seatAlive(i) and capBy(i) = 0 then
       rank = rank + 1
     end if
     i = i + 1
   wend
   picked = 0
-  while picked <= rank and picked < 16
+  while picked <= rank and picked < nSeats
     choice = -1
     choiceCost = 2147483647
     j = 0
-    while j < heartCount() and j < 16
+    while j < heartCount() and j < 64
       owner = heartOwner(j)
       c = controlCaptureTeam(j)
       ok = taken(j) = 0 and owner <> selfId and avoidUntil(j) <= worldTick
       if ok and owner >= 0 then
-        ok = kin(owner) < 50
+        ok = kinK(owner) < 50
       end if
       if ok and c >= 0 and c <> selfId then
-        ok = kin(c) < 50
+        ok = kinK(c) < 50
       end if
       if ok then
         dx = (controlX(j) - homeX) / 8
@@ -368,7 +389,7 @@ if objective < 0 and mine < 2 then
       j = j + 1
     wend
     if choice < 0 then
-      picked = 16
+      picked = nSeats
     else
       taken(choice) = 1
       if picked = rank then
@@ -386,7 +407,7 @@ end if
 ' steals it, and its owner, at the heart we want, is a target.
 neutral = 0
 j = 0
-while j < heartCount() and j < 16
+while j < heartCount() and j < 64
   if heartOwner(j) < 0 and avoidUntil(j) <= worldTick then
     neutral = 1
   end if
@@ -394,7 +415,7 @@ while j < heartCount() and j < 16
 wend
 living = 0
 i = 0
-while i < 16
+while i < nSeats
   if seatAlive(i) then
     living = living + 1
   end if
@@ -413,15 +434,15 @@ if neutral = 0 then
     steal = -1
     stealD = 2147483647
     j = 0
-    while j < heartCount() and j < 16
+    while j < heartCount() and j < 64
       owner = heartOwner(j)
       c = controlCaptureTeam(j)
       ok = owner >= 0 and owner <> selfId and avoidUntil(j) <= worldTick
       if ok then
-        ok = kin(owner) < 25
+        ok = kinK(owner) < 25
       end if
       if ok and c >= 0 and c <> selfId then
-        ok = kin(c) < 50
+        ok = kinK(c) < 50
       end if
       if ok then
         dx = (controlX(j) - selfX) / 8
@@ -460,7 +481,7 @@ while g < greatHeartCount()
     end if
     near = 0
     i = 0
-    while i < 16
+    while i < nSeats
       if i <> selfId and visible(i) then
         ex = playerX(i) - gx
         ey = playerY(i) - gy
@@ -516,7 +537,7 @@ else
       ' Quiet: walk the rounds of our hearts, one post every 20 s, rather than parking.
       want = (worldTick / 480 + selfId) mod mine
       j = 0
-      while j < heartCount() and j < 16
+      while j < heartCount() and j < 64
         if heartOwner(j) = selfId then
           if want = 0 then
             post = j
@@ -556,9 +577,9 @@ best = -1
 bestCost = 2147483647
 threatsNear = 0
 i = 0
-while i < 16
+while i < nSeats
   if i <> selfId and visible(i) then
-    if kin(i) < 25 then
+    if kinK(i) < 25 then
       px = playerX(i)
       py = playerY(i)
       dx = px - selfX
@@ -591,13 +612,13 @@ while i < 16
         end if
         ' A stranger close to a visible sibling is a threat to it.
         k = 0
-        while k < 16
-          if k <> selfId and kin(k) >= 50 and visible(k) then
+        while k < nSeats
+          if k <> selfId and kinK(k) >= 50 and visible(k) then
             ex = playerX(k) - px
             ey = playerY(k) - py
             if ex * ex + ey * ey < 1440000 then
               cost = cost - 2500000
-              k = 16
+              k = nSeats
             end if
           end if
           k = k + 1
@@ -614,7 +635,7 @@ wend
 
 ' Remember seen supplies for ten seconds; equip when nothing is close.
 i = 0
-while i < pickupCount() and i < 32
+while i < pickupCount() and i < 64
   if pickupVisible(i) then
     pickupMemoryX(i) = pickupX(i)
     pickupMemoryY(i) = pickupY(i)
@@ -627,7 +648,7 @@ if mode <> 2 and controlCaptureTeam(objective) <> selfId then
   nearest = -1
   nearestCost = 4840000
   j = 0
-  while j < pickupCount() and j < 32
+  while j < pickupCount() and j < 64
     if pickupMemoryTick(j) > 0 and worldTick - pickupMemoryTick(j) < 240 then
       kind = pickupMemoryKind(j)
       wanted = (kind = 0 and not hasGrenade) or (kind = 2 and selfHp < kMaxHp) or (kind = 3 and armorHp < 3 and selfHp = kMaxHp)
@@ -876,8 +897,8 @@ if hasGrenade and best >= 0 then
   d2 = dx * dx + dy * dy
   safe = 1
   i = 0
-  while i < 16
-    if i <> selfId and kin(i) >= 25 and visible(i) then
+  while i < nSeats
+    if i <> selfId and kinK(i) >= 25 and visible(i) then
       fx = playerX(i) - nx
       fy = playerY(i) - ny
       if fx * fx + fy * fy < 202500 then
@@ -898,7 +919,7 @@ if hasGrenade and best >= 0 then
 end if
 
 i = 0
-while i < 16
+while i < nSeats
   if visible(i) then
     oldX(i) = playerX(i)
     oldY(i) = playerY(i)
