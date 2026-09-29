@@ -38,6 +38,7 @@ BASIC dialect, different game and host API.
 | `docs/field.md` | Both leagues' configuration and ranking rule, dated standings, entrants, our account's presence, experience-request fields and credit costs. |
 | `docs/community.md` | Forum/wiki digest (the forum is empty; the wiki is a stale README copy), maintainer measurements, gotchas, release cadence. |
 | `docs/evidence-pipeline.md` | Artifact inventory, replay format, the verified build/replay/local-run commands, the per-seat stats probe (appendix), recommended tools. |
+| `docs/designs/` | Design documents. [`2026-09-29-tooling-plan.html`](docs/designs/2026-09-29-tooling-plan.html) is the proposed tools-and-skills plan (brief: `.tooling-plan-brief.md`). |
 | `reference/*.bas` | Official starters at the deployed tag: `base.bas` (teams baseline), `jev.bas` (base + LLM advisor), `ffa.bas` / `ffa_blind.bas` (Heartland). Keep reference files distinct from candidates. |
 | `reference/manifest-0.3.65.json` | The deployed coworld manifest (config schema, variants, readme). |
 | `tools/deployed_ref.py` | Resolves each league's coworld release to its `coworld-v<version>` tag commit and says whether the docs are current. |

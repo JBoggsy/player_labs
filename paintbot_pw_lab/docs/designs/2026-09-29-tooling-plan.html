@@ -1,0 +1,1499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paintbot PW tooling plan</title>
+<!--
+  Ink & Print design/plan document template (Softmax house style).
+
+  HOW TO USE (renderer subagent):
+  - Replace everything inside <article id="doc"> with the real document content.
+    The placeholder content below doubles as a component style guide — copy the
+    markup patterns (masthead, TOC, section, figure, table, callout, code,
+    citation) and delete what you don't use.
+  - Do NOT modify anything between the DC-COMMENTS BEGIN/END markers. That block
+    is the tested commenting system; copy it verbatim. The one thing you may fill
+    is the CONTENT of <script id="dc-preload" type="application/json">: a
+    dc-comments/1 `comments` array, each comment optionally carrying
+    `replies: [{author, text, created}]`, so the reader sees their comments and
+    the agent's replies together in the sidebar.
+  - Keep the doc self-contained: inline SVG for figures, no JS deps beyond this
+    file. Google Fonts is the only permitted external fetch.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ Ink & Print tokens ============ */
+  :root {
+    --bg: #fffdf4;            /* cream paper */
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;            /* warm near-black — never pure #000 */
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --cta-foreground: #fffdf4;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Merriweather Sans', 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ============ Page grid: reading column + comment rail ============ */
+  .dc-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  article#doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 56px 40px 120px;
+    min-width: 0;
+  }
+
+  /* ============ Typography ============ */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+  }
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 8px 0 10px;
+  }
+  header.masthead .context { color: var(--fg-subtle); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-navy);
+    margin: 48px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; margin: 32px 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--ink-navy); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--cta); }
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 24px; margin: 0 0 14px; }
+  li { margin-bottom: 4px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Key-points opener: every section starts with scannable bullets */
+  .key-points {
+    list-style: none;
+    padding: 0 0 0 2px;
+    margin: 0 0 18px;
+  }
+  .key-points li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .key-points li::before { content: '—'; position: absolute; left: 0; color: var(--ink-gold); font-weight: 700; }
+
+  /* ============ TOC ============ */
+  nav.toc { margin: 28px 0 8px; }
+  nav.toc ol { list-style: none; padding: 0; column-count: 2; column-gap: 40px; margin: 10px 0 0; }
+  nav.toc li { margin-bottom: 5px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  nav.toc .toc-num { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-right: 8px; }
+
+  /* ============ Tables ============ */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+  th {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+    text-align: left;
+    padding: 6px 12px 6px 0;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-feature-settings: 'tnum' 1; }
+
+  /* ============ Figures ============ */
+  figure { margin: 24px 0 28px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+  }
+  figcaption .fig-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10.5px;
+    color: var(--ink-navy);
+    margin-right: 8px;
+  }
+
+  /* ============ Code & citations ============ */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 16px 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .cite {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    background: var(--surface-alt);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  /* Superscript source references — body prose never carries raw file paths.
+     Full citation lives in the title (hover) and in the numbered Sources list. */
+  sup.ref { line-height: 0; }
+  sup.ref a {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-navy);
+    text-decoration: none;
+    padding: 0 1px;
+  }
+  sup.ref a:hover { text-decoration: underline; }
+  ol.sources { margin: 12px 0; padding-left: 30px; }
+  ol.sources li {
+    font-size: 13px;
+    padding: 2px 0;
+  }
+  ol.sources li::marker {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--ink-navy);
+  }
+  ol.sources li:target { background: var(--accent-soft); }
+
+  /* ============ Callouts ============ */
+  .callout { padding: 12px 16px; margin: 18px 0; font-size: 13.5px; border-radius: 3px; }
+  .callout .callout-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .callout-info { background: var(--accent-soft); }
+  .callout-info .callout-label { color: var(--ink-navy); }
+  .callout-warn { background: rgba(179, 110, 78, 0.08); border-left: 3px solid var(--ink-terracotta); }
+  .callout-warn .callout-label { color: var(--ink-terracotta); }
+  .callout-open { background: rgba(212, 168, 83, 0.10); }
+  .callout-open .callout-label { color: #8a6a1f; }
+
+  /* Decision record */
+  .decision { border-top: 1px solid var(--border); padding: 14px 0 4px; margin: 14px 0; }
+  .decision .decision-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sage); }
+  .decision p { margin-top: 6px; }
+
+  @media (max-width: 1100px) {
+    .dc-page { grid-template-columns: 1fr; }
+  }
+  @media print {
+    #dc-sidebar, #dc-fab, #dc-toggle { display: none !important; }
+    .dc-page { grid-template-columns: 1fr; }
+  }
+
+
+  /* ============ Tool catalog, skills, decisions (doc-specific) ============ */
+  .tool { margin: 8px 0 28px; }
+  .tool h3 { margin-bottom: 2px; }
+  .tool-id { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--ink-navy); margin-right: 10px; }
+  .tool-meta { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-subtle); margin: 0 0 10px; }
+  dl.tool-spec { margin: 0; display: grid; grid-template-columns: 9.5em minmax(0, 1fr); column-gap: 16px; }
+  dl.tool-spec dt { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-sage); padding-top: 4px; }
+  dl.tool-spec dd { margin: 0 0 10px; }
+  dl.tool-spec dd p:last-child, dl.tool-spec dd ul:last-child { margin-bottom: 0; }
+  @media (max-width: 640px) {
+    dl.tool-spec { grid-template-columns: 1fr; }
+    dl.tool-spec dt { padding-top: 0; }
+  }
+  dl.skill-list dt { font-weight: 700; margin-top: 14px; }
+  dl.skill-list dd { margin: 4px 0 0; }
+  ol.decisions { list-style: none; counter-reset: decision; padding: 0; }
+  ol.decisions li { counter-increment: decision; position: relative; padding: 10px 14px 10px 52px; margin-bottom: 8px; background: rgba(212, 168, 83, 0.10); border-radius: 3px; }
+  ol.decisions li::before { content: counter(decision); position: absolute; left: 16px; top: 8px; font-family: var(--serif); font-weight: 900; font-size: 20px; color: #8a6a1f; }
+  .callout ul { margin: 4px 0 0; }
+  ol.sources .cite { white-space: normal; overflow-wrap: anywhere; }
+  sup.ref-sep { font-family: var(--mono); font-size: 10.5px; color: var(--ink-navy); line-height: 0; }
+
+  /* replies rendered under a comment (from the comment's `replies` array) */
+  .dc-replies { margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--border-strong); }
+  .dc-reply-author { font-family: var(--sans); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-navy); }
+  .dc-reply-text { font-size: 12.5px; line-height: 1.5; color: var(--fg); white-space: pre-wrap; margin-top: 2px; }
+  .dc-reply-text a { color: var(--ink-navy); word-break: break-all; }
+
+  /* ================================================================
+     DC-COMMENTS BEGIN — styles (copy verbatim; do not modify)
+     ================================================================ */
+  ::highlight(dc-hl) { background: rgba(212, 168, 83, 0.28); }
+  ::highlight(dc-hl-active) { background: rgba(212, 168, 83, 0.6); }
+
+  #dc-fab {
+    position: absolute;
+    z-index: 40;
+    display: none;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cta-foreground);
+    background: var(--cta);
+    border: 1px solid #0a1c42;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  #dc-fab:hover { background: var(--ink-navy); }
+
+  #dc-sidebar {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px 60px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  #dc-sidebar h2.dc-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+    margin: 0 0 4px;
+  }
+  .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .dc-btn {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .dc-btn:hover { background: var(--surface-alt); }
+  .dc-btn:focus-visible, #dc-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dc-empty { color: var(--fg-muted); font-style: italic; }
+  .dc-item { border-top: 1px solid var(--border-subtle); padding: 12px 0; cursor: pointer; }
+  .dc-item.dc-resolved { opacity: 0.5; }
+  .dc-quote {
+    border-left: 2px solid var(--ink-gold);
+    padding-left: 8px;
+    color: var(--fg-subtle);
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+  }
+  .dc-orphan-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-terracotta);
+    background: rgba(179, 110, 78, 0.12);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+  }
+  .dc-text { white-space: pre-wrap; overflow-wrap: break-word; }
+  .dc-item textarea {
+    width: 100%;
+    min-height: 64px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    resize: vertical;
+  }
+  .dc-item textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--fg-muted); }
+  .dc-meta label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dc-meta .dc-del { margin-left: auto; color: var(--ink-terracotta); background: none; border: none; font-size: 11px; cursor: pointer; padding: 0; }
+  .dc-meta .dc-del:hover { text-decoration: underline; }
+  #dc-status { font-size: 11px; color: var(--ink-sage); min-height: 16px; margin-top: 8px; }
+
+  #dc-toggle { display: none; }
+  @media (max-width: 1100px) {
+    #dc-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      max-width: 90vw;
+      transform: translateX(100%);
+      transition: transform 200ms ease-out;
+      z-index: 50;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+    }
+    #dc-sidebar.dc-open { transform: translateX(0); }
+    #dc-toggle {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 51;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cta-foreground);
+      background: var(--cta);
+      border: 1px solid #0a1c42;
+      border-radius: 999px;
+      padding: 9px 15px;
+      cursor: pointer;
+    }
+  }
+  /* ============ DC-COMMENTS END — styles ============ */
+</style>
+</head>
+<body>
+<div class="dc-page">
+<article id="doc">
+  <header class="masthead">
+    <span class="eyebrow">Design Plan · 2026-09-29 · Proposal for review</span>
+    <h1>Paintbot PW: tooling and skills plan</h1>
+    <p class="context">This plan lists each tool and agent skill that the Paintbot PW lab must have to diagnose, test, and improve our BASIC policy, and it tells how to get each one. We did the research against paintbot-pw <code>0ff41d2d</code> (tag <code>coworld-v0.3.77</code>, rules 47). The league used that build on 2026-09-29.</p>
+  </header>
+
+  <section id="summary">
+    <h2>Executive Summary</h2>
+    <p>The engine makes this work unusually cheap. A hosted replay is a complete record of the actions, with a state hash for each tick. The engine already has hooks (<code>observeShot</code>, <code>observeHit</code>, <code>observeTag</code>, and, with <code>-d:pwTraining</code>, also <code>damageObserver</code>/<code>damageWeapon</code>). When a tool plays a replay again with those hooks and reads the <code>World</code> fields in each tick, it gets every event that we asked for. That includes shots, hits (with the attacker, the victim, the weapon, and the distance), damage to armor and to HP, kills, respawns, pickups, the start, pause, reset, and end of each capture, glory by type, the text of each shout, disguises, and each entry into a trench or into water. It also gets the full state in each tick, which the movement diagrams use. A scratch probe did this on all three sample league replays with zero hash errors. It took 0.5–1.0 s for each match for events, or 2.7–4.5 s for each match with all-pairs visibility<sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §0–3">1</a></sup>. Only four items need an engine patch or our own logs: the exact result of a gun ray that gets to a victim with spawn protection or a trench dodge, the intended target of a shot, why and when a VM stopped, and the internal intent of the policy. A native library also runs local 16-seat BASIC matches with the exact rules and glory configuration of the league, at approximately 5.4 s for each match. Its hashes are the same as those of the headless binary<sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §4">1</a></sup>. The sibling labs already solved the hard parts of the analysis: the Gods of the Arena chain from episode reader to A/B adapter to miner features, the shared <code>coworld-ab</code> statistics engine, and the survey and field-study practice of crewrift<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §9">2</a></sup>.</p>
+
+    <div class="callout callout-info">
+      <span class="callout-label">Key finding · the ladder now rates glory margin</span>
+      One result of this research changes what we must measure. Since the evening of 2026-09-28, the paintbot-pw ladder rates each episode by the glory margin, not by win, draw, or loss. The live league settings have <code>margin_scale: 1000</code><sup class="ref"><a href="#src-3" title="live league settings league_b9458ff8… (read 2026-09-29)">3</a></sup>. Thus the Elo outcome of an episode is <code>clamp(0.5 + (our glory − their glory) / 2000, 0, 1)</code><sup class="ref"><a href="#src-4" title="metta@6304974ffa: packages/observatory-competitions/src/observatory_competitions/v2/ladders/rankings/elo.py — lines 82-87, 183-187 (commit 6304974ffa, margin_scale)">4</a></sup>. A 500-glory win counts 0.75, a 950-glory win counts approximately 0.98, and a zero-glory win counts as a draw. Thus the size of the glory now changes the rank. This is the opposite of what the lab docs and the onboarding report said, and T0 corrects them. The change also helps the A/B test: this outcome score is continuous for each episode, so a test needs fewer episodes than a simple win or loss.
+    </div>
+
+    <p>The plan has fifteen tools plus a currency repair (T0–T15) and six lab skills, in five phases. All of them go in the Paintbot PW lab, except two game-agnostic statistics additions to the shared <code>coworld-ab</code> skill. Phase 0 does a new check of the lab docs at rules 47, because they are two releases old. Phase 1 makes the base that all other parts read: a trace tool with a hash check (<code>pw_trace</code>), an episode reader with a signed cache, and Parquet tables for each type of event that DuckDB can query. Phase 2 is the A/B set: a <code>compare.py</code> adapter, the paired and sequential (SPRT) tests that <code>coworld-ab</code> does not have today, a local batch harness, and the <code>paintbot-pw-ab</code> skill. Phase 3 gives movement diagrams and a report for each match on a real terrain background. Phase 4 gives opponent scouting, fight and trade metrics, and the hypothesis-miner adapter. Phase 5 has the ideas that need more work: credit from a win-probability model, intent telemetry and belief audits, and the tuning of constants. James must make four decisions: the default A/B design, whether to add SPRT to the shared engine, the telemetry budget that our BASIC can use, and whether the optional rerun viewer is a permitted dependency.</p>
+  </section>
+
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><span class="toc-num">1</span><a href="#goals">Problem and goals</a></li>
+      <li><span class="toc-num">2</span><a href="#current-state">What exists and what changed</a></li>
+      <li><span class="toc-num">3</span><a href="#principles">Design principles</a></li>
+      <li><span class="toc-num">4</span><a href="#architecture">Architecture</a></li>
+      <li><span class="toc-num">5</span><a href="#tools">Tool catalog</a></li>
+      <li><span class="toc-num">6</span><a href="#skills">Skills</a></li>
+      <li><span class="toc-num">7</span><a href="#ab-design">The A/B design</a></li>
+      <li><span class="toc-num">8</span><a href="#metrics">Metric catalog</a></li>
+      <li><span class="toc-num">9</span><a href="#shared-changes">Shared (root) changes proposed</a></li>
+      <li><span class="toc-num">10</span><a href="#phasing">Phasing and effort</a></li>
+      <li><span class="toc-num">11</span><a href="#extras">Creative extras</a></li>
+      <li><span class="toc-num">12</span><a href="#alternatives">Alternatives considered</a></li>
+      <li><span class="toc-num">13</span><a href="#open-questions">Open questions and decisions</a></li>
+      <li><span class="toc-num">14</span><a href="#risks">Risks</a></li>
+      <li><span class="toc-num">15</span><a href="#sources">Sources</a></li>
+    </ol>
+  </nav>
+
+  <section id="goals">
+    <h2>1 · Problem and goals</h2>
+    <ul class="key-points">
+      <li>The lab has no analysis instruments yet. It has only a release resolver and a pinned engine build.</li>
+      <li>James asked for an A/B skill, a full unpack of each replay, movement diagrams, and the primary combat and objective metrics.</li>
+      <li>Each number must be correct, quick to get, easy for a person to see, and pinned to a release.</li>
+    </ul>
+    <p>The lab has no instruments yet. It has only <code>deployed_ref.py</code>, which finds the release and commit of the league, and <code>build_tools.sh</code>, which builds the pinned engine<sup class="ref"><a href="#src-5" title="personal_labs_paintbot_pw/paintbot_pw_lab/README.md — Instruments section">5</a></sup>.</p>
+    <p>James asked for five items. The first is a good A/B skill. The second is a tool that unpacks a replay to get every event. The third is movement diagrams for a time span that he selects. The fourth is measurements of accuracy, deaths, damage dealt and taken, score, glory, and nearness to hearts. The fifth is any other useful item, with ideas from the other labs.</p>
+    <h3>Goals</h3>
+    <ol>
+      <li><strong>Correct numbers.</strong> Each number has a hash check, and no data disappears without a record.</li>
+      <li><strong>Fast iterations.</strong> The lab rule is speed first, and the number of iterations each day is the measure<sup class="ref"><a href="#src-6" title="personal_labs_paintbot_pw/AGENTS.md — improvement loop">6</a></sup>.</li>
+      <li><strong>Behavior that a person can see and judge.</strong></li>
+      <li><strong>Use</strong> of the shared engines and of the patterns of the sibling labs.</li>
+      <li><strong>A version pin on everything</strong>, because the game releases many versions each day.</li>
+    </ol>
+    <h3>Non-goals</h3>
+    <ul>
+      <li>A new build of the web replay viewer. That build needs Emscripten and a private art repository<sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §2">1</a></sup>.</li>
+      <li>Heartland. It is now a separate coworld with <code>heartland-v*</code> tags, and it is out of scope.</li>
+      <li>A Python Flatty decoder. The Nim loader already validates the format and records its version.</li>
+    </ul>
+  </section>
+
+  <section id="current-state">
+    <h2>2 · What exists and what changed</h2>
+    <ul class="key-points">
+      <li>The league went from 0.3.68 to 0.3.77 in one day. Rules 46–47 added glory for cogs out of the match and new BASIC names.</li>
+      <li>As a result, the per-seat probe of the lab does not compile now, and some lab tools and docs are old.</li>
+      <li>Most shared skills are applicable, but <code>coworld-ab</code> has no paired test and no sequential stop rule.</li>
+    </ul>
+    <h3>Existing lab assets</h3>
+    <p>The lab has two tools, <code>deployed_ref.py</code> and <code>build_tools.sh</code>. It also has five docs, <code>mechanics.md</code>, <code>policy-surface.md</code>, <code>field.md</code>, <code>community.md</code>, and <code>evidence-pipeline.md</code>. We verified all of them at <code>7b2b19f5</code>/<code>ef82196</code>.</p>
+    <h3>Drift since then (2026-09-28 → 29)</h3>
+    <p>The league went from 0.3.68 to 0.3.77. Rules 46–47 added glory for cogs out of the match (<code>gloryBehindCogs</code>). Every 5 s, a team gets glory for each of its cogs that is out of the match, above the number of the enemy, and the league variants pay 10<sup class="ref"><a href="#src-7" title="paintbot-pw@0ff41d2d: examples/paintbot/sim.nim — lines 143, 946-950">7</a></sup>. BASIC got <code>teamLives</code>, <code>teamCogsOut</code>, and <code>awardBehind*</code><sup class="ref"><a href="#src-8" title="paintbot-pw@0ff41d2d: examples/paintbot/bots.nim — lines 260-273">8</a></sup>. The number of seats is now set for each match (2 to 256). <code>World.cogs</code>, <code>equipment</code>, and <code>uniforms</code> are now <code>seq</code>s. The release also added observation contract v3 and <code>pw_seat_state</code><sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §7">1</a></sup>.</p>
+    <p>These changes have these results for the lab:</p>
+    <ul>
+      <li>The per-seat probe of the lab does not compile now. <code>array[Seats,…]</code> fails, and the probe must use <code>seq</code>/<code>MaxSeats</code><sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §0.4">1</a></sup>.</li>
+      <li><code>deployed_ref.py</code> cannot find the new <code>heartland-v*</code> tags of Heartland.</li>
+      <li><code>build_tools.sh</code> still uses 0.3.68 as its default.</li>
+      <li>The mechanics and policy docs do not include rules 46–47.</li>
+    </ul>
+    <h3>Shared skills and how well they fit</h3>
+    <p>These results come from the survey of the shared skills<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §1–4">2</a></sup>:</p>
+    <table>
+      <thead><tr><th>Shared skill</th><th>What it offers</th><th>Fit for Paintbot PW</th></tr></thead>
+      <tbody>
+        <tr><td><code>coworld-ab</code></td><td>Engine <code>ab_stats.py</code> with <code>build_deltas(base_groups, cand_groups, metrics, metric_value, value_fn, all_groups, sig_p)</code><sup class="ref"><a href="#src-9" title="personal_labs_paintbot_pw/.claude/skills/coworld-ab/scripts/ab_stats.py — line 103 (build_deltas contract)">9</a></sup>. Rates use Fisher exact on binary observations; means use Welch; Benjamini-Yekutieli (BY) correction; at least 30 episodes per arm per group for a significant verdict.</td><td>Good base, but it has <strong>no paired test and no sequential stopping</strong>.</td></tr>
+        <tr><td><code>coworld-hypothesis-miner</code></td><td>Adapter exports <code>adapter(dict) -&gt; Episode|None</code> and <code>METAS</code><sup class="ref"><a href="#src-10" title="personal_labs_paintbot_pw/.claude/skills/coworld-hypothesis-miner/ — miner contract">10</a></sup>; needs at least 8 episodes; "never" is encoded as last tick + 1.</td><td>Fits; needs a Paintbot PW <code>features.py</code>.</td></tr>
+        <tr><td><code>coworld-episode-artifacts</code></td><td><code>fetch_artifacts.py</code><sup class="ref"><a href="#src-11" title="personal_labs_paintbot_pw/.claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py">11</a></sup> downloads episode artifacts.</td><td>Saves the paintbot-pw tape under two wrong names (<code>replay.json</code>, <code>replay.json.z</code>)<sup class="ref"><a href="#src-12" title="personal_labs_paintbot_pw/TODO.md">12</a></sup>.</td></tr>
+        <tr><td><code>coworld-experience-requests</code></td><td><code>xp_dashboard.py</code> tracks request batches.</td><td>Requires a <code>results.win</code> array, which paintbot-pw results lack<sup class="ref"><a href="#src-13" title="personal_labs_paintbot_pw/.claude/skills/coworld-experience-requests/scripts/xp_dashboard.py — lines 128-132">13</a></sup>, so it shows progress only.</td></tr>
+        <tr><td><code>coworld-local-run</code></td><td>Docker-based local episodes.</td><td>Does not apply: there is no player container.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="principles">
+    <h2>3 · Design principles</h2>
+    <ul class="key-points">
+      <li>The plan has eight principles, and each one comes from evidence in the engine or in a sibling lab.</li>
+      <li>The primary idea: one replay run with a hash check supplies all data, and no data disappears or mixes across versions.</li>
+    </ul>
+    <ol>
+      <li><strong>One source of truth with a hash check.</strong> Each number comes from a new run of the replay, and that run stops with an error when a hash does not agree<sup class="ref"><a href="#src-14" title="personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/expand_replay.nim — lines 397-405">14</a></sup><sup class="ref-sep">,</sup><sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §5, §9.2">2</a></sup>.</li>
+      <li><strong>The replay tells what occurred, and telemetry tells why.</strong> The tape already has each command that each seat executed, and the new run gives the results for all 16 seats. Thus our BASIC prints only its intent<sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §5">1</a></sup><sup class="ref-sep">,</sup><sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §5b">2</a></sup>.</li>
+      <li><strong>The unit is the episode, with one row for each (episode, policy).</strong> Eight seats of one policy in one episode are not eight samples. The ctf-ab tool and the GotA miner made this mistake<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §10.1">2</a></sup>.</li>
+      <li><strong>Exact values and inferred values never mix. An unknown value is null, not zero, and the tool counts and prints each exclusion</strong><sup class="ref"><a href="#src-15" title="personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/compare.py — lines 163-183">15</a></sup>.</li>
+      <li><strong>Everything has a version pin.</strong> Tools build at the release of the recording, each result records its <code>coworld_version</code>, and a comparison never mixes two versions of the rules<sup class="ref"><a href="#src-16" title="personal_labs_paintbot_pw/paintbot_pw_lab/WORKING_CONTEXT.md — never pool rules versions">16</a></sup>.</li>
+      <li><strong>Use what exists before you make something new.</strong> Use the shared engines for statistics and mining, the Nim engine of the repository for simulation, and only the Python dependencies that the project has now. pandas, pyarrow, DuckDB, matplotlib, scipy, Pillow, numpy, and scikit-learn are already in the project<sup class="ref"><a href="#src-17" title="personal_labs_paintbot_pw/pyproject.toml">17</a></sup>.</li>
+      <li><strong>Output that agents and people can both read.</strong> Each report writes JSON next to its HTML or PNG<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §3b">2</a></sup>.</li>
+      <li><strong>Local runs are for mechanisms and screening, never for evidence against the field.</strong> The cue_n_woo lab had to learn this lesson again and again, and it is a lab rule<sup class="ref"><a href="#src-18" title="personal_labs_paintbot_pw/paintbot_pw_lab/AGENTS.md">18</a></sup>.</li>
+    </ol>
+  </section>
+
+  <section id="architecture">
+    <h2>4 · Architecture</h2>
+    <ul class="key-points">
+      <li>The design has five layers: sources, then a trace with a hash check, then Parquet tables, then one metric library, then the consumers and skills.</li>
+      <li>All consumers read the same tables, so each metric has only one definition.</li>
+      <li>In the policy, one intent telemetry line in our BASIC, controlled by a setting.</li>
+    </ul>
+    <figure>
+<svg id="fig-1" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 762.016px; background-color: transparent;" viewBox="0 0 762.015625 572.7999877929688" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#fig-1{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;fill:#111827;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#fig-1 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#fig-1 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#fig-1 .error-icon{fill:#fffaf0;}#fig-1 .error-text{fill:#111827;stroke:#111827;}#fig-1 .edge-thickness-normal{stroke-width:1px;}#fig-1 .edge-thickness-thick{stroke-width:3.5px;}#fig-1 .edge-pattern-solid{stroke-dasharray:0;}#fig-1 .edge-thickness-invisible{stroke-width:0;fill:none;}#fig-1 .edge-pattern-dashed{stroke-dasharray:3;}#fig-1 .edge-pattern-dotted{stroke-dasharray:2;}#fig-1 .marker{fill:#859ebe;stroke:#859ebe;}#fig-1 .marker.cross{stroke:#859ebe;}#fig-1 svg{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;}#fig-1 p{margin:0;}#fig-1 .label{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111827;}#fig-1 .cluster-label text{fill:#1a3875;}#fig-1 .cluster-label span{color:#1a3875;}#fig-1 .cluster-label span p{background-color:transparent;}#fig-1 .label text,#fig-1 span{fill:#111827;color:#111827;}#fig-1 .node rect,#fig-1 .node circle,#fig-1 .node ellipse,#fig-1 .node polygon,#fig-1 .node path{fill:#f8f6ef;stroke:#d4c9b5;stroke-width:1px;}#fig-1 .rough-node .label text,#fig-1 .node .label text,#fig-1 .image-shape .label,#fig-1 .icon-shape .label{text-anchor:middle;}#fig-1 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#fig-1 .rough-node .label,#fig-1 .node .label,#fig-1 .image-shape .label,#fig-1 .icon-shape .label{text-align:center;}#fig-1 .node.clickable{cursor:pointer;}#fig-1 .root .anchor path{fill:#859ebe!important;stroke-width:0;stroke:#859ebe;}#fig-1 .arrowheadPath{fill:#00020b;}#fig-1 .edgePaths .path{stroke:#859ebe;stroke-width:1px;}#fig-1 .flowchart-link{stroke:#859ebe;fill:none;}#fig-1 .edgeLabel{background-color:#fffdf4;text-align:center;}#fig-1 .edgeLabel p{background-color:#fffdf4;}#fig-1 .edgeLabel rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-1 .labelBkg{background-color:rgba(255, 253, 244, 0.5);}#fig-1 .cluster rect{fill:#fffaf0;stroke:#e4dac8;stroke-width:1px;}#fig-1 .cluster text{fill:#1a3875;}#fig-1 .cluster span{color:#1a3875;}#fig-1 .node .collapsed-indicator{fill:#e4dac8;stroke:none;opacity:0.6;}#fig-1 .node .collapsed-separator{stroke:#e4dac8;stroke-width:0.75px;}#fig-1 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:12px;background:#fffaf0;border:1px solid #e4dac8;border-radius:2px;pointer-events:none;z-index:100;}#fig-1 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#111827;}#fig-1 rect.text{fill:none;stroke-width:0;}#fig-1 .icon-shape,#fig-1 .image-shape{background-color:#fffdf4;text-align:center;}#fig-1 .icon-shape p,#fig-1 .image-shape p{background-color:#fffdf4;padding:2px;}#fig-1 .icon-shape .label rect,#fig-1 .image-shape .label rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-1 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#fig-1 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#fig-1 .node .neo-node{stroke:#d4c9b5;}#fig-1 [data-look="neo"].node rect,#fig-1 [data-look="neo"].cluster rect,#fig-1 [data-look="neo"].node polygon{stroke:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].swimlane.cluster rect{filter:none;}#fig-1 [data-look="neo"].node path{stroke:url(#fig-1-gradient);stroke-width:1px;}#fig-1 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].node .neo-line path{stroke:#d4c9b5;filter:none;}#fig-1 [data-look="neo"].node circle{stroke:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].node circle .state-start{fill:#000000;}#fig-1 [data-look="neo"].icon-shape .icon{fill:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#fig-1-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-1 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="fig-1_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-1_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/></marker><marker id="fig-1_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"/><g class="edgePaths"><path d="M269.555,54L269.555,58.167C269.555,62.333,269.555,70.667,269.555,78.333C269.555,86,269.555,93,269.555,96.5L269.555,100" id="fig-1-L_X_F_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_X_F_0" data-points="W3sieCI6MjY5LjU1NDY4NzUsInkiOjU0fSx7IngiOjI2OS41NTQ2ODc1LCJ5Ijo3OX0seyJ4IjoyNjkuNTU0Njg3NSwieSI6MTA0fV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M479.258,54L479.258,58.167C479.258,62.333,479.258,70.667,479.258,78.333C479.258,86,479.258,93,479.258,96.5L479.258,100" id="fig-1-L_L_R_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_L_R_0" data-points="W3sieCI6NDc5LjI1NzgxMjUsInkiOjU0fSx7IngiOjQ3OS4yNTc4MTI1LCJ5Ijo3OX0seyJ4Ijo0NzkuMjU3ODEyNSwieSI6MTA0fV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M269.555,150L269.555,154.167C269.555,158.333,269.555,166.667,276.809,174.687C284.064,182.708,298.574,190.416,305.828,194.27L313.083,198.123" id="fig-1-L_F_T_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_F_T_0" data-points="W3sieCI6MjY5LjU1NDY4NzUsInkiOjE1MH0seyJ4IjoyNjkuNTU0Njg3NSwieSI6MTc1fSx7IngiOjMxNi42MTU1MzE3ODM1ODAzNywieSI6MjAwfV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M479.258,150L479.258,154.167C479.258,158.333,479.258,166.667,472.003,174.687C464.748,182.708,450.239,190.416,442.984,194.27L435.729,198.123" id="fig-1-L_R_T_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_R_T_0" data-points="W3sieCI6NDc5LjI1NzgxMjUsInkiOjE1MH0seyJ4Ijo0NzkuMjU3ODEyNSwieSI6MTc1fSx7IngiOjQzMi4xOTY5NjgyMTY0MTk2MywieSI6MjAwfV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M374.406,261.4L374.406,265.567C374.406,269.733,374.406,278.067,374.406,285.733C374.406,293.4,374.406,300.4,374.406,303.9L374.406,307.4" id="fig-1-L_T_E_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_T_E_0" data-points="W3sieCI6Mzc0LjQwNjI1LCJ5IjoyNjEuNDAwMDAxNTI1ODc4OX0seyJ4IjozNzQuNDA2MjUsInkiOjI4Ni40MDAwMDE1MjU4Nzg5fSx7IngiOjM3NC40MDYyNSwieSI6MzExLjQwMDAwMTUyNTg3ODl9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M374.406,372.8L374.406,376.967C374.406,381.133,374.406,389.467,374.406,397.133C374.406,404.8,374.406,411.8,374.406,415.3L374.406,418.8" id="fig-1-L_E_M_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_E_M_0" data-points="W3sieCI6Mzc0LjQwNjI1LCJ5IjozNzIuODAwMDAzMDUxNzU3OH0seyJ4IjozNzQuNDA2MjUsInkiOjM5Ny44MDAwMDMwNTE3NTc4fSx7IngiOjM3NC40MDYyNSwieSI6NDIyLjgwMDAwMzA1MTc1Nzh9XQ==" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M274.273,461.865L241.099,467.188C207.924,472.51,141.576,483.155,108.401,491.978C75.227,500.8,75.227,507.8,75.227,511.3L75.227,514.8" id="fig-1-L_M_C_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_M_C_0" data-points="W3sieCI6Mjc0LjI3MzQzNzUsInkiOjQ2MS44NjUxODEyNzM0NTc4fSx7IngiOjc1LjIyNjU2MjUsInkiOjQ5My44MDAwMDMwNTE3NTc4fSx7IngiOjc1LjIyNjU2MjUsInkiOjUxOC44MDAwMDMwNTE3NTc4fV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M322.649,468.8L313.272,472.967C303.896,477.133,285.143,485.467,275.767,493.133C266.391,500.8,266.391,507.8,266.391,511.3L266.391,514.8" id="fig-1-L_M_V_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_M_V_0" data-points="W3sieCI6MzIyLjY0ODc2MzAyMDgzMzMsInkiOjQ2OC44MDAwMDMwNTE3NTc4fSx7IngiOjI2Ni4zOTA2MjUsInkiOjQ5My44MDAwMDMwNTE3NTc4fSx7IngiOjI2Ni4zOTA2MjUsInkiOjUxOC44MDAwMDMwNTE3NTc4fV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M426.164,468.8L435.54,472.967C444.916,477.133,463.669,485.467,473.046,493.133C482.422,500.8,482.422,507.8,482.422,511.3L482.422,514.8" id="fig-1-L_M_S_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_M_S_0" data-points="W3sieCI6NDI2LjE2MzczNjk3OTE2NjcsInkiOjQ2OC44MDAwMDMwNTE3NTc4fSx7IngiOjQ4Mi40MjE4NzUsInkiOjQ5My44MDAwMDMwNTE3NTc4fSx7IngiOjQ4Mi40MjE4NzUsInkiOjUxOC44MDAwMDMwNTE3NTc4fV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/><path d="M474.539,461.065L510.327,466.521C546.115,471.977,617.69,482.888,653.478,491.844C689.266,500.8,689.266,507.8,689.266,511.3L689.266,514.8" id="fig-1-L_M_N_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_M_N_0" data-points="W3sieCI6NDc0LjUzOTA2MjUsInkiOjQ2MS4wNjUxNTExODMzNjQyfSx7IngiOjY4OS4yNjU2MjUsInkiOjQ5My44MDAwMDMwNTE3NTc4fSx7IngiOjY4OS4yNjU2MjUsInkiOjUxOC44MDAwMDMwNTE3NTc4fV0=" data-look="classic" marker-end="url(#fig-1_flowchart-v2-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_X_F_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_L_R_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_F_T_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_R_T_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_T_E_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_E_M_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_M_C_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_M_V_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_M_S_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_M_N_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g></g><g class="nodes"><g class="node default" id="fig-1-flowchart-X-0" data-look="classic" transform="translate(269.5546875, 31)"><rect class="basic label-container" style="" x="-83.03125" y="-22.999999523162842" width="166.0625" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">Hosted</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> episodes</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-F-1" data-look="classic" transform="translate(269.5546875, 127)"><rect class="basic label-container" style="" x="-74.3359375" y="-22.999999523162842" width="148.671875" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">fetch_artifacts</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-L-2" data-look="classic" transform="translate(479.2578125, 31)"><rect class="basic label-container" style="" x="-75.78125" y="-22.999999523162842" width="151.5625" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">Local</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> matches</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-R-3" data-look="classic" transform="translate(479.2578125, 127)"><rect class="basic label-container" style="" x="-85.3671875" y="-22.999999523162842" width="170.734375" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">headless</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> --record</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-T-5" data-look="classic" transform="translate(374.40625, 230.70000076293945)"><rect class="basic label-container" style="" x="-74.484375" y="-30.700000762939453" width="148.96875" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">pw_trace</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">hash-checked</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-E-9" data-look="classic" transform="translate(374.40625, 342.10000228881836)"><rect class="basic label-container" style="" x="-75.3828125" y="-30.700000762939453" width="150.765625" height="61.400001525878906"/><g class="label" style="" transform="translate(0, -15.700000762939453)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">pw_episodes</tspan></tspan><tspan class="text-outer-tspan row" x="0" y="1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">Parquet</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> tables</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-M-11" data-look="classic" transform="translate(374.40625, 445.8000030517578)"><rect class="basic label-container" style="" x="-100.1328125" y="-22.999999523162842" width="200.265625" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">pw_metrics,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> pw_fights</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-C-13" data-look="classic" transform="translate(75.2265625, 541.8000030517578)"><rect class="basic label-container" style="" x="-67.2265625" y="-22.999999523162842" width="134.453125" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">compare.py</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-V-15" data-look="classic" transform="translate(266.390625, 541.8000030517578)"><rect class="basic label-container" style="" x="-73.9375" y="-22.999999523162842" width="147.875" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">pw_viz,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> report</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-S-17" data-look="classic" transform="translate(482.421875, 541.8000030517578)"><rect class="basic label-container" style="" x="-92.09375" y="-22.999999523162842" width="184.1875" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">pw_scout,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> pw_flags</tspan></tspan></text></g></g></g><g class="node default" id="fig-1-flowchart-N-19" data-look="classic" transform="translate(689.265625, 541.8000030517578)"><rect class="basic label-container" style="" x="-64.75" y="-22.999999523162842" width="129.5" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">features.py</tspan></tspan></text></g></g></g></g></g></g><defs><filter id="fig-1-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><defs><filter id="fig-1-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><linearGradient id="fig-1-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d4c9b5" stop-opacity="1"/><stop offset="100%" stop-color="#d4c9b5" stop-opacity="1"/></linearGradient></svg>
+      <figcaption><span class="fig-label">Figure A · Data flow</span>Hosted matches and local matches both go through the single <code>pw_trace</code> step with its hash check and into shared Parquet tables. Thus each consumer (A/B, visuals, scouting, miner features) reads numbers from the same verified source.</figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Layer</th><th>Components</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td>Sources</td><td>Hosted episode artifacts; local matches</td><td>Hosted: <code>episode.json</code>, <code>results.json</code>, the replay tape and our seat logs, fetched with <code>fetch_artifacts.py</code>. Local: the native library or the headless binary.</td></tr>
+        <tr><td>L1 Trace</td><td><code>pw_trace</code> (Nim)</td><td>Built at the recording's release; produces per-episode events and sampled per-tick state, hash-checked.</td></tr>
+        <tr><td>L2 Tables</td><td><code>pw_episodes.py</code></td><td>Reads episodes; runs and caches traces with a receipt signed over the sha256 of the replay, results, <code>episode.json</code>, binary and options; writes per-episode Parquet tables. DuckDB views span a batch.</td></tr>
+        <tr><td>L3 Metrics</td><td><code>pw_metrics.py</code>, <code>pw_fights.py</code></td><td>One definition of every metric, per seat, per (episode, policy) and per team.</td></tr>
+        <tr><td>L4 Consumers</td><td><code>compare.py</code>, <code>features.py</code>, <code>pw_viz.py</code>, <code>pw_match_report.py</code>, <code>pw_scout.py</code>, <code>pw_flags.py</code></td><td>The coworld-ab adapter with paired and SPRT tests; the miner adapter; movement, heatmaps and timelines; per-episode HTML; opponent profiles and the policy×policy matrix; anomaly flags.</td></tr>
+        <tr><td>L5 Skills</td><td><code>paintbot-pw-replay</code>, <code>paintbot-pw-ab</code>, <code>paintbot-pw-diagnose</code>, <code>paintbot-pw-scout</code>, <code>paintbot-pw-local</code>, <code>paintbot-pw-tune</code> (later)</td><td>Agent procedures that bind the shared method skills to these tools (§6).</td></tr>
+        <tr><td>Policy side</td><td>Intent telemetry line</td><td>One line in our BASIC behind a knob, parsed by <code>pw_episodes.py</code>.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="tools">
+    <h2>5 · Tool catalog</h2>
+    <ul class="key-points">
+      <li>The catalog has sixteen entries, T0–T15. Phase 1 (T1, T2, T3, T8) is the base that all other tools read.</li>
+      <li>Effort scale: <strong>S</strong> ≤ 2 h, <strong>M</strong> ≈ half a day, <strong>L</strong> ≈ 1–2 days.</li>
+      <li>Each entry gives the purpose, how to make the tool, what it writes, and how we verify it.</li>
+    </ul>
+    <table>
+      <thead><tr><th>ID</th><th>Name</th><th>Phase</th><th>Effort</th><th>What it unlocks</th></tr></thead>
+      <tbody>
+        <tr><td><a href="#t0">T0</a></td><td>Currency repair</td><td>0</td><td>S</td><td>Lab docs and tools that are correct at rules 47, including the margin-rated ladder</td></tr>
+        <tr><td><a href="#t1">T1</a></td><td><code>pw_trace</code></td><td>1</td><td>M</td><td>Every event and per-tick state from any replay, hash-checked</td></tr>
+        <tr><td><a href="#t2">T2</a></td><td><code>pw_episodes.py</code></td><td>1</td><td>M</td><td>Cached, joined per-episode tables; ad hoc DuckDB queries over a batch</td></tr>
+        <tr><td><a href="#t3">T3</a></td><td><code>pw_metrics.py</code></td><td>1</td><td>M</td><td>One definition of every metric at seat, (episode, policy) and team level</td></tr>
+        <tr><td><a href="#t4">T4</a></td><td><code>pw_fights.py</code></td><td>4</td><td>M</td><td>Engagements, trades and opening duels</td></tr>
+        <tr><td><a href="#t5">T5</a></td><td><code>compare.py</code></td><td>2</td><td>M</td><td>The first real A/B on the Elo outcome score</td></tr>
+        <tr><td><a href="#t6">T6</a></td><td>Paired and sequential statistics</td><td>2</td><td>S/M</td><td>Paired, head-to-head and SPRT tests in the shared engine</td></tr>
+        <tr><td><a href="#t7">T7</a></td><td><code>pw_local.py</code></td><td>2</td><td>M</td><td>Fast local compile checks and screening</td></tr>
+        <tr><td><a href="#t8">T8</a></td><td><code>pw_map.nim</code> + map cache</td><td>1</td><td>S</td><td>Real terrain backgrounds for diagrams</td></tr>
+        <tr><td><a href="#t9">T9</a></td><td><code>pw_viz.py</code></td><td>3</td><td>M</td><td>Movement diagrams for a chosen window, heatmaps, timelines</td></tr>
+        <tr><td><a href="#t10">T10</a></td><td><code>pw_match_report.py</code></td><td>3</td><td>M</td><td>A one-page report per episode with replay deep links</td></tr>
+        <tr><td><a href="#t11">T11</a></td><td><code>pw_scout.py</code></td><td>4</td><td>M</td><td>Opponent profiles, policy×policy matrix, shout-protocol decoding</td></tr>
+        <tr><td><a href="#t12">T12</a></td><td><code>pw_flags.py</code></td><td>4</td><td>S/M</td><td>Tick-linked anomaly flags; worst-loss-first triage</td></tr>
+        <tr><td><a href="#t13">T13</a></td><td>BASIC intent telemetry + parser</td><td>2</td><td>S</td><td>Why our policy acted; the intent-vs-truth audit</td></tr>
+        <tr><td><a href="#t14">T14</a></td><td>Win-probability model and credit</td><td>5</td><td>L</td><td>Which minutes and hearts lose games; miner features</td></tr>
+        <tr><td><a href="#t15">T15</a></td><td>Tuning harness</td><td>5</td><td>L</td><td>Systematic constant search, confirmed against the field</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tool" id="t0">
+      <h3><span class="tool-id">T0</span>Currency repair</h3>
+      <p class="tool-meta">Phase 0 · Effort S (≤ 2 h)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Make the lab docs and tools correct for rules 47 before we build on them, and correct the false statement that the size of the glory does not change the rank.</dd>
+        <dt>How it's built</dt>
+        <dd>Do a new check of <code>mechanics.md</code> and <code>policy-surface.md</code> at <code>0ff41d2d</code> for rules 46–47 (glory for cogs out of the match, the new BASIC names, the number of seats for each match). Change <code>deployed_ref.py</code> so that it finds <code>heartland-v*</code> tags, or remove Heartland from it. Change the default of <code>build_tools.sh</code>. Replace the appendix probe of the evidence pipeline with T1. Correct each lab statement that says the size of the glory does not change the rank (in AGENTS.md, README.md, TENTATIVE_LESSONS.md, <code>mechanics.md</code> §1, <code>field.md</code>, and the onboarding report §3 and §12), because the ladder now uses <code>margin_scale: 1000</code>.</dd>
+        <dt>Output</dt>
+        <dd>Lab docs and tools that are correct at rules 47.</dd>
+        <dt>Verification</dt>
+        <dd><code>deployed_ref.py</code> shows "current".</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t1">
+      <h3><span class="tool-id">T1</span><code>pw_trace</code>: hash-checked replay expander (Nim)</h3>
+      <p class="tool-meta">Phase 1 · Effort M (≈ half a day)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Unpack a replay into every event and the full state for each tick.</dd>
+        <dt>How it's built</dt>
+        <dd>
+          <p>Move the verified scratch probe (<code>pwtrace.nim</code>)<sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §0, §3">1</a></sup> into the lab tools as <code>pw_trace.nim</code>. Compile it in the release worktree, as GotA copies its <code>.nim</code> file into the engine tree<sup class="ref"><a href="#src-19" title="personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/build_expand_replay.sh">19</a></sup><sup class="ref-sep">,</sup><sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §5">2</a></sup>, and add it to <code>build_tools.sh</code>. Flags: <code>-d:pwTraining -d:headless --threads:on</code>.</p>
+          <p>The hooks and sources are these<sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §1.1–1.2">1</a></sup>. <code>observeShot</code> gives each shot<sup class="ref"><a href="#src-20" title="paintbot-pw@0ff41d2d: examples/paintbot/mechanics.nim — line 681">20</a></sup>. <code>observeHit</code> gives each hit, before armor removes damage<sup class="ref"><a href="#src-20" title="paintbot-pw@0ff41d2d: examples/paintbot/mechanics.nim — line 370">20</a></sup>. <code>observeTag</code> gives each kill<sup class="ref"><a href="#src-20" title="paintbot-pw@0ff41d2d: examples/paintbot/mechanics.nim — line 443">20</a></sup>. <code>damageObserver</code> and <code>damageWeapon</code> give the damage and the weapon<sup class="ref"><a href="#src-20" title="paintbot-pw@0ff41d2d: examples/paintbot/mechanics.nim — line 422">20</a></sup>. Differences in the World between ticks give the windup, spray bursts, the charge, throw, and blast of each grenade (<code>w.grenades</code>, <code>w.blasts</code>), pickups (jumps in <code>pickups[k].readyAt</code>), captures (<code>heartCaptures</code>, <code>controlHearts.owner</code>), glory (<code>w.gloryEvents</code>), the cogs that take glory hearts (<code>w.gloryPickups</code>), disguises (<code>w.uniforms</code>), entries into and exits from trenches and water, and spawns. The tool removes duplicate glory events by (tick, team, kind, amount), because hearts pay before the tick counter increases. Commands and shouts come from the tape (<code>recording.communications</code>).</p>
+        </dd>
+        <dt>Output</dt>
+        <dd>
+          <p>Schema v1 has these rows:</p>
+          <ul>
+            <li>A <code>meta</code> row (episode, rules, seed, seats, names, configuration, binary sha)</li>
+            <li><code>event</code> rows (tick, kind, seat, other, x, y, weapon, amount, …)</li>
+            <li><code>state</code> rows every N ticks (default 6, which is 4 Hz) with positions, aim point, goal, hp, armor, lives, alive, charge, in_water, and trench, and every tick for a window that you ask for</li>
+            <li>Optional visibility sets every M ticks (these cost approximately 1 ms for each tick for all pairs)</li>
+            <li>A <code>summary</code> row (final hash, ticks, glory, meter, per-seat counters).</li>
+          </ul>
+          <p>Rules: if a hash does not agree, the tool stops with a non-zero exit code and writes a failed summary. The tool runs one process for each replay, because the engine uses global variables<sup class="ref"><a href="#src-21" title="personal_labs_paintbot_pw/gods_of_the_arena_lab/docs/replay-format.md — lines 514-516">21</a></sup>. It uses <code>seq</code>/<code>MaxSeats</code> in all places.</p>
+          <p>Known gaps, which the tool records as null values with a flag: a ray that gets to a victim with spawn protection or a trench dodge looks like a miss. The tool approximates these cases from the geometry of the ray. An exact answer needs a hook in the trench-dodge code<sup class="ref"><a href="#src-20" title="paintbot-pw@0ff41d2d: examples/paintbot/mechanics.nim — lines 712-714">20</a></sup>. The tick when a VM stops is available only from our own logs, or from a test for "all commands are zero while the cog is alive".</p>
+          <p>Cost: 0.5–1.0 s for each match for events, 2.7–4.5 s with full visibility, and 128–216 KB of event JSONL for each match<sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §3">1</a></sup>.</p>
+        </dd>
+        <dt>Verification</dt>
+        <dd>Identity checks: the sum of the glory events (without duplicates) plus the countdown is equal to the final glory of the team. The ticks, scores, and seed in <code>results.json</code> agree. The number of kills is equal to the sum of <code>SeatStats.kills</code>. Run the tool on the 3 sample replays and on one new hosted rules-47 replay. We did not do that last check yet: hosted builds use Nim 2.2.10, and our build uses 2.2.6.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t2">
+      <h3><span class="tool-id">T2</span><code>pw_episodes.py</code>: episode reader, trace cache, tables</h3>
+      <p class="tool-meta">Phase 1 · Effort M (≈ half a day)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Change a directory of episodes into cached tables with correct joins, which each metric, report, and test reads.</dd>
+        <dt>How it's built</dt>
+        <dd>
+          <p>The model is <code>gota_episodes.py</code><sup class="ref"><a href="#src-22" title="personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/gota_episodes.py">22</a></sup> and <code>replay_stats.py</code><sup class="ref"><a href="#src-23" title="personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/replay_stats.py">23</a></sup> from GotA<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §5, §9.1–9.4">2</a></sup>. The tool reads <code>episode.json</code> and <code>results.json</code>. It finds the tape under each name that the fetcher can use, and it identifies the <code>POLYWORLDREPLAY</code> magic and gzip. It runs <code>pw_trace</code> at the release of the recording (from the rules and coworld version in the replay header). It keeps the output in a cache with a receipt signed over the sha256 of the replay, the results, <code>episode.json</code>, the binary, and the options. It moves the output into place in one atomic step. It lists each failure and stops with exit code 1.</p>
+          <p>The tool joins seats by <code>position</code>, never by the sequence in an array. The team comes from <code>game_config.slots</code>/participants, with a parity check that stops with an error when they do not agree<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §10.2">2</a></sup>. The policy identity comes from the exact <code>policy_version_id</code>.</p>
+          <p>The tool also reads our seat logs: intent lines (T13), <code>BASIC error:</code> lines as <code>vm_error</code>, and the oracle journal if the policy uses the oracle.</p>
+        </dd>
+        <dt>Output</dt>
+        <dd>Parquet tables (pyarrow) for each episode, in a layout like awpy<sup class="ref"><a href="#src-24" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/external.md — §2">24</a></sup>: <code>episodes</code>, <code>seats</code>, <code>shots</code>, <code>damage</code>, <code>kills</code>, <code>spawns</code>, <code>pickups</code>, <code>captures</code>, <code>glory</code>, <code>shouts</code>, <code>states</code> (sampled), <code>visibility</code> (optional), and <code>policy_log</code> (our intent lines). A batch is a directory, and DuckDB views over all Parquet files in it answer questions as they occur.</dd>
+        <dt>Verification</dt>
+        <dd>The cache works correctly for hits and misses, and the tool lists each failure.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t3">
+      <h3><span class="tool-id">T3</span><code>pw_metrics.py</code>: the metric library</h3>
+      <p class="tool-meta">Phase 1 · Effort M (≈ half a day)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>One definition for each metric. Thus the A/B test, the reports, and the miner always agree about the meaning of a number.</dd>
+        <dt>How it's built</dt>
+        <dd>The library calculates each metric from the T2 tables at three levels: seat, (episode, policy), and team. The catalog is in <a href="#metrics">§8</a>.</dd>
+        <dt>Output</dt>
+        <dd>Each metric has units and a denominator. It is null when its input is missing.</dd>
+        <dt>Verification</dt>
+        <dd>We compare samples of the metrics with the per-seat counters of the probe.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t4">
+      <h3><span class="tool-id">T4</span><code>pw_fights.py</code>: engagements, trades, openings</h3>
+      <p class="tool-meta">Phase 4 · Effort M (≈ half a day)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Describe fights, not only separate hits: who fought whom, who won, and what the fight cost.</dd>
+        <dt>How it's built</dt>
+        <dd>The tool divides hits and kills into engagements by time and distance. By default, events within 48 ticks and 1,500 units are in one engagement, and we will examine these values again after the first batch. This follows the OpenDota teamfight idea and the space-time graph in <code>find_firefights.py</code> from ctf<sup class="ref"><a href="#src-24" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/external.md — §2">24</a></sup><sup class="ref-sep">,</sup><sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §4b">2</a></sup>. A trade is a kill that a teammate avenges within 72 ticks (the CS2 practice, and a default value). The tool also finds the first duel of each heart contest and the time from the first sighting to the first hit, which needs visibility samples.</dd>
+        <dt>Output</dt>
+        <dd>For each engagement: the participants as N against M, who saw first, who hit first, the winner, and the hearts that the fight changed. Also trades, first duels, and the time to the first hit.</dd>
+        <dt>Verification</dt>
+        <dd>The plan gives no separate check. We will examine the default values again after the first batch.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t5">
+      <h3><span class="tool-id">T5</span><code>compare.py</code>: coworld-ab adapter</h3>
+      <p class="tool-meta">Phase 2 · Effort M (≈ half a day)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Send Paintbot PW episodes into the shared A/B engine with the correct unit, groups, and primary metric.</dd>
+        <dt>How it's built</dt>
+        <dd>The frame comes from <code>compare.py</code> in the original Paintbot lab (rows for each episode, exact version selection, groups for each version and side)<sup class="ref"><a href="#src-25" title="personal_labs_paintbot_pw/paintbot_lab/tools/compare.py">25</a></sup>. It also uses the exclusion counter and <code>ops_fail_rate</code> from GotA<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §0, §1.4">2</a></sup>. The groups are <code>red</code>, <code>blue</code>, <code>all</code>, and one group for each opponent. The primary mean metric is the Elo outcome score of each episode. Rate metrics are binary for each episode (win, draw, win with zero glory, first capture). The other mean metrics are averages over our 8 seats in each episode.</dd>
+        <dt>Output</dt>
+        <dd>Results through <code>render_markdown</code>/<code>emit_json</code>. The tool keeps them together with the request ids and request bodies that made them (a sugarscape practice, and a gap that the player_ade analysis found)<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §9.14">2</a></sup>.</dd>
+        <dt>Verification</dt>
+        <dd>Contract tests.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t6">
+      <h3><span class="tool-id">T6</span>Paired and sequential statistics: shared, game-agnostic</h3>
+      <p class="tool-meta">Phase 2 · Effort S/M · Root change, needs James's go-ahead</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Give <code>coworld-ab</code> the tests that it does not have. Thus matched designs and early stops are statistically correct.</dd>
+        <dt>How it's built</dt>
+        <dd>We add these items to the shared <code>coworld-ab</code> scripts:
+          <ul>
+            <li>(a) A paired test for designs where the two arms share seeds, sides, and opponents: a paired t-test on the difference in outcome score for each pair, with a Wilcoxon signed-rank check, and McNemar on discordant pairs for the win rate.</li>
+            <li>(b) A head-to-head test: a one-sample t-test of the outcome score against 0.5, and an exact binomial test on decisive games, for each side.</li>
+            <li>(c) A sequential probability ratio test on the mean difference in outcome score, as the GSPRT of Stockfish fishtest does for Elo<sup class="ref"><a href="#src-24" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/external.md — §3, top-12 #1">24</a></sup>.</li>
+          </ul>
+          This is a game-agnostic root change, so James must approve it.</dd>
+        <dt>Output</dt>
+        <dd>New test paths in the shared engine, which all labs can use.</dd>
+        <dt>Verification</dt>
+        <dd>The new paths keep the existing safeguards. A "significant" verdict needs a minimum of 30 episodes in each arm (<code>SMALL_N = 30</code>). Benjamini-Yekutieli correction applies across the reported metrics. The tool counts exclusions and reports operational failures as a metric. Each safeguard has a contract test, in the style of the shared analysis-contract tests<sup class="ref"><a href="#src-26" title="personal_labs_paintbot_pw/tools/tests/test_analysis_contracts.py">26</a></sup>.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t7">
+      <h3><span class="tool-id">T7</span><code>pw_local.py</code>: local batch harness</h3>
+      <p class="tool-meta">Phase 2 · Effort M (≈ half a day)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Run many local matches quickly for compile checks, mechanism checks, and screening. The results are never evidence against the field.</dd>
+        <dt>How it's built</dt>
+        <dd>The harness controls the native library (<code>native_env.nim</code>, built with <code>--app:lib -d:pwTraining</code>)<sup class="ref"><a href="#src-27" title="paintbot-pw@0ff41d2d: examples/paintbot/native_env.nim — native_env.nim and native_env.h">27</a></sup> through ctypes. It sets <code>pw_set_rules(47)</code>, <code>pw_set_config_json</code> with the glory configuration of the league, 16 seat scripts, and the seeds. <code>pw_results</code> gives the winner, glory, meter, and hearts<sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §4">1</a></sup>. It runs parallel processes on all cores. We estimate approximately 2.5 matches each second, but we did not do a load test.</dd>
+        <dt>Output</dt>
+        <dd>Uses: a compile check of a candidate in seconds, mechanism checks, screening against <code>base.bas</code> and our older versions with side swaps, and records of selected matches with <code>paintbot-headless --record</code> for T1.</dd>
+        <dt>Verification</dt>
+        <dd>Parity guard: before you trust a batch, compare some final hashes with the headless binary (they were the same on seeds 7–9). The harness refuses to run if the build of the library is not from the target release. The idea of this guard comes from <code>render_topology.py</code> in the original Paintbot lab<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §3b">2</a></sup>.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t8">
+      <h3><span class="tool-id">T8</span><code>pw_map.nim</code> + map cache</h3>
+      <p class="tool-meta">Phase 1 · Effort S (≤ 2 h)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>A real terrain background for movement diagrams and heatmaps.</dd>
+        <dt>How it's built</dt>
+        <dd>An exporter of approximately 40 lines takes samples of <code>terrainHeight</code>, <code>inWater</code>, <code>blocked</code>, and <code>trenchAt</code> on a grid from <code>newWorld</code>. It also writes JSON with the bounds, hearts, pickups, trenches, cover, and homes<sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §2">1</a></sup>. Generated maps come from their <code>.pbmap</code> grids.</dd>
+        <dt>Output</dt>
+        <dd>A cache for each (release, map) as <code>.npy</code> + JSON.</dd>
+        <dt>Verification</dt>
+        <dd>The probe already verified it: Heartwick with 25-unit cells gives a 640×384 grid in 0.18 s.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t9">
+      <h3><span class="tool-id">T9</span><code>pw_viz.py</code>: movement diagrams and charts</h3>
+      <p class="tool-meta">Phase 3 · Effort M (≈ half a day)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Show behavior: where the cogs went in a time window that you select, where they die, and how control changed during the match.</dd>
+        <dt>How it's built</dt>
+        <dd>
+          <p>The tool draws movement trails for a tick window that you select (<code>--from</code>/<code>--to</code> in ticks or seconds, <code>--seats</code>, <code>--team</code>, <code>--policy</code>) on the T8 terrain. Each seat gets one line, which breaks at death and respawn. Arrowheads show the direction. Markers show the events in the window: kill ×, death ○, capture ◆, pickup ▲, a ring for each grenade blast, and short rays from the shooter for shots. The color of each heart shows its owner at the end of the window.</p>
+          <p>Small multiples show the same window across some episodes, or for each opponent. Batch heatmaps show where cogs spend time and where they die (hexbin or KDE<sup class="ref"><a href="#src-24" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/external.md — §4">24</a></sup>). A comparison of occupancy for each policy gives an overlap score, as the Bhattacharyya overlap in <code>heat_compare.py</code> of crewrift does<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §3b">2</a></sup>. Timelines show the meter and glory of each team over time, with the ticks of captures and kills, and a strip that shows the owner of each heart ("control over time"). An optional animated GIF of a window uses matplotlib and Pillow, because this machine has no ffmpeg.</p>
+          <p>The tool uses only matplotlib, which is already a dependency.</p>
+        </dd>
+        <dt>Output</dt>
+        <dd>PNG files, plus JSON of the plotted data.</dd>
+        <dt>Verification</dt>
+        <dd>A visual comparison of one known moment with the web viewer.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t10">
+      <h3><span class="tool-id">T10</span><code>pw_match_report.py</code>: one-page per-episode report</h3>
+      <p class="tool-meta">Phase 3 · Effort M (≈ half a day)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>One page that tells the story of one episode and links directly to the important moments.</dd>
+        <dt>How it's built</dt>
+        <dd>The report shows the result, the parts of the glory, a timeline, and a table of the T3 metrics for each seat. It also shows the top moments (the largest changes: the first capture, multi-kills, lost hearts), T9 movement panels for those moments, and replay links to those ticks. The paintbot-pw web viewer accepts <code>?replay=&lt;uri&gt;&amp;t=&lt;tick&gt;</code><sup class="ref"><a href="#src-28" title="paintbot-pw@0ff41d2d: coworld/paintbot/viewer.js — lines 638-639, 1654-1655 (viewer deep links)">28</a></sup>.</dd>
+        <dt>Output</dt>
+        <dd>HTML in the Ink &amp; Print style, plus JSON.</dd>
+        <dt>Verification</dt>
+        <dd>Open item: we do not know yet if the Observatory wrapper sends the <code>t</code> parameter to the viewer.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t11">
+      <h3><span class="tool-id">T11</span><code>pw_scout.py</code>: opponent scouting and field survey</h3>
+      <p class="tool-meta">Phase 4 · Effort M (≈ half a day)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Learn what the leaders do, from public league episodes, with no cost in credits.</dd>
+        <dt>How it's built</dt>
+        <dd>
+          <p>The tool makes a policy×policy win matrix with Wilson intervals, as crewrift-survey does<sup class="ref"><a href="#src-29" title="personal_labs_paintbot_pw/crewrift_lab/.claude/skills/crewrift-survey/">29</a></sup>. This matrix fits well here, because each episode has one policy on each team. For each opponent, a profile shows the first routes and first heart targets (the idea of <code>infer_battle_plan.py</code> from ctf, but with the team from the metadata, not from parity), the sequence of hearts, the weapons, the use of grenades and spray, the pickup habits, the usual time to win, the parts of the glory, and <strong>their shout protocol</strong>. The shout text is in the tape, and we can read it (for example, <code>FIRE22 1137 1763</code> in a sample)<sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §1.1">1</a></sup>. A shout also gives the exact position of the speaker to all cogs within 12.8 m, and that includes our cogs.</p>
+          <p>Field-study practice, from crewrift-field-study<sup class="ref"><a href="#src-30" title="personal_labs_paintbot_pw/crewrift_lab/.claude/skills/crewrift-field-study/">30</a></sup>: before you pull a batch, put one new replay through T1. If a total is exactly 0% or 100%, think that it is a tooling bug until you prove otherwise.</p>
+        </dd>
+        <dt>Output</dt>
+        <dd>The matrix, the opponent profiles, and flagged episodes, each with a one-line reason that an agent writes (the <code>reasons.json</code> of crewrift-survey).</dd>
+        <dt>Verification</dt>
+        <dd>The check of one new replay before each batch pull.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t12">
+      <h3><span class="tool-id">T12</span><code>pw_flags.py</code>: anomaly flags</h3>
+      <p class="tool-meta">Phase 4 · Effort S/M</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Show a person or an agent the exact ticks where something went wrong.</dd>
+        <dt>How it's built</dt>
+        <dd>The tool makes flags from rules, each with its tick. The flags are:
+          <ul>
+            <li>Cogs that are stuck or move back and forth (the same goal and a small displacement)</li>
+            <li>Alive seats that do nothing (all commands are zero, which is also the test for a stopped VM)</li>
+            <li>A death alone in enemy vision</li>
+            <li>A heart lost while allies were near</li>
+            <li>A grenade with no victims</li>
+            <li>Hits on teammates</li>
+            <li>Long time in water (72 ticks or more)</li>
+            <li>Wins with zero glory.</li>
+          </ul>
+          Defaults: "stuck" means the same goal and a displacement of less than 200 units over 72 ticks while alive. "Idle" means all commands are zero for 48 ticks or more while alive. Each threshold is a named constant in one place.</dd>
+        <dt>Output</dt>
+        <dd>Flags with ticks, and the report shows the thresholds. The tool sorts our losses by margin, and we examine the worst loss first (the Halite triage method)<sup class="ref"><a href="#src-24" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/external.md — §5">24</a></sup>.</dd>
+        <dt>Verification</dt>
+        <dd>The plan gives no separate check. Each report shows the thresholds, so a reader can judge them.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t13">
+      <h3><span class="tool-id">T13</span>BASIC intent telemetry + parser</h3>
+      <p class="tool-meta">Phase 2 (in the first policy) · Effort S (≤ 2 h)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Record why our policy did an action. The replay cannot tell us this.</dd>
+        <dt>How it's built</dt>
+        <dd>A maximum of one short line for each decision, controlled by a configuration setting. The line records only intent: the mode, the selected heart, the target seat, a reason code, and the remaining instruction budget. Budget: a maximum of 1 print for each decision and approximately 200 bytes. That is much less than the limit of 1,024 bytes and 128 events for each decision. If a policy goes over that limit, the seat stops<sup class="ref"><a href="#src-8" title="paintbot-pw@0ff41d2d: examples/paintbot/bots.nim — line 160 (PRINT limits)">8</a></sup><sup class="ref-sep">,</sup><sup class="ref"><a href="#src-31" title="paintbot-pw@0ff41d2d: src/polyworld/basic.nim — lines 2423-2430 (print overrun is a runtime error)">31</a></sup>. The average must also stay below approximately 700 bytes for each tick, so that a full match stays under the 10 MiB log limit<sup class="ref"><a href="#src-1" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md — §5">1</a></sup>. The policy writes the line when the intent changes and also every N ticks, as the <code>LH</code> line of GotA does<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §6">2</a></sup>. T2 contains the parser.</dd>
+        <dt>Output</dt>
+        <dd>A <code>policy_log</code> table. With it, we can do a belief and intent audit: a join of the intent with the truth in the replay (the crewrift-belief-audit pattern)<sup class="ref"><a href="#src-32" title="personal_labs_paintbot_pw/crewrift_lab/.claude/skills/crewrift-belief-audit/">32</a></sup>.</dd>
+        <dt>Verification</dt>
+        <dd>Code review makes sure that the policy obeys the budget (see <a href="#risks">Risks</a>).</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t14">
+      <h3><span class="tool-id">T14</span>Win-probability model and credit</h3>
+      <p class="tool-meta">Phase 5 · Effort L (≈ 1–2 days)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Show which minutes and which hearts lose games. The tool gives each event credit for its effect on the probability to win.</dd>
+        <dt>How it's built</dt>
+        <dd>A logistic model on the hearts that each team holds, the meter difference, the cogs alive and the lives of each team, the time left, and the glory. We fit it on league episodes. Each capture, kill, and death gets credit for its change in win probability (the Leetify and Xenopoulos CS:GO practice)<sup class="ref"><a href="#src-24" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/external.md — §2, top-12 #7">24</a></sup>.</dd>
+        <dt>Output</dt>
+        <dd>Credit for each event, which the miner also uses as features.</dd>
+        <dt>Verification</dt>
+        <dd>The plan does not give one.</dd>
+      </dl>
+    </div>
+
+    <div class="tool" id="t15">
+      <h3><span class="tool-id">T15</span>Tuning harness</h3>
+      <p class="tool-meta">Phase 5 · Effort L (≈ 1–2 days)</p>
+      <dl class="tool-spec">
+        <dt>Purpose</dt>
+        <dd>Search the constants of the policy with a method, not by hand.</dd>
+        <dt>How it's built</dt>
+        <dd>SPSA or Optuna searches the configuration settings of the policy with the local harness (T7)<sup class="ref"><a href="#src-24" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/external.md — top-12 #12">24</a></sup>.</dd>
+        <dt>Output</dt>
+        <dd>Sets of candidate constants, which we then test against the field.</dd>
+        <dt>Verification</dt>
+        <dd>Safeguard: local results are only for screening. The A/B skill tests each candidate against the field.</dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="skills">
+    <h2>6 · Skills</h2>
+    <ul class="key-points">
+      <li>Six lab skills. Each one is an agent procedure that connects a shared method skill to the tools of this lab.</li>
+      <li>The pattern comes from crewrift: survey, then warehouse, then belief audit, then diagnosis, then experiment, then A/B<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §6b">2</a></sup>.</li>
+      <li>A miner adapter also lets <code>coworld-hypothesis-miner</code> operate on Paintbot PW episodes.</li>
+    </ul>
+    <figure>
+<svg id="fig-2" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 642.812px; background-color: transparent;" viewBox="0 0 642.8125 446" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#fig-2{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;fill:#111827;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#fig-2 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#fig-2 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#fig-2 .error-icon{fill:#fffaf0;}#fig-2 .error-text{fill:#111827;stroke:#111827;}#fig-2 .edge-thickness-normal{stroke-width:1px;}#fig-2 .edge-thickness-thick{stroke-width:3.5px;}#fig-2 .edge-pattern-solid{stroke-dasharray:0;}#fig-2 .edge-thickness-invisible{stroke-width:0;fill:none;}#fig-2 .edge-pattern-dashed{stroke-dasharray:3;}#fig-2 .edge-pattern-dotted{stroke-dasharray:2;}#fig-2 .marker{fill:#859ebe;stroke:#859ebe;}#fig-2 .marker.cross{stroke:#859ebe;}#fig-2 svg{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;}#fig-2 p{margin:0;}#fig-2 .label{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111827;}#fig-2 .cluster-label text{fill:#1a3875;}#fig-2 .cluster-label span{color:#1a3875;}#fig-2 .cluster-label span p{background-color:transparent;}#fig-2 .label text,#fig-2 span{fill:#111827;color:#111827;}#fig-2 .node rect,#fig-2 .node circle,#fig-2 .node ellipse,#fig-2 .node polygon,#fig-2 .node path{fill:#f8f6ef;stroke:#d4c9b5;stroke-width:1px;}#fig-2 .rough-node .label text,#fig-2 .node .label text,#fig-2 .image-shape .label,#fig-2 .icon-shape .label{text-anchor:middle;}#fig-2 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#fig-2 .rough-node .label,#fig-2 .node .label,#fig-2 .image-shape .label,#fig-2 .icon-shape .label{text-align:center;}#fig-2 .node.clickable{cursor:pointer;}#fig-2 .root .anchor path{fill:#859ebe!important;stroke-width:0;stroke:#859ebe;}#fig-2 .arrowheadPath{fill:#00020b;}#fig-2 .edgePaths .path{stroke:#859ebe;stroke-width:1px;}#fig-2 .flowchart-link{stroke:#859ebe;fill:none;}#fig-2 .edgeLabel{background-color:#fffdf4;text-align:center;}#fig-2 .edgeLabel p{background-color:#fffdf4;}#fig-2 .edgeLabel rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-2 .labelBkg{background-color:rgba(255, 253, 244, 0.5);}#fig-2 .cluster rect{fill:#fffaf0;stroke:#e4dac8;stroke-width:1px;}#fig-2 .cluster text{fill:#1a3875;}#fig-2 .cluster span{color:#1a3875;}#fig-2 .node .collapsed-indicator{fill:#e4dac8;stroke:none;opacity:0.6;}#fig-2 .node .collapsed-separator{stroke:#e4dac8;stroke-width:0.75px;}#fig-2 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:12px;background:#fffaf0;border:1px solid #e4dac8;border-radius:2px;pointer-events:none;z-index:100;}#fig-2 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#111827;}#fig-2 rect.text{fill:none;stroke-width:0;}#fig-2 .icon-shape,#fig-2 .image-shape{background-color:#fffdf4;text-align:center;}#fig-2 .icon-shape p,#fig-2 .image-shape p{background-color:#fffdf4;padding:2px;}#fig-2 .icon-shape .label rect,#fig-2 .image-shape .label rect{opacity:0.5;background-color:#fffdf4;fill:#fffdf4;}#fig-2 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#fig-2 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#fig-2 .node .neo-node{stroke:#d4c9b5;}#fig-2 [data-look="neo"].node rect,#fig-2 [data-look="neo"].cluster rect,#fig-2 [data-look="neo"].node polygon{stroke:url(#fig-2-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-2 [data-look="neo"].swimlane.cluster rect{filter:none;}#fig-2 [data-look="neo"].node path{stroke:url(#fig-2-gradient);stroke-width:1px;}#fig-2 [data-look="neo"].node .outer-path{filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-2 [data-look="neo"].node .neo-line path{stroke:#d4c9b5;filter:none;}#fig-2 [data-look="neo"].node circle{stroke:url(#fig-2-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-2 [data-look="neo"].node circle .state-start{fill:#000000;}#fig-2 [data-look="neo"].icon-shape .icon{fill:url(#fig-2-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-2 [data-look="neo"].icon-shape .icon-neo path{stroke:url(#fig-2-gradient);filter:drop-shadow( 1px 2px 2px rgba(185,185,185,1));}#fig-2 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="fig-2_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="fig-2_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/></marker><marker id="fig-2_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"/><g class="edgePaths"><path d="M186.242,31L193.866,31C201.49,31,216.737,31,227.861,31C238.984,31,245.984,31,249.484,31L252.984,31" id="fig-2-L_AB_C2_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_AB_C2_0" data-points="W3sieCI6MTg2LjI0MjE4NzUsInkiOjMxfSx7IngiOjIzMS45ODQzNzUsInkiOjMxfSx7IngiOjI1Ni45ODQzNzUsInkiOjMxfV0=" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M206.984,127L211.151,127C215.318,127,223.651,127,231.35,127C239.049,127,246.115,127,249.647,127L253.18,127" id="fig-2-L_DG_FL_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_DG_FL_0" data-points="W3sieCI6MjA2Ljk4NDM3NSwieSI6MTI3fSx7IngiOjIzMS45ODQzNzUsInkiOjEyN30seyJ4IjoyNTcuMTc5Njg3NSwieSI6MTI3fV0=" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M195.711,223L201.757,223C207.802,223,219.893,223,234.81,223C249.727,223,267.469,223,276.34,223L285.211,223" id="fig-2-L_SC_SO_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_SC_SO_0" data-points="W3sieCI6MTk1LjcxMDkzNzUsInkiOjIyM30seyJ4IjoyMzEuOTg0Mzc1LCJ5IjoyMjN9LHsieCI6Mjg5LjIxMDkzNzUsInkiOjIyM31d" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M197.266,319L203.052,319C208.839,319,220.411,319,232.802,319C245.193,319,258.401,319,265.005,319L271.609,319" id="fig-2-L_RP_VZ_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_RP_VZ_0" data-points="W3sieCI6MTk3LjI2NTYyNSwieSI6MzE5fSx7IngiOjIzMS45ODQzNzUsInkiOjMxOX0seyJ4IjoyNzUuNjA5Mzc1LCJ5IjozMTl9XQ==" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M192.977,415L199.478,415C205.979,415,218.982,415,234.81,415C250.638,415,269.292,415,278.618,415L287.945,415" id="fig-2-L_LO_PL_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_LO_PL_0" data-points="W3sieCI6MTkyLjk3NjU2MjUsInkiOjQxNX0seyJ4IjoyMzEuOTg0Mzc1LCJ5Ijo0MTV9LHsieCI6MjkxLjk0NTMxMjUsInkiOjQxNX1d" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M442.109,31L446.276,31C450.443,31,458.776,31,476.779,58.571C494.781,86.142,522.453,141.283,536.289,168.854L550.125,196.425" id="fig-2-L_C2_EP_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C2_EP_0" data-points="W3sieCI6NDQyLjEwOTM3NSwieSI6MzF9LHsieCI6NDY3LjEwOTM3NSwieSI6MzF9LHsieCI6NTUxLjkxODgyMzI0MjE4NzUsInkiOjIwMH1d" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M441.914,127L446.113,127C450.313,127,458.711,127,474.649,138.696C490.587,150.392,514.065,173.784,525.804,185.481L537.543,197.177" id="fig-2-L_FL_EP_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_FL_EP_0" data-points="W3sieCI6NDQxLjkxNDA2MjUsInkiOjEyN30seyJ4Ijo0NjcuMTA5Mzc1LCJ5IjoxMjd9LHsieCI6NTQwLjM3NjcwODk4NDM3NSwieSI6MjAwfV0=" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M409.883,223L419.421,223C428.958,223,448.034,223,461.072,223C474.109,223,481.109,223,484.609,223L488.109,223" id="fig-2-L_SO_EP_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_SO_EP_0" data-points="W3sieCI6NDA5Ljg4MjgxMjUsInkiOjIyM30seyJ4Ijo0NjcuMTA5Mzc1LCJ5IjoyMjN9LHsieCI6NDkyLjEwOTM3NSwieSI6MjIzfV0=" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M423.484,319L430.755,319C438.026,319,452.568,319,471.577,307.304C490.587,295.608,514.065,272.216,525.804,260.519L537.543,248.823" id="fig-2-L_VZ_EP_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_VZ_EP_0" data-points="W3sieCI6NDIzLjQ4NDM3NSwieSI6MzE5fSx7IngiOjQ2Ny4xMDkzNzUsInkiOjMxOX0seyJ4Ijo1NDAuMzc2NzA4OTg0Mzc1LCJ5IjoyNDZ9XQ==" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/><path d="M407.148,415L417.142,415C427.135,415,447.122,415,470.952,387.429C494.781,359.858,522.453,304.717,536.289,277.146L550.125,249.575" id="fig-2-L_PL_EP_0" class="edge-thickness-normal edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_PL_EP_0" data-points="W3sieCI6NDA3LjE0ODQzNzUsInkiOjQxNX0seyJ4Ijo0NjcuMTA5Mzc1LCJ5Ijo0MTV9LHsieCI6NTUxLjkxODgyMzI0MjE4NzUsInkiOjI0Nn1d" data-look="classic" marker-end="url(#fig-2_flowchart-v2-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" data-id="L_AB_C2_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_DG_FL_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_SC_SO_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_RP_VZ_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_LO_PL_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_C2_EP_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_FL_EP_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_SO_EP_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_VZ_EP_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g><g class="edgeLabel"><g class="label" data-id="L_PL_EP_0" transform="translate(0, 0)"><text y="-10.1" text-anchor="middle"><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em" text-anchor="middle"/></text></g></g><g><rect class="background" style="stroke: none"/></g></g><g class="nodes"><g class="node default" id="fig-2-flowchart-AB-0" data-look="classic" transform="translate(107.4921875, 31)"><rect class="basic label-container" style="" x="-78.75" y="-22.999999523162842" width="157.5" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">paintbot-pw-ab</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-C2-1" data-look="classic" transform="translate(349.546875, 31)"><rect class="basic label-container" style="" x="-92.5625" y="-22.999999523162842" width="185.125" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">compare.py</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> +</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> xreqs</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-DG-2" data-look="classic" transform="translate(107.4921875, 127)"><rect class="basic label-container" style="" x="-99.4921875" y="-22.999999523162842" width="198.984375" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">paintbot-pw-diagnose</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-FL-3" data-look="classic" transform="translate(349.546875, 127)"><rect class="basic label-container" style="" x="-92.3671875" y="-22.999999523162842" width="184.734375" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">flags,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> reports,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> miner</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-SC-4" data-look="classic" transform="translate(107.4921875, 223)"><rect class="basic label-container" style="" x="-88.21875" y="-22.999999523162842" width="176.4375" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">paintbot-pw-scout</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-SO-5" data-look="classic" transform="translate(349.546875, 223)"><rect class="basic label-container" style="" x="-60.3359375" y="-22.999999523162842" width="120.671875" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">pw_scout</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-RP-6" data-look="classic" transform="translate(107.4921875, 319)"><rect class="basic label-container" style="" x="-89.7734375" y="-22.999999523162842" width="179.546875" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">paintbot-pw-replay</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-VZ-7" data-look="classic" transform="translate(349.546875, 319)"><rect class="basic label-container" style="" x="-73.9375" y="-22.999999523162842" width="147.875" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">pw_viz,</tspan><tspan font-style="normal" class="text-inner-tspan" font-weight="normal"> report</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-LO-8" data-look="classic" transform="translate(107.4921875, 415)"><rect class="basic label-container" style="" x="-85.484375" y="-22.999999523162842" width="170.96875" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">paintbot-pw-local</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-PL-9" data-look="classic" transform="translate(349.546875, 415)"><rect class="basic label-container" style="" x="-57.6015625" y="-22.999999523162842" width="115.203125" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">pw_local</tspan></tspan></text></g></g></g><g class="node default" id="fig-2-flowchart-EP-11" data-look="classic" transform="translate(563.4609375, 223)"><rect class="basic label-container" style="" x="-71.3515625" y="-22.999999523162842" width="142.703125" height="45.999999046325684"/><g class="label" style="" transform="translate(0, -7.999999523162842)"><rect/><g><rect class="background" style="stroke: none"/><text y="-10.1" style=""><tspan class="text-outer-tspan row" x="0" y="-0.1em" dy="1.1em"><tspan font-style="normal" class="text-inner-tspan" font-weight="normal">pw_episodes</tspan></tspan></text></g></g></g></g></g></g><defs><filter id="fig-2-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><defs><filter id="fig-2-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"/></filter></defs><linearGradient id="fig-2-gradient" gradientUnits="objectBoundingBox" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d4c9b5" stop-opacity="1"/><stop offset="100%" stop-color="#d4c9b5" stop-opacity="1"/></linearGradient></svg>
+      <figcaption><span class="fig-label">Figure B · Skills over tools</span>Each lab skill uses one layer of tools, and all of them come to <code>pw_episodes</code>. The dashed line shows that local runs get to the tables only when we record a match for a trace.</figcaption>
+    </figure>
+    <dl class="skill-list">
+      <dt><code>paintbot-pw-replay</code></dt>
+      <dd><em>"Unpack or look at this replay or episode."</em> Steps: find the release, build if necessary, make the T2 trace and tables, show the T3 summary, draw a T9 diagram for the window that you ask for, and make a T10 report with viewer links. It answers questions such as "what occurred at tick X" or "show me the movement of seat N from 1:10 to 1:40".</dd>
+      <dt><code>paintbot-pw-ab</code></dt>
+      <dd><em>"Did the change help?"</em> It uses <code>coworld-ab</code>. Steps: select a design (<a href="#ab-design">§7</a>), write the bodies of the experience requests (pinned 8-seat rosters, seeds, side swaps), make the requests, get the artifacts as they arrive, stop by SPRT or at a fixed N, run <code>compare.py</code>, make the report, look at 2–3 replays from each arm, and record the request ids with the verdict.</dd>
+      <dt><code>paintbot-pw-diagnose</code></dt>
+      <dd><em>"Why do we lose? What must we change?"</em> Steps: get a batch, calculate the T3 metrics and T12 flags, start with the worst losses, make T10 reports, and write hypotheses as mechanisms in a specified BASIC module, each with an expected effect for each group (the crewrift-diagnose schema)<sup class="ref"><a href="#src-33" title="personal_labs_paintbot_pw/crewrift_lab/.claude/skills/crewrift-diagnose/">33</a></sup>. Then give them to <code>coworld-experiment</code>. When we suspect nothing specific, use the miner features.</dd>
+      <dt><code>paintbot-pw-scout</code></dt>
+      <dd><em>"What do the leaders do?"</em> Steps: get recent public league rounds, make the T11 matrix and profiles, decode the shout protocols, flag episodes with reasons, and write the report.</dd>
+      <dt><code>paintbot-pw-local</code></dt>
+      <dd><em>"Compile or screen this locally."</em> Steps: do the T7 compile check, then screen against <code>base.bas</code> and our last accepted version, with side swaps and the glory configuration of the league. The skill says clearly that the result is not evidence against the field.</dd>
+      <dt><code>paintbot-pw-tune</code> (Phase 5)</dt>
+      <dd>Search for constants with T15, then test them with <code>paintbot-pw-ab</code>.</dd>
+      <dt>Miner adapter: <code>features.py</code> (+ rows builder)</dt>
+      <dd>For <code>coworld-hypothesis-miner</code>: one row for each (episode, our policy). The score is the Elo outcome score (primary) or the win. Timing features use the last tick + 1 for "never". <code>change_hint</code> gives the name of the BASIC module. The features do not include the parts of the score<sup class="ref"><a href="#src-34" title="personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/features.py — lines 19-25, 82, 111-112">34</a></sup>.</dd>
+    </dl>
+  </section>
+
+  <section id="ab-design">
+    <h2>7 · The A/B design</h2>
+    <ul class="key-points">
+      <li>Primary metric: the continuous Elo outcome score, which the ladder itself uses.</li>
+      <li>Recommended default: one common opponent, with paired seeds and sides.</li>
+      <li>Stop with SPRT as episodes arrive, or at a fixed N without early looks.</li>
+    </ul>
+    <h3>Unit and outcome</h3>
+    <p>The unit is one episode, which has two policies, one on each team. <strong>The primary metric is the Elo outcome score</strong> that the ladder itself uses, <code>clamp(0.5 + (our glory − their glory) / 2000, 0, 1)</code>. This is a continuous value for each episode<sup class="ref"><a href="#src-4" title="metta@6304974ffa: packages/observatory-competitions/src/observatory_competitions/v2/ladders/rankings/elo.py — lines 183-187">4</a></sup>, because the live setting is <code>margin_scale: 1000</code>. If an episode fails and the platform connects the failure to one policy, that side gets 0 or 1 (the forfeit branch)<sup class="ref"><a href="#src-4" title="metta@6304974ffa: packages/observatory-competitions/src/observatory_competitions/v2/ladders/rankings/elo.py — lines 171-179 (forfeit branch)">4</a></sup>. The secondary metrics are the win rate (a draw counts as no win), the time to win, the parts of the glory, the wins with zero glory, and heart-seconds, which is a margin measure with less variance.</p>
+    <h3>Three designs</h3>
+    <div class="decision">
+      <span class="decision-label">Design 1 · Recommended default</span>
+      <p><strong>Common opponent, paired seeds and sides.</strong> The candidate and the baseline each play the same opponent policy, with all 8 opponent seats pinned to one explicit <code>policy_ref</code>. They use the same list of seeds and both sides. We pair the episodes by (seed, side). A paired t-test on the difference for each pair tests the primary outcome score, and a Wilcoxon signed-rank test checks the result. McNemar on the discordant pairs tests the win rate. A draw counts as no win, and a pair with the same result in both arms is concordant and the test does not use it. This design answers the question "is it better against X". Do it again for each leader, and combine the results, with a report for each opponent.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Design 2</span>
+      <p><strong>Head-to-head.</strong> The candidate plays the baseline in the same episode, and the sides change across the batch. A one-sample t-test compares the outcome score of the candidate with 0.5, and an exact binomial test on decisive games gives the win-rate view, with a report for each side. This design gives the most information for each episode. But a change can win against our old version and still do worse against the field (the "Just Woke Up" warning from Battlecode)<sup class="ref"><a href="#src-24" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/external.md — §1">24</a></sup>.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Design 3</span>
+      <p><strong>Field sample.</strong> Both arms play a mix of the current leaders, without pairs. The Fisher and Welch tests of <code>coworld-ab</code> apply, as they do today. This design is the nearest to the ladder, and it costs the most.</p>
+    </div>
+    <h3>Stopping and scale</h3>
+    <p>The stop rule is a sequential probability ratio test on the mean difference in outcome score (a normal approximation, as the GSPRT of fishtest does for Elo). An example is H0 = 0 against H1 = +0.05 with α = β = 0.05, with a check as episodes arrive. The alternative is a fixed N without early looks.</p>
+    <p>Scale: for the win-rate view, the guide estimates approximately 250 episodes to separate a 62% win rate from 50%<sup class="ref"><a href="#src-35" title="personal_labs_paintbot_pw/paintbot_pw_lab/docs/evidence-pipeline.md — §7">35</a></sup>. The continuous outcome score needs fewer episodes, and we will measure how many on the first batch. At approximately 0.3 credits for each episode, that is approximately 75 credits for each arm, from a balance of 20,000 credits that increases by approximately 1,429 each day<sup class="ref"><a href="#src-36" title="personal_labs_paintbot_pw/paintbot_pw_lab/docs/field.md">36</a></sup>.</p>
+    <h3>Variance control</h3>
+    <p>League episodes use <code>game_config.seed</code> 2026. We do not know yet if the engine seed changes for each job (an open question). If we pair by explicit seeds through <code>game_config_overrides.seed</code>, we can compare the arms in both cases.</p>
+    <div class="callout callout-warn">
+      <span class="callout-label">Guardrails from the sibling labs</span>
+      Use a minimum of 30 episodes for each arm in each group before a "significant" verdict. Use BY correction across the reported metrics. Count the exclusions. Report operational failures as a metric. Never mix two versions of the rules. Do a new confirmation run before you accept an effect that the miner found<sup class="ref"><a href="#src-2" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md — §1.3, §10.4">2</a></sup><sup class="ref-sep">,</sup><sup class="ref"><a href="#src-24" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/external.md — §3">24</a></sup>.
+    </div>
+  </section>
+
+  <section id="metrics">
+    <h2>8 · Metric catalog</h2>
+    <ul class="key-points">
+      <li>T3 uses these definitions. Each metric has one definition, with units and a denominator.</li>
+      <li>The catalog flags inferred values (misses from spawn protection or trench dodges, inferred targets), and it never mixes them with exact values.</li>
+    </ul>
+    <table>
+      <thead><tr><th>Metric</th><th>Definition</th><th>Level</th></tr></thead>
+      <tbody>
+        <tr><td>Elo outcome score</td><td><code>clamp(0.5 + (our glory − their glory) / 2000, 0, 1)</code>; a forfeit scores 0 or 1</td><td>episode</td></tr>
+        <tr><td>Win / draw / loss</td><td>From results (<code>outcome</code>, scores)</td><td>episode</td></tr>
+        <tr><td>Winning glory</td><td>Our team's glory when we win; null otherwise (a selected sample, flagged)</td><td>episode</td></tr>
+        <tr><td>Glory composition</td><td>Countdown + quiet supplies + glory hearts + behind lives + behind cogs, from deduped <code>gloryEvents</code></td><td>team</td></tr>
+        <tr><td>Meter curve, time to win</td><td><code>scoreTicks/24</code> per tick; tick of match end</td><td>team</td></tr>
+        <tr><td>First capture tick, lead changes</td><td>First <code>controlHearts.owner</code> flip to our team; sign changes of the meter difference</td><td>team</td></tr>
+        <tr><td>Hearts held (mean, at end), heart-seconds</td><td>Per-tick ownership counts</td><td>team</td></tr>
+        <tr><td>Gun accuracy</td><td>Hits ÷ fired rays (<code>observeShot</code>); shield and trench-dodge misses flagged as inferred</td><td>seat</td></tr>
+        <tr><td>Accuracy by distance band</td><td>Hits by <code>damageObserver</code> distance; misses by ray length or by the nearest enemy on the aim line (inferred target)</td><td>seat</td></tr>
+        <tr><td>Spray / grenade effectiveness</td><td>Bursts or blasts with at least 1 enemy victim; friendly victims counted separately</td><td>seat</td></tr>
+        <tr><td>Damage dealt / taken</td><td>HP removed and armor absorbed, by weapon, attacker and victim</td><td>seat</td></tr>
+        <tr><td>Kills, deaths, K/D, trades</td><td><code>observeTag</code>; a trade is a teammate's killer killed within 72 ticks (3 s; a default to revisit after the first batch)</td><td>seat</td></tr>
+        <tr><td>Friendly fire</td><td>Hits and kills on teammates</td><td>seat</td></tr>
+        <tr><td>Time alive, lives used, cogs out</td><td><code>hp &gt; 0</code> ticks; <code>lives</code>; <code>teamCogsOut</code></td><td>seat / team</td></tr>
+        <tr><td>Heart nearness</td><td>Ticks within 140 units of a heart with a traversable line (the capture reach)<sup class="ref"><a href="#src-20" title="paintbot-pw@0ff41d2d: examples/paintbot/mechanics.nim — line 327 (capture reach)">20</a></sup>; ticks in own, enemy and neutral territory (<code>territoryOwner</code>); contested ticks</td><td>seat</td></tr>
+        <tr><td>Capture credit</td><td>Captures started, completed (<code>cogs.captures</code>) and interrupted</td><td>seat</td></tr>
+        <tr><td>Water / trench time</td><td><code>inWater</code> / <code>trenchAt</code> ticks</td><td>seat</td></tr>
+        <tr><td>Pickups</td><td>Taken, by kind; supply-free stretches (the quiet-supplies award)</td><td>seat / team</td></tr>
+        <tr><td>Shouts</td><td>Count and bytes; heard by enemies (recomputed from positions within 1,280 units)</td><td>seat</td></tr>
+        <tr><td>Idle / stuck</td><td>Alive ticks with all-zero commands; small displacement with an unchanged goal</td><td>seat</td></tr>
+        <tr><td>VM disabled</td><td>From our logs (<code>BASIC error:</code>); a heuristic for other policies</td><td>seat</td></tr>
+        <tr><td>Budget headroom</td><td>Instructions used (from our intent line); peaks measured locally with <code>PW_BASIC_PEAKS=1</code></td><td>seat</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="shared-changes">
+    <h2>9 · Shared (root) changes proposed</h2>
+    <ul class="key-points">
+      <li>Three changes outside the lab. Each one is game-agnostic, and each one repairs more than Paintbot PW.</li>
+      <li>Also the usual documentation links for each new lab tool.</li>
+    </ul>
+    <ul>
+      <li><strong>T6 paired and SPRT statistics</strong> in <code>coworld-ab</code>, game-agnostic.</li>
+      <li><strong><code>fetch_artifacts.py</code></strong>: identify the <code>POLYWORLDREPLAY</code> magic and save the tape as <code>replay.bin</code>. This is an existing root TODO<sup class="ref"><a href="#src-12" title="personal_labs_paintbot_pw/TODO.md">12</a></sup>, and it also affects GotA.</li>
+      <li><strong><code>xp_dashboard.py</code></strong>: accept an outcome function for each game, not only a <code>results.win</code> array. This repairs the dashboard for both GotA and paintbot-pw.</li>
+      <li><strong>Docs</strong>: link each new lab tool from the shared capabilities page<sup class="ref"><a href="#src-37" title="personal_labs_paintbot_pw/docs/capabilities.md">37</a></sup>, and run the docs audit<sup class="ref"><a href="#src-38" title="personal_labs_paintbot_pw/tools/audit_docs.py">38</a></sup>.</li>
+    </ul>
+  </section>
+
+  <section id="phasing">
+    <h2>10 · Phasing and effort</h2>
+    <ul class="key-points">
+      <li>Approximately 11 days of work in total, across six phases (0–5).</li>
+      <li>Phases 1–2 (approximately 4 days) are the critical path to the first measured policy change.</li>
+      <li>Phase 3 can occur at the same time as Phase 2, after T2 exists.</li>
+    </ul>
+    <table>
+      <thead><tr><th>Phase</th><th>Contents</th><th>Effort</th><th>Unlocks</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>T0 currency repair</td><td>~2 h</td><td>Trustworthy docs at rules 47</td></tr>
+        <tr><td>1</td><td>T1 <code>pw_trace</code>, T2 <code>pw_episodes</code>, T3 <code>pw_metrics</code>, T8 map export, skill <code>paintbot-pw-replay</code></td><td>~2 days</td><td>Every number and event; single-episode inspection</td></tr>
+        <tr><td>2</td><td>T5 <code>compare.py</code>, T6 paired/SPRT, T7 <code>pw_local</code>, skills <code>paintbot-pw-ab</code> and <code>paintbot-pw-local</code>; T13 intent line in the first policy</td><td>~2 days</td><td>First real A/B; fast local screening</td></tr>
+        <tr><td>3</td><td>T9 <code>pw_viz</code>, T10 match report</td><td>~1.5 days</td><td>Movement diagrams, heatmaps, timelines, per-match pages</td></tr>
+        <tr><td>4</td><td>T4 fights/trades, T11 scout, T12 flags, miner <code>features.py</code>, skills <code>paintbot-pw-scout</code> and <code>paintbot-pw-diagnose</code></td><td>~2.5 days</td><td>Opponent intelligence, ranked hypotheses</td></tr>
+        <tr><td>5</td><td>T14 win-probability credit, T15 tuning + <code>paintbot-pw-tune</code>, belief/intent audit, optional rerun viewer</td><td>~3 days</td><td>Deeper diagnosis; systematic tuning</td></tr>
+      </tbody>
+    </table>
+    <h3>Validation per tool</h3>
+    <ul>
+      <li><strong>T1</strong>: the 3 samples and 1 new hosted rules-47 replay (hash, glory identity, kill identity).</li>
+      <li><strong>T2</strong>: cache hits and misses, and the list of failures.</li>
+      <li><strong>T3</strong>: samples of the metrics compared with the per-seat counters of the probe.</li>
+      <li><strong>T5 / T6</strong>: contract tests.</li>
+      <li><strong>T7</strong>: the same hashes as the headless binary.</li>
+      <li><strong>T9</strong>: a visual comparison of one known moment with the web viewer.</li>
+    </ul>
+  </section>
+
+  <section id="extras">
+    <h2>11 · Creative extras</h2>
+    <ul class="key-points">
+      <li>Smaller ideas that are worth a record. None of them is on the critical path.</li>
+      <li>The shout-protocol decoder has the most promise, because each tape already holds the text.</li>
+    </ul>
+    <ul>
+      <li><strong>Shout-protocol decoder.</strong> Opponents coordinate with shouts, the text is in each tape, and a shout gives the exact position of the speaker to all cogs within 12.8 m. If we decode the protocols of the leaders (T11), we learn their plans. Our own policy can also listen during a game through <code>heardText</code>. That is a strategy question for James, not a tooling question.</li>
+      <li><strong>Audit of intent against truth in the seat log</strong> (crewrift-belief-audit), after T13 exists: find the ticks where the belief of our policy (the target is visible, the heart is ours) does not agree with the replay.</li>
+      <li><strong>Highlight detection</strong> with the action-camera interest scores of the repository<sup class="ref"><a href="#src-39" title="paintbot-pw@0ff41d2d: examples/paintbot/camdirector.nim">39</a></sup><sup class="ref-sep">,</sup><sup class="ref"><a href="#src-40" title="paintbot-pw@0ff41d2d: examples/paintbot/camera_eval.nim">40</a></sup>, added in 0.3.71, to select moments for match reports.</li>
+      <li><strong>Occupancy data as a policy input</strong> (the heartleaf pattern): use the position and death heatmaps of a batch to select routes.</li>
+      <li><strong>Scenario regression cases</strong> from real replays, after the native library can set a state (the screeps-server-mockup pattern). We put this item on hold, because the library has no call to set a state today.</li>
+    </ul>
+  </section>
+
+  <section id="alternatives">
+    <h2>12 · Alternatives considered</h2>
+    <ul class="key-points">
+      <li>Eight alternatives. For each one, the section tells why we rejected it, put it on hold, or used a lighter form.</li>
+      <li>The common reason: the Nim engine is the only correct source, and new dependencies wait until we clearly need them.</li>
+    </ul>
+    <div class="decision">
+      <span class="decision-label">Rejected · Python Flatty decoder of tapes</span>
+      <p><strong>What:</strong> decode tapes in Python, as <code>replay_actions.py</code> of GotA does<sup class="ref"><a href="#src-41" title="personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/replay_actions.py">41</a></sup>. <strong>Why not:</strong> it cannot prove that the replay is deterministic, and it cannot give results. The Nim engine is the only correct source.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Adopted in lighter form · Warehouse first</span>
+      <p><strong>What:</strong> make the DuckDB + Parquet warehouse of crewrift and ctf the center of the design. <strong>Why not as proposed:</strong> it is heavier. Parquet tables for each episode with DuckDB views give the same storage without a separate build step.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Deferred · Engine patch for exact shot outcomes</span>
+      <p><strong>What:</strong> add a hook in the trench-dodge code<sup class="ref"><a href="#src-20" title="paintbot-pw@0ff41d2d: examples/paintbot/mechanics.nim — lines 712-714">20</a></sup>. <strong>Why not now:</strong> the patch is small, but it makes a fork of a repository that has many releases each day. Start with an approximation from geometry and with flags. If the gap is important, ask the maintainer for the hook.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Rejected for now · Counterfactual branch-from-tick</span>
+      <p><strong>What:</strong> branch a replay at tick T and continue the play (the "Take Command" feature of StarCraft). <strong>Why not:</strong> after tick T, the recorded commands of the opponents do not fit the changed world, and their BASIC is private. Also, the globals of our VM start again empty. The method is correct only for a small number of ticks.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Rejected · Building the web viewer locally</span>
+      <p><strong>What:</strong> build the replay viewer for better playback. <strong>Why not:</strong> it needs Emscripten and the private <code>polyworld_art</code> checkout<sup class="ref"><a href="#src-42" title="paintbot-pw@0ff41d2d: coworld/paintbot/tools/build_replay_viewer.sh">42</a></sup>. Links to the hosted viewer give what we need.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Deferred to Phase 5 (optional) · rerun.io scrubbable timeline</span>
+      <p><strong>What:</strong> a rerun.io timeline for per-tick debug work<sup class="ref"><a href="#src-24" title=".reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/external.md — top-12 #4">24</a></sup>. <strong>Why not now:</strong> it is good for per-tick debug work, but it is a new dependency. Offer it as an option in Phase 5, after the matplotlib panels exist.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Rejected · Local batch results as evidence</span>
+      <p><strong>Why not:</strong> a lab rule. Local runs are only for screening.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Rejected · Reusing the shared <code>coworld-local-run</code> skill</span>
+      <p><strong>Why not:</strong> it operates only with Docker, and this game has no player container.</p>
+    </div>
+  </section>
+
+  <section id="open-questions">
+    <h2>13 · Open questions and decisions</h2>
+    <ul class="key-points">
+      <li>James must make five decisions. The summary names the first four.</li>
+      <li>Four platform facts are not verified. We must settle them early, before they cause bias in a result.</li>
+    </ul>
+    <h3>Decisions for James</h3>
+    <ol class="decisions">
+      <li><strong>A/B default design.</strong> Common opponent, paired, on the Elo outcome score (recommended), head-to-head, or field sample?</li>
+      <li><strong>Shared engine change.</strong> Do you approve paired tests and SPRT in the shared <code>coworld-ab</code> engine (a root change)?</li>
+      <li><strong>Telemetry budget.</strong> Can our BASIC use one print line for each decision (approximately 200 bytes or less) for intent, controlled by a setting that is on by default?</li>
+      <li><strong>rerun.io.</strong> Do you accept it as an optional dependency in Phase 5?</li>
+      <li><strong>Default roster.</strong> The existing preference "one copy of our policy for each request, with random fill" was for the 10 seats of GotA. In 8v8, one policy fills a team. Do you agree that the default roster is "our 8 seats against 8 pinned opponent seats"?</li>
+    </ol>
+    <div class="callout callout-open">
+      <span class="callout-label">Unverified platform facts to settle early</span>
+      <ul>
+        <li>Whether engine seeds change for each job when <code>game_config.seed</code> is fixed.</li>
+        <li>Whether the platform returns hosted seat logs for our own policy in our experience requests.</li>
+        <li>Whether the Observatory viewer sends a tick parameter.</li>
+        <li>Whether a hosted rules-47 replay plays again with exact hashes on local Nim 2.2.6 (hosted builds use 2.2.10).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="risks">
+    <h2>14 · Risks</h2>
+    <ul class="key-points">
+      <li>Frequent releases and different Nim versions are the primary risks to correct numbers. The hash check protects against both.</li>
+      <li>The largest process risk is to build too much before the first policy exists.</li>
+    </ul>
+    <table>
+      <thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td>Release churn</td><td>Every tool pins a release and refuses mismatches; T0-style currency checks become routine, with <code>deployed_ref.py</code> run first.</td></tr>
+        <tr><td>Nim version skew (2.2.6 local, 2.2.10 hosted)</td><td>The hash check is the guard; install 2.2.10 if a mismatch appears.</td></tr>
+        <tr><td>Cost of visibility sampling</td><td>Compute it every N ticks, or only for our seats.</td></tr>
+        <tr><td>Telemetry breaking the policy</td><td>A hard budget enforced in code review; one line per decision.</td></tr>
+        <tr><td>Over-building before the first policy exists</td><td>Build Phases 1–2 only, then iterate on real questions.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="sources">
+    <h2>15 · Sources</h2>
+    <p>This section has one entry for each source file that the text cites, in the sequence of the first citation. Put the pointer on a superscript in the text to see the specific lines or section.</p>
+    <ol class="sources">
+      <li id="src-1"><span class="cite">.reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/engine-surface.md</span> — Research notes: the engine surface — hooks, World fields, trace probe results, native library, map export, logging limits, rules 46–47 drift.</li>
+      <li id="src-2"><span class="cite">.reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/sibling-labs.md</span> — Research notes: shared skills and sibling-lab tooling (GotA, crewrift, ctf, paintbot, sugarscape, player_ade).</li>
+      <li id="src-3"><span class="cite">live league settings league_b9458ff8… (read 2026-09-29)</span> — Live paintbot-pw league settings showing margin_scale: 1000.</li>
+      <li id="src-4"><span class="cite">metta@6304974ffa: packages/observatory-competitions/src/observatory_competitions/v2/ladders/rankings/elo.py</span> — Ladder Elo outcome with margin scaling and the forfeit branch (lines 82-87, 171-187).</li>
+      <li id="src-5"><span class="cite">personal_labs_paintbot_pw/paintbot_pw_lab/README.md</span> — Paintbot PW lab README, Instruments section.</li>
+      <li id="src-6"><span class="cite">personal_labs_paintbot_pw/AGENTS.md</span> — Repo agent guide: the improvement loop and the speed-first doctrine.</li>
+      <li id="src-7"><span class="cite">paintbot-pw@0ff41d2d: examples/paintbot/sim.nim</span> — Simulation: glory kinds (143), behind-in-cogs glory (946-950), World fields (103-182), visibility (711-722).</li>
+      <li id="src-8"><span class="cite">paintbot-pw@0ff41d2d: examples/paintbot/bots.nim</span> — BASIC bot surface: PRINT limits (160), new BASIC names (260-273).</li>
+      <li id="src-9"><span class="cite">personal_labs_paintbot_pw/.claude/skills/coworld-ab/scripts/ab_stats.py</span> — Shared A/B statistics engine; build_deltas contract (line 103).</li>
+      <li id="src-10"><span class="cite">personal_labs_paintbot_pw/.claude/skills/coworld-hypothesis-miner/</span> — Shared hypothesis-miner skill and its adapter contract.</li>
+      <li id="src-11"><span class="cite">personal_labs_paintbot_pw/.claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py</span> — Shared episode-artifact fetcher.</li>
+      <li id="src-12"><span class="cite">personal_labs_paintbot_pw/TODO.md</span> — Repo TODO: the replay-tape naming bug in the fetcher.</li>
+      <li id="src-13"><span class="cite">personal_labs_paintbot_pw/.claude/skills/coworld-experience-requests/scripts/xp_dashboard.py</span> — Experience-request dashboard; requires results.win (lines 128-132).</li>
+      <li id="src-14"><span class="cite">personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/expand_replay.nim</span> — GotA hash-checked replay expander (fail-loud check, lines 397-405).</li>
+      <li id="src-15"><span class="cite">personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/compare.py</span> — GotA coworld-ab adapter; exclusion counting (lines 163-183).</li>
+      <li id="src-16"><span class="cite">personal_labs_paintbot_pw/paintbot_pw_lab/WORKING_CONTEXT.md</span> — Paintbot PW lab working context: record coworld_version, never pool rules versions.</li>
+      <li id="src-17"><span class="cite">personal_labs_paintbot_pw/pyproject.toml</span> — Repo Python dependencies.</li>
+      <li id="src-18"><span class="cite">personal_labs_paintbot_pw/paintbot_pw_lab/AGENTS.md</span> — Paintbot PW lab agent guide.</li>
+      <li id="src-19"><span class="cite">personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/build_expand_replay.sh</span> — GotA build script that compiles the expander inside the engine tree.</li>
+      <li id="src-20"><span class="cite">paintbot-pw@0ff41d2d: examples/paintbot/mechanics.nim</span> — Game mechanics: hooks at 370, 422, 443, 681; captures 320-360; pickups 527-553; trench dodge 712-714.</li>
+      <li id="src-21"><span class="cite">personal_labs_paintbot_pw/gods_of_the_arena_lab/docs/replay-format.md</span> — GotA replay-format notes: one process per replay (lines 514-516).</li>
+      <li id="src-22"><span class="cite">personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/gota_episodes.py</span> — GotA episode reader and trace cache.</li>
+      <li id="src-23"><span class="cite">personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/replay_stats.py</span> — GotA replay statistics tables.</li>
+      <li id="src-24"><span class="cite">.reports-working/paintbot-pw-tooling-plan-2026-09-29/notes/external.md</span> — Research notes: external practice (fishtest, awpy, OpenDota, Leetify/Xenopoulos, Battlecode postmortems, Halite); external URLs are inside.</li>
+      <li id="src-25"><span class="cite">personal_labs_paintbot_pw/paintbot_lab/tools/compare.py</span> — Original Paintbot lab coworld-ab adapter.</li>
+      <li id="src-26"><span class="cite">personal_labs_paintbot_pw/tools/tests/test_analysis_contracts.py</span> — Shared analysis-contract tests (style reference for T6).</li>
+      <li id="src-27"><span class="cite">paintbot-pw@0ff41d2d: examples/paintbot/native_env.nim</span> — Native batch library (with native_env.h).</li>
+      <li id="src-28"><span class="cite">paintbot-pw@0ff41d2d: coworld/paintbot/viewer.js</span> — Web replay viewer; deep links (638-639, 1654-1655).</li>
+      <li id="src-29"><span class="cite">personal_labs_paintbot_pw/crewrift_lab/.claude/skills/crewrift-survey/</span> — crewrift survey skill: policy matrix with Wilson intervals, reasons.json.</li>
+      <li id="src-30"><span class="cite">personal_labs_paintbot_pw/crewrift_lab/.claude/skills/crewrift-field-study/</span> — crewrift field-study skill: fresh-replay check, flat-aggregate rule.</li>
+      <li id="src-31"><span class="cite">paintbot-pw@0ff41d2d: src/polyworld/basic.nim</span> — BASIC VM: print overrun is a runtime error (lines 2423-2430).</li>
+      <li id="src-32"><span class="cite">personal_labs_paintbot_pw/crewrift_lab/.claude/skills/crewrift-belief-audit/</span> — crewrift belief-audit skill.</li>
+      <li id="src-33"><span class="cite">personal_labs_paintbot_pw/crewrift_lab/.claude/skills/crewrift-diagnose/</span> — crewrift diagnose skill: hypothesis schema.</li>
+      <li id="src-34"><span class="cite">personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/features.py</span> — GotA miner features adapter (lines 19-25, 82, 111-112).</li>
+      <li id="src-35"><span class="cite">personal_labs_paintbot_pw/paintbot_pw_lab/docs/evidence-pipeline.md</span> — Paintbot PW evidence pipeline; episode-count guide (§7).</li>
+      <li id="src-36"><span class="cite">personal_labs_paintbot_pw/paintbot_pw_lab/docs/field.md</span> — Paintbot PW field notes: episode cost and credit balance.</li>
+      <li id="src-37"><span class="cite">personal_labs_paintbot_pw/docs/capabilities.md</span> — Repo capabilities index.</li>
+      <li id="src-38"><span class="cite">personal_labs_paintbot_pw/tools/audit_docs.py</span> — Repo documentation audit tool.</li>
+      <li id="src-39"><span class="cite">paintbot-pw@0ff41d2d: examples/paintbot/camdirector.nim</span> — Action-camera director (interest scoring).</li>
+      <li id="src-40"><span class="cite">paintbot-pw@0ff41d2d: examples/paintbot/camera_eval.nim</span> — Action-camera evaluation.</li>
+      <li id="src-41"><span class="cite">personal_labs_paintbot_pw/gods_of_the_arena_lab/tools/replay_actions.py</span> — GotA Python Flatty tape decoder.</li>
+      <li id="src-42"><span class="cite">paintbot-pw@0ff41d2d: coworld/paintbot/tools/build_replay_viewer.sh</span> — Replay-viewer build script (Emscripten, polyworld_art).</li>
+    </ol>
+  </section>
+
+</article>
+
+<!-- ================================================================
+     DC-COMMENTS BEGIN — markup + script (copy verbatim; do not modify)
+     ================================================================ -->
+<aside id="dc-sidebar" aria-label="Comments">
+  <h2 class="dc-title">Comments <span id="dc-count"></span></h2>
+  <div class="dc-actions">
+    <button class="dc-btn" id="dc-export">Export JSON</button>
+    <button class="dc-btn" id="dc-copy">Copy JSON</button>
+    <button class="dc-btn" id="dc-import">Import…</button>
+    <input type="file" id="dc-file" accept=".json,application/json" hidden>
+  </div>
+  <div id="dc-status" role="status"></div>
+  <div id="dc-list"><p class="dc-empty">No comments yet. Select text in the document to add one.</p></div>
+</aside>
+<button id="dc-fab" type="button">+ Comment</button>
+<button id="dc-toggle" type="button">Comments</button>
+<!-- Preload slot: a renderer may put a dc-comments/1 `comments` array here (each comment optionally carrying `replies`). Merged by id into the stored comments on load. Leave empty otherwise. -->
+<script id="dc-preload" type="application/json"></script>
+
+<script>
+(() => {
+  'use strict';
+  const FORMAT = 'dc-comments/1';
+  const CTX = 32; // prefix/suffix context length, chars
+  const doc = document.getElementById('doc');
+  const fab = document.getElementById('dc-fab');
+  const listEl = document.getElementById('dc-list');
+  const countEl = document.getElementById('dc-count');
+  const statusEl = document.getElementById('dc-status');
+  const sidebar = document.getElementById('dc-sidebar');
+  const storeKey = 'dc:' + document.title;
+
+  let comments = []; // {id, exact, prefix, suffix, text, created, resolved}
+  let ranges = new Map(); // id -> Range (null if orphaned)
+  let seq = 0;
+
+  // ---- text indexing: one global string over #doc's text nodes ----
+  function docText() {
+    const r = document.createRange();
+    r.selectNodeContents(doc);
+    return r.toString();
+  }
+  function globalOffset(container, offset) {
+    const r = document.createRange();
+    r.setStart(doc, 0);
+    r.setEnd(container, offset);
+    return r.toString().length;
+  }
+  function offsetsToRange(start, end) {
+    const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+    let pos = 0, range = document.createRange(), haveStart = false;
+    while (walker.nextNode()) {
+      const node = walker.currentNode, len = node.data.length;
+      if (!haveStart && pos + len >= start) {
+        range.setStart(node, start - pos);
+        haveStart = true;
+      }
+      if (haveStart && pos + len >= end) {
+        range.setEnd(node, end - pos);
+        return range;
+      }
+      pos += len;
+    }
+    return null;
+  }
+
+  // ---- anchoring: TextQuoteSelector-style exact + prefix/suffix ----
+  function selectorFromRange(range) {
+    const text = docText();
+    const start = globalOffset(range.startContainer, range.startOffset);
+    const end = globalOffset(range.endContainer, range.endOffset);
+    return {
+      exact: text.slice(start, end),
+      prefix: text.slice(Math.max(0, start - CTX), start),
+      suffix: text.slice(end, end + CTX),
+    };
+  }
+  function locate(c) {
+    const text = docText();
+    let i = text.indexOf(c.prefix + c.exact + c.suffix);
+    if (i >= 0) return offsetsToRange(i + c.prefix.length, i + c.prefix.length + c.exact.length);
+    i = text.indexOf(c.exact);
+    if (i >= 0) return offsetsToRange(i, i + c.exact.length);
+    return null;
+  }
+  function reanchorAll() {
+    ranges = new Map(comments.map(c => [c.id, locate(c)]));
+    paint();
+  }
+
+  // ---- painting via CSS Custom Highlight API ----
+  const hl = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  const hlActive = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  if (hl) { CSS.highlights.set('dc-hl', hl); CSS.highlights.set('dc-hl-active', hlActive); }
+  function paint(activeId) {
+    if (!hl) return;
+    hl.clear(); hlActive.clear();
+    for (const [id, r] of ranges) {
+      if (!r) continue;
+      (id === activeId ? hlActive : hl).add(r);
+    }
+  }
+
+  // ---- persistence (best-effort; file:// storage varies by browser) ----
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(comments)); } catch (e) { /* unavailable on some file:// setups */ }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      if (raw) comments = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- sidebar rendering ----
+  function flash(msg) {
+    statusEl.textContent = msg;
+    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 2500);
+  }
+  function sortedComments() {
+    const pos = c => {
+      const r = ranges.get(c.id);
+      return r ? globalOffset(r.startContainer, r.startOffset) : Infinity; // orphans last
+    };
+    return [...comments].sort((a, b) => pos(a) - pos(b));
+  }
+  function render(editingId) {
+    countEl.textContent = comments.length ? '(' + comments.length + ')' : '';
+    listEl.textContent = '';
+    if (!comments.length) {
+      const p = document.createElement('p');
+      p.className = 'dc-empty';
+      p.textContent = 'No comments yet. Select text in the document to add one.';
+      listEl.appendChild(p);
+      return;
+    }
+    for (const c of sortedComments()) {
+      const item = document.createElement('div');
+      item.className = 'dc-item' + (c.resolved ? ' dc-resolved' : '');
+      item.dataset.id = c.id;
+
+      const quote = document.createElement('div');
+      quote.className = 'dc-quote';
+      quote.textContent = c.exact.length > 90 ? c.exact.slice(0, 90) + '…' : c.exact;
+      if (!ranges.get(c.id)) {
+        const tag = document.createElement('span');
+        tag.className = 'dc-orphan-tag';
+        tag.textContent = 'orphaned';
+        quote.appendChild(tag);
+      }
+      item.appendChild(quote);
+
+      if (c.id === editingId) {
+        const ta = document.createElement('textarea');
+        ta.value = c.text;
+        ta.placeholder = 'Write a comment… (⌘/Ctrl+Enter to save, Esc to cancel)';
+        ta.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        });
+        ta.addEventListener('click', e => e.stopPropagation());
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'dc-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginTop = '6px';
+        saveBtn.addEventListener('click', e => { e.stopPropagation(); commit(); });
+        function commit() {
+          c.text = ta.value.trim();
+          if (!c.text) return cancel();
+          save(); render();
+        }
+        function cancel() {
+          if (!c.text) { comments = comments.filter(x => x.id !== c.id); ranges.delete(c.id); paint(); }
+          save(); render();
+        }
+        item.appendChild(ta);
+        item.appendChild(saveBtn);
+        listEl.appendChild(item);
+        requestAnimationFrame(() => ta.focus());
+        continue;
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dc-text';
+      text.textContent = c.text;
+      item.appendChild(text);
+
+      if (Array.isArray(c.replies) && c.replies.length) {
+        const box = document.createElement('div');
+        box.className = 'dc-replies';
+        for (const r of c.replies) {
+          const who = document.createElement('div');
+          who.className = 'dc-reply-author';
+          who.textContent = 'Reply from ' + (r.author || 'agent') + (r.created ? ' · ' + String(r.created).slice(0, 10) : '');
+          const body = document.createElement('div');
+          body.className = 'dc-reply-text';
+          for (const part of String(r.text || '').split(/(https?:\/\/[^\s)]+)/g)) {
+            if (/^https?:\/\//.test(part)) {
+              const a = document.createElement('a');
+              a.href = part; a.target = '_blank'; a.rel = 'noopener';
+              a.textContent = part;
+              a.addEventListener('click', e => e.stopPropagation());
+              body.appendChild(a);
+            } else body.appendChild(document.createTextNode(part));
+          }
+          box.append(who, body);
+        }
+        item.appendChild(box);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'dc-meta';
+      const when = document.createElement('span');
+      when.textContent = c.created.slice(0, 10);
+      const resolved = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!c.resolved;
+      cb.addEventListener('click', e => e.stopPropagation());
+      cb.addEventListener('change', () => { c.resolved = cb.checked; save(); render(); });
+      resolved.append(cb, 'resolved');
+      const del = document.createElement('button');
+      del.className = 'dc-del';
+      del.textContent = 'delete';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        comments = comments.filter(x => x.id !== c.id);
+        ranges.delete(c.id);
+        paint(); save(); render();
+      });
+      meta.append(when, resolved, del);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        const r = ranges.get(c.id);
+        if (!r) return flash('Anchor not found in this version of the document.');
+        const rect = r.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + rect.top - 160, behavior: 'smooth' });
+        paint(c.id);
+        setTimeout(() => paint(), 2000);
+      });
+      // double-click text to edit
+      text.addEventListener('dblclick', e => { e.stopPropagation(); render(c.id); });
+      listEl.appendChild(item);
+    }
+  }
+
+  // ---- selection -> floating Comment button ----
+  document.addEventListener('mouseup', e => {
+    if (fab.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) { fab.style.display = 'none'; return; }
+      const range = sel.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer) || !range.toString().trim()) {
+        fab.style.display = 'none';
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      fab.style.display = 'block';
+      fab.style.left = Math.min(rect.right + 8 + window.scrollX, window.scrollX + document.documentElement.clientWidth - 120) + 'px';
+      fab.style.top = (rect.top + window.scrollY - 4) + 'px';
+      fab.dataset.pending = '1';
+    }, 0);
+  });
+  fab.addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const c = Object.assign({ id: 'c' + Date.now().toString(36) + (seq++), text: '', created: new Date().toISOString(), resolved: false }, selectorFromRange(range));
+    comments.push(c);
+    ranges.set(c.id, range.cloneRange());
+    paint(c.id);
+    sel.removeAllRanges();
+    fab.style.display = 'none';
+    sidebar.classList.add('dc-open');
+    render(c.id);
+  });
+
+  // ---- export / import ----
+  function payload() {
+    return JSON.stringify({
+      format: FORMAT,
+      doc: document.title,
+      exported: new Date().toISOString(),
+      comments: comments,
+    }, null, 2);
+  }
+  document.getElementById('dc-export').addEventListener('click', () => {
+    const blob = new Blob([payload()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'doc') + '.comments.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Downloaded.');
+  });
+  document.getElementById('dc-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(payload()); flash('Copied to clipboard.'); }
+    catch (e) { flash('Clipboard blocked — use Export instead.'); }
+  });
+  document.getElementById('dc-import').addEventListener('click', () => document.getElementById('dc-file').click());
+  document.getElementById('dc-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(raw => {
+      const data = JSON.parse(raw);
+      if (data.format !== FORMAT || !Array.isArray(data.comments)) { flash('Not a dc-comments file.'); return; }
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of data.comments) byId.set(c.id, c);
+      comments = [...byId.values()];
+      reanchorAll(); save(); render();
+      flash('Imported ' + data.comments.length + ' comment(s).');
+    }).catch(() => flash('Could not parse that file.'));
+    e.target.value = '';
+  });
+
+  document.getElementById('dc-toggle').addEventListener('click', () => sidebar.classList.toggle('dc-open'));
+
+  // ---- init ----
+  load();
+  // Merge the renderer's preloaded comments (with replies) by id: a stored
+  // comment keeps its own text/resolved state and takes the preloaded replies.
+  try {
+    const pre = document.getElementById('dc-preload');
+    const preloaded = pre && pre.textContent.trim() ? JSON.parse(pre.textContent) : [];
+    if (Array.isArray(preloaded) && preloaded.length) {
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of preloaded) {
+        const existing = byId.get(c.id);
+        if (existing) { if (c.replies) existing.replies = c.replies; }
+        else byId.set(c.id, c);
+      }
+      comments = [...byId.values()];
+      save();
+    }
+  } catch (e) { /* malformed preload: ignore */ }
+  reanchorAll();
+  render();
+})();
+</script>
+<!-- ============ DC-COMMENTS END ============ -->
+</div>
+</body>
+</html>
