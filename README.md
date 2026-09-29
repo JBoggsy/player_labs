@@ -47,7 +47,7 @@ player_labs/
   emergant_lab/        eighth game lab — Emerg-ant, a 16-agent repeated-food-capture colony shooter
   gods_of_the_arena_lab/ ninth game lab — Gods of the Arena, a BASIC-scripted 5v5 lane battler (knowledge map in docs/research.md)
   sugarscape_lab/      tenth game lab — Sugarscape, a movement-policy lab over coworld-sugarscape (own README)
-  paintbot_pw_lab/     eleventh game lab — Paintbot PW, the Polyworld rebuild of Paintbot: 8v8 heart-territory, BASIC policies (not paintbot_lab's game)
+  paintbot_pw_lab/     eleventh game lab — Paintbot PW, the Polyworld rebuild of Paintbot: 8v8 heart-territory, BASIC policies (not paintbot_lab's game); agent entry point `paintbot_pw_lab/tools/pw.py`
   player_ade/          design for the web-UI agentic development environment on top of the lab (own README)
   pyproject.toml       uv project: coworld[auth] + the pinned players SDK (from git) + deps
 ```

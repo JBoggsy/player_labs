@@ -3,26 +3,18 @@
 What the lab knows about paintbot-pw, where each piece lives, and how to check it is
 still true. Start here, after [AGENTS.md](AGENTS.md).
 
-Every mechanics document opens with a **Currency** block naming the paintbot-pw commit
-it was verified against. The deployed commit is the only one that matters, and the game
-ships several releases a day. Check it first:
+Every mechanics document opens with a **Currency** block naming the paintbot-pw commit it was
+verified against. The game ships several releases a day, so check where things stand first:
 
 ```sh
-uv run python paintbot_pw_lab/tools/deployed_ref.py     # each league's release vs the docs
-paintbot_pw_lab/tools/build_tools.sh                    # engine binaries at the pinned tag
+uv run python paintbot_pw_lab/tools/pw.py doctor --json          # release pin vs league, builds, env
+uv run python paintbot_pw_lab/tools/pw.py deployed-ref --json    # + diffstat of rule files since the docs' commit
 ```
 
-Everything below is verified at `Metta-AI/paintbot-pw` `7b2b19f5` (tag `coworld-v0.3.65`,
-rules 45), 2026-09-28, unless marked otherwise, and re-checked at `ab597b35` (0.3.67, the
-same day): that release changes only art, terrain generation, `jev.bas` loop bounds and the
-glory-heart pair count on big maps. `mechanics.nim`, `bots.nim`, `game.nim` and `basic.nim`
-are unchanged; `sim.nim` citations past line 941 shift by +3. 0.3.68 (`ef82196`, live the
-same evening) is a refactor with no rules change: config parsing moved from `game.nim` to
-`match_config.nim` and `LiveRules = 45` was added, so `game.nim` and `sim.nim` line numbers
-shift a little more. The onboarding report is
-[`docs/reports/paintbot-pw-onboarding-2026-09-28.html`](../docs/reports/paintbot-pw-onboarding-2026-09-28.html). Where the maintainer's guide and the code
-disagree, the code wins; the known mismatches are listed in
-[mechanics.md §8](docs/mechanics.md).
+Two pins, on purpose (`tools/release.env`): **the tools** follow the league (`PW_RELEASE_TAG`,
+coworld-v0.3.79 = `d0728ab1` on 2026-09-29), while **the docs** stay at the commit their line
+citations are exact for (`PW_DOCS_SHA` = `570174a2`, coworld-v0.3.78, rules 47 teams). 0.3.79
+changed only the neural lane and training internals; the BASIC teams game is identical.
 
 ## The game in one paragraph
 
@@ -48,14 +40,17 @@ kept only by the winner. Every seat is a BASIC script run inside the engine.
 | Leagues and field | Main teams ladder: two policies per episode, each filling a whole team, seed 2026, 12 episodes every 10 min. Leaders (2026-09-28): Aaron L (two entries) and David B (the game's maintainer; a neural policy and an LLM-advisor policy). Heartland (FFA-kin) opened 2026-09-28. | [field.md](docs/field.md) |
 | Evaluation budget | Experience-request fields, the roster trap (pin all 8 opponent seats), credits (~0.3 per episode). | [field.md §Experience requests](docs/field.md) |
 | Community | Forum empty; wiki is a stale README copy; the maintainer's guide carries the only measurements. | [community.md](docs/community.md) |
-| Evidence pipeline | Artifacts, the `POLYWORLDREPLAY` tape, hash-checked re-simulation (one build replays older rules), local runs, the verified per-seat stats probe, and the adapters still to build. | [evidence-pipeline.md](docs/evidence-pipeline.md) |
+| Evidence pipeline | Artifacts, the `POLYWORLDREPLAY` tape, hash-checked re-simulation (one build replays older rules), local runs. The tools built on it are indexed in [docs/tools/README.md](docs/tools/README.md). | [evidence-pipeline.md](docs/evidence-pipeline.md) |
 
 ## Instruments
 
-| Instrument | State |
-| --- | --- |
-| `tools/deployed_ref.py` | Working. League → coworld release → tag commit, vs `DOCS_SHA`. |
-| `tools/build_tools.sh` | Working. Builds `paintbot-headless` (hash-checked replay validation, native local runs) and `replay_stats` into `tools/bin/<tag>/`, plus the engine `local.py` needs in `tools/.cache/<tag>/`. |
-| Local match | `tools/bin/<tag>/paintbot-headless --bot reference/base.bas:16 --seed 2026 --ticks 2400`, or `local.py` from the worktree for per-seat logs. `--bot FILE:N` fills seats in order, so alternate flags for A vs B. Local runs cannot set the league's glory config. |
-| Per-seat replay stats | Probe verified (source in [evidence-pipeline.md, appendix](docs/evidence-pipeline.md)); not yet a lab tool. |
-| A/B (`compare.py`), miner (`features.py`), episode reader | Not built. Design in [evidence-pipeline.md §8](docs/evidence-pipeline.md). |
+The tools, their agent contract and "which tool answers which question" are indexed in
+[docs/tools/README.md](docs/tools/README.md) (generated from `tools/pw.py tools --markdown`).
+The skills that drive them are listed in [AGENTS.md](AGENTS.md#agents-start-here). In short:
+hash-checked replay expansion (`pw_trace`) feeds per-episode Parquet tables (`pw_episodes`),
+one metric library (`pw_metrics`), fights and anomaly flags, movement diagrams and match reports,
+the A/B adapter with paired and SPRT tests (`compare`), the local 16-seat harness at the league's
+rules and glory config (`pw_local`, about 1.5 matches/s), public-data scouting (`pw_scout`),
+intent telemetry and its audit (`pw_intent`), the miner adapter, a win-probability model, and an
+SPSA tuner.
+

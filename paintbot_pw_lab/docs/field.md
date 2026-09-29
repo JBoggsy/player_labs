@@ -2,6 +2,26 @@
 
 Snapshot taken **2026-09-28, about 22:00 UTC**. Standings move every 10 minutes, so re-read them before you act on them.
 
+> **Update 2026-09-29 (build and Heartland split; standings not re-snapshotted).** Read with
+> `tools/deployed_ref.py` and the paintbot-pw repo, not a fresh standings pull:
+>
+> - The main league now runs coworld `paintbot-pw` **0.3.78**
+>   (`cow_12867c2e-aca8-4755-980b-5ba668a04ad4`) = tag `coworld-v0.3.78` = `570174a2`. Live
+>   games record rules **48**, whose only change is FFA-kin fog, so the teams game plays
+>   **rules 47**: glory for being behind in cogs, and a per-match seat count (the paintbot-pw
+>   config schema still fixes it at 16). The manifest's teams variants now set
+>   `glory: {"behind_lives": 5, "behind_cogs": 10}`; that has not yet been seen in a live
+>   episode's `game_config`, so the "Glory config" row below is the 2026-09-28 value.
+>   Details: [mechanics.md §1.2](mechanics.md) and its currency block.
+> - **Heartland is its own coworld now.** The `heartland` and `heartland-big` variants were
+>   removed from the paintbot-pw manifest (0.3.71). The Heartland league (same league id as
+>   below) points at game `game_73bfa882-779c-4f78-bb3d-75ecec0020a2` and coworld `heartland`
+>   **0.1.9** (`cow_2ec4535a-d143-4e9e-a4a6-9fe057b8792e`), tagged `heartland-v0.1.9` at the
+>   same commit `570174a2`. Heartland plays rules 48 (FFA-kin fog of war).
+> - Rows below that name the coworld id, version 0.3.65, rules 45 or `bots.nim` line numbers
+>   are therefore from the 2026-09-28 snapshot, not current. Current rule and API facts live in
+>   [mechanics.md](mechanics.md) and [policy-surface.md](policy-surface.md).
+
 Evidence labels:
 
 - **documented**: stated in the game README (manifest 0.3.65) or a league guide.

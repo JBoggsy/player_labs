@@ -14,6 +14,34 @@ them against paintbot-pw source. The closest sibling is
 [`gods_of_the_arena_lab/`](../gods_of_the_arena_lab/AGENTS.md): same engine family and
 BASIC dialect, different game and host API.
 
+## Agents: start here
+
+Every tool is one command away and drivable without a human. From the repo root:
+
+```bash
+uv run python paintbot_pw_lab/tools/pw.py doctor --json   # release pin vs league, builds, env; prints fix commands
+uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: what each answers, inputs, outputs
+```
+
+- **Tool index and the agent CLI contract:** [docs/tools/README.md](docs/tools/README.md)
+  (generated from `tools/pw.py`). Every tool takes `--json` (one object: `ok`, `outputs`,
+  `counts`, `failures`, `result`, `next`) and exits 0 ok / 1 some inputs failed / 2 usage
+  (valid values listed) / 3 build or environment missing (`next` holds the fix).
+- **Release pin:** `tools/release.env` is the single source of the engine tag every tool uses;
+  `pw.py deployed-ref --write --json` moves it when the league moves.
+- **Skills** (in [.claude/skills/](.claude/skills/); read the SKILL.md directly when working from
+  the repo root, since lab skills only auto-load for files under this directory):
+
+| Skill | Use when |
+| --- | --- |
+| [paintbot-pw-loop](.claude/skills/paintbot-pw-loop/SKILL.md) | running the improvement loop unattended (needs the loop charter in WORKING_CONTEXT) |
+| [paintbot-pw-replay](.claude/skills/paintbot-pw-replay/SKILL.md) | unpacking or looking at a replay/episode: events, metrics, movement diagrams, match report |
+| [paintbot-pw-ab](.claude/skills/paintbot-pw-ab/SKILL.md) | deciding whether a change helped (paired A/B on the Elo outcome score, SPRT stop) |
+| [paintbot-pw-diagnose](.claude/skills/paintbot-pw-diagnose/SKILL.md) | "why are we losing / what should we change": flags, worst losses, hypotheses, miner |
+| [paintbot-pw-scout](.claude/skills/paintbot-pw-scout/SKILL.md) | what the leaders do, from public episodes: matrix, profiles, shout protocols |
+| [paintbot-pw-local](.claude/skills/paintbot-pw-local/SKILL.md) | compile checks and fast local screening (never field evidence) |
+| [paintbot-pw-tune](.claude/skills/paintbot-pw-tune/SKILL.md) | SPSA search over `' @tune` constants, then a hosted A/B |
+
 ## Read in this order
 
 1. [WORKING_CONTEXT.md](WORKING_CONTEXT.md) — current objective, identity, next decision.
@@ -25,8 +53,8 @@ BASIC dialect, different game and host API.
    modes and every host call. Read before writing any BASIC.
 5. [docs/field.md](docs/field.md) — leagues, match configuration, standings, experience
    request options and credit budget.
-6. [docs/evidence-pipeline.md](docs/evidence-pipeline.md) — artifacts, hash-checked
-   re-simulation, local runs, and the tools still to build.
+6. [docs/evidence-pipeline.md](docs/evidence-pipeline.md) — artifacts, the replay format and
+   hash-checked re-simulation; [docs/tools/README.md](docs/tools/README.md) — the tools built on it.
 7. [TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md) — untested hypotheses to turn into A/Bs.
 
 ## Files
@@ -37,12 +65,16 @@ BASIC dialect, different game and host API.
 | `docs/policy-surface.md` | Upload formats (raw `.bas`, neural ZIP), dialect, per-tick execution, budgets, failure modes, host API, advisor oracle, starter summaries. |
 | `docs/field.md` | Both leagues' configuration and ranking rule, dated standings, entrants, our account's presence, experience-request fields and credit costs. |
 | `docs/community.md` | Forum/wiki digest (the forum is empty; the wiki is a stale README copy), maintainer measurements, gotchas, release cadence. |
-| `docs/evidence-pipeline.md` | Artifact inventory, replay format, the verified build/replay/local-run commands, the per-seat stats probe (appendix), recommended tools. |
-| `docs/designs/` | Design documents. [`2026-09-29-tooling-plan.html`](docs/designs/2026-09-29-tooling-plan.html) is the proposed tools-and-skills plan (brief: `.tooling-plan-brief.md`). |
-| `reference/*.bas` | Official starters at the deployed tag: `base.bas` (teams baseline), `jev.bas` (base + LLM advisor), `ffa.bas` / `ffa_blind.bas` (Heartland). Keep reference files distinct from candidates. |
-| `reference/manifest-0.3.65.json` | The deployed coworld manifest (config schema, variants, readme). |
-| `tools/deployed_ref.py` | Resolves each league's coworld release to its `coworld-v<version>` tag commit and says whether the docs are current. |
-| `episode_data/` | Downloaded hosted episodes (gitignored), one directory per episode. |
+| `docs/evidence-pipeline.md` | Artifact inventory, replay format, re-simulation constraints, local runs. |
+| `docs/tools/` | One reference per tool (agent contract, commands, outputs, limits); `README.md` is the generated index, `tables.md` the Parquet table contract. |
+| `docs/designs/` | Design documents. [`2026-09-29-tooling-plan.html`](docs/designs/2026-09-29-tooling-plan.html) is the tools-and-skills plan, now implemented (brief: `.tooling-plan-brief.md`). |
+| `tools/` | The instruments: `pw.py` (dispatcher, catalog, doctor), `pw_cli.py` (shared CLI contract), `release.env` / `pw_release.py` (engine pin), Nim `pw_trace` / `pw_map`, Python readers, metrics, visuals, A/B, local harness, scouting, miner, win probability, tuning; `tests/`. Build products go to gitignored `tools/bin/` and `tools/.cache/`. |
+| `.claude/skills/` | The seven lab skills listed above. |
+| `reference/base.bas`, `reference/jev.bas` | Official teams starters at the pinned release. Keep reference files distinct from candidates. |
+| `reference/intent_telemetry.bas`, `reference/wire_intent_base.py` | The intent-line module for our policies, and a script that wires it into `base.bas` for audits. |
+| `reference/heartland/` | FFA-kin starters for the separate Heartland coworld; they do not compile in the teams game. |
+| `reference/manifest-0.3.79.json` | The deployed coworld manifest (config schema, variants, readme). |
+| `episode_data/`, `analysis/` | Downloaded episodes and tool outputs (gitignored). |
 
 ## Rules specific to this lab
 
@@ -68,11 +100,14 @@ BASIC dialect, different game and host API.
   (`bots.nim:147-148`); the guide and starter headers still say 20,000.
 - **Teams-only vs FFA-only names.** Calling an FFA-kin function (`kin()`, `gene()`, …) in
   the teams game is a compile error. Keep Heartland code paths separate.
-- **Replays re-simulate across versions.** The newest build replays older rules versions
-  hash-exactly (verified on rules-44 replays with the 0.3.65 build). Always hash-check;
-  the repo's `replay_stats.nim` does not.
+- **Replays re-simulate across versions and Nim builds.** The newest build replays older rules
+  versions hash-exactly (rules-44 replays under 0.3.65-0.3.79 builds), and hosted tapes built with
+  Nim 2.2.10 replay exactly under local Nim 2.2.6 (2 hosted 0.3.78 episodes). Always hash-check:
+  `pw_trace` does; the repo's `replay_stats.nim` does not.
 - **Experience-request rosters:** pin all 8 opponent seats to one explicit policy to match
-  league conditions; `top_n`/`random` draw per seat and mix opponents.
+  league conditions; `top_n`/`random` draw per seat and mix opponents. Never put our policy on
+  both teams in a hosted request (self-play; `pw_ab_requests.py` refuses `h2h`): screen
+  candidate-vs-baseline locally with `pw.py local screen`.
 - **Identity.** Uploads bind to the active player session; confirm `softmax status` shows
   the intended player before uploading (see WORKING_CONTEXT).
 - Use the shared experience-request, artifact, A/B and miner skills; this lab supplies

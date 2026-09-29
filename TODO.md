@@ -99,3 +99,15 @@ Remove a task when it is complete.
   `examples/paintbot/bots.nim:147-148` allows 50,000 instructions and 125,000 work units,
   and that the guide says `jev.bas` ships with `useRetreat`/`useDial` off while the file
   has them on (James sends it; see `paintbot_pw_lab/docs/mechanics.md` section 8).
+- Settle with the first hosted A/B: does `game_config_overrides.seed` fix the engine seed (a 2-3
+  episode pilot; decides whether `compare --design paired` pairs identical worlds), do hosted seat
+  logs come back for our own policy, and does a live episode's `game_config.glory` show
+  `behind_cogs: 10`. Update `paintbot_pw_lab/WORKING_CONTEXT.md` and mechanics §1.2.
+- Calibrate `pw_flags`, `pw_fights`, `pw_metrics` and `pw_intent` thresholds on a 100+ episode
+  batch (all are named constants with uncalibrated plan defaults).
+- Check whether the Observatory replay wrapper honors `t=<tick>`; update `pw_match_report`'s caveat.
+- Shared: `.claude/skills/coworld-ab/scripts/compare_report.py` help says "the compare.py --json
+  output"; for paintbot_pw the input file now comes from `compare.py ... --out FILE`.
+- Shared: the hypothesis miner (`mine_hypotheses.py`) has no `--json` envelope and raises a
+  traceback below 8 rows; `pw.py mine` forwards that behavior.
+
