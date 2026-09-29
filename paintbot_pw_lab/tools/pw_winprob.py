@@ -105,6 +105,9 @@ def cmd_fetch(args, report) -> dict:
                 present += not new
                 print(f"{row['id']}  round {round_row['round_number']}  {row['coworld_version']}"
                       f"{'' if new else '  (already present)'}", file=sys.stderr)
+    except pw_public.RateLimited as error:
+        raise pw_cli.RateLimited(f"public API rate limit ({error})",
+                                 "the same winprob fetch command (already-saved episodes are skipped)") from error
     except pw_public.PublicFetchError as error:
         raise pw_cli.EnvironmentMissing(f"public API read failed ({error})",
                                         "the same command again later (network or rate limit)") from error

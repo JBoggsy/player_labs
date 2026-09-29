@@ -15,8 +15,11 @@ One repository publishes two coworlds: `paintbot-pw` (tags `coworld-v<version>`,
 `heartland` (tags `heartland-v<version>`, printed for reference only).
 
 Exit codes (agent CLI contract): 0 tools current; 1 release.env is behind the league, or was
-just updated by --write (rebuild next), or the league's version has no tag; 2 usage error;
-3 environment missing (no softmax login, network/git failure, no source clone) with the fix.
+just updated by --write (rebuild next), or the league's version has no tag, or the API was
+rate-limited (HTTP 429, failure code rate_limited) or failed transiently (5xx, code
+api_unavailable): wait and retry, nothing is missing; 2 usage error; 3 environment missing
+(no softmax login or HTTP 401/403, network unreachable, git failure, no source clone) with
+the fix in `next`.
 Reference: paintbot_pw_lab/docs/tools/deployed_ref.md. Makes 2 API reads per league plus one
 `git ls-remote`; do not loop it.
 """
@@ -56,7 +59,24 @@ REBUILD = ["paintbot_pw_lab/tools/build_tools.sh", "paintbot_pw_lab/tools/build_
 
 
 class EnvironmentMissing(RuntimeError):
-    """Something outside the tool is missing; str() includes the fixing command."""
+    """Something outside the tool is missing; str() includes the fixing command, `fix` is it alone."""
+
+    def __init__(self, message: str, fix: str | None = None):
+        super().__init__(message)
+        self.fix = fix
+
+
+class ApiTransient(RuntimeError):
+    """The Observatory API answered 429 (code rate_limited) or 5xx (api_unavailable): nothing is
+    missing, the check could not run right now. Exit 1; the fix is to wait and retry."""
+
+    def __init__(self, message: str, code: str):
+        super().__init__(message)
+        self.code = code
+
+
+LOGIN = "uv run softmax login"
+RETRY = "wait a minute, then rerun: uv run python paintbot_pw_lab/tools/deployed_ref.py --json"
 
 
 def release_tags() -> dict[str, str]:
@@ -66,7 +86,7 @@ def release_tags() -> dict[str, str]:
                              capture_output=True, text=True, check=True).stdout
     except (OSError, subprocess.CalledProcessError) as err:
         raise EnvironmentMissing(f"git ls-remote {SOURCE_REPO} failed ({err}); check network/git "
-                                 "access, then rerun this command") from err
+                                 "access, then rerun this command", f"git ls-remote --tags {SOURCE_REPO}") from err
     tags = {}
     for line in out.splitlines():
         sha, ref = line.split("\t")
@@ -86,7 +106,7 @@ def resolve_leagues(tags: dict[str, str]) -> list[dict]:
     server = auth.get_api_server()
     token = auth.load_current_token(server=server)
     if not token:
-        raise EnvironmentMissing("no softmax login token: run `uv run softmax login`")
+        raise EnvironmentMissing(f"no softmax login token: run `{LOGIN}`", LOGIN)
     base = server.rstrip("/") + "/observatory"
     headers = {"Authorization": f"Bearer {token}"}
     rows = []
@@ -104,11 +124,26 @@ def resolve_leagues(tags: dict[str, str]) -> list[dict]:
                          "coworld_id": coworld_id, "coworld": name, "version": version,
                          "tag": tag, "sha": tags.get(tag) if tag else None})
     except httpx.HTTPStatusError as err:
-        fix = "run `uv run softmax login`" if err.response.status_code in (401, 403) else "retry later"
-        raise EnvironmentMissing(f"Observatory API {err.response.status_code} on {err.request.url}: {fix}") from err
+        raise classify_http_error(err.response.status_code, str(err.request.url)) from err
     except httpx.HTTPError as err:
-        raise EnvironmentMissing(f"Observatory API unreachable ({err}); check network, then rerun") from err
+        raise EnvironmentMissing(f"Observatory API unreachable ({err}); check network, then rerun",
+                                 "check the network, then rerun this command") from err
     return rows
+
+
+def classify_http_error(status: int, url: str) -> Exception:
+    """401/403: a login problem (EnvironmentMissing naming `softmax login`). 429: rate limited,
+    5xx: the API is down for now (ApiTransient, exit 1: wait and retry). Anything else is
+    unexpected, reported as environment with the status so a human can look."""
+    if status in (401, 403):
+        return EnvironmentMissing(f"Observatory API {status} on {url}: run `{LOGIN}`", LOGIN)
+    if status == 429:
+        return ApiTransient(f"Observatory API rate limit (HTTP 429) on {url}; nothing is missing: "
+                            "wait and retry", "rate_limited")
+    if status >= 500:
+        return ApiTransient(f"Observatory API HTTP {status} on {url}; wait and retry", "api_unavailable")
+    return EnvironmentMissing(f"Observatory API HTTP {status} on {url}", "rerun this command; if it "
+                              "persists, check the league id in deployed_ref.LEAGUES")
 
 
 def rule_diffstat(clone: Path, from_sha: str, to_sha: str) -> list[dict]:
@@ -117,7 +152,7 @@ def rule_diffstat(clone: Path, from_sha: str, to_sha: str) -> list[dict]:
     Fetches the clone (never changes its checkout) when a commit is not present yet."""
     if not (clone / ".git").exists():
         raise EnvironmentMissing(f"no paintbot-pw clone at {clone}: run `git clone {SOURCE_REPO} {clone}` "
-                                 "(or set PW_CLONE)")
+                                 "(or set PW_CLONE)", f"git clone {SOURCE_REPO} {clone}")
     git = ["git", "-C", str(clone)]
 
     def have(sha: str) -> bool:
@@ -127,7 +162,8 @@ def rule_diffstat(clone: Path, from_sha: str, to_sha: str) -> list[dict]:
         subprocess.run(git + ["fetch", "--quiet", "--tags", "origin"], capture_output=True)
         if not (have(from_sha) and have(to_sha)):
             raise EnvironmentMissing(f"{clone} lacks {from_sha} or {to_sha} even after fetch: "
-                                     f"run `git -C {clone} fetch --tags origin`")
+                                     f"run `git -C {clone} fetch --tags origin`",
+                                     f"git -C {clone} fetch --tags origin")
     out = subprocess.run(git + ["diff", "--numstat", from_sha, to_sha, "--", *RULE_FILES],
                          capture_output=True, text=True, check=True).stdout
     return parse_numstat(out)
@@ -156,7 +192,8 @@ def main(argv: list[str] | None = None) -> int:
                "  uv run python paintbot_pw_lab/tools/deployed_ref.py --json     # one JSON object\n"
                "  uv run python paintbot_pw_lab/tools/deployed_ref.py --write    # move release.env, then rebuild\n"
                "  uv run python paintbot_pw_lab/tools/deployed_ref.py --docs-sha 7b2b19f5  # diff from another basis\n"
-               "exit: 0 current; 1 behind league / just written / untagged; 2 usage; 3 environment missing",
+               "exit: 0 current; 1 behind league / just written / untagged / API rate-limited or down (retry);\n"
+               "      2 usage; 3 environment missing (login, network, clone; fix in next)",
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--json", action="store_true",
                         help="print exactly one JSON object to stdout; human text goes to stderr")
@@ -195,7 +232,15 @@ def main(argv: list[str] | None = None) -> int:
         say(f"ERROR: {err}")
         envelope["failures"].append({"id": "environment", "code": "environment_missing", "message": str(err)})
         envelope["counts"]["failed"] = 1
+        if err.fix:
+            envelope["next"].append(err.fix)
         return finish(3)
+    except ApiTransient as err:
+        say(f"ERROR: {err}")
+        envelope["failures"].append({"id": "observatory_api", "code": err.code, "message": str(err)})
+        envelope["counts"]["failed"] = 1
+        envelope["next"].append(RETRY)
+        return finish(1)
 
     envelope["counts"]["processed"] = len(leagues)
     for row in leagues:

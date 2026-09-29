@@ -40,7 +40,7 @@ import tempfile
 import zlib
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import pandas as pd
@@ -114,8 +114,13 @@ class Source:
     episode_json: Path | None
     results_json: Path | None
     local_meta: Path | None
-    cache: Path                  # directory holding trace, receipt and tables
+    cache: Path                  # directory holding trace, receipt and tables (the default variant)
     log_dir: Path | None
+
+
+def in_cache(path: Path) -> bool:
+    """True for a path inside any trace cache (pw_cache/, pw_cache@*/, NAME*.pw_cache/, temp dirs)."""
+    return any(part == CACHE_DIR or part.startswith(CACHE_DIR + "@") or ".pw_cache" in part for part in path.parts)
 
 
 def find_replay(directory: Path) -> Path | None:
@@ -140,13 +145,13 @@ def discover(roots: list[Path]) -> list[Source]:
                 continue
             raise pw_cli.UsageError(f"not an episode directory or .replay file: {root}")
         hosted_dirs = {p.parent for name in ("episode.json", "results.json") for p in root.rglob(name)
-                       if CACHE_DIR not in p.parts}
+                       if not in_cache(p)}
         for directory in hosted_dirs:
             sources[directory] = Source("hosted", find_replay(directory),
                                         _file(directory / "episode.json"), _file(directory / "results.json"),
                                         None, directory / CACHE_DIR, directory)
         for replay in root.rglob("*.replay"):
-            if replay.parent in hosted_dirs or CACHE_DIR in replay.parts or ".pw_cache" in str(replay):
+            if replay.parent in hosted_dirs or in_cache(replay):
                 continue
             sources[replay] = local_source(replay)
     if not sources:   # a wrong path, not a bad episode: a usage error (CLI exit 2)
@@ -201,6 +206,36 @@ class TraceOptions:
     def signature(self) -> dict:
         return {"state_every": self.state_every, "vis_every": self.vis_every,
                 "window": list(self.window) if self.window else None}
+
+
+def cache_variant(tag: str | None, binary: Path, options: TraceOptions) -> str:
+    """'' for the default trace (the pinned release's pw_trace, default options), else a readable
+    key naming what differs: the tag (or `bin-<sha>` for an explicit --binary) and the options.
+
+    Each variant has its own cache directory, so tracing an episode with another tag or a finer
+    sampling (pw_viz --fine, pw_intent's dense trace, --vis-every) never replaces another one."""
+    parts = []
+    tag = tag or DEFAULT_TAG
+    if binary.resolve() != (pw_release.bin_dir(tag) / "pw_trace").resolve():
+        parts.append("bin-" + digest(binary)[:10])
+    elif tag != DEFAULT_TAG:
+        parts.append(tag)
+    if options != TraceOptions():
+        key = f"se{options.state_every}-ve{options.vis_every}"
+        if options.window:
+            key += f"-w{options.window[0]}_{options.window[1]}"
+        parts.append(key)
+    return "+".join(parts)
+
+
+def variant_cache(source: Source, variant: str) -> Path:
+    """The cache directory of one variant: pw_cache/ (default) or pw_cache@<variant>/ in a
+    hosted episode dir; NAME.pw_cache/ or NAME@<variant>.pw_cache/ beside a local NAME.replay."""
+    if not variant:
+        return source.cache
+    if source.kind == "hosted":
+        return source.cache.with_name(f"{CACHE_DIR}@{variant}")
+    return source.replay.with_name(f"{source.replay.stem}@{variant}.pw_cache")
 
 
 def signature(source: Source, binary: Path, options: TraceOptions) -> dict:
@@ -545,7 +580,7 @@ def policy_log(episode_id: str, source: Source) -> pd.DataFrame:
     if source.log_dir is not None:
         for path in sorted(source.log_dir.rglob("*.log")):
             seat = next((int(m.group(1)) for pattern in POLICY_LOG_PATTERNS if (m := pattern.search(path.name))), None)
-            if seat is None or CACHE_DIR in path.parts:
+            if seat is None or in_cache(path):
                 continue
             # One marker row per log file, so "no vm_error rows" can be told apart from "no log".
             rows.append({"episode_id": episode_id, "seat": seat, "t": None, "line_kind": "log_present",
@@ -569,11 +604,12 @@ def policy_log(episode_id: str, source: Source) -> pd.DataFrame:
 @dataclass
 class Episode:
     episode_id: str
-    source: Source
+    source: Source               # source.cache is the variant this load used
     meta: dict
     summary: dict
     tables: dict[str, pd.DataFrame]
     cache_hit: bool
+    tag: str | None = None       # release build that traced it (None: an explicit --binary)
 
     def __getitem__(self, name: str) -> pd.DataFrame:
         return self.tables[name]
@@ -602,6 +638,9 @@ def load_episode(source: Source | Path, binary: Path | None = None, *, tag: str 
     binary = resolve_binary(tag, binary)
     options = options or TraceOptions()
     episode_id = episode_id_of(source)
+    variant = cache_variant(tag, binary, options)
+    source = replace(source, cache=variant_cache(source, variant))
+    trace_tag = None if variant.startswith("bin-") else (tag or DEFAULT_TAG)
     expected = signature(source, binary, options)
     hit = not refresh and cached(source, expected)
     if not hit:
@@ -625,7 +664,7 @@ def load_episode(source: Source | Path, binary: Path | None = None, *, tag: str 
             shutil.rmtree(work, ignore_errors=True)
     meta, _, _, _, summary = read_trace_header(source.cache / "trace.jsonl")
     tables = {name: pd.read_parquet(source.cache / "tables" / f"{name}.parquet") for name in TABLES}
-    return Episode(episode_id, source, meta, summary, tables, hit)
+    return Episode(episode_id, source, meta, summary, tables, hit, trace_tag)
 
 
 def read_trace_header(path: Path) -> tuple[dict, None, None, None, dict]:
@@ -659,7 +698,7 @@ def load_batch(roots: list[Path] | Path, binary: Path | None = None, *, tag: str
 
     def one(source: Source):
         try:
-            return load_episode(source, binary, options=options, refresh=refresh)
+            return load_episode(source, binary, tag=tag, options=options, refresh=refresh)
         except (EpisodeError, OSError, ValueError, KeyError) as error:
             where = source.replay or source.cache.parent
             code = error.code if isinstance(error, EpisodeError) else type(error).__name__
@@ -680,8 +719,9 @@ def load_batch(roots: list[Path] | Path, binary: Path | None = None, *, tag: str
 def open_duckdb(where: "Batch | list[Path] | Path"):
     """A DuckDB connection with one view per table.
 
-    Pass a loaded Batch (exactly its verified episodes) or roots (every episode discover()
-    finds whose cache has tables; run load_batch first so the caches are current)."""
+    Pass a loaded Batch (exactly its verified episodes, in the cache variant they were loaded
+    with) or roots (the DEFAULT cache variant of every episode discover() finds that has
+    tables; run load_batch first so the caches are current)."""
     import duckdb
     if isinstance(where, Batch):
         caches = [e.source.cache for e in where.episodes]

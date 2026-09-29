@@ -9,7 +9,8 @@
 #   replay_stats        the repo's per-team summary (NOT hash-checked; see docs/evidence-pipeline.md)
 #   pw_trace            the lab's hash-checked replay expander (docs/tools/pw_trace.md)
 #   pw_map              the lab's terrain raster + map JSON exporter (docs/tools/pw_map.md)
-# and leaves a worktree at paintbot_pw_lab/tools/.cache/<tag>/ whose tmp/paintbot-coworld engine
+# and leaves a worktree at paintbot_pw_lab/tools/.cache/<tag>/ ($PW_CACHE_DIR/<tag>/ when that is set)
+# whose tmp/paintbot-coworld engine
 # lets coworld/paintbot/local.py run there.
 #
 # The lab's own .nim sources (pw_trace.nim, pw_map.nim) are copied into the worktree's
@@ -25,7 +26,7 @@ LAB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$LAB/tools/release.env"   # PW_RELEASE_TAG: the league's teams build (the lab's one pin)
 TAG="${1:-$PW_RELEASE_TAG}"
 CLONE="${PW_CLONE:-$HOME/coding/coworlds/paintbot-pw}"
-TREE="$LAB/tools/.cache/$TAG"
+TREE="${PW_CACHE_DIR:-$LAB/tools/.cache}/$TAG"   # PW_CACHE_DIR: see pw_release.cache_root
 OUT="$LAB/tools/bin/$TAG"
 
 [[ -d "$CLONE/.git" ]] || git clone --filter=blob:none https://github.com/Metta-AI/paintbot-pw.git "$CLONE"

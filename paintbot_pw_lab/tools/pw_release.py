@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -91,6 +92,21 @@ def docs_sha() -> str:
 
 def bin_dir(tag: str | None = None) -> Path:
     return TOOLS / "bin" / (tag or current_tag())
+
+
+def cache_root() -> Path:
+    """Where lab tools keep rebuildable caches: $PW_CACHE_DIR when set, else tools/.cache/.
+
+    Holds the per-release source worktree (<tag>/, written by build_tools.sh, which honours the
+    same variable) and the map rasters (maps/<tag>/). Read at call time so a caller can point
+    it at a scratch directory. Per-episode trace caches are NOT here: they live beside the
+    episode (pw_episodes.py)."""
+    return Path(os.environ.get("PW_CACHE_DIR") or TOOLS / ".cache").expanduser()
+
+
+def release_tree(tag: str | None = None) -> Path:
+    """The release's source worktree that build_tools.sh leaves: <cache root>/<tag>/."""
+    return cache_root() / (tag or current_tag())
 
 
 def build_command(tool: str, tag: str | None = None) -> str:

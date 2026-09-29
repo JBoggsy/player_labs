@@ -368,7 +368,7 @@ def episode_name(a: Path, b: Path, seed: int, a_side: int) -> str:
 
 def _handoff(tag: str) -> tuple[Path, Path]:
     """The -d:coworld engine and host.py that build_tools.sh leaves in the release worktree."""
-    tree = pe.TOOLS / ".cache" / tag
+    tree = pw_release.release_tree(tag)
     engine, host = tree / "tmp" / "paintbot-coworld", tree / "coworld" / "paintbot" / "runtime" / "host.py"
     if not engine.is_file() or not host.is_file():
         raise pw_cli.EnvironmentMissing(f"missing {engine} or {host}", pw_release.build_command("pw_trace", tag))

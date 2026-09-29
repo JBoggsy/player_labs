@@ -12,8 +12,9 @@ Every command writes a PNG and a JSON of exactly the data it plotted, side by si
 
 Times: `1500` = tick 1500, `62.5s` = seconds, `1:10` = m:ss (24 ticks per second).
 Positions come from `states` rows, sampled every `state_every` ticks (default 6); pass
-`--fine` to re-trace with every-tick states for the window (this replaces the episode's
-cache options). Contract: paintbot_pw_lab/docs/tools/pw_viz.md.
+`--fine` to re-trace with every-tick states for the window (cached as its own variant beside
+the default trace; see pw_episodes.cache_variant). `--tag` picks the build for both the trace
+and the terrain raster. Contract: paintbot_pw_lab/docs/tools/pw_viz.md.
 
   uv run python paintbot_pw_lab/tools/pw_viz.py movement EPISODE_DIR --from 0:40 --to 1:05 --team 0
   uv run python paintbot_pw_lab/tools/pw_viz.py timeline EPISODE_DIR --out /tmp/tl.png
@@ -388,7 +389,7 @@ def plot_movement(episodes: list, out: Path, t0: int | None, t1: int | None, *, 
         end = int(ep["episodes"].iloc[0].ticks)
         a, b = (t0 or 0), min(t1 if t1 is not None else end, end)
         chosen = select_seats(ep, seats, team, policy)
-        mapdata = pw_mapdata.map_for_episode(ep.meta)
+        mapdata = pw_mapdata.map_for_episode(ep.meta, tag=ep.tag)
         title = (panel_titles[i] if panel_titles else _short_id(ep.episode_id)) + f"   {clock(a)}–{clock(b)}"
         if a >= end:
             title += f"   (window starts after this match ended at {clock(end)}: nothing to draw)"
@@ -468,7 +469,7 @@ def policy_deaths(episodes: list, policy: str | None, team: int | None = None, n
 
 def plot_heatmap(episodes: list, out: Path, *, policy=None, team=None, kind: str = "density",
                  normalize_side: bool = False) -> dict:
-    mapdata = pw_mapdata.map_for_episode(episodes[0].meta)
+    mapdata = pw_mapdata.map_for_episode(episodes[0].meta, tag=episodes[0].tag)
     fig, ax = plt.subplots(figsize=(12, 7.6), facecolor=PAPER)
     draw_terrain(ax, mapdata)
     x0, x1, z1, z0 = mapdata.extent
@@ -518,7 +519,7 @@ def bhattacharyya(a: np.ndarray, b: np.ndarray) -> float | None:
 
 
 def plot_occupancy(episodes: list, out: Path, policies: list[str], *, team=None, normalize_side: bool = True) -> dict:
-    mapdata = pw_mapdata.map_for_episode(episodes[0].meta)
+    mapdata = pw_mapdata.map_for_episode(episodes[0].meta, tag=episodes[0].tag)
     grids, counts = [], []
     for policy in policies:
         points = policy_positions(episodes, policy, team, normalize_side)
@@ -662,7 +663,7 @@ def plot_timeline(ep, out: Path, moments: list[dict] | None = None) -> dict:
 def animate(ep, out: Path, t0: int, t1: int, seats: list[int], *, bbox=None, fps: int = 8) -> dict:
     from matplotlib.animation import FuncAnimation, PillowWriter
 
-    mapdata = pw_mapdata.map_for_episode(ep.meta)
+    mapdata = pw_mapdata.map_for_episode(ep.meta, tag=ep.tag)
     states = ep["states"]
     states = states[(states.t >= t0) & (states.t <= t1) & states.seat.isin(seats)]
     frames = sorted(states.t.unique())[::max(1, GIF_STEP_TICKS // max(1, int(ep["episodes"].iloc[0].state_every)))]
@@ -804,7 +805,7 @@ def build_parser() -> pw_cli.ArgumentParser:
                         help="heatmap: rotate Azure positions onto Ember's side (point-symmetric maps only)")
     parser.add_argument("--raw-sides", action="store_true", help="occupancy: do not rotate Azure onto Ember's side")
     parser.add_argument("--fine", action="store_true", help="re-trace with every-tick states for the window")
-    parser.add_argument("--tag", help="pw_trace build (default: tools/release.env)")
+    parser.add_argument("--tag", help="release build for the trace and the terrain map (default: tools/release.env)")
     return parser
 
 

@@ -174,7 +174,7 @@ def replay_links(ep, tick: int | None = None, viewer_base: str | None = None) ->
 # ---------------------------------------------------------------- figures
 
 def moment_panel(ep, moment: dict, out: Path) -> dict:
-    mapdata = pw_mapdata.map_for_episode(ep.meta)
+    mapdata = pw_mapdata.map_for_episode(ep.meta, tag=ep.tag)
     end = int(ep["episodes"].iloc[0].ticks)
     t0, t1 = max(0, moment["from"]), min(end, moment["to"])
     bbox = moment_bbox(moment, mapdata)

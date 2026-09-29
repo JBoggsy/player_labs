@@ -66,3 +66,12 @@ def test_summarize_counts_sides_and_seed_balance():
 def test_mean_ci_unknown_is_none():
     assert pw_local.mean_ci([]) == {"mean_outcome": None, "ci95_low": None, "ci95_high": None}
     assert pw_local.mean_ci([0.7])["ci95_low"] is None
+
+
+def test_identical_play_needs_equal_hashes_on_both_sides_of_every_seed():
+    same = [{"seed": s, "a_side": side, "final_hash": 100 + s} for s in (1, 2) for side in (0, 1)]
+    assert pw_local.identical_play(same)
+    differs = same[:-1] + [{"seed": 2, "a_side": 1, "final_hash": 999}]
+    assert not pw_local.identical_play(differs)
+    assert not pw_local.identical_play(same[:1])       # one side only (a `match`): unknown, not identical
+    assert not pw_local.identical_play([])

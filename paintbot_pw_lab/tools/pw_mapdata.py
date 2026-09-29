@@ -2,8 +2,9 @@
 """Load Paintbot PW map geometry (terrain raster + features) for plots and metrics (T8).
 
 Runs the release's `pw_map` once per (release, map, rules, step) and caches the result
-under paintbot_pw_lab/tools/.cache/maps/<tag>/ as NAME.npz (heights, flags) + NAME.json
-(bounds, hearts, pickups, trenches, cover, homes). Contract: docs/tools/pw_map.md.
+under paintbot_pw_lab/tools/.cache/maps/<tag>/ ($PW_CACHE_DIR/maps/<tag>/ when that env var
+is set) as NAME.npz (heights, flags) + NAME.json (bounds, hearts, pickups, trenches, cover,
+homes). Contract: docs/tools/pw_map.md.
 
     from pw_mapdata import load_map
     m = load_map("", rules=47)          # "" = the Heartwick island
@@ -27,7 +28,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pw_cli  # noqa: E402
 import pw_release  # noqa: E402
 
-TOOLS = Path(__file__).resolve().parent
 DEFAULT_TAG = pw_release.current_tag()  # tools/release.env, shared with build_tools.sh
 FLAG_BITS = {"water": 1, "blocked": 2, "trench": 4, "off_island": 8, "blocked_for_cog": 16}
 
@@ -60,9 +60,16 @@ class MapData:
                 int(np.clip((x - x0) // step, 0, self.meta["nx"] - 1)))
 
 
-def load_map(map_name: str = "", *, rules: int = 47, step: int = 25, tag: str = DEFAULT_TAG,
+def map_cache(tag: str | None = None) -> Path:
+    """<cache root>/maps/<tag>/ (pw_release.cache_root: $PW_CACHE_DIR or tools/.cache)."""
+    return pw_release.cache_root() / "maps" / (tag or DEFAULT_TAG)
+
+
+def load_map(map_name: str = "", *, rules: int = 47, step: int = 25, tag: str | None = None,
              binary: Path | None = None) -> MapData:
-    cache = TOOLS / ".cache" / "maps" / tag
+    """The map raster for one release build; tag None = the pinned release (tools/release.env)."""
+    tag = tag or DEFAULT_TAG
+    cache = map_cache(tag)
     stem = f"{map_name or 'heartwick'}-r{rules}-s{step}"
     npz, meta_path = cache / f"{stem}.npz", cache / f"{stem}.json"
     if not (npz.is_file() and meta_path.is_file()):
@@ -87,7 +94,9 @@ def load_map(map_name: str = "", *, rules: int = 47, step: int = 25, tag: str = 
 
 
 def map_for_episode(meta: dict, **kwargs) -> MapData:
-    """The map a traced episode played on (pw_trace meta row: map name and rules)."""
+    """The map a traced episode played on (pw_trace meta row: map name and rules).
+
+    Pass tag=episode.tag so the raster comes from the same build that traced the episode."""
     return load_map(meta["map"], rules=meta["rules"], **kwargs)
 
 
@@ -115,7 +124,7 @@ def run_cli(args, report: pw_cli.Report) -> dict:
           f"bounds {m.meta['bounds']}, {len(m.meta['hearts'])} hearts, {len(m.meta['pickups'])} pickups, "
           f"{len(m.meta['trenches'])} trenches, {len(m.meta['cover'])} cover; water {m.water.mean():.1%} of cells")
     stem = f"{name}-r{args.rules}-s{args.step}"
-    cache = TOOLS / ".cache" / "maps" / args.tag
+    cache = map_cache(args.tag)
     if args.png:
         import matplotlib
         matplotlib.use("Agg")

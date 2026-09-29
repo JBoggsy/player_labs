@@ -3,7 +3,8 @@
 #
 #   paintbot_pw_lab/tools/build_native.sh [coworld-vX.Y.Z]    # default: PW_RELEASE_TAG in tools/release.env
 #
-# Runs build_tools.sh <tag> first, so the release worktree (tools/.cache/<tag>/) and
+# Runs build_tools.sh <tag> first, so the release worktree (tools/.cache/<tag>/, or
+# $PW_CACHE_DIR/<tag>/) and
 # paintbot-headless (the parity reference) exist for the same tag, then compiles
 # examples/paintbot/native_env.nim as a shared library into tools/bin/<tag>/libpw.dylib.
 #
@@ -15,7 +16,7 @@ set -euo pipefail
 LAB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$LAB/tools/release.env"
 TAG="${1:-$PW_RELEASE_TAG}"
-TREE="$LAB/tools/.cache/$TAG"
+TREE="${PW_CACHE_DIR:-$LAB/tools/.cache}/$TAG"   # PW_CACHE_DIR: see pw_release.cache_root
 OUT="$LAB/tools/bin/$TAG"
 
 "$LAB/tools/build_tools.sh" "$TAG"

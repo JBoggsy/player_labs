@@ -174,3 +174,53 @@ def test_unknown_policy_is_exit_2_listing_valid_values(capfd):
         assert main([str(SAMPLE), "--policy", "nobody", "--json"]) == 2
         data = json.loads(capfd.readouterr().out)
         assert "richard-paintbot-pw" in data["result"]["valid"] and data["failures"][0]["code"] == "usage_error"
+
+
+def _participant(pvid, name, version, player_id, player, owner):
+    return {"policy_version_id": pvid, "policy_name": name, "version": version, "player_id": player_id,
+            "player_name": player, "owner_name": owner}
+
+
+def test_leader_rows_resolve_champions_whose_leaderboard_label_is_null():
+    attributions = [{"subject_id": "ply_a", "policy_version_id": "pv-a"},
+                    {"subject_id": "ply_b", "policy_version_id": "pv-b"},
+                    {"subject_id": "ply_c", "policy_version_id": "pv-c"}]
+    episodes = [{"participants": [_participant("pv-b", "coach", 8, "ply_b", "Coach", "Aaron L"),
+                                  _participant("pv-a", "neural", 26, "ply_a", "Alpha", "David B")]}]
+    board = [{"rank": 1, "player_id": "ply_a", "player_name": "Alpha", "score": 1816.5, "policy_label": None},
+             {"rank": 2, "player_id": "ply_b", "player_name": "Coach", "score": 1813.4, "policy_label": "coach:v8"}]
+    rows = ps.leader_rows(attributions, episodes, board)
+    assert [(r["rank"], r["player"], r["policy_ref"], r["mmr"]) for r in rows] == [
+        (1, "Alpha", "neural:v26", 1816), (2, "Coach", "coach:v8", 1813), (None, None, None, None)]
+    assert rows[2]["policy_version_id"] == "pv-c"   # unnamed entrant keeps its exact id
+
+
+def test_leaders_rate_limit_is_exit_1_with_code_rate_limited(monkeypatch, capsys):
+    import pw_public
+
+    def throttled(**kwargs):
+        raise pw_public.RateLimited("GET /v2/rounds: HTTP 429")
+    monkeypatch.setattr(pw_public, "rounds", throttled)
+    assert ps.main(["leaders", "--json"]) == 1
+    captured = capsys.readouterr()
+    out = json.loads(captured.out)
+    assert out["failures"][0]["code"] == "rate_limited" and "wait and retry" in out["next"]
+    assert "Traceback" not in captured.err
+
+
+def test_leaders_without_a_leaderboard_still_names_the_round(monkeypatch, capsys):
+    import pw_public
+    monkeypatch.setattr(pw_public, "rounds", lambda **kw: [
+        {"id": "r2", "round_number": 2, "status": "pending"},
+        {"id": "r1", "round_number": 1, "status": "completed", "completed_at": "t",
+         "round_config": {"entrant_attributions": [{"subject_id": "ply_a", "policy_version_id": "pv-a"}]}}])
+    monkeypatch.setattr(pw_public, "round_episodes", lambda round_id: [
+        {"participants": [_participant("pv-a", "neural", 26, "ply_a", "Alpha", "David B")]}])
+
+    def down(division):
+        raise pw_public.PublicFetchError("HTTP 500")
+    monkeypatch.setattr(pw_public, "leaderboard", down)
+    assert ps.main(["leaders", "--json"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["result"]["round_number"] == 1 and out["result"]["leaders"][0]["policy_ref"] == "neural:v26"
+    assert out["result"]["leaderboard"].startswith("unavailable")

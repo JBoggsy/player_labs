@@ -90,3 +90,16 @@ def test_skip_reason():
     assert pw_public.skip_reason({**ok, "status": "running"}) == "status=running"
     assert pw_public.skip_reason({**ok, "replay_url": None}) == "no_replay_url"
     assert pw_public.skip_reason(ok, {"0.3.78"}) == "other_version"
+
+
+def test_a_persistent_429_is_rate_limited_not_a_generic_failure():
+    def opener(request, timeout):
+        raise http_error(429)
+    with pytest.raises(pw_public.RateLimited):
+        pw_public.get("https://x", sleep=lambda s: None, opener=opener)
+
+    def forbidden(request, timeout):
+        raise http_error(403)
+    with pytest.raises(pw_public.PublicFetchError) as err:
+        pw_public.get("https://x", sleep=lambda s: None, opener=forbidden)
+    assert not isinstance(err.value, pw_public.RateLimited)

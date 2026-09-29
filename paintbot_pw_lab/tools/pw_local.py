@@ -16,6 +16,8 @@ which also proves the seat-to-team mapping).
 
 Teams: seat s plays for team s % 2 (sim.nim `team`). "a_side" is the team A plays: 0 = A on
 the even seats, 1 = A on the odd seats. Every seed in a screen is played with both a_side values.
+When every seed's two final hashes are equal, A and B played move for move identically: the
+screen reports identical_play = true and warns (its W/D/L then says nothing about A vs B).
 Outcome for A per match is the ladder's Elo outcome, clamp(0.5 + (A glory - B glory)/2000, 0, 1)
 (docs/mechanics.md §1.3). pw_results glory is already settled: the loser and both sides of a
 draw hold 0.
@@ -137,6 +139,21 @@ def summarize(rows: list[dict]) -> dict:
     return summary
 
 
+def identical_play(rows: list[dict]) -> bool:
+    """True when every seed was played with both a_side values and each seed's two final state
+    hashes are equal: A-vs-B equals B-vs-A game for game, so the two files played move for
+    move identically (e.g. a policy whose differences sit behind an oracle that is off locally)."""
+    by_seed: dict[int, dict[int, int]] = {}
+    for row in rows:
+        by_seed.setdefault(row["seed"], {})[row["a_side"]] = row["final_hash"]
+    return bool(by_seed) and all(len(h) == 2 and h[0] == h[1] for h in by_seed.values())
+
+
+IDENTICAL_PLAY_WARNING = ("the two files play move-for-move identically here (every seed's final hash is the same "
+                          "with A on either side); e.g. jev.bas without an oracle equals base.bas. This screen "
+                          "says nothing about the difference between them")
+
+
 def mean_ci(values: list[float]) -> dict:
     n = len(values)
     if n == 0:
@@ -170,7 +187,10 @@ def check_build(tag: str) -> dict:
         if not path.exists():
             raise pw_cli.EnvironmentMissing(f"missing {path}", fix)
     meta = json.loads(meta_path.read_text())
-    expected_commit = git_commit(LAB / "tools" / ".cache" / tag, tag)
+    tree = pw_release.release_tree(tag)
+    if not tree.is_dir():   # e.g. PW_CACHE_DIR now points somewhere the build did not use
+        raise pw_cli.EnvironmentMissing(f"missing release worktree {tree} (PW_CACHE_DIR or tools/.cache)", fix)
+    expected_commit = git_commit(tree, tag)
     problems = []
     if meta.get("tag") != tag:
         problems.append(f"library built for tag {meta.get('tag')!r}, requested {tag!r}")
@@ -431,6 +451,7 @@ def batch(args, seeds: list[int], sides: list[int]) -> dict:
         "wall_seconds": round(wall, 1), "workers": workers,
         "matches_per_second": round(len(rows) / wall, 3) if wall > 0 else None,
         "summary": summarize(rows), "recorded": recorded,
+        "identical_play": identical_play(rows),
     }
     if args.out:
         (Path(args.out) / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
@@ -532,6 +553,9 @@ def cmd_screen(args, report) -> dict:
     parse_glory(args.glory)
     summary = batch(args, parse_seed_list(args.seeds, "--seeds"), [0, 1])
     print_summary(summary)
+    if summary["identical_play"]:
+        print(f"WARNING: {IDENTICAL_PLAY_WARNING}", file=sys.stderr)
+        report.suggest(f"WARNING: {IDENTICAL_PLAY_WARNING}")
     return report_batch(report, summary, args.out, args.record)
 
 

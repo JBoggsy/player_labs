@@ -110,3 +110,40 @@ def test_deployed_ref_environment_missing_exits_3(env_file, monkeypatch, capsys)
     assert deployed_ref.main(["--json"]) == 3
     out = json.loads(capsys.readouterr().out)
     assert out["failures"][0]["code"] == "environment_missing" and "softmax login" in out["failures"][0]["message"]
+
+
+def test_deployed_ref_rate_limit_is_exit_1_not_a_login_problem(env_file, monkeypatch, capsys):
+    monkeypatch.setattr(deployed_ref, "release_tags", lambda: {})
+
+    def throttled(tags):
+        raise deployed_ref.classify_http_error(429, "https://softmax.com/api/observatory/v2/leagues/x")
+    monkeypatch.setattr(deployed_ref, "resolve_leagues", throttled)
+    assert deployed_ref.main(["--json"]) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["failures"][0]["code"] == "rate_limited"
+    assert "login" not in json.dumps(out) and out["next"] == [deployed_ref.RETRY]
+
+
+def test_deployed_ref_http_classification_and_fix_in_next(env_file, monkeypatch, capsys):
+    assert isinstance(deployed_ref.classify_http_error(401, "u"), deployed_ref.EnvironmentMissing)
+    assert deployed_ref.classify_http_error(403, "u").fix == deployed_ref.LOGIN
+    assert deployed_ref.classify_http_error(502, "u").code == "api_unavailable"
+    monkeypatch.setattr(deployed_ref, "release_tags", lambda: {})
+
+    def unauthorized(tags):
+        raise deployed_ref.classify_http_error(401, "u")
+    monkeypatch.setattr(deployed_ref, "resolve_leagues", unauthorized)
+    assert deployed_ref.main(["--json"]) == 3
+    out = json.loads(capsys.readouterr().out)
+    assert out["failures"][0]["code"] == "environment_missing" and out["next"] == [deployed_ref.LOGIN]
+
+
+def test_cache_root_honours_pw_cache_dir(tmp_path, monkeypatch):
+    monkeypatch.delenv("PW_CACHE_DIR", raising=False)
+    assert pw_release.cache_root() == pw_release.TOOLS / ".cache"
+    monkeypatch.setenv("PW_CACHE_DIR", str(tmp_path / "c"))
+    assert pw_release.cache_root() == tmp_path / "c"
+    assert pw_release.release_tree("coworld-v0.3.70") == tmp_path / "c" / "coworld-v0.3.70"
+    import pw_mapdata
+    assert pw_mapdata.map_cache("coworld-v0.3.70") == tmp_path / "c" / "maps" / "coworld-v0.3.70"
+    assert pw_mapdata.map_cache(None) == tmp_path / "c" / "maps" / pw_mapdata.DEFAULT_TAG

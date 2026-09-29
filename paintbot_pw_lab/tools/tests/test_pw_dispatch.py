@@ -114,3 +114,90 @@ def test_the_skill_viz_examples_use_a_window_inside_the_sample_match():
     skill = (LAB / ".claude" / "skills" / "paintbot-pw-replay" / "SKILL.md").read_text()
     starts = [pv.parse_time(t) for t in re.findall(r"movement \S+ --from (\S+)", skill)]
     assert starts and all(t < 1649 for t in starts)
+
+
+CHARTER_TEMPLATE = """# Working context
+
+## Loop charter
+
+Not set. The loop skill runs only when James fills this in.
+
+- objective: (e.g. raise the mean Elo outcome)
+- policy_file: (e.g. paintbot_pw_lab/policy/dist/<name>.bas)
+- policy_name / player: (upload name)
+- baseline: (accepted version `name:vN`)
+- opponents: (explicit `policy_ref`s)
+- allowed_changes: (classes of change)
+- credit_budget: (credits per iteration)
+- max_iterations:
+
+## Identity and presence
+- objective: not part of the charter
+"""
+
+
+def test_loop_readiness_reads_the_charter(tmp_path):
+    path = tmp_path / "WORKING_CONTEXT.md"
+    path.write_text(CHARTER_TEMPLATE)
+    loop = pw.loop_readiness(path)
+    assert not loop["ready"] and loop["missing"][0] == "not_set_marker"
+    assert set(loop["missing"][1:]) == set(pw.CHARTER_FIELDS) and loop["charter_path"] == str(path)
+
+    filled = (CHARTER_TEMPLATE.replace("Not set. The loop skill runs only when James fills this in.\n", "")
+              .replace("(e.g. raise the mean Elo outcome)", "beat the top 3")
+              .replace("(e.g. paintbot_pw_lab/policy/dist/<name>.bas)", "`paintbot_pw_lab/reference/base.bas`")
+              .replace("(upload name)", "james-pw / James Boggs").replace("(accepted version `name:vN`)", "james-pw:v3")
+              .replace("(explicit `policy_ref`s)", "coach:v8").replace("(classes of change)", "constants")
+              .replace("(credits per iteration)", "20").replace("- max_iterations:", "- max_iterations: 5"))
+    path.write_text(filled)
+    loop = pw.loop_readiness(path)
+    assert loop["ready"] and loop["missing"] == [] and loop["fields"]["baseline"] == "james-pw:v3"
+
+    path.write_text(filled.replace("paintbot_pw_lab/reference/base.bas", "paintbot_pw_lab/policy/nope.bas"))
+    assert pw.loop_readiness(path)["missing"] == ["policy_file_exists"]
+    assert pw.loop_readiness(tmp_path / "absent.md")["missing"] == ["charter_file"]
+
+
+class Proc:
+    def __init__(self, returncode, envelope):
+        self.returncode, self.stdout, self.stderr = returncode, json.dumps(envelope), ""
+
+
+def test_league_check_rate_limit_is_not_an_environment_problem(monkeypatch):
+    envelope = {"failures": [{"id": "observatory_api", "code": "rate_limited", "message": "HTTP 429"}],
+                "next": ["wait a minute, then rerun ..."], "result": None}
+    monkeypatch.setattr(pw.subprocess, "run", lambda *a, **k: Proc(1, envelope))
+    result = pw.league_check()
+    assert not result["ok"] and result["severity"] == "rate_limited" and "login" not in result["fix"]
+    envelope = {"failures": [{"id": "environment", "code": "environment_missing", "message": "no token"}],
+                "next": ["uv run softmax login"], "result": None}
+    monkeypatch.setattr(pw.subprocess, "run", lambda *a, **k: Proc(3, envelope))
+    assert pw.league_check()["severity"] == "missing" and pw.league_check()["fix"] == "uv run softmax login"
+
+
+def test_doctor_rate_limit_exit_1_and_unready_loop_keeps_exit_code(monkeypatch, capsys):
+    ok = [pw.check("uv", True, "uv")]
+    unready = {"ready": False, "missing": ["objective"], "charter_path": "paintbot_pw_lab/WORKING_CONTEXT.md",
+               "fields": {}, "skill": "paintbot_pw_lab/.claude/skills/paintbot-pw-loop/SKILL.md"}
+    monkeypatch.setattr(pw, "loop_readiness", lambda: unready)
+    monkeypatch.setattr(pw, "active_player", lambda: {"active_player_id": None, "session": "none",
+                                                       "detail": "main user", "confirm": "uv run coworld player list"})
+    monkeypatch.setattr(pw, "doctor_checks", lambda offline: ok)
+    assert pw.main(["doctor", "--json"]) == 0                     # loop not ready: exit unchanged
+    out = json.loads(capsys.readouterr().out)
+    assert out["result"]["loop"]["ready"] is False and any("paintbot-pw-loop" in n for n in out["next"])
+    assert out["result"]["player"]["confirm"] == "uv run coworld player list"
+
+    throttled = ok + [pw.check("league_build", False, "HTTP 429", "wait", severity="rate_limited")]
+    monkeypatch.setattr(pw, "doctor_checks", lambda offline: throttled)
+    assert pw.main(["doctor", "--json"]) == 1
+    out = json.loads(capsys.readouterr().out)
+    assert out["failures"] == [{"id": "league_build", "code": "rate_limited", "message": "HTTP 429"}]
+    assert out["next"][:2] == pw.RETRY_LATER and not any("softmax login" in n for n in out["next"])
+
+
+def test_leaders_is_forwarded_to_scout_with_its_subcommand(monkeypatch):
+    calls = []
+    monkeypatch.setattr(pw.subprocess, "call", lambda argv, **kw: calls.append(argv) or 0)
+    assert pw.main(["leaders", "--top", "3", "--json"]) == 0
+    assert calls[0][1].endswith("pw_scout.py") and calls[0][2:] == ["leaders", "--top", "3", "--json"]

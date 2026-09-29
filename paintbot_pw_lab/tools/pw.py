@@ -16,15 +16,19 @@ docs/tools/README.md, which is generated from it:
 
     uv run python paintbot_pw_lab/tools/pw.py tools --markdown > paintbot_pw_lab/docs/tools/README.md
 
-Exit codes of `tools`: 0. Of `doctor`: 0 ready; 1 release.env is behind the league (the fix
-commands are listed); 2 usage; 3 something is missing (binaries, Python deps, source clone,
-login or network), each with the command that fixes it.
+Exit codes of `tools`: 0. Of `doctor`: 0 ready; 1 release.env is behind the league, or the
+league check could not run (HTTP 429 rate limit / 5xx: wait and retry, or use --offline);
+2 usage; 3 something is missing (binaries, Python deps, source clone, login or network), each
+with the command that fixes it. Loop readiness (result.loop, from WORKING_CONTEXT.md's
+"## Loop charter") and the active player (result.player) are reported but never change the
+exit code.
 """
 from __future__ import annotations
 
 import importlib.util
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -39,6 +43,11 @@ LAB = TOOLS.parent
 REPO = LAB.parent
 DISPATCH = "uv run python paintbot_pw_lab/tools/pw.py"
 SKILLS = REPO / ".claude" / "skills"
+CHARTER = LAB / "WORKING_CONTEXT.md"
+LOOP_SKILL = LAB / ".claude" / "skills" / "paintbot-pw-loop" / "SKILL.md"
+# The "## Loop charter" fields the paintbot-pw-loop skill needs before it may run.
+CHARTER_FIELDS = ("objective", "policy_file", "policy_name / player", "baseline", "opponents",
+                  "allowed_changes", "credit_budget", "max_iterations")
 DEFAULT_CLONE = Path(os.environ.get("PW_CLONE", Path.home() / "coding/coworlds/paintbot-pw"))
 TEST_COMMAND = ["uv", "run", "python", "-m", "pytest", "-q", "paintbot_pw_lab/tools/tests", "tools/tests"]
 EPISODE_EXITS = ("0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); "
@@ -58,10 +67,14 @@ CATALOG: list[dict] = [
      "purpose": "Check the lab is ready: release.env vs the league, built binaries and library, Python deps, "
                 "source clone, shared skill engines. Prints the exact fix command for each problem.",
      "when_to_use": "First command of any autonomous loop, and whenever a tool exits 3.",
-     "questions": ["Is the lab ready to run? What do I fix first?"],
+     "questions": ["Is the lab ready to run? What do I fix first?", "Is the loop charter filled in?",
+                   "Which player identity is active?"],
      "inputs": "--json; --offline skips the league check (no network)",
-     "outputs": "nothing written; result.checks[] = {name, ok, detail, fix}",
-     "exit_codes": "0 ready; 1 release.env behind the league; 2 usage; 3 something missing (fix listed)",
+     "outputs": "nothing written; result.checks[] = {name, ok, detail, fix}, result.loop = {ready, missing, "
+                "charter_path}, result.player = {active_player_id, session, confirm}",
+     "exit_codes": "0 ready; 1 release.env behind the league, or the league check was rate-limited (code "
+                   "rate_limited) / the API was down: wait and retry or use --offline; 2 usage; 3 something "
+                   "missing (fix listed). An unready loop charter never changes the exit code",
      "doc": "README.md#doctor", "skill": None},
     {"name": "tools", "target": ("self", "tools"),
      "purpose": "Print this catalog (text, --json, or --markdown = docs/tools/README.md).",
@@ -89,7 +102,7 @@ CATALOG: list[dict] = [
      "purpose": "Build paintbot-headless, replay_stats, pw_trace and pw_map for the pinned tag (or a given tag).",
      "when_to_use": "When doctor/release reports a missing binary or deployed-ref just moved the pin.",
      "questions": ["How do I build the analysis binaries?"],
-     "inputs": "[TAG] (default: tools/release.env)", "outputs": "tools/bin/<tag>/, tools/.cache/<tag>/ worktree",
+     "inputs": "[TAG] (default: tools/release.env)", "outputs": "tools/bin/<tag>/, tools/.cache/<tag>/ worktree ($PW_CACHE_DIR/<tag>/ when set)",
      "exit_codes": "0 built; non-zero build failure (read the compiler output)",
      "doc": "pw_trace.md", "skill": "paintbot-pw-replay"},
     {"name": "build-native", "target": ("sh", "build_native.sh"),
@@ -114,7 +127,9 @@ CATALOG: list[dict] = [
                    "Does this batch load and verify?"],
      "inputs": "ROOT... [--window A:B] [--vis-every M] [--sql QUERY] [--refresh] [--json]",
      "outputs": "per-episode cache <episode dir>/pw_cache/ or NAME.pw_cache/ beside a .replay (trace.jsonl, "
-                "tables/*.parquet, receipt.json); reused while the inputs are unchanged",
+                "tables/*.parquet, receipt.json); another --tag or trace options get their own variant "
+                "(pw_cache@<variant>/, NAME@<variant>.pw_cache/) instead of replacing it; reused while the inputs "
+                "are unchanged",
      "exit_codes": EPISODE_EXITS, "doc": "pw_episodes.md", "skill": "paintbot-pw-replay"},
     {"name": "metrics", "target": ("py", "pw_metrics.py"),
      "purpose": "Every metric at seat, policy and team level: result, Elo outcome, glory composition, combat, "
@@ -143,7 +158,8 @@ CATALOG: list[dict] = [
      "when_to_use": "Plots and spatial metrics; check a map loads for a release.",
      "questions": ["Where are the hearts, water, trenches and cover?"],
      "inputs": "[--map NAME] [--rules N] [--step U] [--png OUT] [--json]",
-     "outputs": "tools/.cache/maps/<tag>/<map>-r<rules>-s<step>.{npz,json}; --png file",
+     "outputs": "tools/.cache/maps/<tag>/<map>-r<rules>-s<step>.{npz,json} (under $PW_CACHE_DIR when set); "
+                "--png file",
      "exit_codes": "0 ok; 2 usage or unknown map; 3 pw_map not built (run paintbot_pw_lab/tools/build_tools.sh)",
      "doc": "pw_map.md", "skill": None},
     {"name": "map-raw", "target": ("bin", "pw_map"),
@@ -159,8 +175,9 @@ CATALOG: list[dict] = [
      "questions": ["Show me seat N's movement from 0:40 to 1:05.", "Where does policy X go / die?",
                    "How do two policies' positions differ?"],
      "inputs": "movement|heatmap|occupancy|timeline|gif ROOT... [--from T --to T] [--seats] [--team] "
-               "[--policy] [--out FILE] [--json]",
-     "outputs": "default paintbot_pw_lab/analysis/pw_viz/<episode|batch>/<command>[-selectors].png + .json",
+               "[--policy] [--fine] [--tag TAG] [--out FILE] [--json]",
+     "outputs": "default paintbot_pw_lab/analysis/pw_viz/<episode|batch>/<command>[-selectors].png + .json; "
+                "--tag picks the build for the trace and the map ($PW_CACHE_DIR/maps/<tag>/ when set)",
      "exit_codes": EPISODE_EXITS + "; a --from past every match end or an unknown policy/seat is exit 2",
      "doc": "pw_viz.md", "skill": "paintbot-pw-replay"},
     {"name": "report", "target": ("py", "pw_match_report.py"),
@@ -180,8 +197,19 @@ CATALOG: list[dict] = [
                "[--json]",
      "outputs": "fetch: episode_data/scout/<date>/r<round>_<ereq>/ + index.json (skips what exists); "
                 "report: scout.json, scout.md, scout.interesting.json in the first root",
-     "exit_codes": EPISODE_EXITS + "; fetch: 3 when the public API is unreachable",
+     "exit_codes": EPISODE_EXITS + "; fetch: 1 rate-limited after retries (code rate_limited), 3 when the "
+                                   "public API is unreachable",
      "doc": "pw_scout.md", "skill": "paintbot-pw-scout"},
+    {"name": "leaders", "target": ("py", "pw_scout.py"), "argv": ["leaders"],
+     "purpose": "Current champions of a division: the latest completed public round's entrants, named "
+                "from its episodes, ranked from the public leaderboard (MMR). Anonymous, 3 reads.",
+     "when_to_use": "Resolving --opponent refs for an A/B or evaluation (also `pw.py scout leaders`).",
+     "questions": ["Who are the current champions, as name:vN refs for --opponent?"],
+     "inputs": "[--division ID] [--top N] [--json]",
+     "outputs": "stdout only; result.leaders[] = {rank, player, policy_ref, policy_version_id, mmr, owner}",
+     "exit_codes": "0 ok; 1 rate-limited after retries (code rate_limited) or some entrants unnamed; "
+                   "2 usage; 3 the public API is unreachable",
+     "doc": "pw_scout.md#leaders", "skill": "paintbot-pw-ab"},
     {"name": "ab-requests", "target": ("py", "pw_ab_requests.py"),
      "purpose": "Compose (never create) the experience-request bodies for a paired / h2h / field A/B.",
      "when_to_use": "Designing a hosted A/B; creating the bodies is a separate step that costs XP credits.",
@@ -251,7 +279,8 @@ CATALOG: list[dict] = [
      "inputs": "fetch --out DIR | fit ROOT... --out DIR | credit ROOT... --model FILE --out DIR; [--json]",
      "outputs": "fit: model.json, report.json, wp_{ticks,events,policy}.parquet; fetch: <ereq>/ dirs (skips "
                 "what exists)",
-     "exit_codes": EPISODE_EXITS + "; fit with < 4 usable episodes is exit 1; fetch: 3 when the API is unreachable",
+     "exit_codes": EPISODE_EXITS + "; fit with < 4 usable episodes is exit 1; fetch: 1 rate-limited after retries "
+                                   "(code rate_limited), 3 when the API is unreachable",
      "doc": "pw_winprob.md", "skill": "paintbot-pw-diagnose"},
     {"name": "test", "target": ("cmd", TEST_COMMAND),
      "purpose": "Run the lab tool tests (and the repo's shared analysis tests).",
@@ -275,7 +304,8 @@ def command_of(entry: dict) -> str:
 def public_entry(entry: dict) -> dict:
     """A catalog row as `tools --json` prints it."""
     kind, what = entry["target"]
-    runs = {"py": f"paintbot_pw_lab/tools/{what}", "sh": f"paintbot_pw_lab/tools/{what}",
+    prefix = "".join(f" {a}" for a in entry.get("argv", []))
+    runs = {"py": f"paintbot_pw_lab/tools/{what}{prefix}", "sh": f"paintbot_pw_lab/tools/{what}",
             "bin": f"paintbot_pw_lab/tools/bin/<tag>/{what}", "self": "pw.py",
             "cmd": " ".join(Path(a).relative_to(REPO).as_posix() if a.startswith(str(REPO)) else a
                             for a in what)}[kind]
@@ -392,7 +422,21 @@ uv environment (`uv sync`), `tools/release.env` readable, every binary and the n
 for the pinned tag (`build_tools.sh` / `build_native.sh`), the library's build receipt matching
 the tag, the paintbot-pw source clone (`git clone ...`), the shared skill engines (`ab_stats`,
 `paired_stats`, `variance_miner`), and, unless `--offline`, `deployed_ref.py` (league build vs
-`release.env`; needs `softmax login` and network)."""
+`release.env`; needs `softmax login` and network). An HTTP 429 there is failure code
+`rate_limited` (exit 1, `next`: wait and retry, or `doctor --offline`), not a login problem;
+only 401/403 or no token suggests `uv run softmax login`.
+
+It also reports, without changing the exit code:
+
+- `result.player`: the active player id read from the local softmax credentials (no network).
+  `uv run coworld player list` shows the names with the active one marked (`softmax status`
+  does not show the active player).
+- `result.loop = {ready, missing, charter_path}`: whether `## Loop charter` in
+  `paintbot_pw_lab/WORKING_CONTEXT.md` is filled in (objective, policy_file, policy_name /
+  player, baseline, opponents, allowed_changes, credit_budget, max_iterations; a field is
+  unset when empty or still a `(...)` placeholder, a section saying "Not set" adds
+  `not_set_marker`, and a set policy_file must exist, else `policy_file_exists`). When not
+  ready, `next` points at the charter and the `paintbot-pw-loop` skill."""
 
 
 def cmd_tools(argv: list[str]) -> int:
@@ -417,6 +461,15 @@ def cmd_tools(argv: list[str]) -> int:
 # ---------------------------------------------------------------- doctor
 
 DEPENDENCIES = ("numpy", "pandas", "pyarrow", "duckdb", "matplotlib", "sklearn", "scipy", "httpx", "PIL")
+
+
+# severity of a failed check -> (failure code, exit code). "missing" is the only one that means
+# the environment is broken; the others leave the tools usable.
+SEVERITY = {"missing": ("environment_missing", pw_cli.EXIT_ENVIRONMENT),
+            "stale": ("stale", pw_cli.EXIT_PARTIAL),
+            "rate_limited": ("rate_limited", pw_cli.EXIT_PARTIAL),
+            "api_unavailable": ("api_unavailable", pw_cli.EXIT_PARTIAL)}
+RETRY_LATER = ["wait and retry", f"{DISPATCH} doctor --offline --json"]
 
 
 def check(name: str, ok: bool, detail: str, fix: str | None = None, severity: str = "missing") -> dict:
@@ -464,51 +517,139 @@ def doctor_checks(offline: bool) -> list[dict]:
 
 
 def league_check() -> dict:
-    """deployed_ref.py --json: 0 current, 1 behind (fix = its next commands), 3 environment."""
+    """deployed_ref.py --json: 0 current, 1 behind / rate-limited / API down, 3 environment."""
     proc = subprocess.run([sys.executable, str(TOOLS / "deployed_ref.py"), "--json"], capture_output=True, text=True)
     try:
         envelope = json.loads(proc.stdout)
     except json.JSONDecodeError:
         return check("league_build", False, f"deployed_ref.py exit {proc.returncode}: {proc.stderr.strip()[-300:]}",
                      f"{DISPATCH} deployed-ref")
+    message = "; ".join(f["message"] for f in envelope["failures"])
+    codes = {f["code"] for f in envelope["failures"]}
     if proc.returncode == 0:
         tracked = envelope["result"]["tracked"]
         changed = envelope["result"]["docs_rule_files_changed"]
         return check("league_build", True, f"league on {tracked['tag']} {tracked['sha'][:8]}; tools current; "
                                            f"{changed} rule-bearing file(s) changed since the docs' commit")
+    for transient in ("rate_limited", "api_unavailable"):
+        if transient in codes:   # nothing is missing: the check could not run right now
+            return check("league_build", False, message, " or ".join(RETRY_LATER), severity=transient)
     if proc.returncode == 1:
-        return check("league_build", False, "; ".join(f["message"] for f in envelope["failures"])
-                     or "release.env is behind the league's build",
+        return check("league_build", False, message or "release.env is behind the league's build",
                      " && ".join(envelope["next"][:3]) or f"{DISPATCH} deployed-ref --write", severity="stale")
-    message = "; ".join(f["message"] for f in envelope["failures"]) or proc.stderr.strip()[-300:]
-    return check("league_build", False, message, (envelope.get("next") or ["uv run softmax login"])[0])
+    return check("league_build", False, message or proc.stderr.strip()[-300:],
+                 (envelope.get("next") or [f"{DISPATCH} deployed-ref"])[0])
+
+
+def charter_value_set(value: str) -> bool:
+    """A charter field counts as set unless empty or still the template's (parenthesized) placeholder."""
+    value = value.strip()
+    return bool(value) and not (value.startswith("(") and value.endswith(")"))
+
+
+def loop_readiness(path: Path = CHARTER) -> dict:
+    """Parse WORKING_CONTEXT.md's "## Loop charter": {ready, missing, charter_path, fields, skill}.
+
+    A field is missing when it is absent, empty or a "(...)" placeholder; the section saying
+    "Not set" is itself a missing item (not_set_marker); a set policy_file must exist."""
+    shown = str(path.relative_to(REPO)) if path.is_relative_to(REPO) else str(path)
+    loop = {"ready": False, "missing": [], "charter_path": shown, "fields": {},
+            "skill": str(LOOP_SKILL.relative_to(REPO))}
+    try:
+        text = path.read_text()
+    except OSError:
+        loop["missing"] = ["charter_file"]
+        return loop
+    match = re.search(r"^## Loop charter[ \t]*\n(.*?)(?=^## |\Z)", text, flags=re.M | re.S)
+    if not match:
+        loop["missing"] = ["charter_section"]
+        return loop
+    section = match.group(1)
+    fields = {}
+    for line in section.splitlines():
+        found = re.match(r"^\s*[-*]\s*([^:]+?)\s*:\s*(.*)$", line)
+        if found and found.group(1).strip().lower() in CHARTER_FIELDS:
+            fields[found.group(1).strip().lower()] = found.group(2).strip()
+    loop["fields"] = fields
+    missing = [name for name in CHARTER_FIELDS if not charter_value_set(fields.get(name, ""))]
+    if re.search(r"\bNot set\b", section):
+        missing.insert(0, "not_set_marker")
+    policy_file = fields.get("policy_file", "")
+    if "policy_file" not in missing:
+        candidate = Path(policy_file.strip("`")).expanduser()
+        if not any(p.is_file() for p in ([candidate] if candidate.is_absolute() else [REPO / candidate, LAB / candidate])):
+            missing.append("policy_file_exists")
+    loop["missing"] = missing
+    loop["ready"] = not missing
+    return loop
+
+
+def active_player() -> dict:
+    """The active player identity, read from the local softmax credentials file (no network).
+
+    Names need a network call, so only the id is shown; `uv run coworld player list` prints the
+    names with the active one marked. `softmax status` does not show the active player."""
+    confirm = "uv run coworld player list"
+    try:
+        from softmax import auth
+        server = auth.get_api_server()
+        player_id = auth.get_active_player_id(server=server)
+        live = auth.load_player_session(server=server) is not None
+        cached = auth.get_cached_player_session(server=server, player_id=player_id) if player_id else None
+        expires_at = cached.expires_at.isoformat() if cached else None
+    except Exception as err:  # noqa: BLE001 - informational: never fail doctor over it
+        return {"active_player_id": None, "session": "unknown", "expires_at": None,
+                "detail": f"could not read ({err})", "confirm": confirm}
+    if player_id is None:
+        session, detail = "none", "no active player: commands act as your main user (default player)"
+    elif live:
+        session, detail = "active", f"acting as player {player_id}"
+    else:
+        session, detail = "expired", (f"player {player_id} selected but its session expired ({expires_at}): "
+                                      "commands act as your main user until `uv run coworld player use` "
+                                      "refreshes it")
+    return {"active_player_id": player_id, "session": session, "expires_at": expires_at, "server": server,
+            "detail": detail, "confirm": confirm}
 
 
 def cmd_doctor(argv: list[str]) -> int:
     parser = pw_cli.ArgumentParser("pw_doctor", "Check the lab is ready and print the fix for each problem.",
                                    prog="pw.py doctor", examples=[f"{DISPATCH} doctor --json",
                                                                   f"{DISPATCH} doctor --offline"],
-                                   exit_codes="0 ready; 1 release.env behind the league; 2 usage; "
-                                              "3 something missing (fix listed)")
+                                   exit_codes="0 ready; 1 release.env behind the league, or the league check "
+                                              "was rate-limited / the API down (wait and retry, or --offline); "
+                                              "2 usage; 3 something missing (fix listed). Loop readiness never "
+                                              "changes the exit code")
     parser.add_argument("--offline", action="store_true", help="skip the league check (no network, no login)")
 
     def run_cli(args, report):
         checks = doctor_checks(args.offline)
         for c in checks:
-            mark = "ok  " if c["ok"] else ("STALE" if c["severity"] == "stale" else "FAIL")
+            mark = "ok  " if c["ok"] else ("FAIL" if c["severity"] == "missing" else c["severity"].upper())
             print(f"{mark} {c['name']:<22} {c['detail']}")
             if not c["ok"]:
+                code, _ = SEVERITY[c["severity"]]
                 print(f"     fix: {c['fix']}")
-                report.fail(c["name"], "stale" if c["severity"] == "stale" else "environment_missing", c["detail"])
-                report.suggest(c["fix"])
+                report.fail(c["name"], code, c["detail"])
+                for command in (RETRY_LATER if code in ("rate_limited", "api_unavailable") else [c["fix"]]):
+                    report.suggest(command)
         report.counts["processed"] = len(checks)
-        if any(not c["ok"] and c["severity"] == "missing" for c in checks):
-            report.exit_code = pw_cli.EXIT_ENVIRONMENT
-        elif any(not c["ok"] for c in checks):
-            report.exit_code = pw_cli.EXIT_PARTIAL
+        failed_exits = [SEVERITY[c["severity"]][1] for c in checks if not c["ok"]]
+        if failed_exits:
+            report.exit_code = max(failed_exits)
+        player = active_player()
+        print(f"player                      {player['detail']} (names: {player['confirm']})")
+        loop = loop_readiness()
+        if loop["ready"]:
+            print(f"loop                        charter ready ({loop['charter_path']})")
+        else:
+            print(f"loop                        NOT READY: {', '.join(loop['missing'])} unset in "
+                  f"{loop['charter_path']} (tools still usable; only the loop skill waits)")
+            report.suggest(f"fill in '## Loop charter' in {loop['charter_path']} (see {loop['skill']}); "
+                           "until then propose a charter and stop")
         if report.exit_code is None:
             print("READY")
-        return {"checks": checks}
+        return {"checks": checks, "loop": loop, "player": player}
 
     return pw_cli.run(parser, run_cli, argv)
 
@@ -517,6 +658,7 @@ def cmd_doctor(argv: list[str]) -> int:
 
 def forward(entry: dict, argv: list[str]) -> int:
     kind, what = entry["target"]
+    argv = [*entry.get("argv", []), *argv]
     if kind == "py":
         return subprocess.call([sys.executable, str(TOOLS / what), *argv])
     if kind == "sh":

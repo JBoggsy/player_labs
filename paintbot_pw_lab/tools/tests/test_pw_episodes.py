@@ -170,3 +170,40 @@ def test_batch_lists_failures_instead_of_dropping(tmp_path):
     con = pe.open_duckdb(batch)
     assert con.execute("select count(*) from seats").fetchone() == (16,)
     assert pe.main([str(tmp_path)]) == 1
+
+
+def test_cache_variants_are_separate_directories(tmp_path):
+    binary = pe.pw_release.bin_dir(pe.DEFAULT_TAG) / "pw_trace"
+    assert pe.cache_variant(None, binary, pe.TraceOptions()) == ""
+    assert pe.cache_variant(pe.DEFAULT_TAG, binary, pe.TraceOptions()) == ""
+    other = pe.pw_release.bin_dir("coworld-v0.3.70") / "pw_trace"
+    assert pe.cache_variant("coworld-v0.3.70", other, pe.TraceOptions()) == "coworld-v0.3.70"
+    fine = pe.TraceOptions(window=(960, 1560))
+    assert pe.cache_variant("coworld-v0.3.70", other, fine) == "coworld-v0.3.70+se6-ve0-w960_1560"
+    assert pe.cache_variant(None, binary, pe.TraceOptions(vis_every=24)) == "se6-ve24"
+    custom = tmp_path / "pw_trace"
+    custom.write_bytes(b"x")
+    assert pe.cache_variant(None, custom, pe.TraceOptions()).startswith("bin-")
+
+    hosted = pe.Source("hosted", tmp_path / "ep" / "replay.gz", None, None, None, tmp_path / "ep" / "pw_cache",
+                       tmp_path / "ep")
+    assert pe.variant_cache(hosted, "") == tmp_path / "ep" / "pw_cache"
+    assert pe.variant_cache(hosted, "se6-ve24") == tmp_path / "ep" / "pw_cache@se6-ve24"
+    local = pe.local_source(tmp_path / "m.replay")
+    assert pe.variant_cache(local, "se6-ve24") == tmp_path / "m@se6-ve24.pw_cache"   # matches *.pw_cache/ ignore
+    assert pe.in_cache(tmp_path / "ep" / "pw_cache@x" / "a.replay") and pe.in_cache(tmp_path / "m@x.pw_cache" / "t")
+    assert not pe.in_cache(tmp_path / "ep" / "replay.gz")
+
+
+@needs_sample
+def test_a_finer_trace_does_not_replace_the_default_cache(tmp_path):
+    directory = tmp_path / "episode"
+    directory.mkdir()
+    for name in ("episode.json", "results.json", "replay.json"):
+        shutil.copy(SAMPLE / name, directory / name)
+    assert not pe.load_episode(directory).cache_hit
+    fine = pe.load_episode(directory, options=pe.TraceOptions(window=(100, 160)))
+    assert not fine.cache_hit and fine.source.cache.name == "pw_cache@se6-ve0-w100_160"
+    assert pe.load_episode(directory).cache_hit                       # the default is still there
+    assert pe.load_episode(directory, options=pe.TraceOptions(window=(100, 160))).cache_hit
+    assert len(pe.discover([tmp_path])) == 1                          # variant dirs are not episodes

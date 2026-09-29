@@ -24,6 +24,8 @@ Contract (docs/tools/README.md "Agent contract"):
   exit 2   usage or config error, including unknown selectors (the message lists valid values)
   exit 3   environment missing: a binary, library or release not built; the message names
            the command that fixes it
+A rate limit that outlasted the retries (HTTP 429) is NOT an environment problem: failure code
+"rate_limited", exit 1, `next` = wait and retry (raise pw_cli.RateLimited).
 An unexpected exception (a tool bug) still prints the envelope, with failure code "crash"
 and exit 1, and the traceback on stderr.
 """
@@ -73,6 +75,17 @@ class EnvironmentMissing(SystemExit):
     def __init__(self, message: str, fix: str):
         super().__init__(f"{message}: run {fix}")
         self.message, self.fix = f"{message}: run {fix}", fix
+
+
+class RateLimited(SystemExit):
+    """A remote API kept answering HTTP 429 after polite retries: exit 1, failure code
+    rate_limited. Nothing is missing; `retry` is the command to run again after a wait."""
+
+    exit_code = EXIT_PARTIAL
+
+    def __init__(self, message: str, retry: str):
+        super().__init__(message)
+        self.message, self.retry = message, retry
 
 
 def jsonable(value):
@@ -246,6 +259,13 @@ def run(parser: ArgumentParser, body, argv: list[str] | None = None) -> int:
             report.suggest(err.fix)
             print(f"ERROR: {err.message}", file=sys.stderr)
             code = EXIT_ENVIRONMENT
+        except RateLimited as err:
+            report.fail("rate_limit", "rate_limited", err.message)
+            report.suggest("wait and retry")
+            report.suggest(err.retry)
+            print(f"ERROR: {err.message} (rate limited; nothing is missing: wait, then run {err.retry})",
+                  file=sys.stderr)
+            code = EXIT_PARTIAL
         except pw_release.NotBuilt as err:
             report.fail(err.tool, "not_built", str(err))
             report.suggest(err.fix)

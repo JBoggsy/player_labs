@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """Paintbot PW opponent scouting and field survey from PUBLIC league data (lab tool T11).
 
-Two steps, both free (anonymous public reads, no credits, no auth):
+Three subcommands, all free (anonymous public reads, no credits, no auth):
+
+  leaders who the division's current champions are, as policy refs for --opponent: the
+          latest completed round's round_config.entrant_attributions (player -> exact
+          policy_version_id), named from that round's episode rows (policy_name, version,
+          owner), ranked by the public leaderboard (rank, MMR). Three reads. Unlike the
+          leaderboard's policy_label (null for some champions, e.g. Alpha), every entrant of
+          the round is resolved. HTTP 429 after pw_public's retries is exit 1, code rate_limited.
 
   fetch   list the league's recent completed rounds (/v2/rounds?league_id=...), then each
           round's episodes (/v2/rounds/<id>/episodes), and save each completed episode as
@@ -32,6 +39,7 @@ EMBER'S FRAME: for an Azure side, feature k is reported as its point mirror, so 
 the side's own home heart and h1 the enemy's. Contract: docs/tools/pw_scout.md.
 
 CLI:
+  uv run python paintbot_pw_lab/tools/pw_scout.py leaders [--division ID] [--top N] [--json]
   uv run python paintbot_pw_lab/tools/pw_scout.py fetch [--league ID] [--max-episodes 30] [--max-rounds 6] [--out DIR]
   uv run python paintbot_pw_lab/tools/pw_scout.py report ROOT [ROOT ...] [--out DIR] [--reasons FILE]
       [--by version|name] [--ours KEY_OR_NAME] [--vis-every M]
@@ -59,6 +67,7 @@ import pw_metrics  # noqa: E402
 import pw_public  # noqa: E402
 
 MAIN_LEAGUE = pw_public.MAIN_LEAGUE   # paintbot-pw teams ladder (docs/field.md)
+COMPETITION_DIVISION = pw_public.COMPETITION_DIVISION
 DEFAULT_OUT = pw_episodes.LAB / "episode_data" / "scout"
 
 # fetch size (politeness itself - pause, back-off, retries - lives in pw_public.py)
@@ -155,6 +164,95 @@ def fetch(league: str, out: Path, max_episodes: int, max_rounds: int, tag: str |
     return {"league": league, "out": str(out), "saved": saved, "already_present": skipped,
             "excluded": dict(excluded), "rounds": [r["round_number"] for r in completed],
             "guard": "ok" if checked else "not_run (nothing new)"}
+
+
+# ================================================================ leaders
+
+def leader_rows(attributions: list[dict], episode_rows: list[dict], board: list[dict] | None) -> list[dict]:
+    """One row per round entrant: {rank, player, policy_ref, policy_version_id, mmr, owner, player_id}.
+
+    Identity comes from the round (exact policy_version_id per player); names from the episode
+    participants; rank and MMR from the leaderboard when given. Sorted by rank (unranked last)."""
+    named = {}
+    for row in episode_rows:
+        for seat in row.get("participants") or []:
+            named.setdefault(seat.get("policy_version_id"), seat)
+    ranked = {entry.get("player_id"): entry for entry in board or []}
+    rows = []
+    for entrant in attributions:
+        pvid = entrant.get("policy_version_id")
+        seat = named.get(pvid, {})
+        entry = ranked.get(entrant.get("subject_id"), {})
+        version = seat.get("version")
+        score = entry.get("score")
+        rows.append({
+            "rank": entry.get("rank"),
+            "player": seat.get("player_name") or entry.get("player_name"),
+            "policy_ref": f"{seat['policy_name']}:v{version}" if seat.get("policy_name") and version is not None else None,
+            "policy_version_id": pvid,
+            "mmr": round(score) if isinstance(score, (int, float)) else None,
+            "owner": seat.get("owner_name") or entry.get("owner_name"),
+            "player_id": entrant.get("subject_id"),
+        })
+    rows.sort(key=lambda r: (r["rank"] is None, r["rank"] or 0, str(r["player"])))
+    return rows
+
+
+def leaders(division: str, top: int | None, report) -> dict:
+    """Current champions of a division from public data (3 reads: rounds, episodes, leaderboard)."""
+    retry = f"uv run python paintbot_pw_lab/tools/pw.py leaders --division {division} --json"
+    try:
+        rounds = pw_public.rounds(division_id=division, limit=6)
+        latest = next((r for r in rounds if r.get("status") == "completed"), None)
+        if latest is None:
+            raise pw_cli.UsageError(f"division {division} has no completed round among its last {len(rounds)}; "
+                                    "check the division id (default: the paintbot-pw Competition division)")
+        episode_rows = pw_public.round_episodes(latest["id"])
+    except pw_public.RateLimited as error:
+        raise pw_cli.RateLimited(f"public API rate limit ({error})", retry) from error
+    except pw_public.PublicFetchError as error:
+        raise pw_cli.EnvironmentMissing(f"public API read failed ({error})", "the same command again later "
+                                        "(check the network)") from error
+    board, board_note = None, None
+    try:
+        board = pw_public.leaderboard(division)
+    except pw_public.RateLimited as error:
+        report.fail("leaderboard", "rate_limited", f"leaderboard rate limited ({error}); rows have no rank/MMR")
+        report.suggest("wait and retry")
+        report.suggest(retry)
+        board_note = "rate limited"
+    except pw_public.PublicFetchError as error:
+        board_note = f"unavailable ({error})"
+    attributions = (latest.get("round_config") or {}).get("entrant_attributions") or []
+    rows = leader_rows(attributions, episode_rows, board)
+    shown = rows[:top] if top else rows
+    for row in shown:
+        if row["policy_ref"] is None:
+            report.fail(row["policy_version_id"], "unnamed_entrant",
+                        f"player {row['player_id']}: policy_version_id not seen in round {latest['round_number']}'s "
+                        "first episode page; pass the policy_version_id itself as --opponent")
+    in_round = {row["player_id"] for row in rows}
+    not_in_round = [{"rank": e.get("rank"), "player": e.get("player_name"), "owner": e.get("owner_name"),
+                     "mmr": round(e["score"]) if isinstance(e.get("score"), (int, float)) else None}
+                    for e in board or [] if e.get("player_id") not in in_round]
+    print(f"division {division}: round {latest['round_number']} (completed {latest.get('completed_at')}), "
+          f"{len(rows)} entrants; leaderboard {board_note or 'ok'}")
+    for row in shown:
+        rank = "-" if row["rank"] is None else row["rank"]
+        mmr = "-" if row["mmr"] is None else row["mmr"]
+        print(f"  #{rank:<3} {str(row['player']):<26} {str(row['policy_ref']):<32} MMR {mmr:<5} "
+              f"{row['owner']}  {row['policy_version_id']}")
+    for entry in not_in_round:
+        print(f"  (on the leaderboard, not in round {latest['round_number']}: #{entry['rank']} {entry['player']})")
+    report.counts["processed"] = len(shown)
+    refs = [row["policy_ref"] or row["policy_version_id"] for row in shown]
+    if refs:
+        report.suggest("uv run python paintbot_pw_lab/tools/pw.py ab-requests --design paired --baseline NAME:vN "
+                       "--candidate NAME:vM " + " ".join(f"--opponent {ref}" for ref in refs)
+                       + f" --seeds 1-10 --league-id {MAIN_LEAGUE}")
+    return {"division": division, "round_id": latest["id"], "round_number": latest["round_number"],
+            "completed_at": latest.get("completed_at"), "leaderboard": board_note or "ok",
+            "leaders": shown, "not_in_round": not_in_round}
 
 
 # ================================================================ statistics
@@ -794,10 +892,15 @@ def report(roots: list[Path], out: Path, reasons_path: Path | None, by: str, our
 
 def build_parser() -> pw_cli.ArgumentParser:
     parser = pw_cli.ArgumentParser("pw_scout", __doc__, examples=[
+        "uv run python paintbot_pw_lab/tools/pw_scout.py leaders --top 3 --json",
         "uv run python paintbot_pw_lab/tools/pw_scout.py fetch --max-episodes 30 --json",
         "uv run python paintbot_pw_lab/tools/pw_scout.py report paintbot_pw_lab/episode_data/scout/2026-09-29 --json",
         "uv run python paintbot_pw_lab/tools/pw_scout.py report ROOT --ours james-pw --reasons ROOT/reasons.json"])
     sub = parser.add_subparsers(dest="command", required=True)
+    ld = sub.add_parser("leaders", help="current champions as policy refs (resolving --opponent for an A/B)")
+    ld.add_argument("--division", default=COMPETITION_DIVISION,
+                    help=f"division id (default the paintbot-pw Competition division {COMPETITION_DIVISION})")
+    ld.add_argument("--top", type=int, help="only the N best-ranked entrants, e.g. --top 3")
     f = sub.add_parser("fetch", help="download recent public league episodes (anonymous, gentle)")
     f.add_argument("--league", default=MAIN_LEAGUE, help=f"league id (default the teams ladder {MAIN_LEAGUE})")
     f.add_argument("--max-episodes", type=int, default=MAX_EPISODES_DEFAULT,
@@ -821,6 +924,10 @@ def build_parser() -> pw_cli.ArgumentParser:
 
 
 def run_cli(args, envelope: pw_cli.Report):
+    if args.command == "leaders":
+        if args.top is not None and args.top < 1:
+            raise pw_cli.UsageError("--top must be at least 1")
+        return leaders(args.division, args.top, envelope)
     if args.command == "fetch":
         if args.max_episodes > MAX_EPISODES_CAP:
             raise pw_cli.UsageError(f"--max-episodes above {MAX_EPISODES_CAP} is not polite to the public API; "
@@ -828,6 +935,9 @@ def run_cli(args, envelope: pw_cli.Report):
         out = args.out or DEFAULT_OUT / dt.datetime.now(dt.timezone.utc).date().isoformat()
         try:
             return fetch(args.league, out, args.max_episodes, args.max_rounds, args.tag, envelope)
+        except pw_public.RateLimited as error:
+            raise pw_cli.RateLimited(f"public API rate limit ({error})",
+                                     "the same fetch command (episodes already saved are skipped)") from error
         except pw_public.PublicFetchError as error:
             raise pw_cli.EnvironmentMissing(f"public API read failed ({error})",
                                             "the same command again later (network or rate limit)") from error

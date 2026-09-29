@@ -48,6 +48,11 @@ class PublicFetchError(RuntimeError):
     """A public read failed after retries (network, HTTP error, rate limit)."""
 
 
+class RateLimited(PublicFetchError):
+    """HTTP 429 persisted through every retry. Not an environment problem: wait and retry.
+    CLIs report failure code `rate_limited` with exit 1."""
+
+
 class BadReplay(PublicFetchError):
     """The replay_url answered with bytes that are not a tape: skip that episode, keep going."""
 
@@ -63,7 +68,8 @@ def get(url: str, *, sleep=time.sleep, opener=urllib.request.urlopen) -> bytes:
                 return response.read()
         except urllib.error.HTTPError as error:
             if error.code not in RETRY_STATUS or attempt == MAX_RETRIES:
-                raise PublicFetchError(f"GET {url}: HTTP {error.code}") from error
+                kind = RateLimited if error.code == 429 else PublicFetchError
+                raise kind(f"GET {url}: HTTP {error.code}") from error
             wait = float(error.headers.get("Retry-After") or delay) if error.headers else delay
             print(f"  HTTP {error.code} from {urllib.parse.urlparse(url).path}; waiting {wait:.0f} s",
                   file=sys.stderr, flush=True)
@@ -85,6 +91,12 @@ def rounds(*, league_id: str | None = None, division_id: str | None = None, limi
     if not (league_id or division_id):
         raise ValueError("give league_id or division_id")
     return get_json("/v2/rounds", league_id=league_id, division_id=division_id, limit=limit)["entries"]
+
+
+def leaderboard(division_id: str) -> list[dict]:
+    """The division's public leaderboard rows (rank, player_id, player_name, owner_name, score = MMR,
+    policy_label, which is null for some champions: use round attributions for identity)."""
+    return get_json(f"/v2/divisions/{division_id}/leaderboard", include_recent_rounds="false")
 
 
 def round_episodes(round_id: str, limit: int | None = 50) -> list[dict]:
