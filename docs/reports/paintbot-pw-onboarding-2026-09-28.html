@@ -397,6 +397,11 @@
     <p class="context">For James, before the selection of the first Paintbot PW policy. We did the research against Metta-AI/paintbot-pw <code>ab597b35</code> (tag <code>coworld-v0.3.67</code>). Both leagues used that release when we wrote this report.</p>
   </header>
 
+    <div class="callout callout-warn">
+      <span class="callout-label">Correction · 2026-09-29</span>
+      This report says the league's Elo sees only win, draw or loss. That changed on the evening of 2026-09-28: the ladder now uses <code>margin_scale: 1000</code>, so each episode counts as <code>clamp(0.5 + (our glory − their glory) / 2000, 0, 1)</code>. The size of the glory now changes the rank. Rules 47 also added glory for cogs out of the match (+10 for each extra cog, every 5 s, in the league). The current rules are in section 1 of <a href="../../paintbot_pw_lab/docs/mechanics.md">the lab's mechanics document</a>.
+    </div>
+
   <section id="summary">
     <h2>Executive summary</h2>
     <p>Paintbot PW is Paintbot, rebuilt in Polyworld. Polyworld is a deterministic game engine that is written in Nim. Sixteen cogs (the name of the game for its small wheeled robots, one for each seat) play in two teams of eight. Red has the even seats and Blue has the odd seats. The teams fight for ten heart towers on an island with the name Heartwick. Each seat is a small BASIC program, and the game itself runs that program one time in each tick. Thus a "player" is a text file. It is not a container, and it is not a network client. A cog that stays near a heart for three seconds captures it. Owned hearts fill the meter of the team. The first team to 900 meter points wins, or the team with the higher meter wins at ten minutes. Fights are short and dangerous. Each cog has three hit points, four lives, and a paint gun that fires one shot each second. Friendly fire is on, and each cog can see only forward, in a cone.</p>
@@ -465,6 +470,10 @@
   </section>
   <section id="3-winning-versus-scoring-glory">
     <h2>3 · Winning versus scoring: glory</h2>
+    <div class="callout callout-warn">
+      <span class="callout-label">Correction · 2026-09-29</span>
+      This report says the league's Elo sees only win, draw or loss. That changed on the evening of 2026-09-28: the ladder now uses <code>margin_scale: 1000</code>, so each episode counts as <code>clamp(0.5 + (our glory − their glory) / 2000, 0, 1)</code>. The size of the glory now changes the rank. Rules 47 also added glory for cogs out of the match (+10 for each extra cog, every 5 s, in the league). The current rules are in section 1 of <a href="../../paintbot_pw_lab/docs/mechanics.md">the lab's mechanics document</a>.
+    </div>
     <ul class="key-points">
       <li>The meter selects the winner. The <strong>score</strong> is glory, and only the team that wins keeps it.</li>
       <li>Glory starts at 600 (the length of the match in seconds). It decreases by 1 each second, to a minimum of 0.</li>

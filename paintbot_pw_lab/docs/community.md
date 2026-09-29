@@ -77,7 +77,7 @@ All source-verified in the README at `7b2b19f5` unless marked otherwise.
 
   Glory starts at 600 and counts down 1 per second, flooring at 0. Every seat on the winning team gets the same number.
 
-  Since 2026-09-28 the league's Elo rates the glory margin (`margin_scale: 1000`, see [field.md](field.md#match-configuration)), so glory magnitude **does affect rank**. A 0-glory win ties the loser's 0 and becomes an Elo draw.
+  Since 2026-09-28 the league's Elo rates the glory margin (`margin_scale: 1000`, see [mechanics.md §1.3](mechanics.md#13-how-glory-becomes-league-rank)), so glory magnitude **does affect rank**. A 0-glory win ties the loser's 0 and becomes an Elo draw.
 - **Shouts are public.** `shout` is heard by *both* teams within 12.8 m. The Jev baseline deliberately has only the asker repeat callouts (`useEcho = 0`).
 - **Uniforms (rules 27)** make a cog read as the other team through `visible`, `playerX/Y/Hp`, `playerTeam` and `heardSlot` until it attacks. Friendly fire is on for every weapon.
 - **FFA-only functions** (`kin`, `gene`, `seatScore`, `heartOwner`, `greatHeart*`, `territoryBoost`, `gameMode`) are *undefined* in the teams game. A script that calls them fails to compile there, so one BASIC file cannot call them in both modes.

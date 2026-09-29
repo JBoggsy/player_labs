@@ -165,6 +165,8 @@ in the repo is `base.bas` rewritten that way (guide line 124).
 | `controlContested(i)` | 0/1 |
 | `controlPoints(i)` | 1 (big hearts ended at rules 27) |
 | `glory(team)` | current glory of team 0 or 1; -1 otherwise |
+| `teamLives(team)`, `teamCogsOut(team)` | lives left / cogs out of the match for team 0 or 1; -1 otherwise (rules 46-47, `bots.nim:260-269` at `570174a2`) |
+| `awardBehind`, `awardBehindSeconds`, `awardBehindCogs`, `awardBehindCogsSeconds` | the configured behind-in-lives and behind-in-cogs glory awards (`bots.nim:262-272` at `570174a2`); see [mechanics.md §1.2](mechanics.md) |
 
 Invalid indices return -1 (`bots.nim:257-272`).
 

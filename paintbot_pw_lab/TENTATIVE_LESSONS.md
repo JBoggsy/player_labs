@@ -16,6 +16,7 @@ an A/B on the live roster before it is a lesson.
   (a medkit only when hurt). Glory size moves Elo under `margin_scale: 1000`, so +10 glory
   is +0.005 of Elo outcome per episode. Evidence needed: outcome-score change and win-rate
   change versus the starter.
-- **Falling behind on lives pays glory only if the team still wins.** Mechanics: +5 per life
-  behind every 5 s in the league config. Evidence needed: whether leaders' wins cluster
-  with a lives deficit (replay stats), before treating it as anything but a side effect.
+- **Falling behind pays glory only if the team still wins.** Mechanics: in the league config
+  a team earns +5 per life behind and +10 per extra cog out of the match, each every 5 s
+  ([mechanics.md §1.2](docs/mechanics.md)). Evidence needed: whether leaders' wins cluster
+  with a lives or cogs deficit (replay stats), before treating it as anything but a side effect.

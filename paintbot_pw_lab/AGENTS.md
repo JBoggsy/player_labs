@@ -56,11 +56,12 @@ BASIC dialect, different game and host API.
   `margin_scale: 1000`: each episode counts as `clamp(0.5 + (our glory - their glory) / 2000,
   0, 1)`, so a 500-glory win is 0.75, a 950-glory win about 0.98 and a 0-glory win a draw
   (metta `elo.py:183-187`). Fast, high-glory wins move rank more; a loss to a fast winner
-  costs more. Never infer a win from anything but the result.
+  costs more. Never infer a win from anything but the result. The canonical, source-cited
+  statement of scoring and rank is [docs/mechanics.md §1](docs/mechanics.md); update it there.
 - **A BASIC compile error fails the whole episode** (no results, no data from that
   eval slot); it shows up as failed hosted episodes, which is the signal to read. When
   the platform attributes a failure to one policy, Elo scores that side as a forfeit loss
-  (`elo.py:171-176`) and 3 consecutive failures disqualify a league entry, so only submit
+  (`elo.py:174-179`) and 3 consecutive failures disqualify a league entry, so only submit
   a version with completed hosted episodes. A runtime error or budget overrun disables
   only that seat for the rest of the episode.
 - **Budgets are 50,000 instructions and 125,000 work units per decision**

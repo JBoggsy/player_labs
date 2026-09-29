@@ -2,6 +2,12 @@
 
 Research report · 2026-09-28 · for James, before choosing the first Paintbot PW policy. Researched against Metta-AI/paintbot-pw `ab597b35` (tag `coworld-v0.3.67`), the release both leagues ran at the time of writing.
 
+> **Correction (2026-09-29).** This report says the league's Elo sees only win/draw/loss. Since
+> 2026-09-28 evening the ladder uses `margin_scale: 1000`: each episode counts as
+> `clamp(0.5 + (our glory − their glory) / 2000, 0, 1)`, so glory size moves rank. Rules 47 also
+> added behind-in-cogs glory (league: +10 per extra cog out, every 5 s). Current, canonical
+> statement: [`paintbot_pw_lab/docs/mechanics.md` §1](../../paintbot_pw_lab/docs/mechanics.md).
+
 ## Executive summary
 
 Paintbot PW is Paintbot rebuilt inside Polyworld, a deterministic Nim game engine. Sixteen cogs (the game's name for its small wheeled robots, one per seat) in two teams of eight (Red on even seats, Blue on odd) fight over ten heart towers on an island called Heartwick. Every seat is a small BASIC program that the game itself runs once per tick, so a "player" is a text file, not a container or a network client. Standing next to a heart for three seconds captures it, owned hearts fill the team's meter, and the first team to 900 meter points wins, or the higher meter at ten minutes. Combat is short and lethal: three hit points, four lives, a one-shot-per-second paint gun, friendly fire on, and a vision cone that only sees forward.
@@ -96,6 +102,13 @@ Figure 2 — The three ways a teams match ends. All three pass through the same 
 Every ending runs through one line that sets the winner from the meters and then calls `settleGlory` (`examples/paintbot/mechanics.nim:775-786`). Elimination is decisive because the survivor's meter is raised to full first. Mutual elimination on the same tick compares the meters as they stand (`examples/paintbot/mechanics.nim:780-783`).
 
 ## 3. Winning versus scoring: glory
+
+> **Correction (2026-09-29).** This report says the league's Elo sees only win/draw/loss. Since
+> 2026-09-28 evening the ladder uses `margin_scale: 1000`: each episode counts as
+> `clamp(0.5 + (our glory − their glory) / 2000, 0, 1)`, so glory size moves rank. Rules 47 also
+> added behind-in-cogs glory (league: +10 per extra cog out, every 5 s). Current, canonical
+> statement: [`paintbot_pw_lab/docs/mechanics.md` §1](../../paintbot_pw_lab/docs/mechanics.md).
+
 
 - The meter picks the winner. The **score** is glory, and only the winning team keeps it.
 - Glory starts at 600 (the match length in seconds) and falls by 1 per second, floored at 0.

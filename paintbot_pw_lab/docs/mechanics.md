@@ -16,68 +16,137 @@ Paths are relative to the repo root. `sim.nim` and `mechanics.nim` are under `ex
 `coworld/paintbot/guide.md`; the manifest's `docs.readme` is that guide minus its
 `readme:skip` blocks (checked by diff). Companion page: [policy-surface.md](policy-surface.md).
 
-## 1. The one thing to get right: winning vs. glory
+## 1. The one thing to get right: winning, glory, and rank
 
-The **heart meter decides who wins. Glory is the score the platform receives**, and a loser's
-glory is set to zero. The ladder therefore sees one number per seat: the winning team's glory, or
-0. A win is necessary for any score, and a *fast* win is worth more than a slow one.
+> **Currency of this section.** Verified 2026-09-29 against paintbot-pw `570174a2` (tag
+> `coworld-v0.3.78`, the league's build that day; rules 48, whose only change is FFA-kin fog, so
+> the teams game plays rules 47). Line numbers in this section are at `570174a2`; the rest of
+> this document is still at `7b2b19f5`. League ranking settings were read live the same day;
+> the Elo code is metta `packages/observatory-competitions/src/observatory_competitions/v2/ladders/rankings/elo.py`
+> at `49951fd7f6`. This section is the lab's canonical statement of scoring and rank; other docs
+> link here instead of restating it.
+
+Three different numbers matter, and only the last one is what the league ranks by:
+
+1. **The heart meter decides who wins the match.**
+2. **Glory is the score the platform receives.** The winner keeps its glory; the loser and both
+   sides of a draw get 0.
+3. **League rank (MMR) moves by the glory margin.** Since 2026-09-28 evening the ladder's Elo
+   uses `margin_scale: 1000`, so every point of winning glory moves rank, not just the win.
+
+### 1.1 Heart meter versus glory
 
 | | Heart meter (win condition) | Glory (reported score, teams game) |
 | --- | --- | --- |
-| Starts at | 0 per team | match length in seconds: `endTick div 24` = 600 for 14,400 ticks (`sim.nim:824-826`) |
-| Changes | +1 tick-point per owned control heart per tick (`mechanics.nim:768-769`) | -1 per second, floored at 0 (`sim.nim:891-892`); plus awards below |
-| Ends match when | a team reaches `hearts * 4320 / 2` = 21,600 tick-points = 900 points (`sim.nim:873-875`, `mechanics.nim:784`) | never ends the match |
-| At match end | higher meter wins; equal = draw (`mechanics.nim:785`) | loser set to 0; draw sets **both** to 0 (`sim.nim:950-954`) |
-| Reported as | not reported | `scores[i]` = glory of seat i's team (`sim.nim:964-965`) |
+| Starts at | 0 per team | match length in seconds: `endTick div 24` = 600 for 14,400 ticks (`sim.nim:864-865`) |
+| Changes | +1 tick-point per owned control heart per tick | -1 per second, floored at 0, plus the awards in 1.2 (`sim.nim:934-959`) |
+| Ends match when | a team reaches `hearts × HeartMeterFillTicks / 2` = 10 × 4,320 / 2 = 21,600 tick-points = 900 points (`sim.nim:13`, `912-914`; `mechanics.nim:774-785`), a team is eliminated, or tick 14,400 | never ends the match |
+| At match end | higher meter wins; equal = draw (`mechanics.nim:786`) | `settleGlory`: loser set to 0; a draw sets **both** to 0 (`sim.nim:1009-1013`, called at `mechanics.nim:787`) |
+| Reported as | not reported | `results.scores[i]` = glory of seat i's team (`sim.nim:1015-1024`) |
 
-### How glory is computed (rules 37-45, `sim.nim:877-954`)
+Every ending (meter full, elimination, time limit) passes through the same winner comparison
+and `settleGlory` call (`mechanics.nim:785-787`). Elimination fills the survivor's meter first,
+so the survivor wins.
 
-Each tick, after the tick counter advances (`mechanics.nim:771-772`):
+### 1.2 How glory is earned and lost (rules 37-47)
 
-1. **Countdown.** On every tick divisible by 24, each team loses 1 glory, floored at 0
-   (`sim.nim:891-892`).
-2. **Quiet supplies.** When `tick - lastSupplyTick[team] >= quiet_supplies_seconds * 24`, the team
-   earns `quiet_supplies` and the clock restarts (`sim.nim:894-897`). The clock restarts whenever a
-   teammate *takes* any pickup: grenade, spray, medkit, armor or uniform (`mechanics.nim:548-549`).
-   A pickup is only taken when it is useful (for example a medkit only when hurt,
-   `mechanics.nim:534-547`), so walking over a medkit at full health does not reset it.
-3. **Behind in lives.** On every tick divisible by `behind_lives_seconds * 24`, lives are summed
-   per team (`equipment.lives`, which counts the current life), and the team with fewer lives
-   earns `behind_lives * (enemyLives - ownLives)` (`sim.nim:898-903`).
-4. **Glory hearts** (before the counter advances, `mechanics.nim:764`): the first living cog within
-   120 units of a glory heart earns `heart` glory for its team (`sim.nim:918-948`). Seat order
-   alternates each tick for fairness (`sim.nim:932`).
+Glory hearts are paid before the tick counter advances (`mechanics.nim:765`); the rest in
+`updateGlory` after it (`mechanics.nim:773`). Every award is logged as a `GloryEvent` with a
+kind (`sim.nim:142-146`, `916-920`).
 
-Friendly-fire glory existed in rules 37-38 only; it is gone at rules 45 (`mechanics.nim:371-373`).
+| Source | Rule | Kind | Code |
+| --- | --- | --- | --- |
+| Countdown | every 24 ticks (1 s), each team loses 1, floored at 0 | (not an event) | `sim.nim:943-944` |
+| Quiet supplies | when no teammate has **taken** a pickup for `quiet_supplies_seconds`, the team earns `quiet_supplies` and the stretch restarts. A pickup is only taken when useful (a medkit only when hurt, `mechanics.nim:534-549`), so walking over one at full health does not reset it | `gloryQuietSupplies` | `sim.nim:946-949` |
+| Behind in lives (rules 39+) | every `behind_lives_seconds`, lives are summed per team (`teamLives`, counts the current life); the team with fewer earns `behind_lives × (enemy lives − own lives)` | `gloryBehindLives` | `sim.nim:922-926`, `950-954` |
+| Behind in cogs (rules 47+) | every `behind_cogs_seconds`, count each team's cogs **out of the match** (dead with no lives left, `teamCogsOut`); the team with **more** cogs out earns `behind_cogs × (own cogs out − enemy cogs out)` | `gloryBehindCogs` | `sim.nim:928-932`, `955-959` |
+| Glory heart (rules 38+) | the first living cog within 120 units of a glory heart earns `heart` for its team. Hearts spawn in mirrored pairs from 0:20, every 10-20 s, live 30 s, on random open dry spots, and are fog-gated for policies | `gloryHeart` | `sim.nim:36-43`, `974-1005` |
 
-Award values (config key `glory`, teams game only, `game.nim:158-188`; defaults `sim.nim:31-47`):
+Friendly-fire glory existed in rules 37-38 only (`sim.nim:33`).
 
-| Key | Engine default | **Deployed teams variants** | Meaning |
+**Award values.** The config key is `glory` (teams game only; parsed in `match_config.nim:10-39`,
+defaults `sim.nim:31-51`, `617-620`):
+
+| Key | Engine default | **League (all 15 teams variants)** | Meaning |
 | --- | --- | --- | --- |
 | `quiet_supplies` | 10 | 10 | glory per quiet stretch |
 | `quiet_supplies_seconds` | 30 | 30 | stretch length |
 | `behind_lives` | 1 | **5** | glory per life behind, per period |
 | `behind_lives_seconds` | 5 | 5 | period |
+| `behind_cogs` | 1 | **10** | glory per extra cog out, per period |
+| `behind_cogs_seconds` | 5 | 5 | period |
 | `heart` | 20 | 20 | glory per glory heart |
 
-Every teams variant in the 0.3.65 manifest sets `"glory": {"behind_lives": 5}`. The
-`certification` config sets no glory key, so it pays the engine default of 1.
+Source for the league column: every teams variant in `coworld/paintbot/coworld_manifest_template.json`
+at `570174a2` sets `"glory": {"behind_lives": 5, "behind_cogs": 10}` (read 2026-09-29; the change
+to 10 is commit `0ff41d2`, "behind-in-cogs glory 5 -> 10"). **Not yet observed in a live episode's
+`game_config`** (the API was rate-limited when this was written); on 2026-09-28 live episodes
+showed `{"behind_lives": 5}`, which predates rules 47. Local runs through `local.py` use the engine
+defaults; `paintbot-headless` accepts `--glory:<json>` to match the league.
 
-**Practical consequences** (arithmetic from the rules above, not measured):
+**What a policy can read** (BASIC, teams game; `bots.nim:254-272`): `glory(team)`,
+`teamLives(team)`, `teamCogsOut(team)`, and the configured award values `awardBehind`,
+`awardBehindSeconds`, `awardBehindCogs`, `awardBehindCogsSeconds`.
 
-- A win at time *t* seconds is worth about `600 - t + awards`. The guide reports that league
-  matches usually end by elimination at roughly a quarter of the clock (guide line 199); that is
-  about 450 plus awards. This is a claim from the guide, not verified here.
-- Being behind in lives pays heavily at the deployed setting: 5 glory per life behind, every 5
-  seconds. Trailing by 8 lives for one minute pays 12 x 40 = 480. That only counts if the team
-  still wins.
-- Skipping supplies pays +10 per 30 s. Collecting any supply forfeits the running stretch.
-- Glory hearts (+20) spawn in mirrored pairs from 0:20, every 10-20 s, live 30 s, on random
-  open dry spots (`sim.nim:36-43`, `905-948`). They are fog-gated (see policy-surface.md).
-- Mean score and win rate are different questions. A policy that wins 60% slowly can score below
-  one that wins 50% fast. The ladder resolves this in favour of glory: since 2026-09-28 its Elo
-  uses `margin_scale: 1000`, so each episode counts as `clamp(0.5 + (our glory - their glory) /
-  2000, 0, 1)` (metta `elo.py:183-187`; see [field.md](field.md)).
+### 1.3 How glory becomes league rank
+
+The main league (`league_b9458ff8-…`) ranks by Elo with these live settings (read 2026-09-29):
+`k_factor 32`, `initial_rating 1500`, `round_scoring_rule "mean"`, **`margin_scale 1000`**.
+For each episode, the two sides' mean scores are compared (`elo.py:181-182`). With
+`margin_scale` set, the result credited to our side is the **score margin**, not win/draw/loss
+(`elo.py:183-187`):
+
+```
+outcome = clamp(0.5 + (our glory − their glory) / (2 × 1000), 0, 1)
+```
+
+Because the loser's glory is always 0, this is `0.5 + winning glory / 2000` for a win and
+`0.5 − their winning glory / 2000` for a loss:
+
+| Episode result | Outcome for us |
+| --- | --- |
+| Win with 950 glory | 0.975 |
+| Win with 500 glory | 0.75 |
+| Win with 300 glory (e.g. a 5:00 win, no awards) | 0.65 |
+| Win with 0 glory (a slow win whose glory ran out) | 0.5, a draw |
+| Draw (both sides 0) | 0.5 |
+| Loss to a 500-glory winner | 0.25 |
+| Our policy's episode failure attributed to us | 0 (forfeit; the margin is ignored, `elo.py:174-179`) |
+
+The Elo update is then `K × (outcome − expected)` with K = 32. The wins/draws/losses counters
+record which side of 0.5 the outcome fell on. History: the ladder used plain win/draw/loss
+until `margin_scale` was set on 2026-09-28 evening (metta commit `6304974ffa`, whose rollout note
+names this league); ratings earned before then were built that way. Whether other paintbot-pw
+leagues use it is not established.
+
+### 1.4 Practical consequences
+
+Arithmetic from the rules above, not measured:
+
+- **Speed is rank.** Each second of match time costs 1 glory, which is 0.0005 of Elo outcome.
+  A win at *t* seconds is worth about `600 − t + awards` glory. League winners scored 428-577 in
+  one round on 2026-09-28 and 527-551 in three episodes of one round on 2026-09-29 (public round listing), so
+  current wins end in roughly 1-3 minutes.
+- **Losing fast costs more than losing slow.** A loss is `0.5 − their glory / 2000`, so delaying
+  an opponent's win reduces the rating loss even when the loss is certain.
+- **The two "behind" awards pay the team that is losing the fight.** Behind in lives pays 5 per
+  life every 5 s; behind in cogs pays 10 per extra cog out every 5 s. A team 3 cogs down for a
+  minute earns 12 × 30 = 360 from cogs alone. It is worth anything only if that team still wins
+  on the meter. The engine comment states the design intent: glory is "a self-imposed handicap:
+  nothing that makes a team more likely to win pays it" (`sim.nim:28-30`).
+- **Supplies cost glory.** Every pickup a teammate takes forfeits the running quiet stretch
+  (+10 per 30 s).
+- **Win rate and glory are different questions.** A policy that wins 60% slowly can rank below
+  one that wins 50% fast. The A/B primary metric is therefore the per-episode outcome above (see
+  the [tooling plan](designs/2026-09-29-tooling-plan.html), §7).
+
+### 1.5 Re-verifying this section
+
+Run `uv run python paintbot_pw_lab/tools/deployed_ref.py`. If the deployed commit changed, diff
+`examples/paintbot/sim.nim` (constants at the top, `updateGlory`, `settleGlory`, `scores`),
+`examples/paintbot/match_config.nim` and the manifest template's `variants[].game_config.glory`.
+Re-read the league's `settings.ladder.ranking` (the `margin_scale` knob can change without any
+game release), and check one fresh league episode's `game_config.glory`.
 
 ## 2. Teams, seats, and match flow (teams mode)
 
