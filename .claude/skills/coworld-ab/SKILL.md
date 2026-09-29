@@ -89,6 +89,18 @@ JSON. To add a new game: copy crewrift's `compare.py`, swap the four game-specif
 
 The shared engine uses SciPy Fisher exact tests for binary episode outcomes and Welch t-tests for continuous episode values. It applies Benjamini–Yekutieli correction across reported metric/group tests; displayed `p` is adjusted and `raw_p` is unadjusted. A directional verdict also requires at least 30 observations per arm/group. This floor does not guarantee adequate power. `inconclusive` does not establish equivalence or safety.
 
-Use one independent observation per episode/group. Do not count several seats of one policy as independent games; average diagnostics within the episode, or use a preregistered clustered/paired analysis. The engine does not implement paired tests, sequential stopping corrections or causal identification. Missing values remain excluded with counts. Report operational failures separately before filtering whole episodes for gameplay metrics.
+Use one independent observation per episode/group. Do not count several seats of one policy as independent games; average diagnostics within the episode, or use a preregistered clustered/paired analysis. Neither engine does causal identification. Missing values remain excluded with counts. Report operational failures separately before filtering whole episodes for gameplay metrics.
 
 [Paintbot's adapter](../../../paintbot_lab/tools/compare.py) selects immutable version IDs and aggregates team seats per episode. [Gods of the Arena's adapter](../../../gods_of_the_arena_lab/tools/compare.py) groups a policy's class-fixed seats (`--group class|role|team|all`) and averages seats within an episode so each episode is one observation per group. Match game version/config, roster, ally composition, roles and time window before interpretation. A same-window batch alone does not eliminate map/seed or composition confounding.
+
+## Paired, head-to-head and sequential designs (`scripts/paired_stats.py`)
+
+When the design makes observations dependent, use `paired_stats.py` instead of `build_deltas`. It shares `SIG_P`, the `SMALL_N` floor and the BY correction (`ab_stats.apply_correction`), and `emit_json` keeps the neutral contract, adding each delta's `test` and `detail`.
+
+| Design | Call | Tests |
+| --- | --- | --- |
+| Paired: both arms vs the same opponent on the same (seed, side) schedule | `build_paired_deltas(pair_groups, metrics, value_of, groups)` with `pair_groups = {group: [(base_row, cand_row)]}` | means: paired t on per-pair differences, and the Wilcoxon signed-rank p must also be below `SIG_P`; rates: exact McNemar on discordant pairs (a draw is a non-win) |
+| Head-to-head: both arms in one episode | the same call with `tests={primary: "one_sample", win: "decisive_binomial"}` | one-sample t of the candidate's outcome score vs 0.5; exact binomial on decisive games; other metrics paired within the episode |
+| Sequential stopping | `sprt_mean(values, h0=, h1=, alpha=, beta=)` or `sprt_two_sample(base, cand, ...)` | normal-approximation SPRT (fishtest GSPRT form); returns `accept_h0` / `accept_h1` / `continue` with LLR and bounds; always `continue` below `SMALL_N` |
+
+`n_base == n_cand` is the number of pairs that entered each test (pairs with a missing value on either side are left out, not zeroed). The adapter still owns pairing keys, exclusion counters and `ops_fail_rate` as a metric (it pairs like any binary outcome). Run the SPRT only on the pre-registered primary metric; after a sequential stop the secondary p-values are descriptive. Reference adapter: [Paintbot PW `compare.py`](../../../paintbot_pw_lab/tools/compare.py) (`--design paired|h2h|field`, plus a `sprt` subcommand). Contract tests: `tools/tests/test_paired_stats.py`.

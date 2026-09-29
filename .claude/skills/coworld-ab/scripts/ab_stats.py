@@ -120,7 +120,17 @@ def build_deltas(base_groups, cand_groups, metrics, metric_value, value_fn, all_
                       n_base=bv[1] if bv else 0, n_cand=cv[1] if cv else 0, kind=kind)
             d.compute(value_fn(br, key), value_fn(cr, key), sig_p=sig_p)
             out.append(d)
-    eligible = [d for d in out if d.base is not None and d.cand is not None]
+    apply_correction(out, sig_p)
+    return out
+
+
+def apply_correction(deltas: list[Delta], sig_p: float = SIG_P) -> None:
+    """Benjamini-Yekutieli across every reported test, then the SMALL_N floor.
+
+    Replaces each tested delta's `p` with the adjusted value (`raw_p` keeps the unadjusted
+    one). It only ever downgrades a verdict to inconclusive, never upgrades one, so a test
+    with extra verdict conditions (e.g. paired_stats' Wilcoxon agreement) keeps them."""
+    eligible = [d for d in deltas if d.base is not None and d.cand is not None]
     if eligible:
         # Benjamini-Yekutieli controls false discoveries under dependent metrics.
         adjusted = stats.false_discovery_control([d.raw_p for d in eligible], method="by")
@@ -128,7 +138,6 @@ def build_deltas(base_groups, cand_groups, metrics, metric_value, value_fn, all_
             d.p = float(corrected)
             if d.p >= sig_p or min(d.n_base, d.n_cand) < SMALL_N:
                 d.verdict = "inconclusive"
-    return out
 
 
 # --- rendering ----------------------------------------------------------------------
@@ -143,19 +152,29 @@ def fmt(v: float | None, kind: str) -> str:
     return f"{v*100:.0f}%" if kind == "rate" else f"{v:.2f}"
 
 
-def emit_json(base_spec: str, cand_spec: str, target: str | None, deltas: list[Delta]) -> dict:
+INDEPENDENT_ANALYSIS = ("Independent samples; Fisher rates; Welch means; BY correction across reported metrics; "
+                        "minimum 30 observations per side. Inconclusive is not equivalence.")
+
+
+def emit_json(base_spec: str, cand_spec: str, target: str | None, deltas: list[Delta],
+              analysis: str = INDEPENDENT_ANALYSIS) -> dict:
     """The neutral JSON contract consumed by compare_report.py."""
     return {
         "baseline": base_spec, "candidate": cand_spec, "target": target,
-        "analysis": "Independent samples; Fisher rates; Welch means; BY correction across reported metrics; minimum 30 observations per side. Inconclusive is not equivalence.",
+        "analysis": analysis,
         "deltas": [{"metric": d.metric, "group": d.group, "base": d.base, "cand": d.cand,
                     "n_base": d.n_base, "n_cand": d.n_cand, "p": d.p,
                     "raw_p": d.raw_p, "effect": d.effect, "verdict": d.verdict} for d in deltas],
     }
 
 
+INDEPENDENT_NOTE = ("P-values below use Benjamini-Yekutieli correction across the reported metrics. "
+                    "Inconclusive does not establish equality; paired/clustered designs require their own analysis.")
+
+
 def render_markdown(base_spec: str, cand_spec: str, base_groups, cand_groups,
-                    deltas: list[Delta], target: str | None, all_groups, metrics) -> str:
+                    deltas: list[Delta], target: str | None, all_groups, metrics,
+                    note: str = INDEPENDENT_NOTE) -> str:
     """The plain-text A/B summary. Group-agnostic; `all_groups` orders the count line."""
     L = []
     L.append(f"# A/B: `{cand_spec}` (candidate) vs `{base_spec}` (baseline)")
@@ -184,8 +203,7 @@ def render_markdown(base_spec: str, cand_spec: str, base_groups, cand_groups,
                      f"{'d' if d.kind=='mean' else 'rate difference'}={d.effect:+.2f})")
         L.append("")
 
-    L.append("P-values below use Benjamini-Yekutieli correction across the reported metrics. "
-             "Inconclusive does not establish equality; paired/clustered designs require their own analysis.")
+    L.append(note)
     L.append("## All metrics (baseline → candidate, Δ, verdict)")
     L.append("")
     L.append("| metric | group | baseline | candidate | verdict (p) |")
