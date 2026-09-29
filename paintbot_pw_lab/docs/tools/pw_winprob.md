@@ -52,7 +52,7 @@ with the default build (the tag in `tools/release.env`) and cached as usual.
 | Inputs | `fetch --out DIR` (`--versions`, default the `tools/release.env` version; `--max-episodes` ≤ 40); `fit ROOT... --out DIR`; `credit ROOT... --model FILE --out DIR`; `--jobs` |
 | Outputs | `fit`: `model.json`, `report.json`, `wp_ticks.parquet`, `wp_events.parquet`, `wp_policy.parquet`; `credit`: the three parquet tables; `fetch`: `DIR/<ereq>/{episode.json, replay.gz}` |
 | `--json` result | `fetch`: `{out, episodes, already_present, skipped, versions}`; `fit`: `{report, model, verdict, held_out, episodes, event_summary}`; `credit`: `{credited, in_fit, exclusions, event_summary}` |
-| Exit codes | 0 ok; 1 some episodes failed to load, `fit` had fewer than 4 usable episodes, or `fetch` found none of the wanted versions; 2 usage (`--max-episodes` above 40, a missing `--model`); 3 the public API is unreachable after retries, or `pw_trace` is not built |
+| Exit codes | 0 ok; 1 some episodes failed to load, `fit` had fewer than 4 usable episodes, or `fetch` found none of the wanted versions; 2 usage (`--max-episodes` above 40, a missing `--model`); 3 the public API is unreachable, or `pw_trace` is not built. A `fetch` still rate-limited (HTTP 429) after the retries is exit 1 with `failures[].code = "rate_limited"` (wait and rerun; saved episodes are skipped) |
 | Idempotence / cache | fetch skips episodes on disk; fit/credit read the trace caches and overwrite `OUT/` |
 | Typical next step | `credit` a batch of ours with the fitted model; feed `wp_policy.parquet` to diagnosis |
 

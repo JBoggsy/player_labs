@@ -70,7 +70,7 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 | `docs/designs/` | Design documents. [`2026-09-29-tooling-plan.html`](docs/designs/2026-09-29-tooling-plan.html) is the tools-and-skills plan, now implemented (brief: `.tooling-plan-brief.md`). |
 | `tools/` | The instruments: `pw.py` (dispatcher, catalog, doctor), `pw_cli.py` (shared CLI contract), `release.env` / `pw_release.py` (engine pin), Nim `pw_trace` / `pw_map`, Python readers, metrics, visuals, A/B, local harness, scouting, miner, win probability, tuning; `tests/`. Build products go to gitignored `tools/bin/` and `tools/.cache/`. |
 | `.claude/skills/` | The seven lab skills listed above. |
-| `reference/base.bas`, `reference/jev.bas` | Official teams starters at the pinned release. Keep reference files distinct from candidates. |
+| `reference/base.bas`, `reference/jev.bas` | Official teams starters at the pinned release, from `coworld/paintbot/players/` (the files the manifest's `player[]` hashes name). The repo's `examples/paintbot/players/base.bas` is an older engine-test copy; do not use it. Keep reference files distinct from candidates. |
 | `reference/intent_telemetry.bas`, `reference/wire_intent_base.py` | The intent-line module for our policies, and a script that wires it into `base.bas` for audits. |
 | `reference/heartland/` | FFA-kin starters for the separate Heartland coworld; they do not compile in the teams game. |
 | `reference/manifest-0.3.79.json` | The deployed coworld manifest (config schema, variants, readme). |
@@ -108,7 +108,7 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
   league conditions; `top_n`/`random` draw per seat and mix opponents. Never put our policy on
   both teams in a hosted request (self-play; `pw_ab_requests.py` refuses `h2h`): screen
   candidate-vs-baseline locally with `pw.py local screen`.
-- **Identity.** Uploads bind to the active player session; confirm `softmax status` shows
+- **Identity.** Uploads bind to the active player session; confirm `uv run coworld player list` marks
   the intended player before uploading (see WORKING_CONTEXT).
 - Use the shared experience-request, artifact, A/B and miner skills; this lab supplies
   the game adapters. Keep documentation as complete current references; replace

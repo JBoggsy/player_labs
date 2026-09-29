@@ -1,6 +1,12 @@
 # paintbot-pw: leagues, field and evaluation budget
 
-Snapshot taken **2026-09-28, about 22:00 UTC**. Standings move every 10 minutes, so re-read them before you act on them.
+Snapshot taken **2026-09-28, about 22:00 UTC**. Standings move every 10 minutes and champions
+change several times a day, so the tables below are history, not current state. For today's
+champions and exact `policy_ref`s run `uv run python paintbot_pw_lab/tools/pw.py scout leaders --json`;
+for the running release run `pw.py deployed-ref --json`. On 2026-09-29 evening the main league ran
+**0.3.79** (`d0728ab1`, rules 47 teams play), with champions such as `daveey-pw-neural:v26` (#1 Alpha,
+MMR ~1,816), `aaron-coplay-coach:v8`, `aaron-paintbot-pw:v42` and `daveey1-jevbot-v2:v14`
+(public round 2381, read by a verification agent).
 
 > **Update 2026-09-29 (build and Heartland split; standings not re-snapshotted).** Read with
 > `tools/deployed_ref.py` and the paintbot-pw repo, not a fresh standings pull:

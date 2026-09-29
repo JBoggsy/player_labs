@@ -5,6 +5,20 @@ grid from `newWorld`. `pw_mapdata.py` runs it once per (release, map, rules, ste
 caches the result as `.npz` + `.json` under `paintbot_pw_lab/tools/.cache/maps/<tag>/`
 (gitignored with the rest of `tools/.cache/`).
 
+### Cache location
+
+Set `PW_CACHE_DIR` to keep the tools' caches outside the repo: the map rasters then go to
+`$PW_CACHE_DIR/maps/<tag>/`. The same variable moves the per-release source worktree that
+`build_tools.sh` / `build_native.sh` create (`$PW_CACHE_DIR/<tag>/`), which `pw_local.py` and
+`pw_intent.py` read, so set it for the build too, or rebuild after changing it (`pw_local`
+exits 3 naming the missing worktree). Binaries stay in `tools/bin/<tag>/`; per-episode trace
+caches stay beside the episode ([pw_episodes.md](pw_episodes.md#cache-variants)). Resolved by
+`pw_release.cache_root()` at call time.
+
+```bash
+PW_CACHE_DIR=/tmp/pw-cache uv run python paintbot_pw_lab/tools/pw.py map --tag coworld-v0.3.78 --json
+```
+
 ## Commands
 
 ```bash
@@ -30,7 +44,7 @@ row, col = m.cell(x, z)
 | | |
 | --- | --- |
 | Inputs | `--map NAME` ('' = Heartwick), `--rules N`, `--step U`, `--tag`, `--png FILE` |
-| Outputs | cache `tools/.cache/maps/<tag>/<map>-r<rules>-s<step>.{npz,json}`; `--png FILE` |
+| Outputs | cache `tools/.cache/maps/<tag>/<map>-r<rules>-s<step>.{npz,json}` (`$PW_CACHE_DIR/maps/<tag>/...` when set); `--png FILE` |
 | `--json` result | `{map, cache_json, cache_npz, nx, nz, step, bounds, hearts, pickups, trenches, cover, water_share}` (counts, not the feature lists: read `cache_json` for those) |
 | Exit codes | 0 ok; 2 `pw_map` failed for that map/rules (an unknown map); 3 `pw_map` not built (`next[0]` = `paintbot_pw_lab/tools/build_tools.sh`) |
 | Idempotence / cache | one run of `pw_map` per (release, map, rules, step); later calls read the cache |

@@ -34,9 +34,16 @@ the same arguments overwrites its own image.
 - **`--policy`** matches `policy_key` (the exact `policy_version_id`, or `local:<name>`) or
   `policy_name`. `--seats`, `--team` and `--policy` combine (all must hold). An unknown policy or
   seat, or a combination that matches no seat in any episode, is exit 2 with the valid values.
-- **`--fine`** re-traces with every-tick states for the window (`TraceOptions(window=…)`). That
-  rebuilds and **replaces** the episode's cache with those options (other tools still read it
-  correctly, but the next default-option load rebuilds again). On a shared corpus, prefer a copy.
+- **`--fine`** re-traces with every-tick states for the window (`TraceOptions(window=…)`). The
+  result is cached as its own variant (`pw_cache@se6-ve0-w<A>_<B>/` beside the default
+  `pw_cache/`, see [pw_episodes.md](pw_episodes.md#cache-variants)), so it never replaces the
+  default trace other tools read.
+- **`--tag`** picks the release build for both the trace (its own cache variant when it is not
+  the pinned tag) and the terrain raster (`maps/<tag>/`), so a plot of an old-rules episode uses
+  that release's map. That tag needs `pw_trace` and `pw_map` built (`build_tools.sh <tag>`).
+- **`PW_CACHE_DIR`** (env var): where the map rasters are cached, `$PW_CACHE_DIR/maps/<tag>/`
+  instead of `paintbot_pw_lab/tools/.cache/maps/<tag>/`. Point it at a scratch directory to keep
+  a run from writing into the repo (see [pw_map.md](pw_map.md#cache-location)).
 
 ## Agent contract
 
@@ -48,7 +55,7 @@ the same arguments overwrites its own image.
 | Outputs | an image plus a JSON of the plotted data. Default: `paintbot_pw_lab/analysis/pw_viz/<episode id \| batch-<hash>>/<command>[-<kind>][-t<from>-<to>][-team<n>][-seats<list>][-<policy>].png` (`.gif` for gif); `--out FILE` overrides; timeline over several episodes adds `-<episode>` |
 | `--json` result | `{images: [...], data: [...], window: {from_tick, to_tick, match_end_ticks, clamped_to_end, starts_after_end} or null, episodes: [...]}` |
 | Exit codes | 0 ok; 1 some episodes failed to load or verify (the rest are used; one `failures[]` entry each, `counts.failed_by_code`); 2 usage error: bad arguments, roots with no episode, or an unknown selector (`--policy`, `--seats`, a filter matching no seat, a `--from` at or after the end of every match, `--to` before `--from`, `--from/--to` on a command without a window; `result.valid` lists the valid values); 3 `pw_trace` not built (`next[0]` = `paintbot_pw_lab/tools/build_tools.sh`) |
-| Idempotence / cache | same inputs, same path: a rerun overwrites its own image. `--fine` replaces the episode's trace cache options |
+| Idempotence / cache | same inputs, same path: a rerun overwrites its own image. `--fine` and a non-pinned `--tag` trace into their own cache variant; map rasters go to `$PW_CACHE_DIR/maps/<tag>/` (default `tools/.cache/maps/<tag>/`) |
 | Typical next step | Read the PNG before describing it, and check one drawn event with `episodes --sql` |
 
 A `--to` past a match's end is clamped to its last tick and reported (`result.window.clamped_to_end`, a note on stderr). In small multiples, an episode that ended before `--from` gets an empty panel titled so (`starts_after_end`); only a window past the end of **every** episode is refused.

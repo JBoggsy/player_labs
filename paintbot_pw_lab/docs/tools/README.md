@@ -16,6 +16,8 @@ uv run python paintbot_pw_lab/tools/pw.py <subcommand> --help    # every flag, w
 | Question | Subcommand | Skill |
 | --- | --- | --- |
 | Is the lab ready to run? What do I fix first? | `doctor` |  |
+| Is the loop charter filled in? | `doctor` |  |
+| Which player identity is active? | `doctor` |  |
 | Which tool do I use for X? | `tools` |  |
 | Which build does the league run? Are our tools and docs current? | `deployed-ref` | `paintbot-pw-replay` |
 | Which tag are the tools pinned to, and is it built? | `release` |  |
@@ -38,6 +40,7 @@ uv run python paintbot_pw_lab/tools/pw.py <subcommand> --help    # every flag, w
 | Give me a one-page report on this match. | `report` | `paintbot-pw-replay` |
 | Who is strong in the league and how do they play? | `scout` | `paintbot-pw-scout` |
 | What do opponents shout? | `scout` | `paintbot-pw-scout` |
+| Who are the current champions, as name:vN refs for --opponent? | `leaders` | `paintbot-pw-ab` |
 | Which requests does this A/B need? | `ab-requests` | `paintbot-pw-ab` |
 | Did my change help? | `compare` | `paintbot-pw-ab` |
 | Can we stop the A/B yet (SPRT)? | `compare` | `paintbot-pw-ab` |
@@ -61,8 +64,8 @@ Check the lab is ready: release.env vs the league, built binaries and library, P
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py doctor` (runs `pw.py`)
 - **When:** First command of any autonomous loop, and whenever a tool exits 3.
 - **Inputs:** --json; --offline skips the league check (no network)
-- **Outputs:** nothing written; result.checks[] = {name, ok, detail, fix}
-- **Exit codes:** 0 ready; 1 release.env behind the league; 2 usage; 3 something missing (fix listed)
+- **Outputs:** nothing written; result.checks[] = {name, ok, detail, fix}, result.loop = {ready, missing, charter_path}, result.player = {active_player_id, session, confirm}
+- **Exit codes:** 0 ready; 1 release.env behind the league, or the league check was rate-limited (code rate_limited) / the API was down: wait and retry or use --offline; 2 usage; 3 something missing (fix listed). An unready loop charter never changes the exit code
 - **Reference:** [README.md#doctor](README.md#doctor)
 
 ### tools
@@ -105,7 +108,7 @@ Build paintbot-headless, replay_stats, pw_trace and pw_map for the pinned tag (o
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py build` (runs `paintbot_pw_lab/tools/build_tools.sh`)
 - **When:** When doctor/release reports a missing binary or deployed-ref just moved the pin.
 - **Inputs:** [TAG] (default: tools/release.env)
-- **Outputs:** tools/bin/<tag>/, tools/.cache/<tag>/ worktree
+- **Outputs:** tools/bin/<tag>/, tools/.cache/<tag>/ worktree ($PW_CACHE_DIR/<tag>/ when set)
 - **Exit codes:** 0 built; non-zero build failure (read the compiler output)
 - **Reference:** [pw_trace.md](pw_trace.md); skill [`paintbot-pw-replay`](../../.claude/skills/paintbot-pw-replay/SKILL.md)
 
@@ -138,7 +141,7 @@ Load episodes (hosted dirs or local .replay), trace them hash-checked, cache Par
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py episodes` (runs `paintbot_pw_lab/tools/pw_episodes.py`)
 - **When:** First step on any episode data; answering a specific 'what happened at tick X' question.
 - **Inputs:** ROOT... [--window A:B] [--vis-every M] [--sql QUERY] [--refresh] [--json]
-- **Outputs:** per-episode cache <episode dir>/pw_cache/ or NAME.pw_cache/ beside a .replay (trace.jsonl, tables/*.parquet, receipt.json); reused while the inputs are unchanged
+- **Outputs:** per-episode cache <episode dir>/pw_cache/ or NAME.pw_cache/ beside a .replay (trace.jsonl, tables/*.parquet, receipt.json); another --tag or trace options get their own variant (pw_cache@<variant>/, NAME@<variant>.pw_cache/) instead of replacing it; reused while the inputs are unchanged
 - **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh)
 - **Reference:** [pw_episodes.md](pw_episodes.md); skill [`paintbot-pw-replay`](../../.claude/skills/paintbot-pw-replay/SKILL.md)
 
@@ -182,7 +185,7 @@ Map geometry (terrain raster, water, trenches, cover, hearts, pickups) cached pe
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py map` (runs `paintbot_pw_lab/tools/pw_mapdata.py`)
 - **When:** Plots and spatial metrics; check a map loads for a release.
 - **Inputs:** [--map NAME] [--rules N] [--step U] [--png OUT] [--json]
-- **Outputs:** tools/.cache/maps/<tag>/<map>-r<rules>-s<step>.{npz,json}; --png file
+- **Outputs:** tools/.cache/maps/<tag>/<map>-r<rules>-s<step>.{npz,json} (under $PW_CACHE_DIR when set); --png file
 - **Exit codes:** 0 ok; 2 usage or unknown map; 3 pw_map not built (run paintbot_pw_lab/tools/build_tools.sh)
 - **Reference:** [pw_map.md](pw_map.md)
 
@@ -203,8 +206,8 @@ Movement diagrams, heatmaps, occupancy comparison, match timeline, GIF (PNG + JS
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py viz` (runs `paintbot_pw_lab/tools/pw_viz.py`)
 - **When:** To SEE a moment or a habit; always Read the PNG before describing it.
-- **Inputs:** movement|heatmap|occupancy|timeline|gif ROOT... [--from T --to T] [--seats] [--team] [--policy] [--out FILE] [--json]
-- **Outputs:** default paintbot_pw_lab/analysis/pw_viz/<episode|batch>/<command>[-selectors].png + .json
+- **Inputs:** movement|heatmap|occupancy|timeline|gif ROOT... [--from T --to T] [--seats] [--team] [--policy] [--fine] [--tag TAG] [--out FILE] [--json]
+- **Outputs:** default paintbot_pw_lab/analysis/pw_viz/<episode|batch>/<command>[-selectors].png + .json; --tag picks the build for the trace and the map ($PW_CACHE_DIR/maps/<tag>/ when set)
 - **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); a --from past every match end or an unknown policy/seat is exit 2
 - **Reference:** [pw_viz.md](pw_viz.md); skill [`paintbot-pw-replay`](../../.claude/skills/paintbot-pw-replay/SKILL.md)
 
@@ -227,8 +230,19 @@ Public league survey: fetch recent public episodes (anonymous, gentle), then sta
 - **When:** Before designing against the field; to profile a specific opponent.
 - **Inputs:** fetch [--max-episodes N] [--out DIR] [--json] | report ROOT... [--ours KEY] [--reasons FILE] [--json]
 - **Outputs:** fetch: episode_data/scout/<date>/r<round>_<ereq>/ + index.json (skips what exists); report: scout.json, scout.md, scout.interesting.json in the first root
-- **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); fetch: 3 when the public API is unreachable
+- **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); fetch: 1 rate-limited after retries (code rate_limited), 3 when the public API is unreachable
 - **Reference:** [pw_scout.md](pw_scout.md); skill [`paintbot-pw-scout`](../../.claude/skills/paintbot-pw-scout/SKILL.md)
+
+### leaders
+
+Current champions of a division: the latest completed public round's entrants, named from its episodes, ranked from the public leaderboard (MMR). Anonymous, 3 reads.
+
+- **Command:** `uv run python paintbot_pw_lab/tools/pw.py leaders` (runs `paintbot_pw_lab/tools/pw_scout.py leaders`)
+- **When:** Resolving --opponent refs for an A/B or evaluation (also `pw.py scout leaders`).
+- **Inputs:** [--division ID] [--top N] [--json]
+- **Outputs:** stdout only; result.leaders[] = {rank, player, policy_ref, policy_version_id, mmr, owner}
+- **Exit codes:** 0 ok; 1 rate-limited after retries (code rate_limited) or some entrants unnamed; 2 usage; 3 the public API is unreachable
+- **Reference:** [pw_scout.md#leaders](pw_scout.md#leaders); skill [`paintbot-pw-ab`](../../.claude/skills/paintbot-pw-ab/SKILL.md)
 
 ### ab-requests
 
@@ -315,7 +329,7 @@ Win-probability model P(win | team state at t), held-out evaluation, and per-eve
 - **When:** Which events actually swing matches; crediting a batch with a saved model.
 - **Inputs:** fetch --out DIR | fit ROOT... --out DIR | credit ROOT... --model FILE --out DIR; [--json]
 - **Outputs:** fit: model.json, report.json, wp_{ticks,events,policy}.parquet; fetch: <ereq>/ dirs (skips what exists)
-- **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); fit with < 4 usable episodes is exit 1; fetch: 3 when the API is unreachable
+- **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); fit with < 4 usable episodes is exit 1; fetch: 1 rate-limited after retries (code rate_limited), 3 when the API is unreachable
 - **Reference:** [pw_winprob.md](pw_winprob.md); skill [`paintbot-pw-diagnose`](../../.claude/skills/paintbot-pw-diagnose/SKILL.md)
 
 ### test
@@ -385,4 +399,18 @@ uv environment (`uv sync`), `tools/release.env` readable, every binary and the n
 for the pinned tag (`build_tools.sh` / `build_native.sh`), the library's build receipt matching
 the tag, the paintbot-pw source clone (`git clone ...`), the shared skill engines (`ab_stats`,
 `paired_stats`, `variance_miner`), and, unless `--offline`, `deployed_ref.py` (league build vs
-`release.env`; needs `softmax login` and network).
+`release.env`; needs `softmax login` and network). An HTTP 429 there is failure code
+`rate_limited` (exit 1, `next`: wait and retry, or `doctor --offline`), not a login problem;
+only 401/403 or no token suggests `uv run softmax login`.
+
+It also reports, without changing the exit code:
+
+- `result.player`: the active player id read from the local softmax credentials (no network).
+  `uv run coworld player list` shows the names with the active one marked (`softmax status`
+  does not show the active player).
+- `result.loop = {ready, missing, charter_path}`: whether `## Loop charter` in
+  `paintbot_pw_lab/WORKING_CONTEXT.md` is filled in (objective, policy_file, policy_name /
+  player, baseline, opponents, allowed_changes, credit_budget, max_iterations; a field is
+  unset when empty or still a `(...)` placeholder, a section saying "Not set" adds
+  `not_set_marker`, and a set policy_file must exist, else `policy_file_exists`). When not
+  ready, `next` points at the charter and the `paintbot-pw-loop` skill.

@@ -53,6 +53,7 @@ hash-exact).
 
 ```
 <hosted episode dir>/pw_cache/            <local>/NAME.pw_cache/   (for NAME.replay)
+<hosted episode dir>/pw_cache@<variant>/  <local>/NAME@<variant>.pw_cache/   (other tag / options)
     trace.jsonl                            pw_trace output (schema: pw_trace.md)
     tables/<table>.parquet                 one file per table below, for this episode
     receipt.json                           {"inputs": signature, "outputs": {file: sha256}}
@@ -63,7 +64,9 @@ The signature covers sha256 of the tape, `results.json`, `episode.json`, the loc
 `TABLES_VERSION`. A cache is used only when the signature matches and every output's
 sha256 matches; anything else is rebuilt in a temporary directory and promoted by rename.
 `pw_cache/` lives inside `episode_data/`, which is gitignored; local `*.pw_cache/` dirs live
-wherever the recordings are.
+wherever the recordings are. A trace with another release tag, `--binary` or trace options
+(`--window`, `--vis-every`, `--state-every`) is a separate variant directory, so it never
+replaces the default one; see [pw_episodes.md](pw_episodes.md#cache-variants).
 
 ### Local episodes
 

@@ -31,4 +31,14 @@ Each needs an A/B on the live roster before it is a lesson.
   meter plus hearts alone predicted nothing held-out (`pw.py winprob`, thin data: 40 league
   episodes). Evidence needed: a larger league sample; then whether survival changes (refusing
   fights earlier, fewer lone deaths) raise the Elo outcome more than capture changes do.
+- **Never abandon a grenade charge.** Local evidence (28 seeds, base.bas vs base.bas, 2026-09-29):
+  the engine throws a charged grenade on the first tick the script stops calling
+  `chargeGrenade`, and base.bas stops mid-charge whenever its conditions fail (target died,
+  teammate near the target, out of range; `reference/base.bas` grenade block). The throw then
+  flies ~197 units, inside the 415-unit blast. 86 of 340 throws were such short throws (mean 264
+  units); they killed the thrower 60 times, teammates 12 times and enemies 4 times; own-team
+  grenades caused 104 of 1,675 deaths (6.2%). Example: local seed 24, seat 2 at t=454-465 killed
+  itself and seats 4 and 6. Candidate fix: keep charging and throw at the last good aim point, or
+  cancel only while the charge is 0. Evidence needed: a hosted A/B; the league field may punish
+  or ignore this differently.
 

@@ -35,7 +35,9 @@ its checkout never changes).
 ```bash
 uv run python paintbot_pw_lab/tools/deployed_ref.py --write --json > /tmp/ref.json
 # exit 0: tools current. exit 1 + result.written: release.env moved -> run every command in "next".
-# exit 3: environment (login/network/clone) -> run the fix named in failures[0].message.
+# exit 1 + failures[0].code == "rate_limited" (HTTP 429) or "api_unavailable" (5xx): nothing is
+#   missing; wait a minute and rerun (next[0]). Do NOT run softmax login for this.
+# exit 3: environment (login/network/clone) -> run next[0] (also named in failures[0].message).
 ```
 
 ## Exit codes
@@ -44,8 +46,9 @@ uv run python paintbot_pw_lab/tools/deployed_ref.py --write --json > /tmp/ref.js
 | --- | --- | --- |
 | 0 | `release.env` matches the league's tag and commit | nothing; still read the DOCS line |
 | 1 | release.env is behind the league, or `--write` just moved it, or the league's version has no release tag (`failures[].code = "untagged"`) | run `next`: `--write`, then `build_tools.sh`, `build_native.sh`, the test suite |
+| 1 | the Observatory API answered HTTP 429 (`failures[].code = "rate_limited"`) or 5xx (`"api_unavailable"`): the check could not run, nothing is missing | wait, then rerun (`next[0]`); `pw.py doctor --offline` skips this check |
 | 2 | usage error (bad flag, unreadable release.env) | fix the command |
-| 3 | environment missing: no `softmax` login (`uv run softmax login`), Observatory/GitHub unreachable, no source clone | run the command in the message |
+| 3 | environment missing: no `softmax` login token or HTTP 401/403 (`uv run softmax login`), Observatory/GitHub unreachable, no source clone | run `next[0]` (also in the message) |
 
 ## Agent contract
 
@@ -56,7 +59,7 @@ uv run python paintbot_pw_lab/tools/deployed_ref.py --write --json > /tmp/ref.js
 | Inputs | `--write`, `--docs-sha SHA`, `--clone DIR` |
 | Outputs | `tools/release.env` (only with `--write`, only its tag/sha lines) |
 | `--json` result | see Output below: `leagues`, `tracked`, `release_env` before/after, `tools_current`, `written`, `rule_diffstat`, `docs_rule_files_changed`, `docs_to_reverify` |
-| Exit codes | the table above (0 current; 1 behind, just written or untagged; 2 usage; 3 environment) |
+| Exit codes | the table above (0 current; 1 behind, just written, untagged, or rate-limited / API down; 2 usage; 3 environment) |
 | Idempotence / cache | `--write` on a current pin changes nothing. Each run makes 2 API reads per league plus one `git ls-remote`: run it once per loop, not in a tight loop |
 | Typical next step | on exit 1: the commands in `next[]` (rebuild, then the tests); `pw.py doctor` runs this check for you |
 

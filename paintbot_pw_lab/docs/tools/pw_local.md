@@ -67,7 +67,8 @@ in `bad_seats`.
 ## Guards (the tool refuses to run)
 
 1. **Build identity.** `libpw.build.json` must exist, name the requested tag, name the commit
-   the tag resolves to in `tools/.cache/<tag>/`, and match the library's current sha256. The
+   the tag resolves to in `tools/.cache/<tag>/` (`$PW_CACHE_DIR/<tag>/` when set; a missing
+   worktree is exit 3 with the build command), and match the library's current sha256. The
    library has no call that reports its own build ref, so this sidecar is the check.
 2. **Parity with `paintbot-headless`** (`match` and `screen`). Before the batch, two matches
    run through both the library and `tools/bin/<tag>/paintbot-headless` with the same bots,
@@ -105,6 +106,13 @@ matches/s, `recorded` replays, and `summary`:
 - `seed_balanced`: each seed's two sides averaged first, then mean ± CI over seeds. This is the
   number to read: it cancels the side advantage (below). A policy against itself scores exactly
   0.5 per seed here, a free identity check.
+
+`identical_play` (top level of `summary.json` and of the `--json` result): `true` when every
+seed was played on both sides and each seed's two final state hashes are equal, so A-vs-B
+equals B-vs-A game for game and the two files played move for move identically. `screen` then
+prints a WARNING on stderr and adds it to `next`. Seen with `reference/jev.bas` vs
+`reference/base.bas`: jev's differences sit behind the advisor oracle, which is off locally,
+so the screen's W/D/L says nothing about jev vs base. Always `false` for `match` (one side).
 
 stderr prints one line per match and the parity lines; stdout prints the summary.
 

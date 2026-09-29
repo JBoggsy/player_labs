@@ -34,7 +34,13 @@ pw_release.docs_sha()                  # '570174a2'
 pw_release.bin_dir(tag=None)           # Path to tools/bin/<tag>/
 pw_release.require_built("pw_trace")   # Path, or raises pw_release.NotBuilt (exit_code 3)
 pw_release.require_built_or_exit("pw_map", tag)   # CLI paths: prints the fix, exits 3
+pw_release.cache_root()                # $PW_CACHE_DIR, else tools/.cache/ (read at call time)
+pw_release.release_tree(tag=None)      # <cache root>/<tag>/: build_tools.sh's source worktree
 ```
+
+`PW_CACHE_DIR` moves the tools' rebuildable caches out of the repo: the release worktrees
+(`build_tools.sh`/`build_native.sh` use `${PW_CACHE_DIR:-tools/.cache}/<tag>`) and the map
+rasters (`maps/<tag>/`, [pw_map.md](pw_map.md#cache-location)). Binaries stay in `tools/bin/`.
 
 `NotBuilt`'s message is `<path> is missing: run paintbot_pw_lab/tools/build_tools.sh` (with the
 tag appended when it is not the current one); `libpw.dylib`/`libpw.build.json` name

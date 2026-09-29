@@ -53,12 +53,22 @@ uv run python paintbot_pw_lab/tools/pw.py doctor --json
   if any rule-bearing engine file changed since `PW_DOCS_SHA`, the mechanics may have changed.
   **Stop the loop** and report the diffstat; re-verifying the docs (tooling plan T0) comes
   first. Also re-read the league ranking settings if the charter's objective depends on them.
-- Confirm identity before any upload: `uv run softmax status` must show the charter's player.
+- `doctor`'s `result.loop` says whether the charter is complete (`ready`, `missing`): if not
+  ready, stop here (step 0).
+- Confirm identity before any upload: `uv run coworld player list` must mark the charter's
+  player as active (●); switch with the `coworld-player-swap` skill. (`softmax status` shows only
+  the user, not the player.)
 
 ## 2. Evaluate the baseline
 
 Skip if a fresh evaluation of `baseline` vs every charter opponent exists for the current
 `release.env` tag (check `WORKING_CONTEXT.md`, which records the last evaluation's request ids).
+If the charter names opponents by role ("the top 3") rather than exact refs, resolve today's
+champions first; the shared resolver skips champions with a null leaderboard label (often the #1):
+
+```bash
+uv run python paintbot_pw_lab/tools/pw.py scout leaders --json   # rows: rank, player, policy_ref name:vN, policy_version_id, mmr
+```
 
 ```bash
 # the same policy as --baseline and --candidate = evaluate that one policy (one arm)

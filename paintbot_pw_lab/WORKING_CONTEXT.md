@@ -24,7 +24,7 @@ James fills this in; until then an agent proposes a charter and stops.
 
 - objective: (e.g. raise the mean Elo outcome score vs the top 3 champions)
 - policy_file: (e.g. paintbot_pw_lab/policy/dist/<name>.bas)
-- policy_name / player: (upload name; player identity for `softmax status`)
+- policy_name / player: (upload name; player identity as shown by `uv run coworld player list`)
 - baseline: (accepted version `name:vN`; the loop updates this line)
 - opponents: (explicit `policy_ref`s)
 - allowed_changes: (classes of change the loop may make without asking)
@@ -34,8 +34,9 @@ James fills this in; until then an agent proposes a charter and stops.
 ## Identity and presence
 
 - Account players: "James Botts" (default) and "Games Bond". Neither has a policy,
-  membership or submission in any paintbot-pw league. Confirm `uv run softmax status`
-  shows the intended player before the first upload (`coworld-player-swap` skill).
+  membership or submission in any paintbot-pw league. Confirm `uv run coworld player list`
+  marks the intended player (●) as active; `softmax status` shows only the user before the first upload (`coworld-player-swap` skill).
+- The active player session (James Botts, `ply_53fb05a6-…`) expired 2026-09-16 (`pw.py doctor` → `result.player`); refresh with `uv run coworld player use` before any upload, or uploads bind to the user's default player.
 - Credits: 20,000 balance at the cap, refilling ~1,429/day (2026-09-28). A league-like
   episode costs ~0.3 credits.
 

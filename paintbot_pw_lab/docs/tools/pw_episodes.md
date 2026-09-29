@@ -36,10 +36,10 @@ message` line per failure, and the exclusion counts.
 | | |
 | --- | --- |
 | Inputs | episode dirs, batch dirs (searched recursively) or `NAME.replay`; `--tag`/`--binary`, `--state-every`, `--vis-every`, `--window A:B`, `--refresh`, `--jobs`, `--sql` |
-| Outputs | per-episode cache `<episode dir>/pw_cache/` (or `NAME.pw_cache/`): `trace.jsonl`, `tables/*.parquet`, `receipt.json`; `outputs[]` lists the caches this run (re)built |
+| Outputs | per-episode cache `<episode dir>/pw_cache/` (or `NAME.pw_cache/`), or a variant `pw_cache@<variant>/` (`NAME@<variant>.pw_cache/`) for a non-default tag or trace options: `trace.jsonl`, `tables/*.parquet`, `receipt.json`; `outputs[]` lists the caches this run (re)built; `result.episodes[].cache` names the one used |
 | `--json` result | `{episodes: [{episode_id, rules, ticks, winner, glory: [g0, g1], results_check, cached, notes, cache}], sql?: [rows]}` (`sql` only with `--sql`) |
 | Exit codes | 0 ok; 1 some episodes failed to load or verify (the rest are used; one `failures[]` entry each, `counts.failed_by_code`); 2 usage error: bad arguments, roots with no episode, or an unknown selector (`--window`, `--binary`; `result.valid` lists the valid values); 3 `pw_trace` not built (`next[0]` = `paintbot_pw_lab/tools/build_tools.sh`) |
-| Idempotence / cache | a cache is reused while its receipt (tape, metadata, binary and option digests) matches; `--refresh` re-traces. Reruns are cheap |
+| Idempotence / cache | a cache is reused while its receipt (tape, metadata, binary and option digests) matches; `--refresh` re-traces. Reruns are cheap. Each (tag, options) pair has its own cache directory, so tracing with `--tag X` or finer options never replaces another trace (see Cache variants) |
 | Typical next step | `uv run python paintbot_pw_lab/tools/pw.py metrics ROOT --json` (the envelope's `next[]`), or `--sql` for one question |
 
 ## Inputs it accepts
@@ -71,6 +71,31 @@ A cached rerun of all 8 took 1.4 s. A tape with one flipped byte fails as `trace
 (hash mismatch at tick 1641); a directory without a tape fails as `no_replay`; editing
 `results.json` invalidates the cache and fails as `results_mismatch`. Tests:
 `paintbot_pw_lab/tools/tests/test_pw_episodes.py`.
+
+## Cache variants
+
+The cache directory is keyed by what was traced, not just by the episode:
+
+| Trace | Hosted episode dir | Local `NAME.replay` |
+| --- | --- | --- |
+| pinned tag (`tools/release.env`), default options | `pw_cache/` | `NAME.pw_cache/` |
+| `--tag coworld-v0.3.78` | `pw_cache@coworld-v0.3.78/` | `NAME@coworld-v0.3.78.pw_cache/` |
+| `--vis-every 24` | `pw_cache@se6-ve24/` | `NAME@se6-ve24.pw_cache/` |
+| `--tag X --window 960:1560` (also `pw_viz --fine`) | `pw_cache@X+se6-ve0-w960_1560/` | `NAME@X+se6-ve0-w960_1560.pw_cache/` |
+| `--binary PATH` | `pw_cache@bin-<sha256[:10]>/` | `NAME@bin-<sha256[:10]>.pw_cache/` |
+
+So `pw.py episodes DIR --tag X` after `pw_viz --fine` (or `pw_intent`'s dense trace, or
+`--vis-every`) traces once into its own directory and leaves the others in place; the next run
+with the same tag and options is a cache hit. Before 2026-09-29 there was one `pw_cache/` per
+episode and any other tag or granularity silently re-traced and replaced it.
+
+- The "pinned tag" is read from `tools/release.env` when the tool starts. After
+  `deployed_ref.py --write` moves the pin, the new tag's traces take over `pw_cache/` (the old
+  default is re-traced once) and an explicit `--tag <old>` gets its own variant.
+- `open_duckdb(roots)` reads only the default `pw_cache/` of each episode; pass the loaded
+  `Batch` to query a variant.
+- Variants are never deleted automatically. `rm -rf <dir>/pw_cache@*` is safe: a missing cache
+  is rebuilt on the next load.
 
 ## Limits
 
