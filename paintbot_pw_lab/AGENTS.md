@@ -50,10 +50,12 @@ BASIC dialect, different game and host API.
   `source_url` carries no commit; the `coworld-v<version>` tag is the only link from a
   release to source, which `tools/deployed_ref.py` resolves. Releases ship several times a
   day (40 in the first 10 days), so re-run it before trusting any mechanics claim.
-- **Only a win scores.** The result `scores` are the winning team's glory; the loser and
-  both sides of a draw get 0. League Elo compares the two sides' mean scores as
-  win/draw/loss, so a win whose glory has decayed to 0 rates as a draw. Never read glory
-  size as rank movement, and never infer a win from anything but the result.
+- **Glory margin is the rank signal.** The result `scores` are the winning team's glory;
+  the loser and both sides of a draw get 0. Since 2026-09-28 the ladder's Elo uses
+  `margin_scale: 1000`: each episode counts as `clamp(0.5 + (our glory - their glory) / 2000,
+  0, 1)`, so a 500-glory win is 0.75, a 950-glory win about 0.98 and a 0-glory win a draw
+  (metta `elo.py:183-187`). Fast, high-glory wins move rank more; a loss to a fast winner
+  costs more. Never infer a win from anything but the result.
 - **A BASIC compile error fails the whole episode** (no results, no data from that
   eval slot); it shows up as failed hosted episodes, which is the signal to read. When
   the platform attributes a failure to one policy, Elo scores that side as a forfeit loss

@@ -75,8 +75,9 @@ Every teams variant in the 0.3.65 manifest sets `"glory": {"behind_lives": 5}`. 
 - Glory hearts (+20) spawn in mirrored pairs from 0:20, every 10-20 s, live 30 s, on random
   open dry spots (`sim.nim:36-43`, `905-948`). They are fog-gated (see policy-surface.md).
 - Mean score and win rate are different questions. A policy that wins 60% slowly can score below
-  one that wins 50% fast. How the league aggregates per-episode scores into a rank is a platform
-  setting not visible in this repo (**open question**).
+  one that wins 50% fast. The ladder resolves this in favour of glory: since 2026-09-28 its Elo
+  uses `margin_scale: 1000`, so each episode counts as `clamp(0.5 + (our glory - their glory) /
+  2000, 0, 1)` (metta `elo.py:183-187`; see [field.md](field.md)).
 
 ## 2. Teams, seats, and match flow (teams mode)
 
@@ -311,7 +312,6 @@ Which variant the main `paintbot-pw` league runs is not in the repo; the guide s
 
 ## 9. Open questions
 
-- How the league turns per-episode `scores` into a ranking (mean glory, Elo on wins, or other).
 - Whether the platform overrides `seed` per episode (variants fix 2026).
 - Which variant the main league runs (assumed `competition`).
 - What the platform does with a `player_failure` file written by `forfeit_seat` when the episode

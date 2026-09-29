@@ -44,11 +44,9 @@ The manifest's `1v1`, `2v2` and `competition` variants have **identical** game c
 | Filler | `paintbot-pw-basic-v22:v1` (`c51834df…`), a system-owned basic policy. It also ranks as a player. | live |
 | Qualification | `commissioner_key: platform`. Disqualified after 3 consecutive failures. `allowed_failures` 0.34, 2 retries. | live (settings) |
 | Episode score | The winning team's glory goes to each of its seats. The loser scores **0**. Live: all 12 episodes of round 2238 had winner 428–577 and loser 0. | documented + live |
-| Ranking | **Elo**: K = 32, initial 1500, `round_scoring_rule: mean`. The leaderboard labels this "MMR". | live (settings) |
+| Ranking | **Elo**: K = 32, initial 1500, `round_scoring_rule: mean`, **`margin_scale: 1000`** (set 2026-09-28 evening; read live 2026-09-29). The leaderboard labels this "MMR". | live (settings) |
 
-How Elo reads an episode (source-verified, `observatory_competitions/v2/ladders/rankings/elo.py:150-195`): the rating update compares the two sides' mean scores. The result is win, draw (equal scores) or loss, and **the margin is ignored**. So glory size does not move rank; only winning does.
-
-Inference: a team that wins at the 10-minute limit with no glory bonuses scores 0. That ties the loser's 0, and Elo records it as a draw. Slow wins can therefore count as draws.
+How Elo reads an episode (source-verified in metta `elo.py:82-87,171-187`, commit `6304974ffa`): the update compares the two sides' mean scores. With `margin_scale` set, the result is the **score margin**, `clamp(0.5 + (our glory - their glory) / 2000, 0, 1)`, not win/draw/loss. A 500-glory win counts 0.75, a 950-glory win about 0.98, and a 0-glory win 0.5 (a draw). Glory size therefore moves rank. A failure attributed to one policy still forfeits fully (0 or 1). Before 2026-09-28 the ladder used plain win/draw/loss; ratings earned before then were built that way.
 
 Ratings are kept per player (`entrant_attributions` uses `subject_type: player`). Inference: a new champion version inherits the player's rating.
 

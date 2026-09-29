@@ -42,6 +42,14 @@ unchanged as the baseline and measure it against each current champion with pinn
 
 ## Open constraints
 
+- 2026-09-29: the league runs `coworld-v0.3.77` (`0ff41d2d`, rules 47). The mechanics and policy
+  docs are verified only to `ef82196` (rules 45): rules 46-47 behind-in-cogs glory (league pays
+  10 per extra cog out), new BASIC names (`teamLives`, `teamCogsOut`, `awardBehind*`) and
+  per-match seat counts are not yet written up. Phase 0 of
+  [the tooling plan](docs/designs/2026-09-29-tooling-plan.html) re-verifies them.
+- The ladder now rates glory margin (`margin_scale: 1000`, set 2026-09-28 evening); the lab docs
+  are corrected. The onboarding report (`docs/reports/paintbot-pw-onboarding-2026-09-28.*`,
+  sections 3 and 12) still describes plain win/draw/loss and needs an update.
 - 2026-09-28 evening: a third league, Heartland Big (`league_c463b65f-99f1-43ae-bb03-2d4f7f094f1b`),
   appeared, and paintbot-pw `main` has a commit (`f0c9e6f`) that publishes Heartland as its own
   coworld. Once that ships, Heartland's source and tags can differ from the teams game; add

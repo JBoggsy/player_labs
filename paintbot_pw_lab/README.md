@@ -38,7 +38,7 @@ kept only by the winner. Every seat is a BASIC script run inside the engine.
 
 | Topic | What is established | Document |
 | --- | --- | --- |
-| Win condition vs score | The meter decides the winner; `scores` are the winner's glory, loser and draws 0. League Elo reads only win/draw/loss from the side means (`observatory_competitions/.../rankings/elo.py:150-195`), so a win with glory decayed to 0 rates as a draw, and an episode failure attributed to one policy is a forfeit loss for its side. | [mechanics.md §1](docs/mechanics.md), [field.md](docs/field.md) |
+| Win condition vs score | The meter decides the winner; `scores` are the winner's glory, loser and draws 0. League Elo rates the glory margin (`margin_scale: 1000` since 2026-09-28): an episode counts as `clamp(0.5 + (our glory - their glory) / 2000, 0, 1)`, so glory size moves rank and a 0-glory win is a draw; an episode failure attributed to one policy is a forfeit loss for its side (`observatory_competitions/.../rankings/elo.py:171-187`). | [mechanics.md §1](docs/mechanics.md), [field.md](docs/field.md) |
 | Glory awards | Countdown −1/s; +10 per 30 s with no team pickup; +20 per glory heart; +5 per life behind every 5 s in the league config (engine default 1). | [mechanics.md §1](docs/mechanics.md) |
 | Rules | Hearts and capture, lives and respawn, gun/spray/grenade, armor, trenches, disguises, lake, vision cone and hearing, maps and modes. | [mechanics.md](docs/mechanics.md) |
 | Policy language | Polyworld BASIC; per-tick decision; 50,000 instructions and 125,000 work units per decision; 128 KiB source; PRINT limits. | [policy-surface.md §2-3](docs/policy-surface.md) |
