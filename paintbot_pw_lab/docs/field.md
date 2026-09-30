@@ -98,8 +98,28 @@ independently. Using one player for the main line and the other for risky experi
 main rating clean (inference).
 
 MMR values from before 2026-09-29 are not comparable with today's: the filler rose from 559
-(2026-09-28) to 1485 and the top fell from 2373 to 1820, which suggests a re-rating after the
-`margin_scale` change (inference; not verified in source).
+(2026-09-28) to 1485 and the top fell from 2373 to 1820. **Cause (verified 2026-09-30): ordinary
+incremental Elo moving to a new, tighter equilibrium after `margin_scale: 1000` was set. There was
+no re-rating from history.**
+
+- No recompute path: Elo updates one episode at a time (`rankings/elo.py:186-193`). The only
+  replay-from-history code is the score-ranking "rated" backfill (`observatory-api/.../v2/ladders/backfill.py:1-12`
+  says there is no recompute path in the live flow). A settings save refuses only an
+  `algorithm` change (`leagues/settings/service.py:389`). A `margin_scale` change is saved and
+  takes effect from the next round.
+- No reset: the public round list is continuous from round 1397 to 2396, with no missing numbers
+  and no gap over 15 minutes. A `reset-rounds` would have soft-deleted rounds and dropped standings
+  (`round_control/service.py:46-60`). Standings kept their `rounds_played` (a-aron 1027, Alpha 2262).
+- Magnitude: under win/loss a player who always loses has no floor (filler 559), and a player who
+  wins p of their games sits 400·log10(p/(1−p)) above opponents (p 0.95: +512). With margins,
+  a typical win scores about 0.77 (glory ~540), so the mean outcome is 0.23 + 0.54·p. That caps the
+  gap at about 400·log10(0.77/0.23) ≈ 210 (p 0.95: +184). The filler (always loses, outcome 0.23)
+  settles about 210 below its ~1700 opponents, about 1490; it read 1485, and 1472 on 2026-09-30.
+  At K 32 it needs about 170 episodes to climb from 559. It played in all 145 rounds since
+  2026-09-29 00:00 UTC, about 3 episodes each (12 episodes, 8 entrants per round).
+- Timing: the commit landed 2026-09-29 00:05 UTC (metta `6304974ffa`, rollout note "set
+  margin_scale = 1000 on league_b9458ff8"). The exact time it was set is not visible to us: the
+  division admin changelog returns 403 for player credentials, and the league row has no `updated_at`.
 
 ### Champions: 2026-09-29 22:58 UTC (round 2388)
 
@@ -177,6 +197,17 @@ Consequences:
   every episode a distinct derived seed.
 - The API's `game_config.seed` cannot tell you which world an episode played; read the tape
   (`pw_trace` reports `seed`; `pw_episodes` exports `engine_seed` next to `config_seed`).
+- **Confirmed live, 2026-09-30** (seed pilot, `jb-pw-base:v1` vs `aaron-paintbot-pw:v42`, two
+  requests with `game_config_overrides.seed: 7` and `num_episodes: 2`, one per side;
+  `xreq_9f9f812b-…` red, `xreq_9f5eb0aa-…` blue; 0.3.80): every episode's tape seed was 7, and the
+  two episodes of each request are the same game (final hashes `3183008244` ×2 and `3998810126` ×2).
+  So with a pinned seed, only the first episode of a request carries information: use
+  `num_episodes: 1` per (arm, opponent, side, seed), as `pw_ab_requests` does by default.
+- **Hosted artifacts for our own policy**: seat logs are returned for our seats in our XP
+  episodes (`logs/policy_agent_<seat>.log`, the engine's `Player slot N started.` /
+  `completed.` lines plus anything the script prints). Individual seat logs and `results.json`
+  were intermittently "unavailable" for minutes after completion and appeared on a `--force`
+  refetch; `pw_episodes` falls back to `participant_scores` when `results.json` is missing.
 
 ### LLM budget for the Jev oracle
 
@@ -191,9 +222,15 @@ Consequences:
   game-pod call carrying that header to `role: player` for that slot
   (`bedrock_sidecar.py:1481-1511`), so a player spend limit would apply to it (`bedrock_sidecar.py:1478-1479`).
   The request-rate bucket (120/min per seat, documented) still applies.
-- **Model allowlist:** the league has no `llm` block, so `player_model_allowlist` is `null`, which
-  means the platform default allowlist (`league_settings_schema.py:139-148`). Whether that list
-  admits the oracle's `typesafe/jev-1.13` route was not checked.
+- **Model allowlist: `typesafe/jev-1.13` is allowed (source + deploy config, 2026-09-30).** The
+  oracle asks the sidecar's `/v1/systemone` for `typesafe/jev-1.13` (paintbot-pw
+  `coworld/paintbot/runtime/oracle.py:42-44` at `c8dd1def`). The sidecar checks only the platform
+  list (`llm_sidecar.py:320-328`), which production leaves `null`, so every canonical slug passes
+  (`devops/app-manifests/values.yaml:674`). Production also routes 100% of episodes through
+  OpenRouter (`values.yaml:647`), which is the only lane that serves `/v1/systemone`
+  (`bedrock_sidecar.py:1280-1284`). The league's `llm.player_model_allowlist` exists only in the
+  schema (`league_settings_schema.py:139-148`); nothing in the backend or sidecar reads it. So
+  `HOSTED_LLM.md:126` ("the league must also allow the model") does not match the code yet.
 - **XP requests:** `episode_player_llm_spend_limit_usd` (optional, default `null`) is a combined
   per-episode cap split evenly across seats (`observatory-api/.../v2/api_types.py:275-281`;
   `routes/app/v2/experience_requests/service.py:978-982`). When a request targets the league, the
@@ -202,8 +239,16 @@ Consequences:
 - `llm_routing_override` (`openrouter` / `bedrock`) only picks the provider, is **team-only** (403
   otherwise) and `openrouter` needs `num_episodes == 1` (`service.py:805-811`). It does not change
   any spend limit.
-- Live: a league episode reports `llm_spend_limit_rejections: null`. Whether Beta's asks actually
-  succeed in league play needs a seat log (not checked).
+- Live: a league episode reports `llm_spend_limit_rejections: null`.
+- **Beta's asks are answered in league play (strong inference, 2026-09-30).** In `jev.bas`,
+  "`<Squad>, carry on.`" is shouted only after an oracle answer has set `shoutTick`
+  (`reference/jev.bas:1084-1089`, `1216-1221`). Beta (`daveey1-jevbot-v2`) shouted it in all 20 of
+  its audited episodes (1,335 times, first at ticks 15-27). No other policy ever did. Caveats: Beta's
+  source is not public, so this assumes it keeps jev.bas's gate. Beta also never shouted
+  "push/hold `<heart>`". That means either every answer kept the current objective, or v2 changed
+  the relay; this is not checked. The per-episode `cost_usd` cannot show LLM use, because it is
+  pod-hours × instance price only (`event_processor.py:1136-1147`). In round 2395, Beta's
+  episodes cost $0.0103-0.0123 and pure-BASIC episodes cost $0.0105-0.0138.
 
 ## How the field plays (80 league episodes, 2026-09-29)
 
@@ -269,12 +314,20 @@ reports should link the wrapper and state the tick in text.
 - **Players**: **James Botts** `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce` (the selected player) and
   **Games Bond** `ply_f39295d0-ac38-4a62-ac4f-e1d62d7dc9d1` ("Games", not "James"). No player named
   "James Boggs" or "James Bond" exists.
-- **The James Botts session expired on 2026-09-16** (`pw.py doctor`, 2026-09-29). Until
-  `uv run coworld player use` refreshes it, commands act as the main user, and an upload would not
-  bind to James Botts. See the `coworld-player-swap` skill.
-- **In this league: nothing.** None of the eight current champions is ours (public leaderboard,
-  2026-09-29). The authenticated `mine=true` membership check was rate-limited on 2026-09-29; the
-  last successful one (2026-09-28) found zero memberships and zero submissions.
+- **Session**: refreshed 2026-09-30 00:11 UTC with `uv run coworld player use ply_53fb05a6-…`;
+  it expires 2026-10-01 00:11 UTC. Check with `pw.py doctor --json` (`result.player.session`).
+- **Policies**: `jb-pw-base:v1` (policy version `d58653f8-5bf1-48be-9de5-6e9c040cc7d8`) is
+  `reference/base.bas` unchanged (sha256 `3679f5bb…`), uploaded 2026-09-30 as our baseline.
+- **League presence** (James Botts, 2026-09-30): `jb-pw-base:v1` submitted to this league
+  (`sub_0ee67ab9-…`) qualified and competes as champion (membership `lpm_4fcd7b3c-…`, Competition
+  division).
+- **Submitting here also enters Heartland and Heartland Big.** The Heartland league takes its
+  entrants from this league, and Heartland Big from Heartland (`entrants_from_league_id`): within a
+  minute of our submission the platform auto-created submissions `sub_480b41ed-…` (Heartland) and
+  `sub_a42f8843-…` (Heartland Big), both qualified as champions (`lpm_e40c0d24-…`,
+  `lpm_ad6322d9-…`). Those are FFA-kin games on the separate `heartland` coworld; a teams policy
+  compiles there but plays them with the wrong model (seat parity is not a team). Every future
+  submission to this league will do the same; retire the Heartland memberships if they are unwanted.
 
 ## Experience requests (XP)
 

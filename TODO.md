@@ -94,20 +94,8 @@ Remove a task when it is complete.
 
 ## Paintbot PW
 
-- Tell the paintbot-pw maintainer (David B; James sends it) about guide/code mismatches at
-  `d0728ab1`: `coworld/paintbot/guide.md` (lines 720, 800) and the `base.bas` / `jev.bas` headers
-  still give a 20,000-instruction budget while `examples/paintbot/bots.nim:154-155` allows 50,000
-  instructions and 125,000 work units; the guide says `jev.bas` ships with `useRetreat`/`useDial`
-  off while the file has them on; `coworld/paintbot/DEPLOYMENT.md` still says teams variants set
-  `behind_cogs: 5` (live is 10 since 0.3.77); `neural_basic.md` says policy.bas may be 64 KiB
-  while the code allows 128 KiB. Details: `paintbot_pw_lab/docs/mechanics.md` §8 and
-  `paintbot_pw_lab/docs/community.md`.
-- Paintbot PW, with the first hosted batch of our own policy: confirm hosted seat logs come back for
-  our policy (needed by intent telemetry and VM-error detection), and optionally a 2-episode pilot
-  with an explicit `game_config_overrides.seed` (source says both episodes replay the same world;
-  see `paintbot_pw_lab/docs/field.md` § Seeds). Update `paintbot_pw_lab/WORKING_CONTEXT.md`.
-- Calibrate `pw_flags`, `pw_fights`, `pw_metrics` and `pw_intent` thresholds on a 100+ episode
-  batch (all are named constants with uncalibrated plan defaults).
+- Recheck the `pw_intent` audit thresholds (72 ticks / 100 gain / 400 arrived) once one of our
+  policies prints intent lines; they were checked only against league cogs' movement (2026-09-30).
 - Shared: `.claude/skills/coworld-ab/scripts/compare_report.py` help says "the compare.py --json
   output"; for paintbot_pw the input file now comes from `compare.py ... --out FILE`.
 - Shared: the hypothesis miner (`mine_hypotheses.py`) has no `--json` envelope and raises a

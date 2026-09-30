@@ -88,6 +88,10 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
   `source_url` carries no commit; the `coworld-v<version>` tag is the only link from a
   release to source, which `tools/deployed_ref.py` resolves. Releases ship several times a
   day (40 in the first 10 days), so re-run it before trusting any mechanics claim.
+- **Maintainer docs are leads, not truth.** The game's guide, `DEPLOYMENT.md`, `neural_basic.md`,
+  the manifest readme and the wiki have all disagreed with the deployed code (budgets, glory
+  values, size limits). Verify every mechanical claim against source at the deployed commit before
+  relying on it; record mismatches in `docs/mechanics.md` §8 / `docs/community.md` and move on.
 - **Glory margin is the rank signal.** The result `scores` are the winning team's glory;
   the loser and both sides of a draw get 0. Since 2026-09-28 the ladder's Elo uses
   `margin_scale: 1000`: each episode counts as `clamp(0.5 + (our glory - their glory) / 2000,

@@ -33,10 +33,12 @@ James fills this in; until then an agent proposes a charter and stops.
 
 ## Identity and presence
 
-- Account players: "James Botts" (default) and "Games Bond". Neither has a policy,
-  membership or submission in any paintbot-pw league. Confirm `uv run coworld player list`
+- Account players: "James Botts" (default) and "Games Bond". James Botts runs `jb-pw-base:v1`
+  (unchanged `base.bas`, uploaded and submitted 2026-09-30, champion in the paintbot-pw league and,
+  by `entrants_from_league_id` chaining, auto-entered into Heartland and Heartland Big; see
+  [field.md § Our account](docs/field.md#our-account)). Confirm `uv run coworld player list`
   marks the intended player (●) as active; `softmax status` shows only the user before the first upload (`coworld-player-swap` skill).
-- The active player session (James Botts, `ply_53fb05a6-…`) expired 2026-09-16 (`pw.py doctor` → `result.player`); refresh with `uv run coworld player use` before any upload, or uploads bind to the user's default player.
+- Player session refreshed 2026-09-30 00:11 UTC; it expires 2026-10-01 00:11 UTC (`pw.py doctor` → `result.player`). Refresh with `uv run coworld player use ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce` before uploads.
 - Credits: 20,000 balance at the cap, refilling ~1,429/day (2026-09-28). A league-like
   episode costs ~0.3 credits.
 
@@ -56,9 +58,12 @@ James fills this in; until then an agent proposes a charter and stops.
 
 ## Next step (proposed)
 
-Upload `base.bas` unchanged as our baseline, evaluate it against each current champion with a
-`field` request (`pw.py ab-requests --design field --baseline X --candidate X ...`), then run
-`paintbot-pw-diagnose` on that batch to choose the first change.
+`jb-pw-base:v1` (unchanged `base.bas`) is uploaded and competing. Evaluate it against each current
+champion with an unseeded `field` request (`pw.py ab-requests --design field --baseline
+jb-pw-base:v1 --candidate jb-pw-base:v1 --opponent <each pw.py leaders ref> --episodes 10 ...`), or
+read its league episodes as they accumulate (free), then run `paintbot-pw-diagnose` to choose the
+first change. The 4-episode seed pilot (2026-09-30) already shows `aaron-paintbot-pw:v42` beating
+it from both sides.
 
 ## Measured findings (2026-09-29)
 
@@ -92,19 +97,24 @@ Tooling facts:
   budget); it aims at disguised teammates on ~1% of target lines and hits them in about half of
   those cases.
 
+## Answered 2026-09-30
+
+- The ladder-wide MMR drop (top ~2,370 → ~1,820) is Elo settling at a tighter spread under
+  `margin_scale` (a win is worth ~0.77, not 1.0; max spread ~210 points), not a re-rating.
+- The Jev oracle's model is allowed (platform allowlist null; the league setting is schema-only)
+  and Beta very probably gets answers (its answer-triggered relay shouts appear in 20/20 episodes).
+- Hearts ignore disguises: capture, credit and contest use the true team, and public heart state
+  reveals a disguised capturer's real team ([mechanics.md, Disguise](docs/mechanics.md)).
+- Explicit XP seeds fix the world (pilot: identical final hashes per request), and hosted seat logs
+  come back for our own policy ([field.md § Seeds](docs/field.md#seeds-what-actually-reaches-the-engine)).
+
 ## Open constraints
 
 - The docs are verified at `d0728ab1` (coworld-v0.3.79); the league moved to 0.3.80 (`c8dd1def`,
   viewer-only change, rule-bearing files identical) the same evening and the tools pin it.
   Releases ship several times a day: `pw.py deployed-ref --json` lists rule-file changes since
   `PW_DOCS_SHA`; record `coworld_version` per episode and never pool rules versions.
-- Hosted seat logs for our own policy in our experience requests: expected, not exercised
-  (needs our first upload; required for intent telemetry and VM-error detection).
 - The Observatory replay wrapper does not forward a tick (`t=`); only the game's own viewer URL
   honors `?t=`. Match reports link episodes without a tick.
-- The league sets no LLM spend cap; whether the oracle's model passes the platform allowlist and
-  Beta's oracle asks succeed in league play is unverified (needs a seat log).
-- MMRs across the ladder dropped sharply on 2026-09-29 (top ~2,370 → ~1,820), probably a re-rating
-  after `margin_scale` was set; unconfirmed.
 - Thresholds in `pw_flags`, `pw_fights`, `pw_metrics` and `pw_intent` are uncalibrated
   defaults; calibrate them on the first 100+ episode batch of our own policy.

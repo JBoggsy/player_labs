@@ -320,6 +320,24 @@ other team. The disguise drops on a gun order, spray burst, grenade release (cha
 it) or death (`mechanics.nim:668`, `676`, `727`, `446`). Ownership and scoring always use the true
 team.
 
+**Hearts ignore the disguise (verified 2026-09-30, `c8dd1def`).** `updateTerritory` marks a heart
+touched per true team (`touching[team(i)]`, `mechanics.nim:333-336`). The contest flag, capture
+team, ownership flip and capture credit all come from that same true team (`mechanics.nim:337-355`).
+`apparentTeam` changes only how the cog is drawn and seen (`sim.nim:301-303`). As a result:
+
+- A disguised cog captures for its **true** team and is credited with the capture.
+- A disguised enemy standing within 140 units of a heart you are taking **contests** it. Your
+  progress pauses, just as it would for an undisguised enemy.
+- The heart state is public and not fog-gated: BASIC `controlCaptureTeam` / `controlContested`
+  (`bots.nim:285-299`), and the neural observation (`neural_contract.nim:258-267`). A heart that
+  starts capturing or turns contested with no visible enemy therefore gives away a disguised
+  enemy's true team. Vision and targeting still see the disguise.
+- Live check, 80 league episodes from 2026-09-29 (`audit-2026-09-29`): 144 `disguise_on` events.
+  Two captures completed while the credited cog was disguised, both for its true team. On all
+  24 sampled ticks where a disguised cog stood at an enemy or neutral heart, `capture_team` was its
+  true team. In none of those samples was a disguised cog at a heart with an enemy also present,
+  so the contest rule is verified in source only.
+
 ## 6. Vision, hearing, sound
 
 - **Vision** (`sim.nim:704-730`): per cog, a 120-degree cone centred on the cog's current aim
