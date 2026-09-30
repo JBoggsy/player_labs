@@ -152,7 +152,8 @@ class Report:
             self.next.append(command)
 
     def add_batch(self, batch) -> None:
-        """Counts and failures from a pw_episodes.Batch (a failed episode is exit 1).
+        """Counts, failures and newly built trace caches from a pw_episodes.Batch (a failed
+        episode is exit 1; every cache this run traced goes into `outputs`).
 
         A batch with no episode at all (none loaded, none failed) is a usage error: the roots
         point at nothing, and an empty result must not look like success."""
@@ -160,6 +161,9 @@ class Report:
             raise UsageError("no episode found under the given roots (an episode is a directory with "
                              "episode.json or results.json plus a tape, or a NAME.replay file)")
         self.counts["processed"] += len(batch.episodes)
+        for episode in batch.episodes:
+            if not episode.cache_hit:
+                self.output(episode.source.cache)
         for path, code, message in batch.failures:
             self.fail(path, code, message)
         if batch.failures:

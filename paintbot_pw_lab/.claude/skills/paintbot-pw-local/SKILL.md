@@ -47,14 +47,16 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
        --seeds 1-28 --out <scratch>/screen_vs_last --json
    ```
 
-5. **Read the summary**: `seed-balanced` mean A outcome (the ladder's Elo outcome, 0.5 = even) with
+5. **Read the summary**: `seed-balanced` mean A outcome (the Elo outcome score, 0.5 = even) with
    its 95% CI, W/D/L per side, and any `bad_seats` warning (in `--json`: `result.summary.seed_balanced`,
    `result.summary.a_side_0/1`, and a `bad_seats` failure with exit 1). Report it as
    "local screen vs X: seed-balanced outcome 0.61 [0.53, 0.68], 28 seeds, <tag from `pw.py release`>,
-   screening only".
+   screening only". If it warns that the two files play move-for-move identically
+   (`result.identical_play`), the screen says nothing about their difference.
 
 6. **Look at a match** when a number surprises you: add `--record <dir> --record-seeds 9` to
-   re-run that seed through `paintbot-headless --record` (both sides), then read it like any
+   re-run that seed through `paintbot-headless --record` (both sides; `screen --record` without
+   `--record-seeds` is exit 2, while `match --record DIR` records its own seed), then read it like any
    episode: `uv run python paintbot_pw_lab/tools/pw.py episodes <dir> --json` and the `paintbot-pw-replay` skill.
 
 ## Pitfalls
@@ -62,7 +64,8 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
 - **Local results are screening only, never field evidence.** Do not quote them as a win rate
   against the league, and do not use them to decide a submission.
 - **Always keep both sides and read `seed_balanced`.** Base vs itself: the odd-seat team won 10
-  of 14 seeds. A one-sided screen measures the side, not the policy.
+  of 14 seeds locally, a mirror-match effect (the league shows no side advantage (odd seats won 43 of 80 hash-verified 0.3.79 episodes, Wilson 95% 43–64%)). A one-sided screen measures the
+  side, not the policy.
 - The tool refuses to run when the library's `libpw.build.json` does not match the requested tag,
   or when the two parity matches disagree with `paintbot-headless` (exit 3, fix in `next[]`).
   Rebuild with `pw.py build-native <tag>`; do not work around it.
@@ -82,8 +85,10 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
 - **Commands:** `uv run python paintbot_pw_lab/tools/pw.py local compile FILE --json`, then `uv run python paintbot_pw_lab/tools/pw.py local screen A B --seeds 1-28 --out
   <scratch>/screen --json`. The screen is deterministic: the same files, seeds and build give the
   same numbers, so rerun only when a file changed.
-- **Reading the envelope:** `result.summary.seed_balanced` (mean A outcome and 95% CI) is the
-  number; `result.parity` shows the library matched `paintbot-headless`; `failures[]` lists bad seats
+- **Reading the envelope:** `result.summary.seed_balanced` (`n_seeds`, `mean_outcome`, `ci95_low`,
+  `ci95_high`) is the number; `result.parity` shows the library matched `paintbot-headless`;
+  `result.identical_play` is true when the two files played identically (the screen is then
+  uninformative); `result.recorded` lists recordings; `failures[]` lists bad seats
   and recordings whose hash differed.
 - **Exit codes:** 0 use it. 1 a seat failed to compile or was disabled (compile), or some matches had
   a bad seat or a recording differed (screen): fix the policy before reading the number. 2 a missing

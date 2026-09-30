@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """SPSA tuning of named integer constants in a BASIC policy, scored by local matches.
 
-SCREENING ONLY. The objective is the mean ladder Elo outcome of the candidate against ONE fixed
+SCREENING ONLY. The objective is the mean Elo outcome score of the candidate against ONE fixed
 opponent file over ONE fixed seed list (both sides of every seed), played in the local native
 library (tools/pw_local.py). It overfits that seed list and that opponent by construction.
 A tuned file is a hypothesis: re-screen it on fresh seeds (--confirm-seeds or pw_local screen)
@@ -362,7 +362,10 @@ def cmd_render(args, report) -> dict:
         name, _, value = item.partition("=")
         if name not in values:
             raise pw_cli.UsageError(f"--set {name}: not a knob in {args.candidate}", sorted(values))
-        values[name] = int(value)
+        try:
+            values[name] = int(value)
+        except ValueError:
+            raise pw_cli.UsageError(f"--set {item}: the value must be an integer (NAME=VALUE)") from None
     for knob in knobs:
         if not knob.low <= values[knob.name] <= knob.high:
             raise pw_cli.UsageError(f"{knob.name} = {values[knob.name]} is outside [{knob.low}, {knob.high}]")

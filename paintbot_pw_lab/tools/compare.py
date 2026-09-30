@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paintbot PW A/B adapter (lab tool T5) over the shared coworld-ab engines.
+"""Paintbot PW A/B adapter over the shared coworld-ab engines.
 
 Reads episodes through pw_episodes (hash-checked traces) and pw_metrics, builds one row per
 (episode, arm policy), and hands the rows to `ab_stats` (independent arms) or
@@ -15,7 +15,7 @@ Designs (--design):
   field   unpaired arms (e.g. vs a mix of leaders): Fisher rates, Welch means (ab_stats).
 
 Unit: one row per (episode, arm policy); a policy's 8 seats are summed within the episode and
-per-seat metrics divide by its seat count. Primary metric: the ladder's Elo outcome score,
+per-seat metrics divide by its seat count. Primary metric: the Elo outcome score,
 clamp(0.5 + (our glory - their glory) / 2000, 0, 1); a platform failure attributed to one
 policy is a forfeit (0 for that side, 1 for the other), as in metta elo.py.
 
@@ -485,8 +485,8 @@ def cmd_sprt(args, report: pw_cli.Report) -> dict:
 
 def build_parser() -> pw_cli.ArgumentParser:
     parser = pw_cli.ArgumentParser("compare", __doc__, examples=[
-        "uv run python paintbot_pw_lab/tools/compare.py compare ROOT --design h2h --baseline base.bas "
-        "--candidate cand.bas --json",
+        "uv run python paintbot_pw_lab/tools/compare.py compare REC_DIR --design h2h --baseline local:base.bas "
+        "--candidate local:cand.bas --json",
         "uv run python paintbot_pw_lab/tools/compare.py compare ROOT --design paired --baseline james-pw:v3 "
         "--candidate james-pw:v4 --out /tmp/ab.json",
         "uv run python paintbot_pw_lab/tools/compare.py sprt ROOT --design paired --baseline james-pw:v3 "

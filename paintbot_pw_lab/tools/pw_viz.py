@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paintbot PW movement diagrams, heatmaps and timelines (lab tool T9). matplotlib only.
+"""Paintbot PW movement diagrams, heatmaps and timelines. matplotlib only.
 
 Reads traced episodes (pw_episodes tables) and the release's terrain raster (pw_mapdata).
 Every command writes a PNG and a JSON of exactly the data it plotted, side by side.

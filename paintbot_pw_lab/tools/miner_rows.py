@@ -20,7 +20,7 @@ Usage:
       --adapter paintbot_pw_lab/tools/features.py --top 5
 
 Score (`--score`, stored in each row; the adapter reads it):
-  elo   the ladder's Elo outcome, clamp(0.5 + (our glory - their glory)/2000, 0, 1) (default;
+  elo   the ladder's Elo outcome score, clamp(0.5 + (our glory - their glory)/2000, 0, 1) (default;
         what league rank moves by, docs/mechanics.md §1.3)
   win   1 win, 0.5 draw, 0 loss
 """

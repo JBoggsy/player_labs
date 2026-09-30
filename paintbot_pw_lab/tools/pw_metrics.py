@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paintbot PW metric library (lab tool T3): one definition of every metric.
+"""Paintbot PW metric library: one definition of every metric.
 
 Computed from pw_episodes tables at three levels:
   seat_metrics(ep)    one row per (episode, seat)
@@ -12,6 +12,7 @@ missing, never 0. Ratios at policy/team level are recomputed from summed numerat
 denominators, never averaged. Contract: paintbot_pw_lab/docs/tools/pw_metrics.md.
 
 CLI: uv run python paintbot_pw_lab/tools/pw_metrics.py ROOT [ROOT ...] [--policy KEY] [--csv DIR]
+         [--tag TAG] [--json]
 """
 from __future__ import annotations
 
@@ -66,7 +67,8 @@ METRICS: dict[str, tuple[str, str, str, str]] = {
     "captures_completed": ("seat/team", "count", "heart captures credited (cogs.captures)", "exact"),
     "capture_starts": ("team", "count", "capture_start events", "exact"),
     "capture_resets": ("team", "count", "captures abandoned before completion (capture_reset)", "exact"),
-    "contests": ("team", "count", "contest_start events at hearts where this team was capturing", "exact"),
+    "contests": ("team", "count", "contest_start events: both teams in reach of one heart, whoever (if anyone) "
+                 "was capturing; the same on both team rows", "exact"),
     "longest_supply_gap_ticks": ("team", "ticks", "longest stretch without a team pickup (incl. start and end)", "exact"),
     "cogs_out_end": ("team", "cogs", "cogs out of the match at the end", "exact"),
     "team_lives_end": ("team", "lives", "lives left at the end", "exact"),
@@ -399,7 +401,9 @@ def team_metrics(ep, seat_rows: pd.DataFrame | None = None) -> pd.DataFrame:
         row["captures_completed"] = len(completes)
         row["capture_starts"] = int(((caps.kind == "capture_start") & (caps.team == team)).sum())
         row["capture_resets"] = int(((caps.kind == "capture_reset") & (caps.team == team)).sum())
-        row["contests"] = int(((caps.kind == "contest_start") & (caps.team == team)).sum())
+        # A contest is both teams in reach, so it counts for both, including one that starts
+        # with no capture in progress (its captures.team is null).
+        row["contests"] = int((caps.kind == "contest_start").sum())
         taken = sorted(pickups[pickups.team == team].t)
         row["longest_supply_gap_ticks"] = int(np.max(np.diff([0, *taken, ticks])))
         row["cogs_out_end"] = int(episode[f"cogs_out_{team}"])

@@ -1,10 +1,11 @@
-# pw_winprob.py: win-probability model and event credit (T14)
+# pw_winprob.py: win-probability model and event credit
 
 A logistic model of P(team wins the match | team-level state at tick t), fit on hash-checked
 episodes through [`pw_episodes`](tables.md), scored on held-out episodes, and used to credit
 each capture, kill and death with the change in win probability it caused (the Leetify / CS:GO
-"win probability added" practice). It answers "which minutes and which events lost this game"
-and gives the hypothesis miner per-(episode, policy) credit features.
+"win probability added" practice). It answers "which minutes and which events lost this game".
+`wp_policy.parquet` is keyed like the hypothesis miner's unit (episode, policy), but
+`miner_rows.py` does not read it yet. Index of all tools: [README.md](README.md).
 
 Files: [`tools/pw_winprob.py`](../../tools/pw_winprob.py), tests in
 [`tools/tests/test_pw_winprob.py`](../../tools/tests/test_pw_winprob.py).
@@ -41,7 +42,9 @@ with the default build (the tag in `tools/release.env`) and cached as usual.
 **Exclusions, always printed and counted in `report.json`:** load failures from
 `pw_episodes` (with their code), `rules_below_47` (behind-in-cogs glory changed the game),
 `not_16_seat_teams`, `not_heartwick`, `draw`. `fit` refuses with fewer than 4 usable episodes
-(exit 1).
+(exit 1, failure code `too_few_episodes`), and `credit` with none left (exit 1,
+`no_usable_episodes`, the message lists the exclusions). The hosted samples in
+`episode_data/20260928T214433_*` are rules 44, so every one is excluded (`rules_below_47`).
 
 ## Agent contract
 
@@ -49,10 +52,10 @@ with the default build (the tag in `tools/release.env`) and cached as usual.
 
 | | |
 | --- | --- |
-| Inputs | `fetch --out DIR` (`--versions`, default the `tools/release.env` version; `--max-episodes` ≤ 40); `fit ROOT... --out DIR`; `credit ROOT... --model FILE --out DIR`; `--jobs` |
+| Inputs | `fetch --out DIR` (`--versions X.Y.Z[,...]`, default the `tools/release.env` version; `--max-episodes` ≤ 40, default 40; `--rounds` default 6; `--division`, default Competition); `fit ROOT... --out DIR` (`--sample-every` default 24, `--folds` default 5); `credit ROOT... --model FILE --out DIR`; fit/credit `--jobs N` (parallel traces, default half the cores) |
 | Outputs | `fit`: `model.json`, `report.json`, `wp_ticks.parquet`, `wp_events.parquet`, `wp_policy.parquet`; `credit`: the three parquet tables; `fetch`: `DIR/<ereq>/{episode.json, replay.gz}` |
 | `--json` result | `fetch`: `{out, episodes, already_present, skipped, versions}`; `fit`: `{report, model, verdict, held_out, episodes, event_summary}`; `credit`: `{credited, in_fit, exclusions, event_summary}` |
-| Exit codes | 0 ok; 1 some episodes failed to load, `fit` had fewer than 4 usable episodes, or `fetch` found none of the wanted versions; 2 usage (`--max-episodes` above 40, a missing `--model`); 3 the public API is unreachable, or `pw_trace` is not built. A `fetch` still rate-limited (HTTP 429) after the retries is exit 1 with `failures[].code = "rate_limited"` (wait and rerun; saved episodes are skipped) |
+| Exit codes | 0 ok; 1 some episodes failed to load, `fit` had fewer than 4 usable episodes (`too_few_episodes`), `credit` had no usable episode (`no_usable_episodes`), or `fetch` found none of the wanted versions (`no_episodes`); 2 usage (`--max-episodes` above 40, a missing `--model`); 3 the public API is unreachable, or `pw_trace` is not built. A `fetch` still rate-limited (HTTP 429) after the retries is exit 1 with `failures[].code = "rate_limited"` (wait and rerun; saved episodes are skipped) |
 | Idempotence / cache | fetch skips episodes on disk; fit/credit read the trace caches and overwrite `OUT/` |
 | Typical next step | `credit` a batch of ours with the fitted model; feed `wp_policy.parquet` to diagnosis |
 
@@ -117,7 +120,10 @@ the policy is on both teams), `n_seats`, `n_captures`/`wp_captures`, `n_kills`/`
 policy's seats), `wp_net`, `wp_start` (P at t = 0), `worst_minute_start_t` and
 `worst_minute_drop` (the team's largest P(win) drop within any 60 s window).
 
-`model.json`: features, scaler, coefficients, intercept, `fitted_episodes`, options.
+`model.json`: `features, scaler_mean, scaler_scale, coef, intercept, C, fitted_episodes,
+sample_every, min_rules, engine_release, created`. `report.json`: `held_out, calibration,
+by_phase, by_source, folds, episodes, by_source_episodes, exclusions, fit_rows, sample_every,
+team0_win_rate, coefficients_standardized, credit_prediction, event_summary, verdict`.
 Python: `WinModel.from_json(json.load(...)).team0_probability(team_rows(ep)[0])`.
 
 ## Verified (2026-09-29, coworld-v0.3.78)
@@ -167,6 +173,9 @@ Not verified / limits:
 - The public listing row has no `game_config.slots`, so team identity falls back to seat
   parity (`episodes.notes` = `team_from_parity`); results are checked against
   `participant_scores`.
-- `fetch` duplicates a small part of what a scouting fetcher would do; use one fetcher once
-  both exist.
+- `fetch` and `pw_scout.py fetch` share `tools/pw_public.py` but save different layouts
+  (`DIR/<ereq>/` here, `episode_data/scout/<date>/r<round>_<ereq>/` there); `fit` reads both.
+  Re-checked 2026-09-29 at coworld-v0.3.79: `fit` on `episode_data/scout/2026-09-29` + 8 local
+  recordings (20 episodes, THIN DATA) and `credit` of a `pw_intent record` episode ran;
+  `fetch` was not re-run.
 - Other maps (100/126 hearts) and FFA-kin are excluded, not modelled.

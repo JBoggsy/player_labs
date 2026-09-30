@@ -1,5 +1,6 @@
 # compare.py — the Paintbot PW A/B adapter
 
+Part of the [lab tool index](README.md) (dispatcher: `pw.py compare`).
 `paintbot_pw_lab/tools/compare.py` answers "did the candidate beat the baseline?" from
 downloaded episodes. It reads every episode through `pw_episodes` (hash-checked traces) and
 `pw_metrics`, builds one row per (episode, arm policy), and hands the rows to the shared
@@ -30,9 +31,10 @@ uv run python .claude/skills/coworld-ab/scripts/compare_report.py out.json --out
     --eyebrow "Paintbot PW · A/B comparison" [--finding finding.md] [--verdict "..."]
 ```
 
-Policies are given as an exact `policy_version_id`, `local:<name>` (local recordings), or
-`name:vN` resolved against the episodes' own participants (an ambiguous or unknown label
-stops the run). `--tag`, `--jobs`, `--refresh` pass through to `pw_episodes.load_batch`.
+Policies are given as an exact `policy_version_id`, `local:<name>` (local recordings; the bare
+file name, e.g. `base.bas`, also resolves as their label), or `name:vN` resolved against the
+episodes' own participants (an ambiguous or unknown label stops the run with exit 2 and
+`result.valid`). `--tag`, `--jobs`, `--refresh` pass through to `pw_episodes.load_batch`.
 
 ## Agent contract
 
@@ -51,7 +53,7 @@ stops the run). `--tag`, `--jobs`, `--refresh` pass through to `pw_episodes.load
 
 | `--design` | Episodes | Unit and tests | Groups |
 | --- | --- | --- | --- |
-| `paired` (recommended) | each arm vs the same opponent; pw_ab_requests gives one request per (arm, opponent, side, seed) | pairs keyed by (opponent, side, seed); seed = `game_config.seed` (hosted) or the engine seed (local). Means: paired t, and the Wilcoxon signed-rank p must also be < 0.05. Rates: exact McNemar on discordant pairs | `all`, `red`, `blue`, `vs <opponent>` when there is more than one opponent |
+| `paired` (recommended) | each arm vs the same opponent; pw_ab_requests gives one request per (arm, opponent, side, seed) | pairs keyed by (opponent, side, seed); seed = `game_config.seed` (hosted) or the engine seed (local). An explicit request seed fixes the world for every episode of that request, so use one single-episode request per (arm, opponent, side, seed): extra episodes replay one match (`duplicate_game`). Means: paired t, and the Wilcoxon signed-rank p must also be < 0.05. Rates: exact McNemar on discordant pairs | `all`, `red`, `blue`, `vs <opponent>` when there is more than one opponent |
 | `h2h` | candidate vs baseline in one episode | `elo_outcome`: one-sample t vs 0.5; `win_rate`: exact binomial on decisive games (draws dropped); other metrics paired within the episode | `all`, candidate side |
 | `field` | unpaired arms, e.g. vs a mix of leaders | Fisher (rates), Welch (means), as `ab_stats` always did | as `paired` |
 
@@ -68,7 +70,7 @@ numerators and denominators (pw_metrics).
 
 | Metric | Kind | Definition |
 | --- | --- | --- |
-| `elo_outcome` (primary) | mean | `clamp(0.5 + (our glory − their glory)/2000, 0, 1)`; attributable platform failure = forfeit 0/1 |
+| `elo_outcome` (primary) | mean | the Elo outcome score, `clamp(0.5 + (our glory − their glory)/2000, 0, 1)`; attributable platform failure = forfeit 0/1 |
 | `win_rate`, `draw_rate` | rate | per episode; a draw is a non-win |
 | `zero_glory_win_rate` | rate | won with 0 glory (worth 0.5 on the ladder, like a draw) |
 | `first_capture_rate` | rate | our team completed the match's first capture (strictly earlier) |
@@ -122,6 +124,12 @@ descriptive: their fixed-sample p-values ignore the optional stopping.
 
 ## Verified (2026-09-29, build coworld-v0.3.78)
 
+Re-checked at coworld-v0.3.79 (2026-09-29): `compare` and `sprt --design h2h` on 8 local
+base-vs-jev recordings (16 rows, `--out` JSON rendered by `compare_report.py`), `--design
+paired` on the same data refused (`an episode holds both arms`, exit 2), an unknown arm and an
+unknown `--metrics` name (exit 2 with `result.valid`), and `--design field` on the 3 hosted
+sample episodes.
+
 - 160 local rules-48 recordings with the league glory config (seeds 1–20, both sides; FAKE
   arms, not evidence about any policy): `paired` base.bas vs nearby.bas (both vs jev.bas,
   40 pairs), a near-null arm (base.bas with one RNG constant changed), and `h2h` nearby.bas vs
@@ -145,9 +153,11 @@ quarter of that.
 
 ## Not verified / limits
 
-- No hosted A/B batch has been run; pairing on hosted `game_config_overrides.seed` is
-  unexercised. Whether an explicit override also fixes the engine seed is open (league
-  episodes with `seed: 2026` had engine seeds 1327528888–90); the pairing diagnostic reports it.
+- No hosted A/B batch has been run, so pairing on hosted `game_config_overrides.seed` is
+  unexercised. The source says an explicit override does reach the engine (every episode of
+  that request plays that world), so seed-paired arms play identical worlds; league episodes
+  do not play their API `seed: 2026` ([docs/field.md § Seeds](../field.md#seeds-what-actually-reaches-the-engine)). `pairs_with_different_engine_seeds`
+  should therefore stay 0; a non-zero count means that chain broke.
 - Hosted forfeit rows are exercised only on synthetic `episode.json` edits.
 - Thresholds behind the inferred metrics (`vm_disabled_suspect_seats`, stuck, accuracy
   bands) are uncalibrated; see [pw_metrics.md](pw_metrics.md).

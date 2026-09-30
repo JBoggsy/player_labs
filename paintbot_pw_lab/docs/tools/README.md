@@ -87,7 +87,7 @@ Compare the league's deployed paintbot-pw build with tools/release.env; --write 
 - **When:** Before trusting any analysis after a league release; start of every loop (doctor runs it).
 - **Inputs:** --write, --docs-sha SHA, --clone DIR, --json
 - **Outputs:** tools/release.env (only with --write)
-- **Exit codes:** 0 current; 1 behind / just written (rebuild next) / untagged; 2 usage; 3 no login, network or clone (fix listed)
+- **Exit codes:** 0 current; 1 behind / just written (rebuild next) / untagged, or the API rate-limited (code rate_limited) or down (api_unavailable); 2 usage (plain argparse text, no JSON envelope); 3 no login, network or clone (fix listed)
 - **Reference:** [deployed_ref.md](deployed_ref.md); skill [`paintbot-pw-replay`](../../.claude/skills/paintbot-pw-replay/SKILL.md)
 
 ### release
@@ -98,7 +98,7 @@ Print the release pins (tag, sha, docs sha) and which binaries exist for a tag.
 - **When:** To check a build exists before running a tool (`--require all`).
 - **Inputs:** --tag TAG, --require all|TOOL..., --json
 - **Outputs:** none
-- **Exit codes:** 0 ok; 2 unknown tool name; 3 a --require'd binary is missing (build command named)
+- **Exit codes:** 0 ok (always, without --require); 2 unknown tool name (plain argparse text, no JSON envelope); 3 a --require'd binary is missing (build command in next[])
 - **Reference:** [pw_release.md](pw_release.md)
 
 ### build
@@ -107,8 +107,8 @@ Build paintbot-headless, replay_stats, pw_trace and pw_map for the pinned tag (o
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py build` (runs `paintbot_pw_lab/tools/build_tools.sh`)
 - **When:** When doctor/release reports a missing binary or deployed-ref just moved the pin.
-- **Inputs:** [TAG] (default: tools/release.env)
-- **Outputs:** tools/bin/<tag>/, tools/.cache/<tag>/ worktree ($PW_CACHE_DIR/<tag>/ when set)
+- **Inputs:** [TAG] (default: tools/release.env); no --json. Env: PW_CLONE (source clone, default ~/coding/coworlds/paintbot-pw, cloned when absent), PW_CACHE_DIR (worktree root)
+- **Outputs:** tools/bin/<tag>/, tools/.cache/<tag>/ worktree ($PW_CACHE_DIR/<tag>/ when set) with its tmp/paintbot-coworld engine
 - **Exit codes:** 0 built; non-zero build failure (read the compiler output)
 - **Reference:** [pw_trace.md](pw_trace.md); skill [`paintbot-pw-replay`](../../.claude/skills/paintbot-pw-replay/SKILL.md)
 
@@ -118,7 +118,7 @@ Build libpw.dylib (+ libpw.build.json) for local matches; runs build_tools.sh fi
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py build-native` (runs `paintbot_pw_lab/tools/build_native.sh`)
 - **When:** Before pw_local / pw_tune when the library is missing or the pin moved.
-- **Inputs:** [TAG] (default: tools/release.env)
+- **Inputs:** [TAG] (default: tools/release.env); no --json
 - **Outputs:** tools/bin/<tag>/libpw.dylib, libpw.build.json
 - **Exit codes:** 0 built; non-zero build failure
 - **Reference:** [pw_local.md](pw_local.md); skill [`paintbot-pw-local`](../../.claude/skills/paintbot-pw-local/SKILL.md)
@@ -131,7 +131,7 @@ Hash-checked replay expander (Nim): re-simulates a tape and writes events + samp
 - **When:** Rarely directly; `episodes` runs and caches it. Use for a raw JSONL of one tape.
 - **Inputs:** [--tag TAG] REPLAY OUT.jsonl [--state-every N] [--window A:B] [--vis-every M]
 - **Outputs:** OUT.jsonl
-- **Exit codes:** 0 verified; 1 hash mismatch or identity failure; 2 bad arguments; 3 (dispatcher) binary not built
+- **Exit codes:** 0 verified; 1 hash mismatch or identity failure; 2 bad arguments or not a POLYWORLDREPLAY tape; 3 (dispatcher) binary not built
 - **Reference:** [pw_trace.md](pw_trace.md); skill [`paintbot-pw-replay`](../../.claude/skills/paintbot-pw-replay/SKILL.md)
 
 ### episodes
@@ -140,9 +140,9 @@ Load episodes (hosted dirs or local .replay), trace them hash-checked, cache Par
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py episodes` (runs `paintbot_pw_lab/tools/pw_episodes.py`)
 - **When:** First step on any episode data; answering a specific 'what happened at tick X' question.
-- **Inputs:** ROOT... [--window A:B] [--vis-every M] [--sql QUERY] [--refresh] [--json]
+- **Inputs:** ROOT... [--tag TAG | --binary PATH] [--state-every N] [--vis-every M] [--window A:B] [--refresh] [--jobs J] [--sql QUERY] [--json]
 - **Outputs:** per-episode cache <episode dir>/pw_cache/ or NAME.pw_cache/ beside a .replay (trace.jsonl, tables/*.parquet, receipt.json); another --tag or trace options get their own variant (pw_cache@<variant>/, NAME@<variant>.pw_cache/) instead of replacing it; reused while the inputs are unchanged
-- **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh)
+- **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); a --sql query DuckDB rejects, --state-every < 1 or a --vis-every that is not a multiple of it is exit 2
 - **Reference:** [pw_episodes.md](pw_episodes.md); skill [`paintbot-pw-replay`](../../.claude/skills/paintbot-pw-replay/SKILL.md)
 
 ### metrics
@@ -151,7 +151,7 @@ Every metric at seat, policy and team level: result, Elo outcome, glory composit
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py metrics` (runs `paintbot_pw_lab/tools/pw_metrics.py`)
 - **When:** Summarizing episodes; the numbers behind A/B, mining and diagnosis.
-- **Inputs:** ROOT... [--policy KEY] [--csv DIR] [--json]
+- **Inputs:** ROOT... [--policy KEY] [--csv DIR] [--tag TAG] [--json]
 - **Outputs:** with --csv: {seat,policy,team}_metrics.csv
 - **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh)
 - **Reference:** [pw_metrics.md](pw_metrics.md); skill [`paintbot-pw-replay`](../../.claude/skills/paintbot-pw-replay/SKILL.md)
@@ -162,8 +162,8 @@ Engagements (N-vs-M, who hit first, who won), trades and opening duels per heart
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py fights` (runs `paintbot_pw_lab/tools/pw_fights.py`)
 - **When:** When combat decides the result: are we losing fights, first shots, or openings?
-- **Inputs:** ROOT... [--policy KEY] [--list] [--csv DIR] [--vis-every M] [--json]
-- **Outputs:** with --csv: engagements, opening_duels, trades, fight_policy CSVs
+- **Inputs:** ROOT... [--policy KEY] [--list] [--csv DIR] [--vis-every M] [--tag TAG] [--json]
+- **Outputs:** with --csv: engagements, opening_duels, trades, fight_policy CSVs; --vis-every M traces into its own cache variant (pw_cache@se6-ve<M>/)
 - **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh)
 - **Reference:** [pw_fights.md](pw_fights.md); skill [`paintbot-pw-diagnose`](../../.claude/skills/paintbot-pw-diagnose/SKILL.md)
 
@@ -173,7 +173,7 @@ Rule-based anomaly flags linked to ticks (stuck, idle, dead VM, died alone, hear
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py flags` (runs `paintbot_pw_lab/tools/pw_flags.py`)
 - **When:** Triage: which losses to look at first and which ticks in them.
-- **Inputs:** ROOT... [--policy KEY] [--flags a,b] [--top N] [--csv FILE] [--json]
+- **Inputs:** ROOT... [--policy KEY] [--flags a,b] [--top N] [--csv FILE] [--vis-every M] [--tag TAG] [--json]
 - **Outputs:** with --csv: every flag row
 - **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh)
 - **Reference:** [pw_flags.md](pw_flags.md); skill [`paintbot-pw-diagnose`](../../.claude/skills/paintbot-pw-diagnose/SKILL.md)
@@ -184,7 +184,7 @@ Map geometry (terrain raster, water, trenches, cover, hearts, pickups) cached pe
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py map` (runs `paintbot_pw_lab/tools/pw_mapdata.py`)
 - **When:** Plots and spatial metrics; check a map loads for a release.
-- **Inputs:** [--map NAME] [--rules N] [--step U] [--png OUT] [--json]
+- **Inputs:** [--map NAME] [--rules N] [--step U] [--tag TAG] [--png OUT] [--json]
 - **Outputs:** tools/.cache/maps/<tag>/<map>-r<rules>-s<step>.{npz,json} (under $PW_CACHE_DIR when set); --png file
 - **Exit codes:** 0 ok; 2 usage or unknown map; 3 pw_map not built (run paintbot_pw_lab/tools/build_tools.sh)
 - **Reference:** [pw_map.md](pw_map.md)
@@ -197,7 +197,7 @@ Raw pw_map export (Nim): OUT_PREFIX.json + .bin (+ .ppm).
 - **When:** Rarely; `map` caches it.
 - **Inputs:** [--tag TAG] OUT_PREFIX [--map NAME] [--rules N] [--step U] [--ppm]
 - **Outputs:** OUT_PREFIX.*
-- **Exit codes:** 0 ok; non-zero bad arguments; 3 (dispatcher) binary not built
+- **Exit codes:** 0 ok; 1 unknown map (engine exception); 2 bad arguments; 3 (dispatcher) binary not built
 - **Reference:** [pw_map.md](pw_map.md)
 
 ### viz
@@ -206,8 +206,8 @@ Movement diagrams, heatmaps, occupancy comparison, match timeline, GIF (PNG + JS
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py viz` (runs `paintbot_pw_lab/tools/pw_viz.py`)
 - **When:** To SEE a moment or a habit; always Read the PNG before describing it.
-- **Inputs:** movement|heatmap|occupancy|timeline|gif ROOT... [--from T --to T] [--seats] [--team] [--policy] [--fine] [--tag TAG] [--out FILE] [--json]
-- **Outputs:** default paintbot_pw_lab/analysis/pw_viz/<episode|batch>/<command>[-selectors].png + .json; --tag picks the build for the trace and the map ($PW_CACHE_DIR/maps/<tag>/ when set)
+- **Inputs:** movement|heatmap|occupancy|timeline|gif ROOT... [--from T --to T] [--seats] [--team] [--policy] [--kind density|deaths] [--normalize-side] [--raw-sides] [--no-shots] [--bbox x0,z0,x1,z1] [--fine] [--tag TAG] [--out FILE] [--json]
+- **Outputs:** default paintbot_pw_lab/analysis/pw_viz/<short episode id|batch-<hash>>/<command>[-selectors].png + .json; --tag picks the build for the trace and the map ($PW_CACHE_DIR/maps/<tag>/ when set)
 - **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); a --from past every match end or an unknown policy/seat is exit 2
 - **Reference:** [pw_viz.md](pw_viz.md); skill [`paintbot-pw-replay`](../../.claude/skills/paintbot-pw-replay/SKILL.md)
 
@@ -217,8 +217,8 @@ One-page Ink & Print HTML match report per episode: result, how it was decided, 
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py report` (runs `paintbot_pw_lab/tools/pw_match_report.py`)
 - **When:** To hand James one readable page per episode.
-- **Inputs:** ROOT... [--out DIR] [--viewer-base URL] [--json]
-- **Outputs:** default <episode dir>/pw_report/ (hosted) or NAME.pw_report/ (local): report.html, report.json, PNGs
+- **Inputs:** ROOT... [--out DIR] [--viewer-base URL] [--tag TAG] [--json]
+- **Outputs:** default <episode dir>/pw_report/ (hosted) or NAME.pw_report/ (local): report.html, report.json, PNGs; --out DIR: that dir (one episode) or DIR/<episode_id>/ (several)
 - **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh)
 - **Reference:** [pw_match_report.md](pw_match_report.md); skill [`paintbot-pw-replay`](../../.claude/skills/paintbot-pw-replay/SKILL.md)
 
@@ -228,9 +228,9 @@ Public league survey: fetch recent public episodes (anonymous, gentle), then sta
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py scout` (runs `paintbot_pw_lab/tools/pw_scout.py`)
 - **When:** Before designing against the field; to profile a specific opponent.
-- **Inputs:** fetch [--max-episodes N] [--out DIR] [--json] | report ROOT... [--ours KEY] [--reasons FILE] [--json]
-- **Outputs:** fetch: episode_data/scout/<date>/r<round>_<ereq>/ + index.json (skips what exists); report: scout.json, scout.md, scout.interesting.json in the first root
-- **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); fetch: 1 rate-limited after retries (code rate_limited), 3 when the public API is unreachable
+- **Inputs:** fetch [--league ID] [--max-episodes N (<= 100)] [--max-rounds N] [--out DIR] [--tag TAG] | report ROOT... [--out DIR] [--ours KEY] [--reasons FILE] [--by version|name] [--vis-every M] [--title T] [--tag TAG] | leaders (below); [--json]
+- **Outputs:** fetch: episode_data/scout/<UTC date>/r<round>_<ereq>/ + index.json (skips what exists); report: scout.json, scout.md, scout.interesting.json in --out (default the first root)
+- **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); fetch: 1 the guard trace failed (code guard_<code>) or rate-limited after retries (code rate_limited), 3 when the public API is unreachable
 - **Reference:** [pw_scout.md](pw_scout.md); skill [`paintbot-pw-scout`](../../.claude/skills/paintbot-pw-scout/SKILL.md)
 
 ### leaders
@@ -240,7 +240,7 @@ Current champions of a division: the latest completed public round's entrants, n
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py leaders` (runs `paintbot_pw_lab/tools/pw_scout.py leaders`)
 - **When:** Resolving --opponent refs for an A/B or evaluation (also `pw.py scout leaders`).
 - **Inputs:** [--division ID] [--top N] [--json]
-- **Outputs:** stdout only; result.leaders[] = {rank, player, policy_ref, policy_version_id, mmr, owner}
+- **Outputs:** stdout only; result.leaders[] = {rank, player, player_id, policy_ref, policy_version_id, mmr, owner}
 - **Exit codes:** 0 ok; 1 rate-limited after retries (code rate_limited) or some entrants unnamed; 2 usage; 3 the public API is unreachable
 - **Reference:** [pw_scout.md#leaders](pw_scout.md#leaders); skill [`paintbot-pw-ab`](../../.claude/skills/paintbot-pw-ab/SKILL.md)
 
@@ -250,9 +250,9 @@ Compose (never create) the experience-request bodies for a paired / h2h / field 
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py ab-requests` (runs `paintbot_pw_lab/tools/pw_ab_requests.py`)
 - **When:** Designing a hosted A/B; creating the bodies is a separate step that costs XP credits.
-- **Inputs:** --design paired|h2h|field --baseline REF --candidate REF [--opponent REF] [--seeds 1-30] --league-id ID [--run-id ID] [--out DIR] [--json]
+- **Inputs:** --design paired|field (h2h refused) --baseline REF --candidate REF --opponent REF... [--seeds 1-30] [--episodes N] (--league-id ID | --division-id ID | --coworld-id ID [--variant-id ID]) [--private] [--run-id ID] [--out DIR] [--json]
 - **Outputs:** with --out: manifest.json + bodies/<label>.json (same --run-id = same bodies)
-- **Exit codes:** 0 composed; 2 usage error
+- **Exit codes:** 0 composed; 2 usage (no target, h2h refused, paired without --seeds, no --opponent, an invalid body)
 - **Reference:** [pw_ab_requests.md](pw_ab_requests.md); skill [`paintbot-pw-ab`](../../.claude/skills/paintbot-pw-ab/SKILL.md)
 
 ### compare
@@ -261,7 +261,7 @@ A/B statistics over hash-checked episodes (paired, h2h, field) on the shared cow
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py compare` (runs `paintbot_pw_lab/tools/compare.py`)
 - **When:** Deciding whether a candidate beat its baseline.
-- **Inputs:** compare|sprt ROOT... --design D --baseline P --candidate P [--out FILE] [--json]
+- **Inputs:** compare|sprt ROOT... --design paired|h2h|field --baseline P --candidate P (P = policy_version_id, local:<name> or name:vN) [--h0 --h1 --alpha --beta] [--tag TAG] [--refresh] [--jobs J] [--out FILE] [--json]; compare also [--metrics a,b] [--target M] [--xreq ID] [--requests MANIFEST]
 - **Outputs:** with --out: the full result JSON (with rows), input for compare_report.py
 - **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); unknown/ambiguous arm policy or pooled rules versions is exit 2
 - **Reference:** [compare.md](compare.md); skill [`paintbot-pw-ab`](../../.claude/skills/paintbot-pw-ab/SKILL.md)
@@ -272,7 +272,7 @@ Local BASIC matches on the native library (league glory config, both sides): com
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py local` (runs `paintbot_pw_lab/tools/pw_local.py`)
 - **When:** Does a candidate compile and run? Is it clearly worse than base? Record a local replay.
-- **Inputs:** compile FILE | match A B --seed S | screen A B --seeds 1-28 [--out DIR] [--record DIR] [--json]
+- **Inputs:** compile FILE | match A B --seed S [--record DIR] | screen A B --seeds 1-28 [--record DIR --record-seeds LIST]; [--out DIR] [--json] (match --record records its own seed; screen --record needs --record-seeds)
 - **Outputs:** with --out: matches.jsonl + summary.json; with --record: NAME.replay + NAME.meta.json
 - **Exit codes:** 0 ok; 1 a seat failed to compile or was disabled, or a recording's hash differed; 2 usage error; 3 libpw/paintbot-headless not built or not matching the tag (run paintbot_pw_lab/tools/build_native.sh)
 - **Reference:** [pw_local.md](pw_local.md); skill [`paintbot-pw-local`](../../.claude/skills/paintbot-pw-local/SKILL.md)
@@ -285,7 +285,7 @@ SPSA tuning of @tune integer constants in a .bas against one fixed opponent on l
 - **When:** A parameter sweep on a candidate; always re-screen on fresh seeds and A/B hosted after.
 - **Inputs:** knobs FILE | run CAND OPP --seeds --iterations --log FILE [--out TUNED.bas] | render CAND --log FILE --out FILE; [--json]
 - **Outputs:** the JSONL log (append-only, resumable), the tuned .bas
-- **Exit codes:** 0 ok; 1 a seat failed to compile or was disabled, or a recording's hash differed; 2 usage error; 3 libpw/paintbot-headless not built or not matching the tag (run paintbot_pw_lab/tools/build_native.sh)
+- **Exit codes:** 0 ok; 1 candidate seats failed to compile or were disabled (code bad_seats); 2 no or malformed @tune marks, missing file, bad seeds, a log written with other settings, unknown or non-integer --set, or an out-of-range value; 3 libpw/paintbot-headless missing or stale (run paintbot_pw_lab/tools/build_native.sh)
 - **Reference:** [pw_tune.md](pw_tune.md); skill [`paintbot-pw-tune`](../../.claude/skills/paintbot-pw-tune/SKILL.md)
 
 ### intent
@@ -294,7 +294,7 @@ Intent telemetry: record local episodes with seat logs, show PWI lines, audit in
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py intent` (runs `paintbot_pw_lab/tools/pw_intent.py`)
 - **When:** When the question is what our policy MEANT to do (heart choice, target, reason).
-- **Inputs:** record A B --seeds S | show ROOT... | audit ROOT...; [--json]
+- **Inputs:** record A B --seeds S [--sides 0,1] [--glory JSON] [--ticks N] [--port P] [--force] | show ROOT... [--refresh] | audit ROOT... [--horizon N] [--sparse] [--out DIR]; [--tag TAG] [--json]
 - **Outputs:** default paintbot_pw_lab/analysis/pw_intent/{episodes,audit}/
 - **Exit codes:** 0 ok; 1 some episodes failed to record or load; 2 usage; 3 pw_trace or the handoff engine not built (run paintbot_pw_lab/tools/build_tools.sh)
 - **Reference:** [pw_intent.md](pw_intent.md); skill [`paintbot-pw-diagnose`](../../.claude/skills/paintbot-pw-diagnose/SKILL.md)
@@ -305,8 +305,8 @@ Rows for the coworld-hypothesis-miner: one per (episode, our policy) from metric
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py miner` (runs `paintbot_pw_lab/tools/miner_rows.py`)
 - **When:** Nothing specific is suspected: mine a batch for what separates good matches from bad.
-- **Inputs:** ROOT... --policy KEY [--score elo|win] --out FILE [--json]
-- **Outputs:** the JSONL rows file
+- **Inputs:** ROOT... --policy KEY [--score elo|win] [--out FILE] (required with --json; else rows go to stdout) [--refresh] [--json]
+- **Outputs:** the JSONL rows file; result.warning when there are < 8 rows (mine then fails)
 - **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); no/unknown --policy is exit 2 listing them
 - **Reference:** [features.md](features.md); skill [`paintbot-pw-diagnose`](../../.claude/skills/paintbot-pw-diagnose/SKILL.md)
 
@@ -318,7 +318,7 @@ Run the shared hypothesis miner on miner rows with the lab's features.py adapter
 - **When:** Right after `miner` wrote rows.
 - **Inputs:** --rows FILE [--top N] [--out FILE] [--json FILE] (shared engine's flags; adapter preset)
 - **Outputs:** Markdown ranking (stdout or --out); --json FILE: association table
-- **Exit codes:** the shared engine's (0 ok, non-zero on error); not the lab envelope
+- **Exit codes:** the shared engine's (0 ok; 1 with a traceback on error, e.g. fewer than 8 usable rows); not the lab envelope
 - **Reference:** [features.md](features.md); skill [`paintbot-pw-diagnose`](../../.claude/skills/paintbot-pw-diagnose/SKILL.md)
 
 ### winprob
@@ -327,9 +327,9 @@ Win-probability model P(win | team state at t), held-out evaluation, and per-eve
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py winprob` (runs `paintbot_pw_lab/tools/pw_winprob.py`)
 - **When:** Which events actually swing matches; crediting a batch with a saved model.
-- **Inputs:** fetch --out DIR | fit ROOT... --out DIR | credit ROOT... --model FILE --out DIR; [--json]
+- **Inputs:** fetch --out DIR [--max-episodes N (<= 40)] [--rounds N] [--versions X.Y.Z] [--division ID] | fit ROOT... --out DIR [--sample-every N] [--folds K] [--jobs N] | credit ROOT... --model FILE --out DIR [--jobs N]; [--json]. Episodes with rules < 47 are excluded (rules_below_47)
 - **Outputs:** fit: model.json, report.json, wp_{ticks,events,policy}.parquet; fetch: <ereq>/ dirs (skips what exists)
-- **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); fit with < 4 usable episodes is exit 1; fetch: 1 rate-limited after retries (code rate_limited), 3 when the API is unreachable
+- **Exit codes:** 0 ok; 1 some episodes failed to load or verify (the rest are used, failures listed); 2 usage error or unknown selector (valid values listed); 3 pw_trace not built (run paintbot_pw_lab/tools/build_tools.sh); fit with < 4 usable episodes is exit 1 (too_few_episodes); credit with no usable episode is exit 1 (no_usable_episodes); fetch: 1 rate-limited after retries (code rate_limited), 3 when the API is unreachable
 - **Reference:** [pw_winprob.md](pw_winprob.md); skill [`paintbot-pw-diagnose`](../../.claude/skills/paintbot-pw-diagnose/SKILL.md)
 
 ### test
@@ -370,9 +370,15 @@ Every Python tool (all subcommands above except `build`, `build-native`, `trace`
    | `next` | suggested follow-up commands; on exit 3, the fix command |
 
 3. **Exit codes:** `0` success; `1` some inputs failed verification or loading (partial results
-   are still written, failures listed); `2` usage or config error; `3` environment missing
-   (binary, library or release not built), and the message names the exact fixing command,
-   for example `paintbot_pw_lab/tools/build_tools.sh`.
+   are still written, failures listed); `2` usage or config error (failure code `usage_error`);
+   `3` environment missing (binary, library or release not built; code `environment_missing`),
+   and the message names the exact fixing command, for example
+   `paintbot_pw_lab/tools/build_tools.sh`. An unexpected exception (a tool bug) still prints the
+   envelope, exit 1 with failure code `crash` and the traceback on stderr. Exceptions to the
+   envelope: `deployed-ref` and `release` report usage errors as plain argparse text (exit 2,
+   no JSON), and the shell/binary subcommands (`build`, `build-native`, `trace`, `map-raw`,
+   `mine`, `test`) have no `--json` at all (the dispatcher prints an envelope only when it
+   refuses to run a binary that is not built).
 4. **Deterministic outputs, idempotent re-runs.** Default output locations are documented per
    tool; files a tool writes without `--out` go under `paintbot_pw_lab/analysis/<tool>/` or next to
    the episode, at paths that depend only on the inputs. Traces and map rasters are cached

@@ -28,11 +28,13 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
    | Design | Use when | Cost |
    | --- | --- | --- |
    | `paired` (default) | "better against X": both arms vs the same opponent, same seeds, both sides | one request per (arm, opponent, side, seed): 15 seeds = 60 requests per opponent for 30 pairs |
-   | `h2h` | cheap screen of candidate vs baseline directly | **local only**: two of our own policies is self-play, and hosted XP self-play is forbidden (`user_preferences.md`); the composer refuses it. Run `pw.py local screen CAND.bas BASE.bas --record DIR`, then `pw.py compare compare DIR --design h2h`. Beating our old version does not prove beating the field |
+   | `h2h` | cheap screen of candidate vs baseline directly | **local only**: two of our own policies is self-play, and hosted XP self-play is forbidden (`user_preferences.md`); the composer refuses it. Run `pw.py local screen CAND.bas BASE.bas --seeds 1-20 --record DIR --record-seeds 1-20` (`--record` needs `--record-seeds`), then `pw.py compare compare DIR --design h2h --baseline local:BASE.bas --candidate local:CAND.bas`. Beating our old version does not prove beating the field |
    | `field` | closest to the ladder: both arms vs several leaders, unpaired | per (arm, opponent, side); also the cheap fallback for one opponent without seeds (4 requests) |
 
-   Opponents: the current leaders from the division standings (use membership labels; the
-   resolver skips null `policy_label` rows, see [docs/field.md](../../../docs/field.md)).
+   Opponents: the current leaders as exact `name:vN` refs. `uv run python paintbot_pw_lab/tools/pw.py leaders --top 3 --json`
+   lists them (`result.leaders[].policy_ref`), naming every entrant from the latest public round's
+   episodes, including the rows with a null `policy_label` that the shared resolver skips
+   ([pw_scout.md § leaders](../../../docs/tools/pw_scout.md#leaders), [docs/field.md](../../../docs/field.md)).
    Never `top_n`/`random` seats in an A/B: 8 sampled seats are 7+ different champions on one team.
 
 3. **Compose the bodies (no API call).**
@@ -85,8 +87,9 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
    its bounds.
 
    `continue` below 30 observations is by design. On `accept_h1`/`accept_h0`, cancelling the
-   rest saves credits; say so in the update. Local fake arms showed per-pair SD ≈ 0.40, so H1 = +0.05
-   can take ~300 pairs; if that is unaffordable, raise H1 and say so.
+   rest saves credits; say so in the update. Local fake arms showed per-pair SD ≈ 0.40 (pairing
+   barely reduced variance there: unpaired differences of single-arm SD 0.31 would give ≈ 0.44), so H1 = +0.05 can take ~300 pairs; if that
+   is unaffordable, raise H1 and say so ([compare.md](../../../docs/tools/compare.md)).
 
 7. **Compare and render.**
 
@@ -119,12 +122,15 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
 
 - **Never pool rules or coworld versions** (compare.py refuses). A league tag bump mid-run
   splits the batch.
-- **Engine seeds.** League episodes with `game_config.seed: 2026` got engine seeds
-  1327528888–90, so whether an explicit override also fixes the engine seed is unverified.
-  Watch `pairs_with_different_engine_seeds` in the first run: if it is non-zero, the pairing
-  matched requests, not worlds, and the paired test gains little.
-- **Several episodes at one seed** are probably one deterministic game; compare.py keeps one
-  copy (`duplicate_game`). Use more seeds, not more episodes per seed.
+- **Engine seeds.** An explicit `game_config_overrides.seed` reaches the engine, so seed-paired
+  requests play identical worlds (modulo the opponents' own behaviour); a league episode's API
+  `seed: 2026` is a placeholder, not its world ([docs/field.md § Seeds](../../../docs/field.md#seeds-what-actually-reaches-the-engine)).
+  `pairs_with_different_engine_seeds` should be 0; if it is not, the pairing matched requests,
+  not worlds.
+- **One single-episode request per (arm, opponent, side, seed).** An explicit seed makes every
+  episode of its request the same world, so with the same roster extra episodes replay one
+  match: they cost credits and add no information (compare.py keeps one copy, `duplicate_game`).
+  Use more seeds, not more episodes per seed (the composer's default `--episodes 1`).
 - **Head-to-head is not field evidence.** Confirm a h2h win with `paired` or `field` against
   the leaders before submitting.
 - **Local arms are not evidence.** `pw.py local`/`paintbot-headless` recordings are for
@@ -135,18 +141,21 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
 
 - **Preconditions:** `uv run python paintbot_pw_lab/tools/pw.py doctor --json` exits 0; baseline and candidate are uploaded
   versions (`name:vN`); the question and stopping rule are written down (step 1).
-- **Commands:** `ab-requests ... --run-id ID --out RUN/requests --json` (no API call), create
+- **Commands:** `leaders --json` for opponent refs, `ab-requests ... --run-id ID --out RUN/requests --json` (no API call), create
   each body with the shared experience-request helper, stream artifacts into `RUN/episodes`,
   then loop `compare sprt RUN/episodes ... --json` as episodes land (cached traces make each pass
   cheap) and finish with `compare compare ... --out RUN/ab.json --json`.
-- **Reading the envelopes:** `ab-requests` → `result.requests[]` (label, arm, side, seed, body)
+- **Reading the envelopes:** `leaders` → `result.leaders[]` (rank, player, policy_ref, mmr);
+  `ab-requests` → `result.requests[]` (label, arm, policy, side, opponent, seed, body)
   and `counts.episodes`; `compare sprt` → `result.decision`; `compare compare` → `result.deltas`
   (per metric and group: `base`, `cand`, `effect`, `p`, `verdict`, `test`), `result.sprt`, `counts.exclusions`, and
   `failures[]` for episodes that did not load.
 - **Exit codes:** 0 use it. 1 some episodes failed to load: re-fetch them (a missing artifact is
-  "retry") before trusting the verdict. 2 an arm policy is unknown or ambiguous (`result.valid`
-  lists the labels), both arms share an episode (use `--design h2h`), or rules versions are pooled
-  (split the roots). 3 run `next[0]` (build) and rerun.
+  "retry") before trusting the verdict (`leaders`: 1 with code `rate_limited` = wait and retry).
+  2 an arm policy is unknown or ambiguous (`result.valid` lists the labels), both arms share an
+  episode (use `--design h2h`), rules versions are pooled (split the roots), or `ab-requests` was
+  asked for `h2h` / given no target, `--opponent` or `--seeds` where the design needs them.
+  3 run `next[0]` (build) and rerun.
 - **Human gates:** creating experience requests is within lab authorization but **costs XP
   credits**: report the count and estimate. Never use XP requests for self-play. League
   **submission** of the winner and any public forum or wiki post are explicitly gated: stop and

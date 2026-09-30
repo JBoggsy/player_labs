@@ -1,7 +1,9 @@
-# pw_viz.py: movement diagrams, heatmaps, timelines (T9)
+# pw_viz.py: movement diagrams, heatmaps, timelines
 
-Draws traced episodes (the [episode tables](tables.md)) over the release's terrain raster
-([pw_map](pw_map.md)). matplotlib only. Every command writes a PNG (or GIF) and a JSON of exactly
+Answers "show me what happened": movement diagrams for a window, position and death
+heatmaps, two policies' occupancy side by side, a match timeline and short GIFs. It draws
+traced episodes (the [episode tables](tables.md)) over the release's terrain raster
+([pw_map](pw_map.md)), matplotlib only. Index of all tools: [README.md](README.md). Every command writes a PNG (or GIF) and a JSON of exactly
 the data it plotted, with the same stem. Colours follow the Softmax Ink & Print house style:
 warm paper background, Ember = terracotta `#b4532a`, Azure = ink blue `#1f4c9a` (the pair passes the
 dataviz palette validator for colour-blind separation and contrast), neutral grey for unowned hearts,
@@ -22,8 +24,9 @@ uv run python $T timeline  ROOT... [--out t.png]          # several episodes: t-
 uv run python $T gif       EPISODE --from 0 --to 12s [--team 1] [--bbox …] [--out a.gif]
 ```
 
-Without `--out` the files go to `paintbot_pw_lab/analysis/pw_viz/<episode id | batch-<hash>>/`
-under a name built from the command and selectors (see Agent contract below), so a rerun with
+Without `--out` the files go to `paintbot_pw_lab/analysis/pw_viz/<short id | batch-<hash>>/`
+(short id = the episode id without `ereq_`, first 13 characters, `:` → `_`, e.g.
+`5092af64-d37e`) under a name built from the command and selectors (see Agent contract below), so a rerun with
 the same arguments overwrites its own image.
 
 - **Times**: `1500` = tick, `62.5s` = seconds, `1:10` = m:ss (24 ticks/s). Ticks use the table
@@ -51,8 +54,8 @@ the same arguments overwrites its own image.
 
 | | |
 | --- | --- |
-| Inputs | `movement\|heatmap\|occupancy\|timeline\|gif`, roots; `--from/--to` (movement, gif only), `--seats`, `--team`, `--policy` (twice for occupancy), `--kind`, `--bbox`, `--out`, `--fine`, `--tag` |
-| Outputs | an image plus a JSON of the plotted data. Default: `paintbot_pw_lab/analysis/pw_viz/<episode id \| batch-<hash>>/<command>[-<kind>][-t<from>-<to>][-team<n>][-seats<list>][-<policy>].png` (`.gif` for gif); `--out FILE` overrides; timeline over several episodes adds `-<episode>` |
+| Inputs | `movement\|heatmap\|occupancy\|timeline\|gif`, roots; `--from/--to` (movement, gif only), `--seats`, `--team`, `--policy` (twice for occupancy), `--kind density\|deaths` (heatmap), `--normalize-side` (heatmap), `--raw-sides` (occupancy), `--no-shots`, `--bbox x0,z0,x1,z1`, `--out`, `--fine`, `--tag` |
+| Outputs | an image plus a JSON of the plotted data. Default: `paintbot_pw_lab/analysis/pw_viz/<short id \| batch-<hash>>/<command>[-<kind>][-t<from tick>-<to tick\|end>][-team<n>][-seats<a_b>][-<policy>...].png` (`.gif` for gif), e.g. `5092af64-d37e/movement-t240-288-team1.png`; `--out FILE` overrides; timeline over several episodes adds `-<short id>` |
 | `--json` result | `{images: [...], data: [...], window: {from_tick, to_tick, match_end_ticks, clamped_to_end, starts_after_end} or null, episodes: [...]}` |
 | Exit codes | 0 ok; 1 some episodes failed to load or verify (the rest are used; one `failures[]` entry each, `counts.failed_by_code`); 2 usage error: bad arguments, roots with no episode, or an unknown selector (`--policy`, `--seats`, a filter matching no seat, a `--from` at or after the end of every match, `--to` before `--from`, `--from/--to` on a command without a window; `result.valid` lists the valid values); 3 `pw_trace` not built (`next[0]` = `paintbot_pw_lab/tools/build_tools.sh`) |
 | Idempotence / cache | same inputs, same path: a rerun overwrites its own image. `--fine` and a non-pinned `--tag` trace into their own cache variant; map rasters go to `$PW_CACHE_DIR/maps/<tag>/` (default `tools/.cache/maps/<tag>/`) |
@@ -99,6 +102,8 @@ and the plotted `x/z` (shots: `x0,z0,x1,z1` as drawn, `hit`, `victim`). `heatmap
 `count`, `normalize_side`. `occupancy`: `grids` (counts per cell, rows = z), `extent`, `cell`,
 `samples`, `bhattacharyya`, `normalize_side`. `timeline`: `t`, `meter_ticks`, `glory`, `kills`,
 `captures`, `heart_ownership` (`[start, end, owner]` per heart). `gif`: `frames` (ticks), `fps`.
+Every file also has `kind`; heatmap adds `policy, team, episodes, note`; occupancy adds
+`policies, team, episodes`; timeline and gif add `episode_id`; gif adds `from_tick, to_tick, seats`.
 
 ## Python
 
@@ -123,8 +128,12 @@ pv.to_ember_side(frame, ep.meta); pv.parse_time("1:10")
 - Tests: `tools/tests/test_pw_viz.py` (time parsing, trail breaks, heart owners, overlap, side
   normalization, moment selection).
 
-Not verified: against the web viewer at the same tick (no hosted viewer run here); local
-`NAME.replay` episodes (none were on disk; the code paths are the same tables); FFA or generated
+2026-09-29, coworld-v0.3.79: every command ran on local `NAME.replay` recordings
+(`pw.py local screen reference/base.bas reference/jev.bas --record DIR --record-seeds 1-4`),
+including `movement --fine` (cache `NAME@se6-ve0-w240_480.pw_cache/`), `occupancy` (overlap 1.0:
+the two files play identically) and `gif`; `--from 1:10` on the 1:08.7 sample exits 2 as documented.
+
+Not verified: against the web viewer at the same tick (no hosted viewer run here); FFA or generated
 maps; a batch heatmap over 100+ episodes (it loads every episode's tables into memory).
 
 ## Limits
@@ -135,3 +144,5 @@ maps; a batch heatmap over 100+ episodes (it loads every episode's tables into m
 - Dense windows (16 seats, 30 s, shots on) are busy by nature; narrow with `--team`, `--seats`,
   `--bbox`, `--no-shots` or a shorter window.
 - The GIF is slow-ish (one matplotlib redraw per frame) and meant for short windows.
+- Panel titles and default directories use the 13-character short id, so local episode
+  names are cut (`local:base_vs_jev_s1_aeven` shows as `local:base_vs`).

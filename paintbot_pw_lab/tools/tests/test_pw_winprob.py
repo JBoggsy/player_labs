@@ -1,6 +1,7 @@
 """Contracts of pw_winprob.py: team point of view and mirroring, the grouped held-out split, the
 event bracket (before/after rows, sign for the acting team), and the saved-model round trip."""
 
+import json
 import sys
 from pathlib import Path
 
@@ -106,3 +107,18 @@ def test_model_json_round_trip_predicts_identically():
     model = pw_winprob.WinModel().fit(X, y, w)
     again = pw_winprob.WinModel.from_json(model.to_json())
     assert np.allclose(model.team0_probability(rows), again.team0_probability(rows))
+
+
+def test_credit_with_every_episode_excluded_lists_a_failure(tmp_path, monkeypatch, capsys):
+    """Exit 1 must come with a failures[] entry (the contract), even when nothing failed to load."""
+    rows = pd.concat([team_states(f"e{i}", i % 2, 96) for i in range(4)], ignore_index=True)
+    X, y, _, w = pw_winprob.design(rows)
+    model_path = tmp_path / "model.json"
+    model_path.write_text(json.dumps({**pw_winprob.WinModel().fit(X, y, w).to_json(),
+                                                    "fitted_episodes": []}))
+    monkeypatch.setattr(pw_winprob, "load", lambda roots, jobs, report=None: ([], [], {"rules_below_47": 1}))
+    code = pw_winprob.main(["credit", str(tmp_path), "--model", str(model_path), "--out", str(tmp_path / "o"), "--json"])
+    envelope = json.loads(capsys.readouterr().out)
+    assert code == 1 and not envelope["ok"]
+    assert envelope["failures"][0]["code"] == "no_usable_episodes"
+    assert "rules_below_47" in envelope["failures"][0]["message"]

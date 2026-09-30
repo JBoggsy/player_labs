@@ -1,8 +1,11 @@
-# pw_flags.py: tick-linked anomaly flags (T12)
+# pw_flags.py: tick-linked anomaly flags
 
-Rule-based flags that point a human or agent at moments worth watching. Each flag is one
-row linked to ticks. Every threshold is a named constant at the top of the file and is
-printed with the output. Source: `tools/pw_flags.py`.
+Answers "what went wrong in our worst losses, and at which tick?". Rule-based flags (stuck,
+idle, dead VM, died alone, heart lost with allies near, wasted grenade, friendly fire, ...)
+point a human or agent at moments worth watching, and `--policy` lists that policy's losses
+worst first. Each flag is one row linked to ticks. Every threshold is a named constant at the
+top of the file and is printed with the output. Source: `tools/pw_flags.py`. Index of all
+tools: [README.md](README.md).
 
 ## Commands
 
@@ -14,20 +17,33 @@ uv run python paintbot_pw_lab/tools/pw_flags.py ROOT [ROOT ...] [--policy KEY_OR
 - The first line is the thresholds. Then come flag counts, then up to `--top` rows per
   episode. `--top 0` prints only each episode's counts per flag (no row tables).
 - `--policy` narrows the flags to that policy's seats and to team flags on its team. It
-  also prints the policy's **losses and draws, worst Elo outcome first**, with its flag
+  also prints the policy's **losses and draws, worst Elo outcome score first**, with its flag
   counts per episode. That is the triage order for diagnosis: review the worst loss first.
-- `--vis-every M` fills `enemies_seeing` on `death_alone`, and re-traces.
+- `--vis-every M` fills `enemies_seeing` on `death_alone`. It traces once into its own cache
+  variant (see [pw_episodes.md](pw_episodes.md#cache-variants)); the default cache is untouched.
+- `--csv FILE` writes every flag row of the loaded episodes, filtered by `--flags` but not
+  by `--policy` or `--top`.
 - Exit 1 if any episode failed to load; exit 2 for an unknown `--flags` name, an unknown
   `--policy` (the valid keys and names are listed) or a negative `--top`.
 
 ```python
 import pw_flags as pf
 pf.episode_flags(ep)              # DataFrame: episode_id, flag, seat, team, policy_key, t_start, t_end, evidence, detail
-pf.losses(batch, policy, flags)   # the policy's non-wins, worst Elo outcome first
+pf.losses(batch, policy, flags)   # the policy's non-wins, worst Elo outcome score first
 ```
 
 `detail` is a JSON string. `seat` is null for team flags (`heart_lost_with_allies`,
-`zero_glory_win`), and `team` is then the team the flag is about.
+`zero_glory_win`), and `team` is then the team the flag is about. `detail` keys per flag:
+`stuck` {pos, goal, goal_distance}; `oscillating` {flips}; `idle_alive` {ticks};
+`vm_disabled_suspect` {final_idle_run_ticks} (inferred) or {log} (exact); `death_alone`
+{killer, weapon, nearest_teammate, enemies_seeing}; `heart_lost_with_allies` {heart,
+captured_by, allies_near, nearest}; `wasted_grenade` {pos, friendly_victims};
+`friendly_fire` {victims, hp, kills, weapons}; `long_wade` {ticks, ended: left|died|match_end};
+`zero_glory_win` {winner}.
+
+`losses` columns (and `result.losses` rows): `episode_id, result, elo_outcome, glory_ours,
+glory_theirs, opponent, ticks, flags` (the policy's flag total) plus one count column per flag
+that fired (null where it did not).
 
 ## Agent contract
 
@@ -37,9 +53,9 @@ pf.losses(batch, policy, flags)   # the policy's non-wins, worst Elo outcome fir
 | --- | --- |
 | Inputs | roots; `--policy`, `--flags a,b` (names from the Flags table), `--top N` (0 = counts only), `--csv FILE`, `--vis-every M`, `--tag` |
 | Outputs | `--csv FILE`: every flag row |
-| `--json` result | `{thresholds, flag_counts, rows_total, losses: [the policy's non-wins, worst Elo outcome first] or null, rows: [at most --top per episode], rows_note}` |
+| `--json` result | `{thresholds, flag_counts, rows_total, losses: [the policy's non-wins, worst Elo outcome score first] or null, rows: [at most --top per episode], rows_note}` |
 | Exit codes | 0 ok; 1 some episodes failed to load or verify (the rest are used; one `failures[]` entry each, `counts.failed_by_code`); 2 usage error: bad arguments, roots with no episode, or an unknown selector (`--policy`, `--flags`, a negative `--top`; `result.valid` lists the valid values); 3 `pw_trace` not built (`next[0]` = `paintbot_pw_lab/tools/build_tools.sh`) |
-| Idempotence / cache | reads the `pw_episodes` caches; same output on rerun |
+| Idempotence / cache | reads the `pw_episodes` caches (`--vis-every M`: its own cache variant); same output on rerun |
 | Typical next step | `uv run python paintbot_pw_lab/tools/pw.py report <worst loss> --json`, then `viz movement` around a flag's `t_start` |
 
 ## Flags
@@ -49,7 +65,7 @@ pf.losses(batch, policy, flags)   # the policy's non-wins, worst Elo outcome fir
 | `stuck` | Alive and walking (`cmd_walk`) with an unchanged walk goal ≥ 200 away, having moved < 200 units over ≥ 72 ticks. Overlapping windows merge. | sampled |
 | `oscillating` | The walk goal flips back to within 100 units of where it was two changes earlier, the middle goal being ≥ 300 away, ≥ 3 times within 144 ticks | sampled |
 | `idle_alive` | Alive at two consecutive samples with the engine's empty `Command()` for ≥ 48 ticks | sampled |
-| `vm_disabled_suspect` | Empty commands from some tick to the end while alive, for ≥ `pw_metrics.VM_DISABLED_MIN_IDLE_TICKS` (240). It is exact (`evidence: exact`) when our seat log has `BASIC error:`. | inferred / exact |
+| `vm_disabled_suspect` | Empty commands from some tick to the end while alive, for ≥ `pw_metrics.VM_DISABLED_MIN_IDLE_TICKS` (240). A second, exact row (`evidence: exact`) is added for each `BASIC error:` line in a seat log (`policy_log.line_kind = vm_error`; seat logs exist only for our local `pw_intent record` episodes or downloaded hosted logs). | inferred / exact |
 | `death_alone` | Killed with no living teammate within 1,000 units, using the last sample before death. `enemies_seeing` comes from the last visibility sample, or is null without `--vis-every`. | sampled |
 | `heart_lost_with_allies` | A heart the team owned is captured while ≥ 1 living teammate is within 700 units | exact capture, sampled positions |
 | `wasted_grenade` | A grenade blast that damaged no enemy | exact |
@@ -71,6 +87,9 @@ pf.losses(batch, policy, flags)   # the policy's non-wins, worst Elo outcome fir
 - `--vis-every 12` fills `enemies_seeing`.
 - `--policy` loss ordering ran, but only on policies without losses in this sample
   (`aaron-coplay-coach`). The worst-first sort itself is a plain sort on `elo_outcome`.
+  Re-checked 2026-09-29 at coworld-v0.3.79 on 3 local `base.bas` vs `jev.bas` recordings
+  (`--policy jev.bas`): losses listed worst first (0.2305, 0.266), `--flags bogus` and
+  `--top -1` exit 2.
 
 ## Limits
 

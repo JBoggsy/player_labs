@@ -1,13 +1,19 @@
 # Episode tables and Python API (contract)
 
-The lab's analysis layer. `pw_trace` (Nim) re-simulates a tape hash-exactly and writes
+The lab's analysis layer and the contract every analysis tool reads: which Parquet tables
+exist per episode, every column and its meaning, the tick/team/identity conventions, and the
+Python API. `pw_trace` (Nim) re-simulates a tape hash-exactly and writes
 events and state; `pw_episodes.py` turns each episode into the Parquet tables below;
-`pw_metrics.py` computes every metric from those tables. Every later tool (A/B adapter,
+`pw_metrics.py` computes every metric from those tables. Part of the lab tool set:
+[tool index](README.md). Every later tool (A/B adapter,
 miner features, diagrams, match reports, scouting) reads these tables or this API, so a
 change to a column or its meaning bumps `TABLES_VERSION` in `pw_episodes.py` and is
 recorded here in the same change.
 
-Verified 2026-09-29 with build `coworld-v0.3.78` (`570174a2`) on: the 3 rules-44 samples in
+Column lists re-checked 2026-09-29 against build `coworld-v0.3.79` (`d0728ab1`) on the 3
+samples plus 8 local `pw_local` recordings: every table below has exactly the listed columns
+(`visibility` and `policy_log` were empty there). First verified with build
+`coworld-v0.3.78` (`570174a2`) on: the 3 rules-44 samples in
 `episode_data/`, 3 local 16-seat recordings with the league glory config, and 2 fresh hosted
 0.3.78 league episodes (tape header rules 48, hosted Nim 2.2.10, traced with local Nim 2.2.6:
 hash-exact).
@@ -79,6 +85,9 @@ a sidecar `NAME.meta.json` naming the policy on each seat:
             "policy_version_id": null, "policy_version": null}, ...],
  "glory_config": {"behind_lives": 5, "behind_cogs": 10}, "seed": 11}
 ```
+
+`pw_local.py --record` writes this sidecar with `"source": "pw_local"` plus `a_side` and
+`policies` (`{"A": {path, sha256}, "B": {...}}`); only `seats` is read here.
 
 Only `seats[].position` and `seats[].policy_name` are required. `team`, if present, is
 cross-checked against parity. Without a sidecar each seat's policy is its tape name
@@ -231,7 +240,7 @@ episode directory whose name carries the seat (`policy_agent_N.log`, `player-N.l
 `seat-N.log`). `line_kind`:
 
 - `log_present`: one marker per parsed file, so "no errors" differs from "no log".
-- `intent`: a line starting `PWI ` (the T13 intent telemetry; format owned by T13). Parsed
+- `intent`: a line starting `PWI ` (intent telemetry; format in [pw_intent.md](pw_intent.md)). Parsed
   as `key=value` tokens into `fields` (JSON); `t` from `t=`.
 - `vm_error`: a line containing `BASIC error:` (the seat's VM was disabled).
 
@@ -250,7 +259,7 @@ batch.exclusions          # Counter of codes: no_replay, bad_tape, trace_failed,
 batch.table("damage")     # one table across the batch
 ep = pe.load_episode(Path(".../episode_dir"))                           # one episode, raises EpisodeError
 con = pe.open_duckdb(batch)          # or roots: views named like the tables, over cached episodes
-con.execute("select policy_key, count(*) from shots group by 1").df()
+con.execute("select s.policy_key, count(*) from shots join seats s using (episode_id, seat) group by 1").df()
 
 pm.seat_metrics(ep); pm.policy_metrics(ep); pm.team_metrics(ep)          # DataFrames
 pm.batch_metrics(batch)   # {"seat": ..., "policy": ..., "team": ...}

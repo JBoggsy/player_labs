@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compose (never create) experience-request bodies for a Paintbot PW A/B (plan §7).
+"""Compose (never create) experience-request bodies for a Paintbot PW A/B.
 
 Prints a manifest: every request body the design needs, each with its label, arm, side,
 opponent and seed. It makes NO API call. Creating the requests is a separate, human-authorized
@@ -13,16 +13,16 @@ Sides are swapped across the batch. Designs:
           game_config_overrides.seed = that seed (so the arms pair by (opponent, side, seed)).
   h2h     REFUSED here: candidate vs baseline is two of our own policies, i.e. self-play, and
           hosted XP self-play is not allowed (user_preferences.md). Screen h2h locally with
-          `pw.py local screen CANDIDATE.bas BASELINE.bas --record DIR`, then
+          `pw.py local screen CANDIDATE.bas BASELINE.bas --seeds 1-20 --record DIR --record-seeds 1-20`, then
           `pw.py compare compare DIR --design h2h` on the recordings.
   field   each arm vs each --opponent, both sides; per seed when --seeds is given, else
           one request per (arm, opponent, side) with --episodes episodes. Pass the same policy
           as --baseline and --candidate to evaluate one policy (one arm, no duplicate requests).
 
-Seeds: an explicit seed is repeated by every episode of its request, and the engine is
-deterministic, so more than one episode per seed is likely the same game replayed
-(compare.py counts those as duplicate_game). Keep --episodes-per-seed 1 unless a pilot showed
-hosted games at one seed differ.
+Seeds: an explicit game_config_overrides.seed reaches the engine, so every episode of its
+request plays the same world (docs/field.md "Seeds"); with deterministic policies more than
+one episode per seed replays one game (compare.py counts those as duplicate_game). Keep
+--episodes 1 and use more seeds.
 
 Usage (repo root):
   uv run python paintbot_pw_lab/tools/pw_ab_requests.py --design paired \
@@ -88,7 +88,7 @@ def validate(request: dict) -> None:
 SELF_PLAY_REFUSAL = (
     "h2h pits two of our own policies against each other: that is self-play, and hosted XP "
     "self-play is not allowed (user_preferences.md). Screen it locally instead: "
-    "uv run python paintbot_pw_lab/tools/pw.py local screen CANDIDATE.bas BASELINE.bas --record DIR, "
+    "uv run python paintbot_pw_lab/tools/pw.py local screen CANDIDATE.bas BASELINE.bas --seeds 1-20 --record DIR --record-seeds 1-20, "
     "then pw.py compare compare DIR --design h2h on the recordings. For hosted evidence use --design paired or field.")
 
 

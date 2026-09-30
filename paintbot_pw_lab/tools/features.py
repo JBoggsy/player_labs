@@ -9,7 +9,7 @@ Feature rules (coworld-hypothesis-miner SKILL.md):
 - rates are per minute of match (1,440 ticks) or shares of an explicit denominator, so
   long and short matches compare; a feature whose denominator is 0 is left out of that
   row (unknown), never set to 0;
-- score components are excluded per `score_kind`. The ladder score is the Elo outcome of
+- score components are excluded per `score_kind`. The ladder score is the Elo outcome score of
   the glory margin, and glory = match-length countdown + quiet-supplies + behind-in-lives +
   behind-in-cogs + glory-heart awards, settled to 0 for the loser (docs/mechanics.md §1).
   The win itself is decided by the heart meter, which is hearts held over time. So match
@@ -27,8 +27,8 @@ from variance_miner import Episode, FeatureMeta
 
 TICKS_PER_MINUTE = 1440  # 24 ticks per second
 # The engine ranks by a swing in score units and emits nothing under 0.3 (variance_miner
-# `ranked_hypotheses(min_vp=0.3)`). Elo outcome and win are 0-1, which could never clear it,
-# so the adapter reports them as outcome points, 0-100 (0.5 Elo outcome = 50 points).
+# `ranked_hypotheses(min_vp=0.3)`). Elo outcome score and win are 0-1, which could never clear it,
+# so the adapter reports them as outcome points, 0-100 (0.5 Elo outcome score = 50 points).
 SCORE_SCALE = 100.0
 
 # Features that are arithmetic parts of the score or of the win condition, by score kind.

@@ -1,6 +1,7 @@
-# pw_scout.py: opponent scouting and field survey (T11)
+# pw_scout.py: opponent scouting and field survey
 
-Builds a picture of the league field from **public** data only. It uses anonymous reads
+Part of the [lab tool index](README.md) (dispatcher: `pw.py scout`, and `pw.py leaders` for
+`scout leaders`). Builds a picture of the league field from **public** data only. It uses anonymous reads
 and spends no credits. Source: `tools/pw_scout.py`. Procedure:
 [paintbot-pw-scout skill](../../.claude/skills/paintbot-pw-scout/SKILL.md).
 
@@ -72,8 +73,12 @@ is refused (exit 2). Episodes already on disk are skipped without a request. A r
 neither gzip nor a tape is skipped and counted as `bad_replay`.
 
 **Field-study guard.** The first newly downloaded episode goes through
-`pw_episodes.load_episode`, a hash-checked `pw_trace`, before anything else is pulled. If
-it fails, the fetch stops with exit 1. Build the right tag before continuing.
+`pw_episodes.load_episode`, a hash-checked `pw_trace`, before anything else is pulled (so that
+episode directory also gets its `pw_cache/`). If it fails, the fetch stops with exit 1,
+failure code `guard_<load code>` (e.g. `guard_trace_failed`), and `result` is
+`{league, saved, skipped, guard: "failed"}`. Build the right tag before continuing.
+`result.guard` is otherwise `ok`, or `not_run (nothing new)` when every episode was already
+on disk.
 
 ### report
 
@@ -97,11 +102,11 @@ crewrift-survey pattern. Reasons for episodes that are not flagged are kept in
 
 | | |
 | --- | --- |
-| Inputs | `leaders`: `--division`, `--top N`. `fetch`: `--league`, `--max-episodes` (≤ 100), `--max-rounds`, `--out`, `--tag`. `report`: roots, `--out`, `--reasons FILE`, `--by version\|name`, `--ours KEY_OR_NAME`, `--vis-every`, `--title`, `--tag` |
+| Inputs | `leaders`: `--division`, `--top N`. `fetch`: `--league`, `--max-episodes` (≤ 100), `--max-rounds`, `--out`, `--tag`. `report`: roots, `--out`, `--reasons FILE`, `--by version\|name`, `--ours` (an exact `policy_version_id` or a `policy_name` without `:vN`), `--vis-every` (default 0), `--title`, `--tag` |
 | Outputs | `fetch`: `paintbot_pw_lab/episode_data/scout/<UTC date>/r<round>_<ereq>/{episode.json, replay.gz}` and `index.json`. `report`: `scout.md`, `scout.json`, `scout.interesting.json` in `--out` (default: the first root) |
 | `--json` result | `leaders`: `{division, round_id, round_number, completed_at, leaderboard, leaders: [{rank, player, policy_ref, policy_version_id, mmr, owner, player_id}], not_in_round}`. `fetch`: `{league, out, saved, already_present, excluded, rounds, guard}`. `report`: `{report: path to scout.json, standings, sanity, interesting_without_reason}` |
-| Exit codes | 0 ok; 1 the guard trace failed (fetch), some episodes did not verify (report), an entrant could not be named (leaders), or the public API was still rate-limited after retries (leaders, fetch: code `rate_limited`); 2 usage (more than 100 episodes, an `--ours` policy not in the batch with `result.valid`, roots with no episode, a division with no completed round); 3 the public API is unreachable, or `pw_trace` is not built (`next[0]`) |
-| Idempotence / cache | fetch skips an episode whose two files exist, without a request; report reads the trace caches and rewrites its three files |
+| Exit codes | 0 ok; 1 the guard trace failed (fetch, code `guard_<code>`), some episodes did not verify (report), an entrant could not be named (leaders), or the public API was still rate-limited after retries (leaders, fetch: code `rate_limited`); 2 usage (more than 100 episodes, an `--ours` policy not in the batch with `result.valid`, roots with no episode, a division with no completed round, `--top` below 1); 3 the public API is unreachable, or `pw_trace` is not built (`next[0]`) |
+| Idempotence / cache | fetch skips an episode whose two files exist, without a request, and rewrites `index.json`; report reads the trace caches and rewrites its three files (in the first root unless `--out`: pass `--out` to keep an existing report) |
 | Typical next step | write `reasons.json` for `result.interesting_without_reason` and rerun `report --reasons` (the envelope's `next[]`) |
 
 ## What each section means
@@ -113,9 +118,9 @@ crewrift-survey pattern. Reasons for episodes that are not flagged are kept in
   counted. Public rows carry no `game_config.slots`, so the team comes from seat parity
   (`episodes.notes = team_from_parity`). Parity is the engine's own team rule.
 - **Standings.** Per policy: W-D-L, win rate with a 95% Wilson interval, mean Elo outcome
-  (`clamp(0.5 + (ours − theirs)/2000, 0, 1)`, the ladder's per-episode score) ± a
+  score (`clamp(0.5 + (ours − theirs)/2000, 0, 1)`, the ladder's per-episode score) ± a
   normal-approximation 95% half-width, mean winning glory, and median win time.
-- **Matrix.** For each pair of row and column policy: W-L and the row's mean Elo outcome.
+- **Matrix.** For each pair of row and column policy: W-L and the row's mean Elo outcome score.
   Wilson intervals are in `scout.json`.
 - **Profiles.** Hearts and pickups are named **in Ember's frame**: for an Azure side,
   feature k is reported as its point mirror through the midpoint of the two homes. So `h0`
@@ -142,7 +147,7 @@ crewrift-survey pattern. Reasons for episodes that are not flagged are kept in
     or speaker (exact). Positions come from sampled states (x and z interpolated), so a
     hint is an inference.
 - **Interesting episodes.**
-  - `upset`: the winner's batch mean Elo outcome is below the loser's. Both need ≥ 3
+  - `upset`: the winner's batch mean Elo outcome score is below the loser's. Both need ≥ 3
     episodes.
   - `zero_glory_win`.
   - `narrow_win`: winner glory ≤ 500.
@@ -164,6 +169,11 @@ crewrift-survey pattern. Reasons for episodes that are not flagged are kept in
   - matrix exclusions.
 
 ## Verified (2026-09-29, build coworld-v0.3.78)
+
+Re-checked at coworld-v0.3.79 (2026-09-29): `leaders --top 3` (round's top 3 named, `next[]`
+ab-requests command), `fetch --max-episodes 1 --max-rounds 1` (round 2388, guard ok, rules 48),
+`report` on the 12-episode 2026-09-29 sample with `--reasons` and `--out` (~7 s), `--ours`
+with an absent name, an empty root and `--max-episodes 101` (each exit 2).
 
 - `fetch --max-episodes 12 --max-rounds 2` pulled round 2373, 12 episodes on coworld 0.3.78.
   - Tape header: rules 48. The guard traced the first episode hash-exactly (local Nim

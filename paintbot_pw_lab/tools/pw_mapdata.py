@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Load Paintbot PW map geometry (terrain raster + features) for plots and metrics (T8).
+"""Load Paintbot PW map geometry (terrain raster + features) for plots and metrics.
 
 Runs the release's `pw_map` once per (release, map, rules, step) and caches the result
 under paintbot_pw_lab/tools/.cache/maps/<tag>/ ($PW_CACHE_DIR/maps/<tag>/ when that env var
@@ -11,7 +11,9 @@ homes). Contract: docs/tools/pw_map.md.
     plt.imshow(m.heights, extent=m.extent)   # world z grows downward, as in the viewer
     m.water, m.blocked, m.trench         # boolean masks, shape (nz, nx)
 
-CLI: uv run python paintbot_pw_lab/tools/pw_mapdata.py [--map NAME] [--rules N] [--step U] [--png OUT]
+CLI: uv run python paintbot_pw_lab/tools/pw_mapdata.py [--map NAME] [--rules N] [--step U] [--tag TAG]
+         [--png OUT] [--json]
+Exit codes: 0 ok; 2 usage or an unknown map (pw_map failed); 3 pw_map not built for the tag.
 """
 from __future__ import annotations
 

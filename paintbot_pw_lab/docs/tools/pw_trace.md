@@ -1,9 +1,11 @@
-# pw_trace: hash-checked replay expander (T1)
+# pw_trace: hash-checked replay expander
 
 Re-simulates a Paintbot PW tape with the engine's own `step`, checks the recorded state
-hash after every tick, and writes every event plus sampled per-tick state as JSONL.
-Most users should call it through `pw_episodes.py`, which caches it and builds tables
-([tables.md](tables.md)). Source: `tools/pw_trace.nim`.
+hash after every tick, and writes every event plus sampled per-tick state as JSONL. It is
+the evidence gate under every lab number: a trace is usable only when its `summary` says
+`verified`. Most users should call it through `pw_episodes.py`, which caches it and builds
+tables ([tables.md](tables.md)). Source: `tools/pw_trace.nim`. Part of the lab tool set:
+[tool index](README.md) (`pw.py trace`, built by `pw.py build`).
 
 ## Build and run
 
@@ -20,15 +22,18 @@ $B/pw_trace REPLAY OUT.jsonl [--state-every N] [--window A:B] [--vis-every M]
 - Exit 0 and `verified ticks=… hash=… ms=…` on success; exit 1 with `pw_trace FAILED: …`
   on stderr (and a `summary` row with `verified: false`) on a hash mismatch, frames after
   the match ended, a tape that ends before the match, or a failed identity check; exit 2
-  on bad arguments or a non-tape file.
+  (message on stderr) on bad arguments (missing paths, an unknown `--option`,
+  `--state-every` < 1, `--vis-every` not a multiple of `--state-every`) or a non-tape file.
 
 Build notes: `build_tools.sh` copies the file into the release worktree as
 `examples/paintbot/lab_pw_trace.nim` and compiles it there with `-d:pwTraining` (for
 `damageObserver`/`damageWeapon`/`combatTelemetry`; the per-tick hash check proves it does
 not change the simulation). The engine keeps match state in module globals: **one process
 per replay**. Seat count is per match (`Seats` is a runtime value); the code uses `seq`
-everywhere, and the 16-wide `SeatStats` telemetry is skipped for matches of more than 16
-seats (their `seat_stats` and kill check are null).
+everywhere. The `SeatStats` telemetry (`CombatTelemetry`) is as wide as the build supports:
+`MaxSeats` = 256 at coworld-v0.3.79 (`sim.nim:264`, `kinship.nim:12`), 16 in older builds. A
+match wider than that skips it (its `seat_stats` and kill check are null); at 0.3.79 every
+match fits.
 
 ## Agent contract
 
@@ -79,10 +84,11 @@ One JSON object per line, each with `type`:
 - `state`: `t`, `seats` (one array per seat in `state_columns` order), `hearts` (one array per
   heart in `heart_columns` order), `meter_ticks`, `glory`, `team_lives`, `cogs_out`, `winner`.
 - `visibility`: `t`, `sees` (per seat, the list of seats it can see).
-- `summary` (last line): `verified`, `failure`, `hash_mismatch_tick`, `final_hash`, `ticks`,
+- `summary` (last line): `schema_version`, `verified`, `failure`, `hash_mismatch_tick`, `final_hash`, `ticks`,
   `frames`, `winner`, `glory`, `meter_ticks`, `hearts_owned`, `team_lives`, `cogs_out`,
-  `checks` (`glory`: initial, awards, countdown, unsettled, final, ok; `kills`: kill events vs
-  `SeatStats`), `seats` (exact per-tick counters, see `seats` table), `seat_stats` (engine
+  `checks` (`glory`: `ok`, `detail`, `initial`, `awards`, `countdown`, `unsettled`, `final`, each
+  per team; `kills`: `ok`, `kill_events`, `enemy_kill_events`, `seat_stats_kills`,
+  `seat_stats_deaths`, `tags`), `seats` (exact per-tick counters, see `seats` table), `seat_stats` (engine
   `SeatStats` per seat, or null), `elapsed_ms`.
 
 ## How each item is derived
@@ -99,7 +105,13 @@ One JSON object per line, each with `type`:
   once settled). A naive "event tick == now" filter double-counts; the multiset difference
   does not.
 
-## Verified (2026-09-29, build coworld-v0.3.78, Nim 2.2.6, arm64 macOS)
+## Verified (2026-09-29, Nim 2.2.6, arm64 macOS)
+
+Re-checked with build `coworld-v0.3.79`: the `ereq_e7d3e242` sample with `--vis-every 24
+--window 100:130` (verified, 4108 ticks; every field list above matches its rows, and
+across the 3 samples plus 8 local base-vs-jev recordings every listed event kind occurs), a
+local `pw_local screen --record` recording (rules 48), and the exit-2 paths (no arguments, `--bogus`, `results.json` as the
+tape). The notes below are from build `coworld-v0.3.78`:
 
 - The 3 rules-44 samples in `episode_data/` (0.6-1.2 s each, 455-664 shots): verified; glory
   identity and kill identity hold; gun hits = gun damage events.
@@ -119,4 +131,5 @@ One JSON object per line, each with `type`:
 - VM-disabled tick is not in the tape (see `pw_metrics` heuristic and our seat logs).
 - Pickup takers are attributed by state change within 120 units; two same-kind pickups
   taken by nearby seats on one tick are `ambiguous`.
-- Not exercised: FFA-kin tapes, generated maps (`map` non-empty), team vision, >16 seats.
+- Not exercised: FFA-kin tapes, generated maps (`map` non-empty), team vision, >16 seats
+  (`paintbot-headless` has no seat-count flag; only a coworld config sets it).

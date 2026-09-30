@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paintbot PW win-probability model and event credit (lab tool T14).
+"""Paintbot PW win-probability model and event credit.
 
 A logistic model of P(team wins | team-level state at tick t), fit on hash-checked episodes
 through pw_episodes, evaluated out-of-fold with folds grouped by episode, and used to credit
@@ -500,6 +500,7 @@ def cmd_credit(args, envelope) -> dict:
     fitted = set(data["fitted_episodes"])
     episodes, frames, exclusions = load([Path(r) for r in args.roots], args.jobs, envelope)
     if not episodes:
+        envelope.fail("credit", "no_usable_episodes", f"no episode left to credit; exclusions {exclusions}")
         envelope.exit_code = pw_cli.EXIT_PARTIAL
         return None
     tables = write_credit(out, episodes, frames, lambda ep, ts: probability_series(ts, model))

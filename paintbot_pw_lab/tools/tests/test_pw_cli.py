@@ -6,6 +6,7 @@ import os
 import sys
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
@@ -143,13 +144,26 @@ class Batch:
         self.exclusions = Counter(code for _, code, _ in failures)
 
 
+def fake_episode(cache: str, cache_hit: bool):
+    return SimpleNamespace(cache_hit=cache_hit, source=SimpleNamespace(cache=Path(cache)))
+
+
 def test_add_batch_counts_failures_and_refuses_an_empty_batch():
     report = pw_cli.Report("demo")
-    report.add_batch(Batch(["e1", "e2"], [("dir/x", "no_replay", "missing tape")]))
+    report.add_batch(Batch([fake_episode("a/pw_cache", True), fake_episode("b/pw_cache", True)],
+                           [("dir/x", "no_replay", "missing tape")]))
     assert report.counts["processed"] == 2 and report.failures[0]["code"] == "no_replay"
     assert report.envelope(1)["counts"]["failed"] == 1
     with pytest.raises(pw_cli.UsageError, match="no episode found"):
         pw_cli.Report("demo").add_batch(Batch([], []))
+
+
+def test_add_batch_lists_only_the_caches_this_run_traced():
+    # Contract rule 2: `outputs` includes every cache the run created (e.g. a --vis-every variant
+    # that pw_fights traces), and not the caches it merely reused.
+    report = pw_cli.Report("demo")
+    report.add_batch(Batch([fake_episode("a/pw_cache", True), fake_episode("b@se6-ve12.pw_cache", False)], []))
+    assert report.outputs == ["b@se6-ve12.pw_cache"]
 
 
 def test_default_out_is_under_the_lab_analysis_dir():

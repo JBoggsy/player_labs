@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paintbot PW opponent scouting and field survey from PUBLIC league data (lab tool T11).
+"""Paintbot PW opponent scouting and field survey from PUBLIC league data.
 
 Three subcommands, all free (anonymous public reads, no credits, no auth):
 
@@ -20,7 +20,7 @@ Three subcommands, all free (anonymous public reads, no credits, no auth):
 
   report  load the episodes (hash-checked, pw_episodes.load_batch), then write
           scout.json + scout.md (+ scout.interesting.json) with:
-            standings        per policy: W-D-L, win rate with a Wilson interval, mean Elo outcome
+            standings        per policy: W-D-L, win rate with a Wilson interval, mean Elo outcome score
             matrix           policy x policy: n, W-L, win rate (Wilson), mean Elo outcome of the row
             profiles         per policy: opening first targets and first hearts reached, capture
                              order, weapon mix, grenade/spray use, pickups, fights, typical win

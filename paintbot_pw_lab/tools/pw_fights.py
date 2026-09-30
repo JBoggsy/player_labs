@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paintbot PW fights: engagements, trades and opening duels (lab tool T4).
+"""Paintbot PW fights: engagements, trades and opening duels.
 
 Reads pw_episodes tables (never the tape) and segments combat into engagements:
 
@@ -23,6 +23,7 @@ trace's --vis-every; positions for heart distance come from the damage rows (exa
 Contract: paintbot_pw_lab/docs/tools/pw_fights.md.
 
 CLI: uv run python paintbot_pw_lab/tools/pw_fights.py ROOT [ROOT ...] [--policy KEY] [--list] [--csv DIR]
+     [--vis-every M] [--tag TAG] [--json]
 """
 from __future__ import annotations
 
@@ -353,7 +354,8 @@ def build_parser() -> pw_cli.ArgumentParser:
     parser.add_argument("--list", action="store_true", help="print every engagement and contest")
     parser.add_argument("--csv", type=Path, help="write engagements/duels/trades/fight_policy CSVs into this directory")
     parser.add_argument("--vis-every", type=int, default=0,
-                        help="trace visibility every M ticks (re-traces the cache), e.g. 24; needed for saw-first")
+                        help="trace visibility every M ticks, e.g. 24; needed for saw-first (traced once into its own "
+                             "cache variant, the default cache is untouched)")
     parser.add_argument("--tag", help="pw_trace build (default: tools/release.env)")
     return parser
 

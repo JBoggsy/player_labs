@@ -244,9 +244,11 @@ proc main() =
   var shoutsAt = initTable[int, seq[Communication]]()
   for c in r.communications: shoutsAt.mgetOrPut(c.tick, @[]).add c
 
-  let useTelemetry = n <= LegacySeats  # CombatTelemetry is 16 wide; wider matches skip it
+  # CombatTelemetry is one SeatStats per seat the build supports (MaxSeats = 256 at 0.3.79; 16 in
+  # older builds): a match wider than the build's telemetry skips it (seat_stats and kill check null).
   var stats: CombatTelemetry
-  for i in 0..<LegacySeats: stats[i].firstFriendlyFireTick = -1
+  let useTelemetry = n <= stats.len
+  for i in 0..<stats.len: stats[i].firstFriendlyFireTick = -1
   var counters = newSeq[SeatCounters](n)
   for c in counters.mitems: c.lastActiveCommandTick = -1
   var gloryAwards, gloryCountdown: array[2, int32]

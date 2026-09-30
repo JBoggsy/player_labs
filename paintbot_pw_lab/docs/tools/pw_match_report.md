@@ -1,9 +1,10 @@
-# pw_match_report.py: one-page match report per episode (T10)
+# pw_match_report.py: one-page match report per episode
 
-Turns one traced episode into a readable page: who won and how, the ladder score, the glory
-composition, a timeline, the top moments with a zoomed movement panel each, per-seat metrics and
-replay links. Ink & Print HTML (single column, fits a 390 px phone; tables scroll sideways) plus a
-JSON of everything on the page.
+Answers "give me one readable page on this match". Turns one traced episode into a page:
+who won and how, the Elo outcome score, the glory composition, a timeline, the top moments with
+a zoomed movement panel each, per-seat metrics and replay links. Ink & Print HTML (single
+column, fits a 390 px phone; tables scroll sideways) plus a JSON of everything on the page.
+Index of all tools: [README.md](README.md).
 
 ## Command
 
@@ -13,7 +14,7 @@ uv run python paintbot_pw_lab/tools/pw_match_report.py ROOT... [--out DIR] [--vi
 
 - Output per episode: hosted `<episode dir>/pw_report/`, local `NAME.pw_report/` beside
   `NAME.replay` (both inside gitignored data dirs). `--out DIR`: that directory for one episode, or
-  `DIR/<episode_id>/` for several.
+  `DIR/<episode_id>/` for several (`:` → `_`, so a local episode is `DIR/local_NAME/`).
 - Files: `report.html`, `report.json`, `timeline.png` + `.json`, `moment_N.png` + `.json`.
 - Episodes that fail to load get no report, are printed `FAILED [code] … (no report)`, and make the
   exit code 1. About 1 s per cached episode (3 reports in 4 s including start-up).
@@ -34,8 +35,8 @@ uv run python paintbot_pw_lab/tools/pw_match_report.py ROOT... [--out DIR] [--vi
 ## Page contents
 
 1. **Headline and lead**: winner, how it was decided (elimination / meter reached the target /
-   higher meter at the time limit / draw), glory, the **Elo outcome** per team
-   (`clamp(0.5 + margin / 2000, 0, 1)`, `pw_metrics.elo_outcome`), meter, mean hearts held, kills.
+   higher meter at the time limit / draw), glory, the **Elo outcome score** per team
+   (`clamp(0.5 + (own glory − other glory) / 2000, 0, 1)`, `pw_metrics.elo_outcome`), meter, mean hearts held, kills.
 2. **Glory**: start − countdown + awards by kind − what settling took = final, per team (exact).
 3. **Timeline**: `pw_viz.plot_timeline` with the moments marked by number.
 4. **Top moments** (at most 6, in match order), each with its tick, links and a panel:
@@ -46,8 +47,8 @@ uv run python paintbot_pw_lab/tools/pw_match_report.py ROOT... [--out DIR] [--vi
      − own losses in the span.
    - `elimination`: a team with every cog out (weight 10).
    Selection: first captures, then the rest by weight (earlier first on ties). **The weight is a
-   heuristic for what to show, not a measured win-probability swing** (that is plan T14); the page
-   says so. Thresholds are named constants at the top of the file and in `report.json`
+   heuristic for what to show, not a measured win-probability swing** (for measured swings use
+   [`pw_winprob.py credit`](pw_winprob.md)); the page says so. Thresholds are named constants at the top of the file and in `report.json`
    `evidence.thresholds`.
    Panel: `pw_viz.movement_panel` from 10 s before to 2 s after (kill bursts: 5 s before the first
    kill to 2 s after the last), zoomed to at least 3,600 units around the moment and widened to
@@ -69,10 +70,15 @@ For hosted episodes, from `episode.json`:
 - **Watch replay**: `https://softmax.com/observatory/coworld-replays/<coworld_id>?replay_uri=<encoded replay_url>`,
   with `&t=<tick>` on each moment. The paintbot-pw web viewer seeks to `?t=<tick>`
   (`coworld/paintbot/viewer.js`: `seek(Number(t))`, clamped to the final tick, so `t` is a world
-  tick as in our tables). **Whether the Observatory wrapper forwards `t` to the viewer is
-  unverified**; the page says so. If it opens at the start, scrub to the tick shown.
+  tick as in our tables). **The Observatory wrapper does not forward `t` to the viewer**
+  (metta `page.tsx:6-14`, `CoworldReplayFrame.tsx:1248-1272`), so this link opens at 0:00;
+  the page says so and shows the tick to scrub to. Only a directly served viewer
+  (`--viewer-base`) honours `t`.
 - **`--viewer-base URL`**: when you have a directly served viewer, adds `URL?replay=<encoded
   replay_url>&t=<tick>` links. `report.json` always carries the `viewer_query` string.
+
+`links` (top level and per moment) = `{episode_page, replay_url, observatory_replay,
+viewer_query, viewer}` (`viewer` only with `--viewer-base`; `{}` for a local tape).
 
 Local tapes get no links (the page says so).
 
@@ -98,5 +104,9 @@ state_every, thresholds}, images`. Unknown values are `null`.
   at t = 1649.
 - The moment-selection and kill-burst rules have unit tests (`tools/tests/test_pw_viz.py`).
 
+2026-09-29, coworld-v0.3.79: a hosted sample and a local recording in one run with
+`--out DIR --viewer-base URL` wrote `DIR/<episode_id>/` and `DIR/local_<name>/` (6 moments,
+empty `links` for the local tape), exit 0, 3.4 s.
+
 Not verified: that the hosted links open (no browser session against softmax.com here), whether the
-wrapper honours `t`, local-episode reports, and draws (no draw in the corpus).
+wrapper honours `t`, and draws (no draw in the corpus).

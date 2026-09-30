@@ -207,3 +207,20 @@ def test_a_finer_trace_does_not_replace_the_default_cache(tmp_path):
     assert pe.load_episode(directory).cache_hit                       # the default is still there
     assert pe.load_episode(directory, options=pe.TraceOptions(window=(100, 160))).cache_hit
     assert len(pe.discover([tmp_path])) == 1                          # variant dirs are not episodes
+
+
+def test_bad_trace_options_and_bad_sql_are_usage_errors(tmp_path, capsys):
+    """Exit 2 with a usage_error failure, not a per-episode trace_failed (exit 1) or a crash."""
+    assert pe.main([str(tmp_path), "--state-every", "0", "--json"]) == 2
+    assert pe.main([str(tmp_path), "--vis-every", "10", "--json"]) == 2
+    capsys.readouterr()
+    if not (SAMPLE.is_dir() and BINARY.is_file()):
+        pytest.skip("sample episode or pw_trace build missing")
+    directory = tmp_path / "ep"
+    directory.mkdir()
+    for name in ("episode.json", "results.json", "replay.json"):
+        shutil.copy(SAMPLE / name, directory / name)
+    assert pe.main([str(directory), "--sql", "select no_such_column from kills", "--json"]) == 2
+    envelope = json.loads(capsys.readouterr().out)
+    assert envelope["failures"][0]["code"] == "usage_error"
+    assert "kills" in envelope["result"]["valid"]

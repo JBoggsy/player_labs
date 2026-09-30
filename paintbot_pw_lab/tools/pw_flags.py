@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paintbot PW anomaly flags (lab tool T12): rule-based, tick-linked, thresholds printed.
+"""Paintbot PW anomaly flags: rule-based, tick-linked, thresholds printed.
 
 Each flag is one row: (episode_id, flag, seat, team, policy_key, t_start, t_end, evidence,
 detail). `evidence` says how far to trust it: exact (read from hash-checked trace events),
@@ -22,10 +22,11 @@ inferred (a heuristic). Flags:
   long_wade           in water for >= FLAG_LONG_WADE_TICKS in one stretch  (exact)
   zero_glory_win      the winner's final glory is 0: the ladder scores it as a draw  (exact)
 
-`losses(batch, policy)` sorts one policy's losses by Elo outcome (worst first) with that
+`losses(batch, policy, flags)` sorts one policy's losses and draws by Elo outcome score (worst first) with that
 policy's flag counts: the triage order for diagnosis. Contract: docs/tools/pw_flags.md.
 
 CLI: uv run python paintbot_pw_lab/tools/pw_flags.py ROOT [ROOT ...] [--policy KEY] [--flags a,b] [--csv FILE] [--top N]
+     [--vis-every M] [--tag TAG] [--json]
 """
 from __future__ import annotations
 
@@ -345,7 +346,7 @@ def episode_flags(ep, only: set[str] | None = None) -> pd.DataFrame:
 
 
 def losses(batch, policy: str, flags: pd.DataFrame) -> pd.DataFrame:
-    """The policy's losses and draws, worst Elo outcome first, with its flag counts per episode."""
+    """The policy's losses and draws, worst Elo outcome score first, with its flag counts per episode."""
     rows = []
     for ep in batch.episodes:
         for p in pw_metrics.policy_metrics(ep).itertuples():
@@ -377,7 +378,8 @@ def build_parser() -> pw_cli.ArgumentParser:
                         help="flag rows to print (and return in --json) per episode (default 20; 0 = counts only)")
     parser.add_argument("--csv", type=Path, help="write every flag row to this CSV file")
     parser.add_argument("--vis-every", type=int, default=0,
-                        help="trace visibility every M ticks (re-traces the cache), e.g. 24")
+                        help="trace visibility every M ticks, e.g. 24; fills death_alone enemies_seeing (traced once "
+                             "into its own cache variant, the default cache is untouched)")
     parser.add_argument("--tag", help="pw_trace build (default: tools/release.env)")
     return parser
 

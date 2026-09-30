@@ -8,7 +8,10 @@ description: "Use when someone wants to unpack or look inside a Paintbot PW repl
 Turn one episode (or a batch) into verified facts: every shot, hit, kill, pickup, capture,
 glory award and shout, plus sampled per-tick state. Everything comes from a re-simulation
 that checks the recorded state hash every tick, so the numbers are exact unless a column
-says `inferred`. Contract: [docs/tools/tables.md](../../../docs/tools/tables.md); every tool:
+says `inferred`. Tool references: [pw_trace.md](../../../docs/tools/pw_trace.md) (the re-simulation),
+[pw_episodes.md](../../../docs/tools/pw_episodes.md), [pw_metrics.md](../../../docs/tools/pw_metrics.md),
+[pw_viz.md](../../../docs/tools/pw_viz.md), [pw_match_report.md](../../../docs/tools/pw_match_report.md),
+[deployed_ref.md](../../../docs/tools/deployed_ref.md). Contract: [docs/tools/tables.md](../../../docs/tools/tables.md); every tool:
 [docs/tools/README.md](../../../docs/tools/README.md) (`pw.py tools --json` lists them).
 
 ## Procedure
@@ -20,7 +23,7 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
    (exit 1 then means "rebuild") and `build` builds that tag:
 
    ```bash
-   uv run python paintbot_pw_lab/tools/pw.py doctor --json                 # 0 ready; 1 release.env behind; 3 missing (see next[])
+   uv run python paintbot_pw_lab/tools/pw.py doctor --json                 # 0 ready; 1 release.env behind (code stale) or league check rate-limited; 3 missing (see next[])
    uv run python paintbot_pw_lab/tools/pw.py deployed-ref --write          # 0 = current; 1 = release.env moved: rebuild
    uv run python paintbot_pw_lab/tools/pw.py build                         # builds the tag in tools/release.env
    ```
@@ -35,8 +38,10 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
      `https://softmax.com/api/observatory/v2/rounds?league_id=<league>&limit=3`, then
      `/v2/rounds/<round_id>/episodes`; save the row as `episode.json` and download its
      `replay_url` (gzip is fine) as `replay.gz` in the same directory. One call per list; back off on 429.
-   - Local: `paintbot-headless --record NAME.replay` (or `pw.py local match … --record DIR`), plus a
-     `NAME.meta.json` naming each seat's policy (schema in tables.md) if you want policy identity.
+   - Local: `pw.py local match A.bas B.bas --seed S --record DIR` (or `local screen … --record DIR
+     --record-seeds LIST`) writes `NAME.replay` plus the `NAME.meta.json` naming each seat's policy.
+     A bare `paintbot-headless --record NAME.replay` needs that sidecar written by hand (schema in
+     tables.md) if you want policy identity.
 
 3. **Trace and build tables** (cached; ~1 s per episode first time):
 
@@ -117,11 +122,12 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
    - **Side is not behaviour.** Two policies on opposite sides look different on the raw map.
      `occupancy` rotates Azure onto Ember's side by default; use `--normalize-side` for heatmaps
      that pool both sides.
-   - **Replay deep links:** the viewer honours `t=<tick>`, but whether the Observatory wrapper
-     forwards it is unverified. If the replay opens at 0:00, give the tick as well as the link.
+   - **Replay deep links:** the Observatory replay wrapper does not forward `t=<tick>` to the
+     viewer, so the link opens at 0:00: always give the tick (or m:ss) with the link.
    - **Moment ranking is a display heuristic**, not a win-probability swing. Do not quote a
      moment's weight as evidence.
-   - `--fine` replaces the episode's cache options; on a shared corpus, run it on a copy.
+   - `--fine` re-traces with every-tick states for the window; the result is cached as its own
+     variant beside the default cache (`pw_cache@<variant>/`), so it never replaces it.
 
 ## Pitfalls
 
@@ -141,13 +147,15 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
 
 ## Autonomous use
 
-- **Preconditions:** run from the repo root; `uv run python paintbot_pw_lab/tools/pw.py doctor --json` exits 0 (on 1 run
-  `deployed-ref --write` then `build`; on 3 run each command in `next[]`). The episode is on
+- **Preconditions:** run from the repo root; `uv run python paintbot_pw_lab/tools/pw.py doctor --json` exits 0 (on 1 with
+  failure code `stale` run `deployed-ref --write` then `build`; on 1 with `rate_limited` /
+  `api_unavailable` wait and retry, or use `doctor --offline`; on 3 run each command in `next[]`). The episode is on
   disk (hosted directory or `NAME.replay`).
 - **Commands:** `uv run python paintbot_pw_lab/tools/pw.py episodes ROOT --json`, then `metrics ROOT --json`, `viz <command> ROOT
   ... --json`, `report ROOT --json`. Traces are cached per episode, so re-running is cheap.
 - **Reading the envelope:** `ok` is true only on exit 0. `result` holds the payload
-  (`episodes[]`, `team[]`/`policy[]` metric rows, `images[]`, `reports[]`); `failures[]` lists every
+  (`episodes`: `result.episodes[]`; `metrics`: `result.team[]`, `result.policy[]`, `result.seat_metrics[]`;
+  `viz`: `result.images[]`, `result.data[]`, `result.window`; `report`: `result.reports[]`); `failures[]` lists every
   episode that did not verify; `outputs[]` every file written; `next[]` the suggested follow-up.
 - **Exit codes:** 0 use the result. 1 some episodes failed: use the rest, report the failures by
   id and code, never quote a failed episode. 2 a bad argument or unknown selector (policy, seat,

@@ -7,6 +7,10 @@ and nothing here is evidence about the field (see docs/tools/pw_local.md).
     uv run paintbot_pw_lab/tools/pw_local.py compile CANDIDATE.bas
     uv run paintbot_pw_lab/tools/pw_local.py match A.bas B.bas --seed 7 --a-side 0
     uv run paintbot_pw_lab/tools/pw_local.py screen A.bas B.bas --seeds 1-14 --out DIR
+    uv run paintbot_pw_lab/tools/pw_local.py screen A.bas B.bas --seeds 1-4 --record DIR --record-seeds 1-4
+
+--record DIR writes paintbot-headless replays (+ .meta.json sidecars) for pw_episodes: `match`
+records its own seed; `screen` needs --record-seeds naming which seeds (both sides each).
 
 The library is tools/bin/<tag>/libpw.dylib from tools/build_native.sh. Every run checks its
 libpw.build.json (tag, commit, sha256) against the requested tag; `match` and `screen` also run
@@ -18,7 +22,7 @@ Teams: seat s plays for team s % 2 (sim.nim `team`). "a_side" is the team A play
 the even seats, 1 = A on the odd seats. Every seed in a screen is played with both a_side values.
 When every seed's two final hashes are equal, A and B played move for move identically: the
 screen reports identical_play = true and warns (its W/D/L then says nothing about A vs B).
-Outcome for A per match is the ladder's Elo outcome, clamp(0.5 + (A glory - B glory)/2000, 0, 1)
+Outcome for A per match is the Elo outcome score, clamp(0.5 + (A glory - B glory)/2000, 0, 1)
 (docs/mechanics.md §1.3). pw_results glory is already settled: the loser and both sides of a
 draw hold 0.
 """
@@ -565,7 +569,9 @@ def main(argv: list[str] | None = None) -> int:
         "uv run python paintbot_pw_lab/tools/pw_local.py match A.bas B.bas --seed 7 --a-side 0 --json",
         "uv run python paintbot_pw_lab/tools/pw_local.py screen A.bas paintbot_pw_lab/reference/base.bas "
         "--seeds 1-28 --out /tmp/screen --json",
-        "uv run python paintbot_pw_lab/tools/pw_local.py match A.bas B.bas --seed 9 --record /tmp/rec"])
+        "uv run python paintbot_pw_lab/tools/pw_local.py match A.bas B.bas --seed 9 --record /tmp/rec",
+        "uv run python paintbot_pw_lab/tools/pw_local.py screen A.bas B.bas --seeds 1-4 --record /tmp/rec "
+        "--record-seeds 1-4 --json"])
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--tag", default=DEFAULT_TAG, help="release tag of the engine build (default %(default)s)")
     common.add_argument("--glory", default=json.dumps(LEAGUE_GLORY),
@@ -584,7 +590,7 @@ def main(argv: list[str] | None = None) -> int:
     batch_args.add_argument("--max-ticks", type=int, default=MAX_TICKS, help="tick cap (default %(default)s)")
     batch_args.add_argument("--workers", type=int, default=os.cpu_count() or 1, help="processes (default: all cores)")
     batch_args.add_argument("--out", help="directory for matches.jsonl and summary.json (overwritten on re-run)")
-    batch_args.add_argument("--record", help="directory for paintbot-headless replays of --record-seeds")
+    batch_args.add_argument("--record", help="directory for paintbot-headless replays of --record-seeds (match: defaults to --seed; screen: --record-seeds required)")
     batch_args.add_argument("--record-seeds", help="seeds to record, e.g. 7,8 (both sides each)")
 
     p = sub.add_parser("match", parents=[batch_args], help="one match")

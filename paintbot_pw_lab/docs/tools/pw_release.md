@@ -1,7 +1,10 @@
 # release.env and pw_release.py — the one release pin
 
 [`tools/release.env`](../../tools/release.env) is the single source of truth for which
-paintbot-pw release the lab uses. Nothing else in the lab should hold a tag literal.
+paintbot-pw release (the **release tag**, e.g. `coworld-v0.3.79`) the lab uses, and
+`tools/pw_release.py` is the one reader of it: it resolves the tag, the build directory, the
+cache root and whether each binary is built. Nothing else in the lab should hold a tag
+literal. Part of the lab tool set: [tool index](README.md) (`pw.py release`).
 
 ```
 PW_RELEASE_TAG=coworld-v0.3.79   # the build every tool defaults to (tools/bin/<tag>/)
@@ -21,6 +24,8 @@ Who reads it:
 | --- | --- |
 | `build_tools.sh`, `build_native.sh` | `source tools/release.env`; the tag argument still overrides |
 | `pw_episodes.py`, `pw_mapdata.py`, `pw_local.py` | `DEFAULT_TAG = pw_release.current_tag()`; every other tool gets it through them |
+| `pw_cli.py` | the envelope's `release_tag` (overridden by a tool's `--tag`) |
+| `pw.py doctor` | checks every file in `BUILT_BY` and the `libpw.build.json` receipt for the tag |
 | `deployed_ref.py` | compares with the league; `--write` updates the tag and sha lines in place |
 | shell docs | `source paintbot_pw_lab/tools/release.env; B=paintbot_pw_lab/tools/bin/$PW_RELEASE_TAG` |
 
@@ -38,14 +43,17 @@ pw_release.cache_root()                # $PW_CACHE_DIR, else tools/.cache/ (read
 pw_release.release_tree(tag=None)      # <cache root>/<tag>/: build_tools.sh's source worktree
 ```
 
-`PW_CACHE_DIR` moves the tools' rebuildable caches out of the repo: the release worktrees
-(`build_tools.sh`/`build_native.sh` use `${PW_CACHE_DIR:-tools/.cache}/<tag>`) and the map
-rasters (`maps/<tag>/`, [pw_map.md](pw_map.md#cache-location)). Binaries stay in `tools/bin/`.
-
 `NotBuilt`'s message is `<path> is missing: run paintbot_pw_lab/tools/build_tools.sh` (with the
 tag appended when it is not the current one); `libpw.dylib`/`libpw.build.json` name
 `build_native.sh`. Known tools: `paintbot-headless`, `replay_stats`, `pw_trace`, `pw_map`,
 `libpw.dylib`, `libpw.build.json`; anything else is a `ValueError` listing them.
+
+## Environment variables
+
+| Variable | Default | Read by | Effect |
+| --- | --- | --- | --- |
+| `PW_CACHE_DIR` | `paintbot_pw_lab/tools/.cache` | `pw_release.cache_root()` (at call time), `build_tools.sh`, `build_native.sh` | moves the rebuildable caches: the per-release source worktree `<tag>/` (which `pw_local.py` and `pw_intent.py` run from) and the map rasters `maps/<tag>/` ([pw_map.md](pw_map.md#cache-location)). Binaries stay in `tools/bin/<tag>/`; per-episode trace caches stay beside the episode. Set it for the build too, or `pw_local` exits 3 naming the missing worktree |
+| `PW_CLONE` | `~/coding/coworlds/paintbot-pw` | `build_tools.sh`, `deployed_ref.py` (`--clone` default), `pw.py doctor` (`source_clone` check) | the paintbot-pw source clone. `build_tools.sh` clones it (blob-less) when absent, then only fetches; its checkout is never changed |
 
 ## CLI
 
@@ -55,10 +63,13 @@ uv run python paintbot_pw_lab/tools/pw_release.py --json --require all   # exit 
 uv run python paintbot_pw_lab/tools/pw_release.py --tag coworld-v0.3.78 --require pw_trace
 ```
 
-`--json` prints one object (`ok`, `tool`, `release_tag`, `inputs`, `outputs` (always empty),
-`counts`, `failures` (`code: not_built`), `result` (`tag`, `release_tag`, `release_sha`,
-`docs_sha`, `bin_dir`, `built` map, `release_env`), `next` (the build commands)). Exit 0 ok;
-2 unknown `--require` name (the message lists the valid ones); 3 a required binary is missing.
+`--json` prints one object (`ok`, `tool`, `release_tag`, `inputs` (`tag`, `require`), `outputs`
+(always empty), `counts` (`processed` = files required), `failures` (`code: not_built`),
+`result` (`tag`, `release_tag`, `release_sha`, `docs_sha`, `bin_dir`, `built` map,
+`release_env`), `next` (the build commands)). Exit 0 ok; 2 unknown `--require` name (the
+message lists the valid ones; plain argparse, so no JSON envelope even with `--json`); 3 a
+required binary is missing. Without `--require` it always exits 0, even when files are
+missing (the text lists them under `missing:`).
 
 ## Agent contract
 

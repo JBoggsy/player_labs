@@ -76,3 +76,11 @@ def test_spsa_moves_toward_the_better_side_within_bounds():
     # plus side scored higher: a goes up, b (perturbed -1 on the plus side) goes down; move capped.
     assert after[0] == pytest.approx(0.7) and after[1] == pytest.approx(0.3)
     assert gradient[0] > 0 > gradient[1]
+
+
+def test_render_set_with_a_non_integer_value_is_a_usage_error(tmp_path, capsys):
+    candidate = tmp_path / "cand.bas"
+    candidate.write_text(SOURCE)
+    code = pw_tune.main(["render", str(candidate), "--set", "kWetCost=abc", "--out", str(tmp_path / "out.bas")])
+    assert code == 2
+    assert not (tmp_path / "out.bas").exists()

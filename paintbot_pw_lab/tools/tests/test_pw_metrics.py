@@ -89,3 +89,16 @@ def test_sample_episode_metrics_are_consistent():
     band_shots = sum(seats[f"gun_shots_band_{pm._band_name(b)}"].sum() for b in pm.DISTANCE_BANDS)
     assert band_shots <= seats.shots.sum()
     assert seats.vm_errors.isna().all()   # league episodes carry no seat logs: unknown, not zero
+
+
+@pytest.mark.skipif(not (SAMPLE.is_dir() and BINARY.is_file()), reason="sample episode or pw_trace build missing")
+def test_contests_count_every_contest_start_for_both_teams():
+    # A contest that begins with no capture in progress has team null; it still counts.
+    ep = pe.load_episode(SAMPLE)
+    caps = ep.tables["captures"]
+    base = int((caps.kind == "contest_start").sum())
+    extra = pd.DataFrame([{"t": 100, "kind": "contest_start", "heart": 0, "team": None},
+                          {"t": 200, "kind": "contest_start", "heart": 1, "team": 1}])
+    ep.tables["captures"] = pd.concat([caps, extra], ignore_index=True)
+    teams = pm.team_metrics(ep, pm.seat_metrics(ep))
+    assert list(teams.contests) == [base + 2, base + 2]

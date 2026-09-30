@@ -47,16 +47,20 @@ uv run python paintbot_pw_lab/tools/pw.py doctor --json
 
 - exit 0 → continue.
 - exit 3 → run each command in `next`, then rerun `doctor` once; still 3 → stop and report.
-- exit 1 (the league moved past `tools/release.env`) →
+- exit 1 with failure code `rate_limited` or `api_unavailable` (the league check could not run)
+  → wait and rerun `doctor`; do not move the pin. Nothing is missing.
+- exit 1 with failure code `stale` (the league moved past `tools/release.env`) →
   `uv run python paintbot_pw_lab/tools/pw.py deployed-ref --write --json`, then
-  `pw.py build --json` and `pw.py build-native --json`. Read `result.docs_rule_files_changed`:
-  if any rule-bearing engine file changed since `PW_DOCS_SHA`, the mechanics may have changed.
-  **Stop the loop** and report the diffstat; re-verifying the docs (tooling plan T0) comes
-  first. Also re-read the league ranking settings if the charter's objective depends on them.
+  `pw.py build` and `pw.py build-native` (shell build scripts: no `--json`, and their only
+  argument is an optional tag; exit 0 = built). Read the `deployed-ref` envelope's
+  `result.docs_rule_files_changed` (a count): if any rule-bearing engine file changed since
+  `PW_DOCS_SHA`, the mechanics may have changed. **Stop the loop** and report `result.rule_diffstat` (and `result.docs_to_reverify`);
+  re-verifying the mechanics docs comes first. Also re-read the league ranking settings if the
+  charter's objective depends on them.
 - `doctor`'s `result.loop` says whether the charter is complete (`ready`, `missing`): if not
   ready, stop here (step 0).
 - Confirm identity before any upload: `uv run coworld player list` must mark the charter's
-  player as active (●); switch with the `coworld-player-swap` skill. (`softmax status` shows only
+  player as active (●); switch with `uv run coworld player use` (James's user-level `coworld-player-swap` skill covers the details). (`softmax status` shows only
   the user, not the player.)
 
 ## 2. Evaluate the baseline
@@ -67,8 +71,12 @@ If the charter names opponents by role ("the top 3") rather than exact refs, res
 champions first; the shared resolver skips champions with a null leaderboard label (often the #1):
 
 ```bash
-uv run python paintbot_pw_lab/tools/pw.py scout leaders --json   # rows: rank, player, policy_ref name:vN, policy_version_id, mmr
+uv run python paintbot_pw_lab/tools/pw.py leaders --json   # result.leaders[]: rank, player, player_id, policy_ref (name:vN), policy_version_id, mmr, owner
 ```
+
+`leaders` names every entrant from the round's episodes, so it also covers the champions the
+resolver skips. Exit 1 with code `rate_limited` means wait and retry; 3 means the public API is
+unreachable.
 
 ```bash
 # the same policy as --baseline and --candidate = evaluate that one policy (one arm)
@@ -99,10 +107,14 @@ uv run python paintbot_pw_lab/tools/pw.py fights  paintbot_pw_lab/episode_data/R
 uv run python paintbot_pw_lab/tools/pw.py report  <the 3 worst losses from flags result.losses> --json
 ```
 
+`result.losses[]` rows carry `episode_id`, not a path: find each directory with
+`grep -l '"id": "<episode_id>"' paintbot_pw_lab/episode_data/RUN/*/episode.json` (fetcher
+directories are named `<time>_<first 16 characters of the id>`).
+
 - `counts.failed` above 10% of episodes, or a VM error / `vm_disabled_suspect` on our seats →
   that is an ops problem, not gameplay: fix it first (it is always inside the charter).
 - With ≥ 8 episodes and no specific suspect, run the miner (`pw.py miner ... --json`, then
-  `pw.py mine ...`).
+  `pw.py mine ...`; with fewer than 8 rows `miner` sets `result.warning` and `mine` fails).
 - Write at most three hypotheses, each a mechanism pinned to a module of `policy_file`, with the
   predicted change in the primary metric (Elo outcome score) and per-group effects.
 
@@ -122,8 +134,8 @@ uv run python paintbot_pw_lab/tools/pw.py local screen CANDIDATE.bas BASELINE.ba
 ```
 
 - `compile` not ok → fix and retry (at most twice), then stop and report.
-- `screen`: sides are strongly asymmetric locally (odd seats won 10/14 in base vs base), so read
-  both sides. If the candidate is clearly worse (outcome CI entirely below the baseline's),
+- `screen`: sides are strongly asymmetric locally (odd seats won 10/14 in base vs base, a mirror
+  effect; the league shows none), so read `seed_balanced`, never one side. If the candidate is clearly worse (outcome CI entirely below the baseline's),
   revise once; if still worse, drop the hypothesis, record it, and return to step 4. Otherwise
   continue: a local tie is not a reason to stop, because the field is the test.
 
@@ -143,14 +155,14 @@ episodes arrive:
 
 ```bash
 uv run python paintbot_pw_lab/tools/pw.py compare sprt    paintbot_pw_lab/episode_data/RUN --design paired \
-  --baseline BASE:vN --candidate CAND:vM --json          # result: accept_h1 | accept_h0 | continue
+  --baseline BASE:vN --candidate CAND:vM --json          # result.decision: accept_h1 | accept_h0 | continue
 uv run python paintbot_pw_lab/tools/pw.py compare compare paintbot_pw_lab/episode_data/RUN --design paired \
   --baseline BASE:vN --candidate CAND:vM --requests RUN/requests/manifest.json --json   # the final comparison
 ```
 
 ## 8. Decide and record
 
-| SPRT / compare result | Action |
+| SPRT decision (`compare sprt` → `result.decision`; `compare compare` → `result.sprt.decision`) | Action |
 | --- | --- |
 | `accept_h1` (candidate better on Elo outcome) | the candidate becomes the charter `baseline` in `WORKING_CONTEXT.md`; note the evidence (request ids, estimate, CI) |
 | `accept_h0` or a significant regression | keep the baseline; record the refuted hypothesis in `TENTATIVE_LESSONS.md` as a current constraint only if the evidence supports one |

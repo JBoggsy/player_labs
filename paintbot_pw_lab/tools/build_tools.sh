@@ -17,8 +17,8 @@
 # examples/paintbot/ as lab_*.nim and compiled there, so the engine's config.nims and
 # dependency pins apply (the Gods of the Arena build_expand_replay.sh pattern).
 #
-# The source clone (~/coding/coworlds/paintbot-pw, override with PW_CLONE) is only fetched;
-# its own checkout is never changed. A newer build replays older rules versions hash-exactly,
+# The source clone (~/coding/coworlds/paintbot-pw, override with PW_CLONE) is cloned
+# (blob-less) when absent, otherwise only fetched; its own checkout is never changed. A newer build replays older rules versions hash-exactly,
 # so building the league's current tag is enough for analysis.
 set -euo pipefail
 

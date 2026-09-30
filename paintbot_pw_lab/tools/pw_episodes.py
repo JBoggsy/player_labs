@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Paintbot PW episode reader, trace cache and tables (lab tool T2).
+"""Paintbot PW episode reader, trace cache and tables.
 
 Reads downloaded episodes, re-simulates each tape with the hash-checked `pw_trace`
 expander, caches the result under a receipt, and turns it into per-episode Parquet
@@ -23,7 +23,9 @@ Rules the reader enforces (lab doctrine):
 CLI:
   uv run python paintbot_pw_lab/tools/pw_episodes.py ROOT [ROOT ...] [--tag coworld-vX.Y.Z]
       [--binary PATH] [--state-every N] [--vis-every M] [--window A:B] [--refresh]
-      [--jobs J] [--sql "select ..."]
+      [--jobs J] [--sql "select ..."] [--json]
+Exit codes: 0 ok; 1 some episodes failed (listed, the rest used); 2 usage (bad options, no
+episode under the roots, a --sql query DuckDB rejects); 3 pw_trace not built for the tag.
 """
 from __future__ import annotations
 
@@ -61,7 +63,7 @@ TEAM_NAMES = ("ember", "azure")           # engine team 0 / 1 (seat parity)
 SLOT_TEAMS = {"red": 0, "ember": 0, "blue": 1, "azure": 1}
 POLICY_LOG_PATTERNS = (re.compile(r"policy_agent_(\d+)\.log$"), re.compile(r"player-(\d+)\.log$"),
                        re.compile(r"seat[-_](\d+)\.log$"))
-INTENT_PREFIX = "PWI "   # T13 intent telemetry line prefix (see tables.md, policy_log)
+INTENT_PREFIX = "PWI "   # intent telemetry line prefix (reference/intent_telemetry.bas) (see tables.md, policy_log)
 
 TABLES = ("episodes", "seats", "events", "shots", "damage", "kills", "spawns", "pickups",
           "captures", "glory", "shouts", "states", "team_states", "heart_states",
@@ -570,10 +572,10 @@ def normalize(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def policy_log(episode_id: str, source: Source) -> pd.DataFrame:
-    """Intent telemetry (T13) and VM errors from seat logs, when we have them.
+    """Intent telemetry (PWI lines) and VM errors from seat logs, when we have them.
 
     Seat logs exist only for our own seats (hosted) or local.py runs. An intent line is
-    `PWI t=<tick> key=value ...` (format owned by T13; unknown keys are kept). A line
+    `PWI t=<tick> key=value ...` (format: reference/intent_telemetry.bas, docs/tools/pw_intent.md; unknown keys are kept). A line
     containing `BASIC error:` is a vm_error row. Each parsed log also gets one
     `log_present` row. Other prints are not stored."""
     rows = []
@@ -768,6 +770,9 @@ def parse_window(text: str | None) -> tuple[int, int] | None:
 
 
 def run_cli(args, report: pw_cli.Report):
+    if args.state_every < 1 or args.vis_every < 0 or args.vis_every % args.state_every:
+        raise pw_cli.UsageError(f"--state-every {args.state_every} / --vis-every {args.vis_every}: "
+                                "--state-every must be >= 1 and --vis-every 0 or a multiple of it")
     options = TraceOptions(args.state_every, args.vis_every, parse_window(args.window))
     batch = load_batch(args.roots, args.binary, tag=args.tag, options=options, refresh=args.refresh, jobs=args.jobs)
     report.add_batch(batch)
@@ -780,8 +785,6 @@ def run_cli(args, report: pw_cli.Report):
         rows.append({"episode_id": e.episode_id, "rules": row.rules, "ticks": row.ticks, "winner": row.winner,
                      "glory": [row.glory_0, row.glory_1], "results_check": row.results_check,
                      "cached": e.cache_hit, "notes": row.notes or None, "cache": str(e.source.cache)})
-        if not e.cache_hit:
-            report.output(e.source.cache)
     print(f"loaded {len(batch.episodes)} episodes, {len(batch.failures)} failed")
     for path, code, message in batch.failures:
         print(f"FAILED [{code}] {path}: {message}")
@@ -789,7 +792,11 @@ def run_cli(args, report: pw_cli.Report):
         print("exclusions:", dict(batch.exclusions))
     result = {"episodes": rows}
     if args.sql:
-        frame = open_duckdb(batch).execute(args.sql).df()
+        import duckdb
+        try:
+            frame = open_duckdb(batch).execute(args.sql).df()
+        except duckdb.Error as error:   # a bad query is the caller's usage error, not a tool crash
+            raise pw_cli.UsageError(f"--sql failed: {error}", list(TABLES)) from error
         print(frame.to_string())
         result["sql"] = pw_cli.records(frame)
     if batch.episodes:

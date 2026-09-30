@@ -5,8 +5,8 @@ description: "Use when a Paintbot PW BASIC policy has numeric constants worth se
 
 # Paintbot PW constant tuning
 
-SPSA (simultaneous perturbation) over a few integer constants, scored by the mean ladder Elo
-outcome against one opponent file on one seed list, both sides of every seed. It is a cheap
+SPSA (simultaneous perturbation) over a few integer constants, scored by the mean Elo outcome
+score against one opponent file on one seed list, both sides of every seed. It is a cheap
 way to propose values. It overfits that opponent and those seeds, so nothing it prints decides
 a submission: confirm on fresh seeds, then with a hosted A/B (`paintbot-pw-ab` / `coworld-ab`).
 Reference: [docs/tools/pw_tune.md](../../../docs/tools/pw_tune.md). Local harness:
@@ -63,7 +63,8 @@ Run from the repo root (`personal_labs_paintbot_pw/`). Keep logs and outputs in 
 
 - **Screening only.** Never quote a tuning or confirm number as field performance or use it
   to decide a submission.
-- **Keep both sides** (the tool always plays both): the odd-seat side wins far more locally.
+- **Keep both sides** (the tool always plays both): the odd-seat side wins far more in local
+  mirror matches, although the league shows no side advantage.
 - The engine is deterministic: the same values on the same seeds give the same score. Noise
   comes only from the seed list, so more seeds, not repeated runs, reduce it.
 - Don't change the file, opponent, seeds or SPSA settings mid-run; the tool refuses a log

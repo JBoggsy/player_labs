@@ -1,18 +1,23 @@
-# pw_metrics.py: the metric library (T3)
+# pw_metrics.py: the metric library
 
-One definition of every metric in the tooling plan's §8, computed from the
-[tables](tables.md) at three levels. Source: `tools/pw_metrics.py`; the full catalog with
-units, definitions and evidence kind is the `METRICS` dict in that file.
+Every number the lab quotes about a match (result, Elo outcome score, glory composition,
+combat, hearts, supplies, idle time) has exactly one definition here, computed from the
+[tables](tables.md) at seat, policy and team level. A/B, mining, flags and reports all reuse
+it. Source: `tools/pw_metrics.py`; the full catalog with units, definitions and evidence kind
+is the `METRICS` dict in that file. Part of the lab tool set: [tool index](README.md)
+(`pw.py metrics`).
 
 ## Commands
 
 ```bash
-uv run python paintbot_pw_lab/tools/pw_metrics.py ROOT [ROOT ...] [--policy KEY_OR_NAME] [--csv DIR]
+uv run python paintbot_pw_lab/tools/pw_metrics.py ROOT [ROOT ...] [--policy KEY_OR_NAME] [--csv DIR] [--tag TAG] [--json]
+uv run python paintbot_pw_lab/tools/pw_metrics.py paintbot_pw_lab/episode_data/20260928T214433_* --json
 ```
 
 Prints, per episode: each team's result, glory, Elo outcome score and glory composition
 (start − countdown + each award kind − settled), meter, hearts, captures, K/D, accuracy,
-trades, cogs out and longest supply gap; then one line per policy. `--csv` writes
+trades, cogs out and longest supply gap; then one line per policy (only the `--policy` one
+when given). `--csv` writes
 `seat_metrics.csv`, `policy_metrics.csv`, `team_metrics.csv`. Exit 1 if any episode failed
 to load (failures are printed).
 
@@ -50,7 +55,7 @@ teams = pm.team_metrics(ep)          # (episode, team)
 
 | Metric | Definition | Kind |
 | --- | --- | --- |
-| `elo_outcome` | `clamp(0.5 + (our − their glory) / 2000, 0, 1)` (ladder `margin_scale` 1000, [mechanics.md §1](../mechanics.md)) | exact |
+| `elo_outcome` | the **Elo outcome score**: `clamp(0.5 + (our glory − their glory) / 2000, 0, 1)` (ladder `margin_scale` 1000, [mechanics.md §1](../mechanics.md)) | exact |
 | `glory_<kind>` | deduped awards: quiet_supplies, friendly_fire, glory_heart, behind_lives, behind_cogs | exact |
 | `gun_accuracy`, `gun_enemy_accuracy` | hits / rays fired | exact |
 | `gun_acc_band_<lo>_<hi>` | enemy hits at exact distance + misses at the aim-line target's distance, bands 0-750-1500-2500-5250 | inferred |
@@ -58,7 +63,8 @@ teams = pm.team_metrics(ep)          # (episode, team)
 | `dealt_hp_enemy[_weapon]`, `dealt_armor_enemy`, `taken_hp`, `taken_armor` | from damage events | exact |
 | `kills`, `deaths`, `kd`, `trade_kills`, `deaths_traded` | trade window `TRADE_WINDOW_TICKS` = 72 | exact |
 | `alive_share`, `heart_reach_share`, `*_territory_share` | per-tick counters from the trace | exact |
-| `captures_completed`, `capture_starts`, `capture_resets`, `contests`, `first_capture_tick`, `heart_ticks`, `hearts_held_mean` | from capture events | exact |
+| `captures_completed`, `capture_starts`, `capture_resets`, `first_capture_tick`, `heart_ticks`, `hearts_held_mean` | from capture events | exact |
+| `contests` | `contest_start` events (both teams in reach of one heart), including those that begin with no capture in progress; a contest involves both teams, so both team rows carry the same count. Rare in the league (12 contests in 9 of 80 0.3.79 episodes) | exact |
 | `lead_changes` | sign changes of the meter difference across state samples | sampled |
 | `pickups_<kind>`, `longest_supply_gap_ticks` | pickup events | exact |
 | `shouts`, `shout_bytes`, `shouts_heard_by_enemy` | shouts + earshot recompute | exact |
@@ -73,7 +79,12 @@ trade window and stuck thresholds after the first real batch.
 
 ## Verified (2026-09-29)
 
-Ran on 8 episodes (3 league samples, 3 local, 2 hosted 0.3.78): both identities held on all
+Re-run on build `coworld-v0.3.79`: the 3 samples (`--json`, exit 0) and 8 local recordings
+with `--policy base.bas --csv DIR` (the three CSVs written and listed in `outputs[]`); an
+unknown `--policy` exits 2 with `result.valid`; every metric named in the table above is a
+`METRICS` key and an output column.
+
+Earlier (0.3.78) it ran on 8 episodes (3 league samples, 3 local, 2 hosted 0.3.78): both identities held on all
 16 team rows; policy kills sum to team kills; shots and hits sum to the `shots` table. Tests:
 `paintbot_pw_lab/tools/tests/test_pw_metrics.py` (Elo outcome, trade rule, heart-tick
 accounting, summed ratios and mirror policies, a sample episode end to end).
@@ -84,6 +95,6 @@ accounting, summed ratios and mirror policies, a sample episode end to end).
   instruction count, so no policy line (the PWI intent line included) can report it. Measure
   it with `PW_BASIC_PEAKS=1` on a local `paintbot-headless` run, which prints per-seat peaks
   ([evidence-pipeline.md](../evidence-pipeline.md), [policy-surface.md](../policy-surface.md)).
-- Win-probability credit (T14) and engagement segmentation (T4 `pw_fights.py`).
+- Win-probability credit ([pw_winprob.md](pw_winprob.md)) and engagement segmentation ([pw_fights.md](pw_fights.md)).
 - Spray and grenade effectiveness count bursts/blasts with at least one enemy victim; they
   do not attribute a miss to a target.

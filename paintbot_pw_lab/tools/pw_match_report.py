@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""One-page Paintbot PW match report per episode (lab tool T10): Ink & Print HTML + JSON.
+"""One-page Paintbot PW match report per episode: Ink & Print HTML + JSON.
 
 For each verified episode: the result and Elo outcome score, the glory composition, a
 timeline, per-seat metrics (pw_metrics), the top moments (first captures, hearts lost,
 kill bursts, elimination) with a movement panel each (pw_viz), and replay links.
 Failed episodes are listed and make the exit code 1; no report is written for them.
 
-  uv run python paintbot_pw_lab/tools/pw_match_report.py EPISODE_DIR [MORE ...] [--out DIR]
+  uv run python paintbot_pw_lab/tools/pw_match_report.py EPISODE_DIR [MORE ...] [--out DIR] [--viewer-base URL]
+      [--tag TAG] [--json]
 
 Output (default): <episode dir>/pw_report/ for hosted episodes, NAME.pw_report/ beside a
 local NAME.replay: report.html, report.json, timeline.png(+json), moment_N.png(+json).
@@ -41,7 +42,7 @@ MOMENT_AFTER_TICKS = 48       # ...and 2 s after
 MOMENT_ZOOM_HALF = 1800       # panel half-width in world units around the moment (at least)
 MOMENT_ZOOM_PAD = 500         # margin around a moment's victims and killers when they spread wider
 # Ranking weight ("swing") per kind. A heuristic order for choosing what to show, not a
-# measured win-probability change (that is plan T14).
+# measured win-probability change (pw_winprob.py credit measures that).
 SWING_ELIMINATION = 10
 SWING_HEART_LOST = 2          # the heart difference moves by 2
 SWING_FIRST_CAPTURE = 1
@@ -391,9 +392,9 @@ def render_html(data: dict) -> str:
         f"Final scores cross-checked against <span class='mono'>{html.escape(ev['results_check'])}</span>."
         + (f" Notes: <span class='mono'>{html.escape(ev['notes'])}</span>." if ev["notes"] else ""))
     link_note = (
-        "The Observatory replay link wraps the web viewer; the viewer itself seeks to <span class='mono'>&amp;t=&lt;tick&gt;</span> "
-        "(paintbot-pw <span class='mono'>viewer.js</span>), but whether the Observatory wrapper passes <span class='mono'>t</span> "
-        "through is <b>unverified</b>: if it opens at the start, scrub to the tick shown. "
+        "The Observatory replay link wraps the web viewer, and the wrapper does not pass <span class='mono'>t</span> "
+        "through: the replay opens at 0:00, so scrub to the tick shown (the paintbot-pw viewer itself seeks to "
+        "<span class='mono'>&amp;t=&lt;tick&gt;</span> when served directly, see --viewer-base). "
         "Episode-page links follow the pattern verified 2026-07-28 and were not re-checked for this report."
         if links else "Local tape: open it with a local viewer; there is no hosted link.")
 

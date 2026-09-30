@@ -10,7 +10,7 @@ policy opens, fights, captures and scores glory, what their shouts mean, and whi
 watch. It reads public data only: no credits, no auth, no writes. Tool reference:
 [docs/tools/pw_scout.md](../../../docs/tools/pw_scout.md); fights:
 [pw_fights.md](../../../docs/tools/pw_fights.md); flags:
-[pw_flags.md](../../../docs/tools/pw_flags.md); index:
+[pw_flags.md](../../../docs/tools/pw_flags.md); metrics: [pw_metrics.md](../../../docs/tools/pw_metrics.md); index:
 [docs/tools/README.md](../../../docs/tools/README.md).
 
 ## Procedure
@@ -21,7 +21,7 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
    The tag lives in `paintbot_pw_lab/tools/release.env`:
 
    ```bash
-   uv run python paintbot_pw_lab/tools/pw.py doctor --json                 # 0 ready; 1 release.env behind; 3 missing (see next[])
+   uv run python paintbot_pw_lab/tools/pw.py doctor --json                 # 0 ready; 1 release.env behind (code stale) or league check rate-limited; 3 missing (see next[])
    uv run python paintbot_pw_lab/tools/pw.py deployed-ref --write          # 0 = current; 1 = release.env moved: rebuild
    uv run python paintbot_pw_lab/tools/pw.py build                         # builds the tag in tools/release.env
    ```
@@ -39,8 +39,8 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
    One round is 12 episodes. Keep to ≤ 30 per run unless James asks for more. Requests go
    through `tools/pw_public.py` (a pause before each call, back-off on 429/5xx, a fixed retry
    limit), and episodes already on disk are skipped without a request, so a rerun only pulls
-   what is new. On exit 3 (API unreachable or rate-limited after retries), stop and try later;
-   do not loop.
+   what is new. On exit 1 with code `rate_limited` (HTTP 429 after the retries) or exit 3 (the
+   public API is unreachable), stop and try later; do not loop.
 
 3. **Report**:
 
@@ -91,7 +91,7 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
   descriptive.
 - **Do not pool rules versions.** The report warns when coworld versions or tape rules
   are mixed. Split the directories and report each on its own.
-- **The Elo outcome is the ladder score**: `clamp(0.5 + margin/2000, 0, 1)`, and the
+- **The Elo outcome score is the ladder's number**: `clamp(0.5 + (our glory − their glory)/2000, 0, 1)`, and the
   loser's glory is settled to 0. A 0.77 is a normal win and 0.83 a big one. A zero-glory
   win counts as a draw.
 - **Ember frame.** Heart and pickup names are mirrored for Azure sides, so `h0` = own
@@ -113,15 +113,16 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
 - **Commands:** `uv run python paintbot_pw_lab/tools/pw.py scout fetch --max-episodes 30 --json` (the directory is `result.out`),
   then `uv run python paintbot_pw_lab/tools/pw.py scout report <dir> --json`; write `reasons.json` for `result.interesting_without_reason`
   and rerun the report with `--reasons`.
-- **Reading the envelopes:** fetch → `result.saved`, `result.already_present`, `result.excluded`,
-  `result.guard` (`ok`, `failed`, or not run because nothing was new). Report → `result.standings`,
+- **Reading the envelopes:** fetch → `result.out`, `result.saved`, `result.already_present`,
+  `result.excluded`, `result.guard` (`ok`, `not_run (nothing new)`, or `failed`; a failed guard
+  returns early with `saved`, `skipped` and `guard` only, and failure code `guard_<code>`). Report → `result.standings`,
   `result.sanity` (each line is a tooling bug until disproved), `outputs[]` (scout.md, scout.json,
   scout.interesting.json), `next[]` (the reasons step).
-- **Exit codes:** 0 use it. 1 the guard trace failed (fetch: build the league's tag, then rerun)
-  or some episodes did not verify (report: list them, use the rest). 2 bad arguments, more than
-  100 episodes, or an `--ours` policy not in the batch (`result.valid`). 3 the public API is
-  unreachable or rate-limited after retries, or a build is missing: run `next[0]` or try later;
-  never loop on it.
+- **Exit codes:** 0 use it. 1 the guard trace failed (fetch: build the league's tag, then rerun),
+  the public API rate-limited after retries (code `rate_limited`: try later), or some episodes
+  did not verify (report: list them, use the rest). 2 bad arguments, more than 100 episodes, or
+  an `--ours` policy not in the batch (`result.valid`). 3 the public API is unreachable or a
+  build is missing: run `next[0]` or try later; never loop on it.
 - **Human gates:** none for reading: public reads are anonymous and free (keep them small).
   Posting a finding to the forum or wiki is a public write and needs James's explicit go-ahead;
   gameplay findings stay in the lab (user_preferences).

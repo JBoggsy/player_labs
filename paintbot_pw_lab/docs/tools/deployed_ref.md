@@ -1,7 +1,10 @@
 # deployed_ref.py — is the lab on the league's build, and do the docs still hold?
 
 Resolves the paintbot-pw commit the league runs and compares it with the lab's two pins in
-[`tools/release.env`](../../tools/release.env) ([pw_release.md](pw_release.md)):
+[`tools/release.env`](../../tools/release.env) ([pw_release.md](pw_release.md)), so an agent
+knows whether the tools are built for the deployed release and which doc citations may be
+stale. Part of the lab tool set: [tool index](README.md) (`pw.py deployed-ref`).
+The two pins:
 
 - **Tools** (`PW_RELEASE_TAG`/`PW_RELEASE_SHA`): the build every lab tool defaults to. `--write`
   moves them to the league's release; then rebuild.
@@ -27,8 +30,8 @@ uv run python paintbot_pw_lab/tools/deployed_ref.py --docs-sha 7b2b19f5   # diff
 ```
 
 Flags: `--json`, `--write`, `--docs-sha SHA` (default `PW_DOCS_SHA`), `--clone PATH` (source
-clone for the diffstat, default `~/coding/coworlds/paintbot-pw` or `$PW_CLONE`; only fetched,
-its checkout never changes).
+clone for the diffstat, default `$PW_CLONE`, else `~/coding/coworlds/paintbot-pw`; only fetched,
+and only when a needed commit is missing; its checkout never changes).
 
 **Agent loop preflight:**
 
@@ -47,7 +50,7 @@ uv run python paintbot_pw_lab/tools/deployed_ref.py --write --json > /tmp/ref.js
 | 0 | `release.env` matches the league's tag and commit | nothing; still read the DOCS line |
 | 1 | release.env is behind the league, or `--write` just moved it, or the league's version has no release tag (`failures[].code = "untagged"`) | run `next`: `--write`, then `build_tools.sh`, `build_native.sh`, the test suite |
 | 1 | the Observatory API answered HTTP 429 (`failures[].code = "rate_limited"`) or 5xx (`"api_unavailable"`): the check could not run, nothing is missing | wait, then rerun (`next[0]`); `pw.py doctor --offline` skips this check |
-| 2 | usage error (bad flag, unreadable release.env) | fix the command |
+| 2 | usage error (bad flag, unreadable release.env) | fix the command. This tool uses plain argparse, not `pw_cli`: a usage error prints argparse's message on stderr and **no** JSON envelope even with `--json` |
 | 3 | environment missing: no `softmax` login token or HTTP 401/403 (`uv run softmax login`), Observatory/GitHub unreachable, no source clone | run `next[0]` (also in the message) |
 
 ## Agent contract
@@ -82,8 +85,10 @@ DOCS: 6 rule-bearing file(s) changed since 570174a2. Read the diff and re-verify
 ```
 
 `--json` prints one object: `ok` (tools current), `tool`, `release_tag` (the pin before this
-run), `inputs`, `outputs` (`[release.env]` when written), `counts` (`processed` = leagues read),
-`failures`, `next`, and `result`:
+run), `inputs` (`write`, `docs_sha`, `clone`, `release_env`), `outputs` (`[release.env]` when
+written), `counts` (`processed` = leagues read), `failures` (`id`/`code`/`message`; codes
+`environment_missing`, `rate_limited`, `api_unavailable`, `untagged`), `next`, and `result`
+(null on exit 3 and on a rate-limit/API failure):
 
 | `result` key | Meaning |
 | --- | --- |

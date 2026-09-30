@@ -1,6 +1,7 @@
-# pw_tune.py: SPSA tuning of BASIC constants (T15)
+# pw_tune.py: SPSA tuning of BASIC constants
 
-Searches named integer constants in a BASIC policy for a higher mean ladder Elo outcome against
+Part of the [lab tool index](README.md) (dispatcher: `pw.py tune`). Searches named integer
+constants in a BASIC policy for a higher mean Elo outcome score against
 one fixed opponent file, using local matches in the native library ([pw_local](pw_local.md)).
 **Screening only.** It tunes against one opponent on one seed list, so it overfits both by
 construction. A tuned file is a hypothesis to re-screen on fresh seeds and then confirm against
@@ -54,13 +55,14 @@ uv run paintbot_pw_lab/tools/pw_tune.py render CANDIDATE.bas --log <scratch>/tun
    `a_k = a / (k + 1 + A)^0.602` and `c_k = c / (k + 1)^0.101` (Spall's standard exponents) in
    knob space normalized to [0, 1]. The plus and minus points (each knob perturbed at least one
    grid step) are both played on **every tuning seed on both sides**, the same seeds for both
-   (common random numbers), in one batch. Objective = mean A Elo outcome
+   (common random numbers), in one batch. Objective = the candidate's mean Elo outcome score
    `clamp(0.5 + (A − B glory)/2000, 0, 1)`. Update: gradient **ascent**, each knob moving at most
    `--max-move` of its range per iteration, clipped to the range, rounded to the grid.
 4. Scores the final values on the tuning seeds (`final@N`) and, with `--confirm-seeds`, the
    starting and final values on those fresh seeds (`confirm@N`). Writes `--out`.
 
-Defaults: `a = 1.0`, `c = 0.2`, `A = iterations / 10` (min 1), `max_move = 0.2`.
+Defaults: `a = 1.0`, `c = 0.2`, `A = iterations / 10` (min 1), `max_move = 0.2`, `rng_seed = 0`,
+`--workers` all cores; `--tag`, `--glory`, `--max-ticks` as in [pw_local](pw_local.md).
 Cost per iteration = 4 × seeds matches (2 points × 2 sides); at ~1.5 matches/s on 14 cores,
 8 seeds ≈ 22 s per iteration.
 
@@ -72,18 +74,20 @@ Cost per iteration = 4 × seeds matches (2 points × 2 sides); at ~1.5 matches/s
 | --- | --- |
 | Inputs | `knobs CAND`; `run CAND OPP --seeds --iterations --log FILE [--confirm-seeds] [--out]` plus SPSA settings, `--tag`, `--glory`, `--max-ticks`, `--workers`; `render CAND [--log] [--set N=V] --out` |
 | Outputs | `run`: the JSONL log (appended) and `--out` .bas; `render`: the `--out` .bas |
-| `--json` result | `knobs`: `{knobs: [{name, line, value, low, high, step}]}`; `run`: `{guardrail, log, out, initial, final, confirm}`; `render`: `{out, values}` |
-| Exit codes | 0 ok; 1 candidate seats failed to compile or were disabled; 2 no or malformed `@tune` marks, a missing file, bad seeds, a log written with other settings, an unknown `--set` name or a value out of range; 3 the library is missing or stale (`next[0]`) |
+| `--json` result | `knobs`: `{knobs: [{name, line, value, low, high, step}]}` (`line` 0-based; the text output prints it 1-based); `run`: `{guardrail, log, out, initial, final, confirm}` (`initial`/`final` are the log's `eval` records; `confirm` is null without `--confirm-seeds`); `render`: `{out, values}` |
+| Exit codes | 0 ok; 1 candidate seats failed to compile or were disabled (failure code `bad_seats`); 2 no or malformed `@tune` marks, a missing file, bad seeds, a log written with other settings, an unknown or non-integer `--set` (`NAME=VALUE`) or a value out of range; 3 the library is missing or stale (`next[0]`) |
 | Idempotence / cache | the log makes `run` resumable: the same command continues it, a larger `--iterations` extends it |
 | Typical next step | re-screen the tuned file on fresh seeds with `local screen`, then a hosted A/B |
 
 ## Log (resumable JSONL)
 
 - `start`: `config` (candidate and opponent path + sha256, knobs, seeds, confirm seeds, build tag
-  and commit, glory, max ticks, SPSA settings) and the parity checks.
-- `eval`: `label` (`initial`, `final@N`, `confirm@N`), values, `outcome`, `n`, W/D/L,
-  `seed_balanced` (mean and CI), `bad_candidate_seats` (candidate seats that failed to compile or
-  were disabled), per-match `hashes`.
+  and commit, glory, max ticks, SPSA settings), the parity checks and `started` (local time).
+- `eval` with `label` `initial` or `final@N` (`seeds: "tune"`): `values`, `outcome`, `n`, `wins`/
+  `draws`/`losses`, `seed_balanced` (mean and CI), `bad_candidate_seats` (candidate seats that
+  failed to compile or were disabled), per-match `hashes`.
+- `eval` with `label` `confirm@N` (`seeds: "confirm"`): `initial` and `final`, each with those
+  same fields, scored on the confirm seeds.
 - `iter`: `k`, `a_k`, `c_k`, `delta`, `u`, `values`, `plus`/`minus` (values + the same fields as
   `eval`), `gradient`, `u_after`, `values_after`, `seconds`.
 
@@ -92,6 +96,10 @@ extends the run (A is taken from the log). A log whose `config` differs (another
 list, build or SPSA setting) is refused: use a new `--log`.
 
 ## Verified (2026-09-29, coworld-v0.3.78, 14-core Mac)
+
+Re-checked at coworld-v0.3.79 (2026-09-29): `knobs`, a 1-iteration `run` with `--confirm-seeds`
+and `--out` (log records and result keys as above), `render --log … --set kWetCost=8` (one line
+changed), and the refusal to resume a log with a changed seed list (exit 2).
 
 - Tiny run: a copy of base.bas with 2 knobs (`kWetCost` 6 in [2, 12]; a new `kRetreatMargin`
   1 in [0, 4] replacing the literal 1 in `foesNear - friendsNear >= 1`) vs base.bas, seeds

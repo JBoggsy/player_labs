@@ -1,10 +1,10 @@
-# pw_intent.py: intent telemetry, seat-log recording, belief/intent audit (T13)
+# pw_intent.py: intent telemetry, seat-log recording, belief/intent audit
 
 The replay records what every cog **did**. It cannot record what our policy **meant to do**:
 which heart it chose, which seat it was shooting at, why it retreated. Our BASIC prints that
 as one short `PWI` line per decision. This tool owns the line format, records local episodes
 that keep seat logs, and joins the lines to the hash-checked replay to find where intent and
-belief disagree with what happened.
+belief disagree with what happened. Index of all tools: [README.md](README.md).
 
 Files: [`reference/intent_telemetry.bas`](../../reference/intent_telemetry.bas) (the SUB our
 policy pastes in), [`tools/pw_intent.py`](../../tools/pw_intent.py), tests in
@@ -98,7 +98,8 @@ fails that episode (listed in `failures`, exit 1) and the run goes on to the nex
 
 **`--json` results.** `record`: `{out, episodes: [{name, dir, seed, a_side, status
 (recorded|cached|failed), replay, ticks, outcome, disabled_seats}]}`, `outputs` = episode
-directories. `show`: `{episodes: [{episode_id, seat_logs, seats: [intent_summary rows]}]}`;
+directories, `counts.recorded` / `counts.cached`; a failed match is a `failures[]` entry with
+code `player_failure` (compile error), an early engine exit or a timeout. `show`: `{episodes: [{episode_id, seat_logs, seats: [intent_summary rows]}]}`;
 an episode without seat logs is counted in `counts.excluded` / `counts.no_seat_logs`.
 `audit`: `{out_dir, totals: {rule: {checked, unchecked, skipped_*, divergent}},
 consistency_divergences, episodes_audited}`, `outputs` = the two CSVs; an episode without
@@ -119,11 +120,11 @@ directly). Shared rules (envelope keys, exit codes, selector checks):
 
 | | |
 | --- | --- |
-| Inputs | `record`: two `.bas` files, `--seeds`, `--sides`, `--glory`, `--out`; `show`/`audit`: episode roots |
-| Outputs | `record`: local episodes with seat logs under `--out` (default `paintbot_pw_lab/analysis/pw_intent/episodes/`); `audit --out DIR`: divergence tables |
-| `--json` result | `show`: per-seat line counts, malformed lines, VM errors, mode shares; `audit`: `consistency_divergences` (should be 0), deception counts (`target_is_ally`, `seen_fooled`), `heart_not_approached`, per-rule check totals |
+| Inputs | `record`: two `.bas` files, `--seeds` (default 1), `--sides` (default 0,1), `--glory` (default the league config), `--out`, `--tag`, `--ticks` (default 14400), `--port` (default 8390), `--force`; `show`: roots, `--tag`, `--refresh`; `audit`: roots, `--horizon` (default 72), `--out`, `--sparse`, `--tag`, `--refresh` |
+| Outputs | `record`: local episodes with seat logs under `--out` (default `paintbot_pw_lab/analysis/pw_intent/episodes/`); `audit`: `divergences.csv` + `checks.csv` in `--out DIR` (default `paintbot_pw_lab/analysis/pw_intent/audit/<first root name>-<hash>/`) |
+| `--json` result | `record`: `{out, episodes}`; `show`: `{episodes: [{episode_id, seat_logs, seats}]}`, seats = `intent_summary` rows (`intent_lines, bad_lines, vm_errors, last_t, mode_share_<mode>, heart_switches`); `audit`: `{out_dir, totals, consistency_divergences, episodes_audited}` (should be 0 consistency divergences; `totals` holds the deception rules `target_is_ally`, `seen_fooled` and `heart_not_approached`) |
 | Exit codes | 0 ok; 1 some episodes failed to load/verify or `record` had a failed match; 2 usage error (unknown selector, roots with no episode); 3 binaries not built (`next[0]` gives the build command) |
-| Idempotence / cache | `show`/`audit` read the `pw_episodes` caches; `record` refuses to overwrite an existing recording without `--force` |
+| Idempotence / cache | `show` reads the default `pw_episodes` cache, `audit` its dense variant (`@se1-ve1`; `--sparse` uses the default), `--refresh` rebuilds; `record` reuses a complete recording with the same inputs, re-records an incomplete one, and refuses (exit 2) one with other settings unless `--force` |
 | Typical next step | a non-zero `consistency_divergences` → fix the policy/telemetry; deception or heart findings → a hypothesis for `paintbot-pw-diagnose` |
 
 **Reproducing the baseline audit.** `reference/wire_intent_base.py` writes an intent-instrumented
@@ -212,6 +213,11 @@ Thresholds are named constants at the top of `pw_intent.py` (`HEART_APPROACH_TIC
   selfTeam`, so it targets disguised teammates (35 of 4,718 target lines here). Friendly fire
   is on (mechanics.md §5). Whether it actually fires on them and how much damage that costs is
   not measured.
+- Commands re-run 2026-09-29 at coworld-v0.3.79: `wire_intent_base.py` → `record` (1 match,
+  6.3 s, `status: recorded`), the same `record` again (`cached`), with `--ticks 3000` (exit 2,
+  "holds a recording with other settings"), `show` (16 seat logs), `audit` (0 consistency
+  divergences, 7 `seen_fooled`), and `show` on a `pw_local` recording (no seat logs:
+  `counts.no_seat_logs` 1, exit 0).
 - Tests: `uv run python -m pytest paintbot_pw_lab/tools/tests/test_pw_intent.py` (typing,
   rejection of malformed lines, module/parser key and mode-table agreement, malformed lines
   kept, "no log" kept apart from "no lines", `observed_view` against `bodyForSeat`'s rules,
@@ -220,9 +226,10 @@ Thresholds are named constants at the top of `pw_intent.py` (`HEART_APPROACH_TIC
 
 ## Not verified / limits
 
-- No real policy of ours emits the line yet. The wiring used for verification lives in the
-  scratchpad, not in the repo. The mode and reason codes follow base.bas's modules and
-  should be revised with the first real policy (keep `MODE_NAMES`/`REASON_NAMES` in step).
+- No real policy of ours emits the line yet. The verification wiring is
+  `reference/wire_intent_base.py` (an instrumented copy of `base.bas`). The mode and reason
+  codes follow base.bas's modules and should be revised with the first real policy (keep
+  `MODE_NAMES`/`REASON_NAMES` in step).
 - Hosted seat-log retrieval for our own xp-request episodes is not yet exercised.
 - `record` has no parity guard against `paintbot-headless`. The replay it writes is
   hash-checked by `pw_trace` when loaded, which is the check that matters for analysis.

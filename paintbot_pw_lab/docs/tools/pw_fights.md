@@ -1,7 +1,10 @@
-# pw_fights.py: engagements, trades, opening duels (T4)
+# pw_fights.py: engagements, trades, opening duels
 
-Groups combat from the [tables](tables.md) into fights and reports who wins them. It reads
-the hash-checked tables only, never the tape. Source: `tools/pw_fights.py`.
+Answers "do we win the fights we take, who shoots first, and who wins the opening duel at
+each heart?". It groups combat from the hash-checked [tables](tables.md) into engagements,
+trades and opening duels, and reports who wins them per policy (the unit A/B and the miner
+use). It reads the tables only, never the tape. Source: `tools/pw_fights.py`. Index of all
+tools: [README.md](README.md).
 
 ## Commands
 
@@ -14,9 +17,12 @@ The output starts with the thresholds line. Then, per episode, it prints the num
 engagements, contests and trades, and one line per policy: engagements won, first hits,
 outnumbered fights, opening duels and trades. `--list` also prints every engagement and
 contest. `--csv` writes `engagements.csv`, `opening_duels.csv`, `trades.csv` and
-`fight_policy.csv`. `--vis-every M` re-traces with visibility sampling, which fills the
-"saw first" columns. It changes the cache signature, so the next run without it traces
-again. The tool exits 1 if any episode failed to load.
+`fight_policy.csv`. `--vis-every M` traces with visibility sampling, which fills the
+"saw first" columns. That trace is its own cache variant (`pw_cache@se6-ve<M>/`, or
+`NAME@se6-ve<M>.pw_cache/` beside a local replay; see
+[pw_episodes.md](pw_episodes.md#cache-variants)): the first run traces, later runs with the
+same `M` reuse it, and the default cache other tools read is untouched. The tool exits 1 if
+any episode failed to load. `--csv` writes nothing when no episode loaded.
 
 ```python
 import pw_fights as pf
@@ -36,7 +42,7 @@ pf.fight_policy_metrics(ep)   # one row per (episode, policy_key): the A/B and m
 | Outputs | `--csv DIR`: `engagements.csv`, `opening_duels.csv`, `trades.csv`, `fight_policy.csv` |
 | `--json` result | `{thresholds, fight_policy: [rows per (episode, policy)], engagements, opening_duels, trades (counts), rows: note}`; engagement rows only through `--csv` |
 | Exit codes | 0 ok; 1 some episodes failed to load or verify (the rest are used; one `failures[]` entry each, `counts.failed_by_code`); 2 usage error: bad arguments, roots with no episode, or an unknown selector (`--policy`; `result.valid` lists the valid values); 3 `pw_trace` not built (`next[0]` = `paintbot_pw_lab/tools/build_tools.sh`) |
-| Idempotence / cache | reads the `pw_episodes` caches; `--vis-every` rebuilds them once with visibility |
+| Idempotence / cache | reads the `pw_episodes` caches; `--vis-every M` traces once into its own cache variant and reuses it after |
 | Typical next step | `flags` or `report` on the episodes where we lose fights; `miner` for the batch |
 
 ## Definitions
@@ -52,6 +58,19 @@ pf.fight_policy_metrics(ep)   # one row per (episode, policy_key): the A/B and m
 | trade | An enemy kills our seat, and our team kills that killer within `TRADE_WINDOW_TICKS` (72, shared with `pw_metrics.trades`) | exact |
 | heart contest | One capture attempt: a `capture_start`, ending at the next capture event at that heart (complete, reset, or the other team starting) or at the match end. The attacker wins if the attempt completed, else the other team wins. | exact |
 | opening duel | The first enemy kill whose victim is ≤ `OPENING_DUEL_RADIUS` (1,000) from the heart, from `OPENING_DUEL_LEAD_TICKS` (48) before the attempt to its end. `opening_team_won` says whether that team won the contest. | exact events, chosen radius |
+
+CSV columns (the `--csv` files; `--list` prints the first two):
+
+- `engagements.csv`: `episode_id, engagement, t_start, t_end, duration_ticks, events, x, z`
+  (mean position of the events), `seats_0, seats_1, n_0, n_1, first_hit_t, first_hit_seat`
+  (null when several seats hit on the first tick), `first_hit_team, kills_0, kills_1, hp_0,
+  hp_1, winner, first_sight_t, saw_first_team, sight_to_hit_ticks, vision_sampled, hearts,
+  heart_events` (JSON).
+- `opening_duels.csv`: `episode_id, heart, t_start, t_end, attacker, owner_before, end_kind`
+  (`capture_complete`, `capture_reset`, `capture_start` by the other team, or `match_end`),
+  `opening_t, opening_killer, opening_victim, opening_team, contest_winner, opening_team_won`.
+- `trades.csv`: `t_death, victim, victim_team, killer, t_trade, avenger, trade_ticks, episode_id`.
+- `fight_policy.csv`: `episode_id, policy_key, policy_name, team` plus the metrics below.
 
 `fight_policy_metrics` columns: `engagements`, `engagements_won`, `engagements_drawn`,
 `engagements_first_hit`, `won_when_first_hit`, `engagements_outnumbered`,

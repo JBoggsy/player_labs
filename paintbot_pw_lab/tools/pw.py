@@ -88,35 +88,41 @@ CATALOG: list[dict] = [
      "when_to_use": "Before trusting any analysis after a league release; start of every loop (doctor runs it).",
      "questions": ["Which build does the league run? Are our tools and docs current?"],
      "inputs": "--write, --docs-sha SHA, --clone DIR, --json", "outputs": "tools/release.env (only with --write)",
-     "exit_codes": "0 current; 1 behind / just written (rebuild next) / untagged; 2 usage; 3 no login, "
-                   "network or clone (fix listed)",
+     "exit_codes": "0 current; 1 behind / just written (rebuild next) / untagged, or the API rate-limited "
+                   "(code rate_limited) or down (api_unavailable); 2 usage (plain argparse text, no JSON envelope); "
+                   "3 no login, network or clone (fix listed)",
      "doc": "deployed_ref.md", "skill": "paintbot-pw-replay"},
     {"name": "release", "target": ("py", "pw_release.py"),
      "purpose": "Print the release pins (tag, sha, docs sha) and which binaries exist for a tag.",
      "when_to_use": "To check a build exists before running a tool (`--require all`).",
      "questions": ["Which tag are the tools pinned to, and is it built?"],
      "inputs": "--tag TAG, --require all|TOOL..., --json", "outputs": "none",
-     "exit_codes": "0 ok; 2 unknown tool name; 3 a --require'd binary is missing (build command named)",
+     "exit_codes": "0 ok (always, without --require); 2 unknown tool name (plain argparse text, no JSON "
+                   "envelope); 3 a --require'd binary is missing (build command in next[])",
      "doc": "pw_release.md", "skill": None},
     {"name": "build", "target": ("sh", "build_tools.sh"),
      "purpose": "Build paintbot-headless, replay_stats, pw_trace and pw_map for the pinned tag (or a given tag).",
      "when_to_use": "When doctor/release reports a missing binary or deployed-ref just moved the pin.",
      "questions": ["How do I build the analysis binaries?"],
-     "inputs": "[TAG] (default: tools/release.env)", "outputs": "tools/bin/<tag>/, tools/.cache/<tag>/ worktree ($PW_CACHE_DIR/<tag>/ when set)",
+     "inputs": "[TAG] (default: tools/release.env); no --json. Env: PW_CLONE (source clone, default "
+               "~/coding/coworlds/paintbot-pw, cloned when absent), PW_CACHE_DIR (worktree root)",
+     "outputs": "tools/bin/<tag>/, tools/.cache/<tag>/ worktree ($PW_CACHE_DIR/<tag>/ when set) with its "
+                "tmp/paintbot-coworld engine",
      "exit_codes": "0 built; non-zero build failure (read the compiler output)",
      "doc": "pw_trace.md", "skill": "paintbot-pw-replay"},
     {"name": "build-native", "target": ("sh", "build_native.sh"),
      "purpose": "Build libpw.dylib (+ libpw.build.json) for local matches; runs build_tools.sh first.",
      "when_to_use": "Before pw_local / pw_tune when the library is missing or the pin moved.",
      "questions": ["How do I build the local match library?"],
-     "inputs": "[TAG] (default: tools/release.env)", "outputs": "tools/bin/<tag>/libpw.dylib, libpw.build.json",
+     "inputs": "[TAG] (default: tools/release.env); no --json", "outputs": "tools/bin/<tag>/libpw.dylib, libpw.build.json",
      "exit_codes": "0 built; non-zero build failure", "doc": "pw_local.md", "skill": "paintbot-pw-local"},
     {"name": "trace", "target": ("bin", "pw_trace"),
      "purpose": "Hash-checked replay expander (Nim): re-simulates a tape and writes events + sampled state as JSONL.",
      "when_to_use": "Rarely directly; `episodes` runs and caches it. Use for a raw JSONL of one tape.",
      "questions": ["Does this tape replay hash-exactly on our build?"],
      "inputs": "[--tag TAG] REPLAY OUT.jsonl [--state-every N] [--window A:B] [--vis-every M]",
-     "outputs": "OUT.jsonl", "exit_codes": "0 verified; 1 hash mismatch or identity failure; 2 bad arguments; "
+     "outputs": "OUT.jsonl", "exit_codes": "0 verified; 1 hash mismatch or identity failure; 2 bad arguments or not a "
+                                          "POLYWORLDREPLAY tape; "
                                           "3 (dispatcher) binary not built",
      "doc": "pw_trace.md", "skill": "paintbot-pw-replay"},
     {"name": "episodes", "target": ("py", "pw_episodes.py"),
@@ -125,39 +131,44 @@ CATALOG: list[dict] = [
      "when_to_use": "First step on any episode data; answering a specific 'what happened at tick X' question.",
      "questions": ["What happened in this match / at tick X?", "Who killed seat 5?",
                    "Does this batch load and verify?"],
-     "inputs": "ROOT... [--window A:B] [--vis-every M] [--sql QUERY] [--refresh] [--json]",
+     "inputs": "ROOT... [--tag TAG | --binary PATH] [--state-every N] [--vis-every M] [--window A:B] [--refresh] "
+               "[--jobs J] [--sql QUERY] [--json]",
      "outputs": "per-episode cache <episode dir>/pw_cache/ or NAME.pw_cache/ beside a .replay (trace.jsonl, "
                 "tables/*.parquet, receipt.json); another --tag or trace options get their own variant "
                 "(pw_cache@<variant>/, NAME@<variant>.pw_cache/) instead of replacing it; reused while the inputs "
                 "are unchanged",
-     "exit_codes": EPISODE_EXITS, "doc": "pw_episodes.md", "skill": "paintbot-pw-replay"},
+     "exit_codes": EPISODE_EXITS + "; a --sql query DuckDB rejects, --state-every < 1 or a --vis-every that is not "
+                                   "a multiple of it is exit 2",
+     "doc": "pw_episodes.md", "skill": "paintbot-pw-replay"},
     {"name": "metrics", "target": ("py", "pw_metrics.py"),
      "purpose": "Every metric at seat, policy and team level: result, Elo outcome, glory composition, combat, "
                 "hearts, idle.",
      "when_to_use": "Summarizing episodes; the numbers behind A/B, mining and diagnosis.",
      "questions": ["Why did we lose this one (glory composition)?", "What is our accuracy / K/D / heart time?"],
-     "inputs": "ROOT... [--policy KEY] [--csv DIR] [--json]", "outputs": "with --csv: {seat,policy,team}_metrics.csv",
+     "inputs": "ROOT... [--policy KEY] [--csv DIR] [--tag TAG] [--json]",
+     "outputs": "with --csv: {seat,policy,team}_metrics.csv",
      "exit_codes": EPISODE_EXITS, "doc": "pw_metrics.md", "skill": "paintbot-pw-replay"},
     {"name": "fights", "target": ("py", "pw_fights.py"),
      "purpose": "Engagements (N-vs-M, who hit first, who won), trades and opening duels per heart contest.",
      "when_to_use": "When combat decides the result: are we losing fights, first shots, or openings?",
      "questions": ["Do we win the fights we take? Who shoots first?", "Who wins the opening duels?"],
-     "inputs": "ROOT... [--policy KEY] [--list] [--csv DIR] [--vis-every M] [--json]",
-     "outputs": "with --csv: engagements, opening_duels, trades, fight_policy CSVs",
+     "inputs": "ROOT... [--policy KEY] [--list] [--csv DIR] [--vis-every M] [--tag TAG] [--json]",
+     "outputs": "with --csv: engagements, opening_duels, trades, fight_policy CSVs; --vis-every M traces into its "
+                "own cache variant (pw_cache@se6-ve<M>/)",
      "exit_codes": EPISODE_EXITS, "doc": "pw_fights.md", "skill": "paintbot-pw-diagnose"},
     {"name": "flags", "target": ("py", "pw_flags.py"),
      "purpose": "Rule-based anomaly flags linked to ticks (stuck, idle, dead VM, died alone, heart lost with "
                 "allies, wasted grenade, friendly fire, ...); a policy's losses worst first.",
      "when_to_use": "Triage: which losses to look at first and which ticks in them.",
      "questions": ["What went wrong in our worst losses, and at which tick?", "Is a seat stuck or its VM dead?"],
-     "inputs": "ROOT... [--policy KEY] [--flags a,b] [--top N] [--csv FILE] [--json]",
+     "inputs": "ROOT... [--policy KEY] [--flags a,b] [--top N] [--csv FILE] [--vis-every M] [--tag TAG] [--json]",
      "outputs": "with --csv: every flag row", "exit_codes": EPISODE_EXITS,
      "doc": "pw_flags.md", "skill": "paintbot-pw-diagnose"},
     {"name": "map", "target": ("py", "pw_mapdata.py"),
      "purpose": "Map geometry (terrain raster, water, trenches, cover, hearts, pickups) cached per release.",
      "when_to_use": "Plots and spatial metrics; check a map loads for a release.",
      "questions": ["Where are the hearts, water, trenches and cover?"],
-     "inputs": "[--map NAME] [--rules N] [--step U] [--png OUT] [--json]",
+     "inputs": "[--map NAME] [--rules N] [--step U] [--tag TAG] [--png OUT] [--json]",
      "outputs": "tools/.cache/maps/<tag>/<map>-r<rules>-s<step>.{npz,json} (under $PW_CACHE_DIR when set); "
                 "--png file",
      "exit_codes": "0 ok; 2 usage or unknown map; 3 pw_map not built (run paintbot_pw_lab/tools/build_tools.sh)",
@@ -166,7 +177,7 @@ CATALOG: list[dict] = [
      "purpose": "Raw pw_map export (Nim): OUT_PREFIX.json + .bin (+ .ppm).",
      "when_to_use": "Rarely; `map` caches it.", "questions": [],
      "inputs": "[--tag TAG] OUT_PREFIX [--map NAME] [--rules N] [--step U] [--ppm]", "outputs": "OUT_PREFIX.*",
-     "exit_codes": "0 ok; non-zero bad arguments; 3 (dispatcher) binary not built",
+     "exit_codes": "0 ok; 1 unknown map (engine exception); 2 bad arguments; 3 (dispatcher) binary not built",
      "doc": "pw_map.md", "skill": None},
     {"name": "viz", "target": ("py", "pw_viz.py"),
      "purpose": "Movement diagrams, heatmaps, occupancy comparison, match timeline, GIF (PNG + JSON of the "
@@ -175,8 +186,10 @@ CATALOG: list[dict] = [
      "questions": ["Show me seat N's movement from 0:40 to 1:05.", "Where does policy X go / die?",
                    "How do two policies' positions differ?"],
      "inputs": "movement|heatmap|occupancy|timeline|gif ROOT... [--from T --to T] [--seats] [--team] "
-               "[--policy] [--fine] [--tag TAG] [--out FILE] [--json]",
-     "outputs": "default paintbot_pw_lab/analysis/pw_viz/<episode|batch>/<command>[-selectors].png + .json; "
+               "[--policy] [--kind density|deaths] [--normalize-side] [--raw-sides] [--no-shots] "
+               "[--bbox x0,z0,x1,z1] [--fine] [--tag TAG] [--out FILE] [--json]",
+     "outputs": "default paintbot_pw_lab/analysis/pw_viz/<short episode id|batch-<hash>>/<command>[-selectors].png "
+                "+ .json; "
                 "--tag picks the build for the trace and the map ($PW_CACHE_DIR/maps/<tag>/ when set)",
      "exit_codes": EPISODE_EXITS + "; a --from past every match end or an unknown policy/seat is exit 2",
      "doc": "pw_viz.md", "skill": "paintbot-pw-replay"},
@@ -185,20 +198,21 @@ CATALOG: list[dict] = [
                 "timeline, top moments with movement panels, seat table, replay links.",
      "when_to_use": "To hand James one readable page per episode.",
      "questions": ["Give me a one-page report on this match."],
-     "inputs": "ROOT... [--out DIR] [--viewer-base URL] [--json]",
+     "inputs": "ROOT... [--out DIR] [--viewer-base URL] [--tag TAG] [--json]",
      "outputs": "default <episode dir>/pw_report/ (hosted) or NAME.pw_report/ (local): report.html, report.json, "
-                "PNGs", "exit_codes": EPISODE_EXITS, "doc": "pw_match_report.md", "skill": "paintbot-pw-replay"},
+                "PNGs; --out DIR: that dir (one episode) or DIR/<episode_id>/ (several)", "exit_codes": EPISODE_EXITS, "doc": "pw_match_report.md", "skill": "paintbot-pw-replay"},
     {"name": "scout", "target": ("py", "pw_scout.py"),
      "purpose": "Public league survey: fetch recent public episodes (anonymous, gentle), then standings, "
                 "matchup matrix, per-policy profiles, shout decoding, flagged episodes.",
      "when_to_use": "Before designing against the field; to profile a specific opponent.",
      "questions": ["Who is strong in the league and how do they play?", "What do opponents shout?"],
-     "inputs": "fetch [--max-episodes N] [--out DIR] [--json] | report ROOT... [--ours KEY] [--reasons FILE] "
-               "[--json]",
-     "outputs": "fetch: episode_data/scout/<date>/r<round>_<ereq>/ + index.json (skips what exists); "
-                "report: scout.json, scout.md, scout.interesting.json in the first root",
-     "exit_codes": EPISODE_EXITS + "; fetch: 1 rate-limited after retries (code rate_limited), 3 when the "
-                                   "public API is unreachable",
+     "inputs": "fetch [--league ID] [--max-episodes N (<= 100)] [--max-rounds N] [--out DIR] [--tag TAG] | "
+               "report ROOT... [--out DIR] [--ours KEY] [--reasons FILE] [--by version|name] [--vis-every M] "
+               "[--title T] [--tag TAG] | leaders (below); [--json]",
+     "outputs": "fetch: episode_data/scout/<UTC date>/r<round>_<ereq>/ + index.json (skips what exists); "
+                "report: scout.json, scout.md, scout.interesting.json in --out (default the first root)",
+     "exit_codes": EPISODE_EXITS + "; fetch: 1 the guard trace failed (code guard_<code>) or rate-limited after "
+                                   "retries (code rate_limited), 3 when the public API is unreachable",
      "doc": "pw_scout.md", "skill": "paintbot-pw-scout"},
     {"name": "leaders", "target": ("py", "pw_scout.py"), "argv": ["leaders"],
      "purpose": "Current champions of a division: the latest completed public round's entrants, named "
@@ -206,7 +220,7 @@ CATALOG: list[dict] = [
      "when_to_use": "Resolving --opponent refs for an A/B or evaluation (also `pw.py scout leaders`).",
      "questions": ["Who are the current champions, as name:vN refs for --opponent?"],
      "inputs": "[--division ID] [--top N] [--json]",
-     "outputs": "stdout only; result.leaders[] = {rank, player, policy_ref, policy_version_id, mmr, owner}",
+     "outputs": "stdout only; result.leaders[] = {rank, player, player_id, policy_ref, policy_version_id, mmr, owner}",
      "exit_codes": "0 ok; 1 rate-limited after retries (code rate_limited) or some entrants unnamed; "
                    "2 usage; 3 the public API is unreachable",
      "doc": "pw_scout.md#leaders", "skill": "paintbot-pw-ab"},
@@ -214,16 +228,20 @@ CATALOG: list[dict] = [
      "purpose": "Compose (never create) the experience-request bodies for a paired / h2h / field A/B.",
      "when_to_use": "Designing a hosted A/B; creating the bodies is a separate step that costs XP credits.",
      "questions": ["Which requests does this A/B need?"],
-     "inputs": "--design paired|h2h|field --baseline REF --candidate REF [--opponent REF] [--seeds 1-30] "
-               "--league-id ID [--run-id ID] [--out DIR] [--json]",
+     "inputs": "--design paired|field (h2h refused) --baseline REF --candidate REF --opponent REF... "
+               "[--seeds 1-30] [--episodes N] (--league-id ID | --division-id ID | --coworld-id ID [--variant-id ID]) "
+               "[--private] [--run-id ID] [--out DIR] [--json]",
      "outputs": "with --out: manifest.json + bodies/<label>.json (same --run-id = same bodies)",
-     "exit_codes": "0 composed; 2 usage error", "doc": "pw_ab_requests.md", "skill": "paintbot-pw-ab"},
+     "exit_codes": "0 composed; 2 usage (no target, h2h refused, paired without --seeds, no --opponent, "
+                   "an invalid body)", "doc": "pw_ab_requests.md", "skill": "paintbot-pw-ab"},
     {"name": "compare", "target": ("py", "compare.py"),
      "purpose": "A/B statistics over hash-checked episodes (paired, h2h, field) on the shared coworld-ab "
                 "engines, with SPRT on the Elo outcome.",
      "when_to_use": "Deciding whether a candidate beat its baseline.",
      "questions": ["Did my change help?", "Can we stop the A/B yet (SPRT)?"],
-     "inputs": "compare|sprt ROOT... --design D --baseline P --candidate P [--out FILE] [--json]",
+     "inputs": "compare|sprt ROOT... --design paired|h2h|field --baseline P --candidate P (P = policy_version_id, "
+               "local:<name> or name:vN) [--h0 --h1 --alpha --beta] [--tag TAG] [--refresh] [--jobs J] [--out FILE] "
+               "[--json]; compare also [--metrics a,b] [--target M] [--xreq ID] [--requests MANIFEST]",
      "outputs": "with --out: the full result JSON (with rows), input for compare_report.py",
      "exit_codes": EPISODE_EXITS + "; unknown/ambiguous arm policy or pooled rules versions is exit 2",
      "doc": "compare.md", "skill": "paintbot-pw-ab"},
@@ -232,7 +250,9 @@ CATALOG: list[dict] = [
                 "one match, or a seed screen. Screening only.",
      "when_to_use": "Does a candidate compile and run? Is it clearly worse than base? Record a local replay.",
      "questions": ["Does this .bas compile in all 16 seats?", "Is the candidate clearly worse than base locally?"],
-     "inputs": "compile FILE | match A B --seed S | screen A B --seeds 1-28 [--out DIR] [--record DIR] [--json]",
+     "inputs": "compile FILE | match A B --seed S [--record DIR] | screen A B --seeds 1-28 [--record DIR "
+               "--record-seeds LIST]; [--out DIR] [--json] (match --record records its own seed; screen --record "
+               "needs --record-seeds)",
      "outputs": "with --out: matches.jsonl + summary.json; with --record: NAME.replay + NAME.meta.json",
      "exit_codes": NATIVE_EXITS, "doc": "pw_local.md", "skill": "paintbot-pw-local"},
     {"name": "tune", "target": ("py", "pw_tune.py"),
@@ -243,13 +263,18 @@ CATALOG: list[dict] = [
      "inputs": "knobs FILE | run CAND OPP --seeds --iterations --log FILE [--out TUNED.bas] | render CAND "
                "--log FILE --out FILE; [--json]",
      "outputs": "the JSONL log (append-only, resumable), the tuned .bas",
-     "exit_codes": NATIVE_EXITS, "doc": "pw_tune.md", "skill": "paintbot-pw-tune"},
+     "exit_codes": "0 ok; 1 candidate seats failed to compile or were disabled (code bad_seats); 2 no or malformed "
+                   "@tune marks, missing file, bad seeds, a log written with other settings, unknown or non-integer --set, or an "
+                   "out-of-range value; 3 libpw/paintbot-headless missing or stale (run "
+                   "paintbot_pw_lab/tools/build_native.sh)",
+     "doc": "pw_tune.md", "skill": "paintbot-pw-tune"},
     {"name": "intent", "target": ("py", "pw_intent.py"),
      "purpose": "Intent telemetry: record local episodes with seat logs, show PWI lines, audit intent/belief "
                 "against the replay.",
      "when_to_use": "When the question is what our policy MEANT to do (heart choice, target, reason).",
      "questions": ["What was our policy trying to do at tick X?", "Where did its belief differ from reality?"],
-     "inputs": "record A B --seeds S | show ROOT... | audit ROOT...; [--json]",
+     "inputs": "record A B --seeds S [--sides 0,1] [--glory JSON] [--ticks N] [--port P] [--force] | show ROOT... "
+               "[--refresh] | audit ROOT... [--horizon N] [--sparse] [--out DIR]; [--tag TAG] [--json]",
      "outputs": "default paintbot_pw_lab/analysis/pw_intent/{episodes,audit}/",
      "exit_codes": "0 ok; 1 some episodes failed to record or load; 2 usage; 3 pw_trace or the handoff engine "
                    "not built (run paintbot_pw_lab/tools/build_tools.sh)",
@@ -259,8 +284,10 @@ CATALOG: list[dict] = [
                 "flags and intent.",
      "when_to_use": "Nothing specific is suspected: mine a batch for what separates good matches from bad.",
      "questions": ["What should we improve next?", "Which behavior costs us points?"],
-     "inputs": "ROOT... --policy KEY [--score elo|win] --out FILE [--json]",
-     "outputs": "the JSONL rows file", "exit_codes": EPISODE_EXITS + "; no/unknown --policy is exit 2 listing them",
+     "inputs": "ROOT... --policy KEY [--score elo|win] [--out FILE] (required with --json; else rows go to stdout) "
+               "[--refresh] [--json]",
+     "outputs": "the JSONL rows file; result.warning when there are < 8 rows (mine then fails)",
+     "exit_codes": EPISODE_EXITS + "; no/unknown --policy is exit 2 listing them",
      "doc": "features.md", "skill": "paintbot-pw-diagnose"},
     {"name": "mine", "target": ("cmd", ["{python}", str(SKILLS / "coworld-hypothesis-miner" / "scripts" /
                                                         "mine_hypotheses.py"),
@@ -269,17 +296,21 @@ CATALOG: list[dict] = [
      "when_to_use": "Right after `miner` wrote rows.", "questions": [],
      "inputs": "--rows FILE [--top N] [--out FILE] [--json FILE] (shared engine's flags; adapter preset)",
      "outputs": "Markdown ranking (stdout or --out); --json FILE: association table",
-     "exit_codes": "the shared engine's (0 ok, non-zero on error); not the lab envelope",
+     "exit_codes": "the shared engine's (0 ok; 1 with a traceback on error, e.g. fewer than 8 usable rows); "
+                   "not the lab envelope",
      "doc": "features.md", "skill": "paintbot-pw-diagnose"},
     {"name": "winprob", "target": ("py", "pw_winprob.py"),
      "purpose": "Win-probability model P(win | team state at t), held-out evaluation, and per-event credit "
                 "(captures, kills, deaths).",
      "when_to_use": "Which events actually swing matches; crediting a batch with a saved model.",
      "questions": ["Which captures/kills swing win probability most?", "When did we lose this match?"],
-     "inputs": "fetch --out DIR | fit ROOT... --out DIR | credit ROOT... --model FILE --out DIR; [--json]",
+     "inputs": "fetch --out DIR [--max-episodes N (<= 40)] [--rounds N] [--versions X.Y.Z] [--division ID] | "
+               "fit ROOT... --out DIR [--sample-every N] [--folds K] [--jobs N] | credit ROOT... --model FILE --out DIR "
+               "[--jobs N]; [--json]. Episodes with rules < 47 are excluded (rules_below_47)",
      "outputs": "fit: model.json, report.json, wp_{ticks,events,policy}.parquet; fetch: <ereq>/ dirs (skips "
                 "what exists)",
-     "exit_codes": EPISODE_EXITS + "; fit with < 4 usable episodes is exit 1; fetch: 1 rate-limited after retries "
+     "exit_codes": EPISODE_EXITS + "; fit with < 4 usable episodes is exit 1 (too_few_episodes); credit with no "
+                                   "usable episode is exit 1 (no_usable_episodes); fetch: 1 rate-limited after retries "
                                    "(code rate_limited), 3 when the API is unreachable",
      "doc": "pw_winprob.md", "skill": "paintbot-pw-diagnose"},
     {"name": "test", "target": ("cmd", TEST_COMMAND),
@@ -393,9 +424,15 @@ Every Python tool (all subcommands above except `build`, `build-native`, `trace`
    | `next` | suggested follow-up commands; on exit 3, the fix command |
 
 3. **Exit codes:** `0` success; `1` some inputs failed verification or loading (partial results
-   are still written, failures listed); `2` usage or config error; `3` environment missing
-   (binary, library or release not built), and the message names the exact fixing command,
-   for example `paintbot_pw_lab/tools/build_tools.sh`.
+   are still written, failures listed); `2` usage or config error (failure code `usage_error`);
+   `3` environment missing (binary, library or release not built; code `environment_missing`),
+   and the message names the exact fixing command, for example
+   `paintbot_pw_lab/tools/build_tools.sh`. An unexpected exception (a tool bug) still prints the
+   envelope, exit 1 with failure code `crash` and the traceback on stderr. Exceptions to the
+   envelope: `deployed-ref` and `release` report usage errors as plain argparse text (exit 2,
+   no JSON), and the shell/binary subcommands (`build`, `build-native`, `trace`, `map-raw`,
+   `mine`, `test`) have no `--json` at all (the dispatcher prints an envelope only when it
+   refuses to run a binary that is not built).
 4. **Deterministic outputs, idempotent re-runs.** Default output locations are documented per
    tool; files a tool writes without `--out` go under `paintbot_pw_lab/analysis/<tool>/` or next to
    the episode, at paths that depend only on the inputs. Traces and map rasters are cached

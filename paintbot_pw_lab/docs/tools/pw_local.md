@@ -1,6 +1,6 @@
 # pw_local.py — local batch harness
 
-Runs BASIC policy A against policy B in the paintbot-pw native training library, many matches in
+Part of the [lab tool index](README.md) (dispatcher: `pw.py local`). Runs BASIC policy A against policy B in the paintbot-pw native training library, many matches in
 parallel, under the league's rules and glory config. It is a **screening** tool: compile checks,
 mechanism checks, and "is the candidate obviously worse than base.bas or our last accepted
 version". It is never evidence about the league field (the local field is only the files we seat,
@@ -34,6 +34,7 @@ Run from the repo root with `uv run` (stdlib + numpy only).
 uv run paintbot_pw_lab/tools/pw_local.py compile CANDIDATE.bas [--ticks 720] [--seed 7] [--json]
 
 # One match. --a-side 0 = A on the even seats (team 0), 1 = odd seats (team 1).
+# --record DIR alone records this match (its --record-seeds defaults to --seed).
 uv run paintbot_pw_lab/tools/pw_local.py match A.bas B.bas --seed 7 --a-side 0 [--out DIR] [--record DIR]
 
 # Screen: every seed played twice, A on the even seats then on the odd seats.
@@ -41,9 +42,15 @@ uv run paintbot_pw_lab/tools/pw_local.py screen A.bas B.bas --seeds 1-28 --out D
     [--workers 14] [--record DIR --record-seeds 3,9]
 ```
 
+For `screen`, `--record DIR` needs `--record-seeds` (which seeds to replay-record, both sides
+each; exit 2 without it, and exit 2 when a listed seed is not in `--seeds`). A typical
+record-everything screen is `screen A.bas B.bas --seeds 1-4 --record DIR --record-seeds 1-4`.
+
 Shared options: `--tag` (default: `PW_RELEASE_TAG` in `tools/release.env`; print it with
 `uv run python paintbot_pw_lab/tools/pw_release.py`), `--glory JSON` (default the league's
-`{"behind_lives":5,"behind_cogs":10}`), `--max-ticks` (default 14400). Seeds: `1-28`, `7,8,9`,
+`{"behind_lives":5,"behind_cogs":10}`); `match`/`screen` also take `--max-ticks` (default 14400),
+`--workers` (default: all cores), `--out`, `--record`, `--record-seeds`; `compile` takes
+`--seed` (default 7) and `--ticks` (default 720). Seeds: `1-28`, `7,8,9`,
 `1-10,20` (int32, no duplicates).
 
 `compile` exits 1 if any seat failed to compile (`compile_failed`, with line and column) or was
@@ -60,7 +67,7 @@ in `bad_seats`.
 | Inputs | `compile FILE`; `match A B --seed S [--a-side 0\|1]`; `screen A B --seeds LIST`; shared `--tag`, `--glory`, `--max-ticks`, `--workers`, `--out DIR`, `--record DIR`, `--record-seeds` |
 | Outputs | `--out DIR`: `matches.jsonl`, `summary.json` (overwritten); `--record DIR`: `NAME.replay` + `NAME.meta.json` per recorded match |
 | `--json` result | `compile`: `{build, rules, policy: {path, sha256}, seed, ticks, ok, seats: [{seat, team, set_script, status, message}]}`; `match`/`screen`: the `summary.json` object (build, parity, `summary.{all, a_side_0, a_side_1, seed_balanced}`, recorded, ...) |
-| Exit codes | 0 ok; 1 a seat failed to compile or was disabled (one `failures[]` entry per seat), some matches had a bad seat, or a recording's hash differed; 2 a missing `.bas`, bad `--seeds` or `--glory`, `--record-seeds` outside the batch; 3 the library or `paintbot-headless` is missing, stale, or disagrees with the library on the parity matches (`next[0]` = `paintbot_pw_lab/tools/build_native.sh`) |
+| Exit codes | 0 ok; 1 a seat failed to compile or was disabled (one `failures[]` entry per seat, code `compile_failed` or `disabled`), some matches had a bad seat (code `bad_seats`), or a recording's hash differed (code `record_hash_mismatch`); 2 a missing `.bas`, bad `--seeds` or `--glory`, `screen --record` without `--record-seeds`, `--record-seeds` outside the batch (code `usage_error`); 3 the library or `paintbot-headless` is missing, stale, or disagrees with the library on the parity matches (`next[0]` = `paintbot_pw_lab/tools/build_native.sh`) |
 | Idempotence / cache | deterministic: the same files, seeds, glory and build give the same rows |
 | Typical next step | `uv run python paintbot_pw_lab/tools/pw.py episodes <record dir> --json` to read a recorded match |
 
@@ -90,18 +97,18 @@ in `bad_seats`.
 | `winner`, `winner_policy`, `result_a` | winning team (null on a draw), `A`/`B`/null, `win`/`draw`/`loss` for A |
 | `glory0`, `glory1`, `a_glory`, `b_glory` | **settled** glory: the loser and both sides of a draw hold 0 (docs/mechanics.md §1.1) |
 | `meter0`, `meter1`, `hearts0`, `hearts1` | heart meter (float32 from the engine) and control hearts held at the end |
-| `a_outcome` | ladder Elo outcome for A, `clamp(0.5 + (a_glory − b_glory)/2000, 0, 1)` (docs/mechanics.md §1.3) |
+| `a_outcome` | A's Elo outcome score, `clamp(0.5 + (a_glory − b_glory)/2000, 0, 1)` (docs/mechanics.md §1.3) |
 | `final_hash`, `rules` | engine state hash at the end; rules version the handle played |
 | `bad_seats` | seats whose script failed to compile or was disabled at runtime: `seat`, `policy`, `status`, `message`. Empty when all 16 ran to the end |
 | `seat_stats` | 16 rows from `pw_seat_stats` (cumulative for the match): `damage_dealt_enemy`, `damage_dealt_team`, `hits_enemy`, `hits_taken`, `kills`, `deaths`, `captures`, `first_friendly_fire_tick` (−1 = never), plus `seat`, `team`, `policy` |
 | `seconds` | wall time of that match in its worker |
 
-`summary.json`: build (tag, commit, nim), rules, glory, max ticks, map, both policies' paths and
+`summary.json`: `screening_only` (a reminder string), build (tag, commit, nim), `rules` (a list), glory, max ticks, map, both policies' paths and
 sha256, seeds, sides, the parity checks, `matches_with_bad_seats`, wall time, workers,
 matches/s, `recorded` replays, and `summary`:
 
 - `all`, `a_side_0`, `a_side_1`: `n`, `wins`, `draws`, `losses`, `win_rate`, `mean_outcome`
-  (A's mean Elo outcome), `ci95_low`/`ci95_high` (normal approximation, mean ± 1.96·sd/√n; rough
+  (A's mean Elo outcome score), `ci95_low`/`ci95_high` (normal approximation, mean ± 1.96·sd/√n; rough
   below ~20 matches; null with fewer than 2).
 - `seed_balanced`: each seed's two sides averaged first, then mean ± CI over seeds. This is the
   number to read: it cancels the side advantage (below). A policy against itself scores exactly
@@ -117,6 +124,12 @@ so the screen's W/D/L says nothing about jev vs base. Always `false` for `match`
 stderr prints one line per match and the parity lines; stdout prints the summary.
 
 ## Verified (2026-09-29, coworld-v0.3.78, local Nim 2.2.6, 14-core M-series Mac: 10 P + 4 E)
+
+Re-checked at coworld-v0.3.79 (2026-09-29): `compile` on base.bas (ok) and on a one-line syntax
+error (`compile_failed` per seat, exit 1), `match … --record DIR` (records the match seed, hash
+matches the library, `rules` [48]), `screen --seeds 1-4 --record DIR --record-seeds 1-4` (8
+replays + sidecars, `identical_play` true for base vs jev), `screen --record` without
+`--record-seeds` (exit 2).
 
 - Compile mode catches a syntax error (`compile_failed: line 1, column 1: …`) and an instruction
   limit overrun (`disabled: BASIC instruction limit exceeded`) per seat; base.bas is clean.
@@ -140,7 +153,8 @@ Heartwick (the tool has no `--map`; the league plays Heartwick).
 
 ## Limits and pitfalls
 
-- **Side advantage is large.** base.bas vs itself, seeds 1–14: the odd-seat team won 10 of 14.
+- **Side is a large local effect.** base.bas vs itself, seeds 1–14: the odd-seat team won 10 of
+  14 (71%). That is a mirror-match effect of the local screen: the league shows no side advantage (odd seats won 43 of 80 hash-verified 0.3.79 episodes, Wilson 95% 43–64%).
   Always read `seed_balanced`, never one side, and keep both sides in every screen.
 - `rules` reads **48**, `pw_rules_latest()` at this tag. Rules 48 changes only FFA-kin fog, so
   the teams game plays rules-47 behaviour, as the league does.

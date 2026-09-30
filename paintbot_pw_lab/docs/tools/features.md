@@ -4,7 +4,9 @@ The lab's adapter for the shared [`coworld-hypothesis-miner`](../../../.claude/s
 engine. `miner_rows.py` turns a batch of hash-checked episodes into one JSONL row per
 (episode, our policy); `features.py` exports `adapter` and `METAS` that map a row to the
 engine's `Episode(score, features)`. Use it when nothing specific is suspected and you want a
-ranked list of behaviors that separate our policy's good matches from its bad ones.
+ranked list of behaviors that separate our policy's good matches from its bad ones. Index of
+all tools: [README.md](README.md); dispatcher names `pw.py miner` (rows) and `pw.py mine`
+(the engine with this adapter preset).
 
 Files: [`tools/miner_rows.py`](../../tools/miner_rows.py), [`tools/features.py`](../../tools/features.py),
 tests in [`tools/tests/test_features.py`](../../tools/tests/test_features.py).
@@ -16,7 +18,10 @@ tests in [`tools/tests/test_features.py`](../../tools/tests/test_features.py).
 uv run python paintbot_pw_lab/tools/miner_rows.py ROOT [ROOT ...] --policy KEY_OR_NAME \
     [--score elo|win] [--out /tmp/mine/rows.jsonl] [--refresh]
 
-# Mine.
+# Mine (pw.py mine presets --adapter paintbot_pw_lab/tools/features.py).
+uv run python paintbot_pw_lab/tools/pw.py mine --rows /tmp/mine/rows.jsonl --top 5 \
+    --out /tmp/mine/hypotheses.md [--json assoc.json]
+# The same, calling the shared engine directly:
 MINER=.claude/skills/coworld-hypothesis-miner/scripts
 uv run python $MINER/mine_hypotheses.py --rows /tmp/mine/rows.jsonl \
     --adapter paintbot_pw_lab/tools/features.py --top 5 --out /tmp/mine/hypotheses.md [--json assoc.json]
@@ -38,15 +43,15 @@ refuses fewer).
 | `--json` result | `miner`: `{rows, tally, out, warning}` (`warning` when fewer than 8 rows). `mine` does not print the lab envelope: its `--json FILE` writes the association table |
 | Exit codes | `miner`: 0 ok; 1 some episodes failed to load; 2 no or unknown `--policy` (`result.valid` lists the batch's keys and names), `--json` without `--out`; 3 `pw_trace` not built. `mine`: the shared engine's own codes |
 | Idempotence / cache | reads the trace caches; the rows file is rewritten |
-| Typical next step | `uv run python paintbot_pw_lab/tools/pw.py mine --rows FILE --top 5` (the envelope's `next[]`), then `coworld-experiment` |
+| Typical next step | `uv run python paintbot_pw_lab/tools/pw.py mine --rows FILE --top 5` (the envelope's `next[]` spells out the equivalent direct `mine_hypotheses.py --adapter ...` call), then `coworld-experiment` |
 
 ## Unit and score
 
 - **Unit:** one row per (episode, policy_key). The policy's 8 seats in a match are one
   sample. `policy_key` is the exact `policy_version_id` for hosted episodes and
   `local:<file name>` for local ones.
-- **Score** (`--score`, stored in the row): `elo` (default) is the ladder's Elo outcome,
-  `clamp(0.5 + (our − their glory)/2000, 0, 1)`, which is what league rank moves by
+- **Score** (`--score`, stored in the row): `elo` (default) is the ladder's Elo outcome score,
+  `clamp(0.5 + (our glory − their glory)/2000, 0, 1)`, which is what league rank moves by
   ([mechanics.md §1](../mechanics.md)). `win` is 1 / 0.5 / 0. The adapter reports both as
   **outcome points, 0-100** (`SCORE_SCALE`), because the engine emits no hypothesis whose
   swing is under 0.3 score units, which a 0-1 score could never reach.
@@ -104,6 +109,10 @@ signal) but also pay behind-in-lives glory to the side that is behind, and their
   exactly like base.bas, so most of the variance is the side (odd seats win most local
   matches) and the opponent variant. Fight outcomes are also the textbook reverse-causation
   case the miner warns about.
+- Re-run 2026-09-29 at coworld-v0.3.79 on 8 local `base.bas` vs `jev.bas` recordings:
+  `pw.py miner ROOT --policy base.bas --out rows.jsonl --json` (8 rows used) then `pw.py mine
+  --rows rows.jsonl --top 5 --out h.md --json assoc.json` (41 features reached the engine); the
+  two files play identically, so the ranking is meaningless there, a pipeline check only.
 - Tests: `uv run python -m pytest paintbot_pw_lab/tools/tests/test_features.py` (never = last
   tick + 1, score scaling, zero denominators absent, score components excluded per kind,
   unscored rows dropped, every emittable feature has a meta).

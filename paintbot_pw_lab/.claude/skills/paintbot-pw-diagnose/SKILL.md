@@ -27,8 +27,9 @@ index [docs/tools/README.md](../../../docs/tools/README.md), scoring in
 - Episodes of **one** policy version of ours (its `policy_version_id`; `local:<file>` for local
   runs), pulled with `coworld-episode-artifacts` into `paintbot_pw_lab/episode_data/<batch>/`.
   Ten or more for triage, thirty or more before believing a rate.
-- Check the lab (`uv run python paintbot_pw_lab/tools/pw.py doctor --json`; on exit 1 run `deployed-ref --write` then `build`,
-  which builds the tag in `tools/release.env`), then load and check the batch. **Every episode
+- Check the lab (`uv run python paintbot_pw_lab/tools/pw.py doctor --json`; on exit 1 with failure code `stale` run
+  `deployed-ref --write` then `build`, which builds the tag in `tools/release.env`; on `rate_limited`
+  wait and retry or use `doctor --offline`), then load and check the batch. **Every episode
   must be accounted for**: failures print with a code (`failures[]` in `--json`) and the command
   exits 1. Fix or explain them before reading any number.
 
@@ -47,8 +48,11 @@ An unknown `--policy` exits 2 and lists the batch's policy keys and names (`resu
 `--top 0` prints only the per-episode flag counts; `--csv FILE` keeps every row.
 
 `pw_flags --policy` prints our losses and draws **sorted by Elo outcome, worst first**, with flag
-counts per episode (death alone, long wade, oscillating goal, stuck, friendly fire, wasted
-grenade, heart lost with allies nearby, idle, VM-disabled suspect), and the thresholds it used.
+counts per episode (`death_alone`, `long_wade`, `oscillating`, `stuck`, `friendly_fire`,
+`wasted_grenade`, `heart_lost_with_allies`, `idle_alive`, `vm_disabled_suspect`,
+`zero_glory_win`; `--flags a,b` picks some), and the thresholds it used. Loss rows carry
+`episode_id`, not a path: find the directory with
+`grep -l '"id": "<episode_id>"' paintbot_pw_lab/episode_data/<batch>/*/episode.json`.
 Combat and swing, when the weakness looks like fights or timing:
 
 ```bash
@@ -64,7 +68,7 @@ Name the weakness in one line with a number, split by the groups that matter her
 
 | Group | Why split |
 | --- | --- |
-| side (team 0 Ember / team 1 Azure) | a large side advantage exists locally (odd seats won 10 of 14 base-vs-base seeds) |
+| side (team 0 Ember / team 1 Azure) | a side-specific weakness is a different mechanism; the league itself shows no side advantage (odd seats 43 of 80, Wilson 43–64%), though local base-vs-base mirrors do (10 of 14) |
 | opponent policy | a weakness against one leader is a different mechanism from a general one |
 | match phase (opening / mid / late) | first capture, first death and first heart lost are timing features |
 
@@ -113,8 +117,10 @@ uv run python paintbot_pw_lab/tools/pw.py miner paintbot_pw_lab/episode_data/<ba
 uv run python paintbot_pw_lab/tools/pw.py mine --rows <scratch>/mine/rows.jsonl --top 5 --out <scratch>/mine/hypotheses.md   # adapter preset: tools/features.py
 ```
 
-One row per (episode, our policy); score = Elo outcome in points (0-100). Needs ≥ 8 rows (the
-command warns). Read the invariant list first, then check each candidate for **reverse
+One row per (episode, our policy); score = Elo outcome score in points (0-100). Needs ≥ 8 rows:
+with fewer, `miner` still writes them but sets `result.warning`, and `mine` fails (exit 1,
+`adapter produced N usable episodes; need >=8`). For local recordings the key is
+`local:<file>` (e.g. `local:base.bas`). Read the invariant list first, then check each candidate for **reverse
 causation**: engagement win share, K/D and kills are usually consequences of winning, not
 causes. Prefer candidates with a timing or intent feature behind them.
 
@@ -167,7 +173,8 @@ presenting; do not implement a policy change unasked.
   `flags`' `result.losses`, then `miner` + `mine` when nothing specific is suspected. All reads are
   cached; rerunning is cheap.
 - **Reading the envelopes:** `result.policy` (metrics) and `result.losses` (flags, worst Elo
-  outcome first) drive the triage; `failures[]` must be empty or explained before any number is
+  outcome score first; rows are `episode_id`, `result`, `elo_outcome`, glory, `opponent` and flag
+  counts) drive the triage; `failures[]` must be empty or explained before any number is
   quoted; `miner`'s `result.warning` says when there are too few rows to mine.
 - **Exit codes:** 0 use it. 1 some episodes failed: list them, continue on the rest only if the
   failures are explained (a missing tape is "re-fetch", not "absent"). 2 fix the argument (an

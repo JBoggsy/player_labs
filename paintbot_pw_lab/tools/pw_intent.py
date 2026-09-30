@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PWI intent telemetry (plan T13): record local episodes with seat logs, parse, audit.
+"""PWI intent telemetry: record local episodes with seat logs, parse, audit.
 
 Our BASIC prints at most one `PWI` line per decision (reference/intent_telemetry.bas):
 
