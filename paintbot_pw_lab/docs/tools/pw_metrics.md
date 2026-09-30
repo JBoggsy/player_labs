@@ -58,7 +58,7 @@ teams = pm.team_metrics(ep)          # (episode, team)
 | `elo_outcome` | the **Elo outcome score**: `clamp(0.5 + (our glory − their glory) / 2000, 0, 1)` (ladder `margin_scale` 1000, [mechanics.md §1](../mechanics.md)) | exact |
 | `glory_<kind>` | deduped awards: quiet_supplies, friendly_fire, glory_heart, behind_lives, behind_cogs | exact |
 | `gun_accuracy`, `gun_enemy_accuracy` | hits / rays fired | exact |
-| `gun_acc_band_<lo>_<hi>` | enemy hits at exact distance + misses at the aim-line target's distance, bands 0-750-1500-2500-5250 | inferred |
+| `gun_acc_band_<lo>_<hi>` | enemy hits at exact distance + misses at the aim-line target's distance, bands 0-1000-3500-5250 | inferred |
 | `shots_inferred_blocked` | misses whose ray reached a shielded / just-dead cog or passed a trench cog | inferred |
 | `dealt_hp_enemy[_weapon]`, `dealt_armor_enemy`, `taken_hp`, `taken_armor` | from damage events | exact |
 | `kills`, `deaths`, `kd`, `trade_kills`, `deaths_traded` | trade window `TRADE_WINDOW_TICKS` = 72 | exact |
@@ -69,13 +69,26 @@ teams = pm.team_metrics(ep)          # (episode, team)
 | `pickups_<kind>`, `longest_supply_gap_ticks` | pickup events | exact |
 | `shouts`, `shout_bytes`, `shouts_heard_by_enemy` | shouts + earshot recompute | exact |
 | `idle_share` | empty-command decision ticks / decision ticks | exact |
-| `stuck_ticks` | sampled: < 30 units per sample toward an unchanged goal ≥ 200 away | sampled |
+| `stuck_ticks` | sampled: < 10 units per sample toward an unchanged goal ≥ 200 away | sampled |
 | `vm_disabled_suspect` | empty commands for the last ≥ 240 alive ticks | inferred |
 | `vm_errors` | `BASIC error:` lines in our seat log | exact (our seats only) |
 
 All thresholds are named constants at the top of the file (`TRADE_WINDOW_TICKS`,
-`DISTANCE_BANDS`, `STUCK_*`, `VM_DISABLED_MIN_IDLE_TICKS`, `ELO_MARGIN_SCALE`). Revisit the
-trade window and stuck thresholds after the first real batch.
+`DISTANCE_BANDS`, `STUCK_*`, `VM_DISABLED_MIN_IDLE_TICKS`, `ELO_MARGIN_SCALE`).
+
+## Thresholds (calibrated 2026-09-30)
+
+Data: the 80 hash-verified main-league episodes at coworld-v0.3.79 in
+`episode_data/audit-2026-09-29/` (12,961 enemy gun hits, 22,198 misses, 1,280 seat-episodes), default cache.
+
+| Constant | Old → new | Evidence and rule | Effect on the sample |
+| --- | --- | --- | --- |
+| `DISTANCE_BANDS` | 0-750-1500-2500-5250 → **0-1000-3500-5250** | Enemy gun accuracy (hits / (hits + aim-targeted misses)) in 500-unit bins: 0.53 and 0.49 under 1,000, flat 0.45-0.47 from 1,000 to 3,500, then 0.39, 0.35, 0.34 and 0.35 beyond 3,500. The old last band held 76% of shots and crossed the drop at 3,500. The new bands split where accuracy changes. **Renames the band columns** (`gun_shots_band_*`, `gun_acc_band_*`); `features.long_range_shot_share` now reads `3500_5250`. | shots / accuracy: 1,096 / 0.50; 14,810 / 0.46; 15,829 / 0.36 |
+| `STUCK_MAX_DISPLACEMENT` | 30 → **10** units per 6-tick sample | Steps of walkers with a far, unchanged goal (105,523): 9,823 are exactly 0, then ~95 per unit from 2 to 12, then peaks from legitimate slow movement (12-14, 30-32, 36-38 and 42-44 = water, 7 units/tick). 30 also counted those slow movers. Under 10, 92% of the steps are exactly 0. | stuck_ticks 88,307 → 63,854; seats with any 969 → 641 of 1,280 |
+| `STUCK_MIN_GOAL_DISTANCE` | 200 (kept) | The same break as `pw_flags` (arrived < 50, blocked behind a wall 250-350). | |
+| `TRADE_WINDOW_TICKS` | 72 (kept) | Killer-vs-teammate death hazard. Evidence in [pw_fights.md](pw_fights.md#thresholds-calibrated-2026-09-30). | 758 trades of 3,828 enemy kills |
+| `VM_DISABLED_MIN_IDLE_TICKS` | 240 (kept) | The league data cannot calibrate it: no league seat ever sent an empty command (`idle_ticks` 0 everywhere). | 0 suspects |
+| `pw_trace` `AimTolerance` (feeds `aim_target`, `shots_untargeted`, band shots) | 150 → **110** | For enemy hits whose `aim_target` is the victim, the offset across the aim line is p99 82, p99.9 107, max 134; wrongly inferred targets sit at a median of 91; targeted misses spread evenly over 0-150. Applied and re-traced 2026-09-30: `aim_target` now matches the victim on 12,149 of 12,961 enemy hits (93.7%, was 91.6%), and misses tagged with a guessed target fell from 18,818 to 14,958. |
 
 ## Verified (2026-09-29)
 

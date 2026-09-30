@@ -50,15 +50,16 @@ def test_engagements_join_by_time_and_distance_and_pick_a_winner():
         hit(100, 0, 1, 0, 500),                  # fight A starts
         hit(130, 3, 2, 900, 1400),               # 30 ticks later, 400 units from A's victim: joins A
         hit(140, 1, 0, 500, 0, killed=True),     # shares seats with A: joins, team 1 kills
+        hit(150, 7, 6, 2100, 2600),              # 700 units from A's nearest participant (> the 500 join): separate
         hit(190, 5, 4, 20000, 21000),            # far away in space: a separate engagement
         hit(400, 0, 1, 0, 500),                  # 260 ticks after A's last event: a new engagement
         hit(401, 1, 0, 500, 0),                  # same tick-ish, equal kills and hp: draw
     ])
     fights = pfi.engagements(ep)
-    assert list(fights.events) == [3, 1, 2]
+    assert list(fights.events) == [3, 1, 1, 2]
     a = fights.iloc[0]
     assert (a.n_0, a.n_1, a.first_hit_team, a.kills_1, a.winner) == (2, 2, 0, 1, 1)
-    assert fights.iloc[2].winner == pfi.DRAW
+    assert fights.iloc[3].winner == pfi.DRAW
     assert fights.first_sight_t.isna().all() and not fights.vision_sampled.any()   # unknown, not 0
 
 
@@ -93,11 +94,34 @@ def test_flag_runs_and_friendly_fire_merging():
     ep = FakeEpisode({
         "episodes": pd.DataFrame([{"episode_id": "e", "ticks": 1000}]),
         "seats": pd.DataFrame({"seat": range(4), "team": [0, 1, 0, 1], "policy_key": ["a", "b", "a", "b"]}),
-        "damage": pd.DataFrame([hit(10, 0, 2, 0, 50), hit(30, 0, 2, 0, 50, killed=True), hit(500, 0, 2, 0, 50)]),
+        "damage": pd.DataFrame([hit(10, 0, 2, 0, 50), hit(30, 0, 2, 0, 50, killed=True),
+                                hit(100, 0, 2, 0, 50),     # 70 ticks later: within one armored cooldown (72)
+                                hit(500, 0, 2, 0, 50)]),
     })
     flags = pfl.friendly_fire_flags(ep)
-    assert [(f["t_start"], f["t_end"]) for f in flags] == [(10, 30), (500, 500)]
+    assert [(f["t_start"], f["t_end"]) for f in flags] == [(10, 100), (500, 500)]
     assert json.loads(flags[0]["detail"])["kills"] == 1
+
+
+def test_opening_duel_counts_only_kills_at_the_heart():
+    # Calibrated 2026-09-30: kills within 250 of the attempted heart are the opening duel; farther
+    # kills are at the background rate of unrelated kills.
+    def contest(victim_x):
+        ep = FakeEpisode({
+            "episodes": pd.DataFrame([{"episode_id": "e", "ticks": 1000}]),
+            "captures": pd.DataFrame([{"t": 100, "kind": "capture_start", "heart": 0, "team": 0},
+                                      {"t": 172, "kind": "capture_complete", "heart": 0, "team": 0}]),
+            "kills": pd.DataFrame([{**kill(120, 0, 1), "victim_x": victim_x, "victim_z": 0}]),
+            "heart_states": pd.DataFrame([{"t": 0, "heart": 0, "owner": -1}]),
+        })
+        return pfi.opening_duels(ep).iloc[0]
+    near, far = contest(200), contest(600)
+    assert (near.opening_team, near.contest_winner, near.opening_team_won) == (0, 0, True)
+    assert pd.isna(far.opening_team) and far.contest_winner == 0
+
+
+def test_heart_defense_radius_is_reach_plus_one_capture_walk():
+    assert pfl.FLAG_HEART_DEFENSE_RADIUS == 140 + 72 * 28   # capture reach + 72 ticks at 28 units/tick
 
 
 def test_zero_glory_win_is_flagged_only_for_the_winner_at_zero():

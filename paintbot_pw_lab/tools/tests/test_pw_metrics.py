@@ -102,3 +102,19 @@ def test_contests_count_every_contest_start_for_both_teams():
     ep.tables["captures"] = pd.concat([caps, extra], ignore_index=True)
     teams = pm.team_metrics(ep, pm.seat_metrics(ep))
     assert list(teams.contests) == [base + 2, base + 2]
+
+
+def test_stuck_ticks_count_only_near_zero_steps_toward_a_far_unchanged_goal():
+    # Calibrated 2026-09-30: < 10 units per 6-tick sample is stuck; slow movement (water, trench exit,
+    # sneaking) moves 12+ and is not.
+    rows = []
+    for seat, step in ((0, 0), (1, 5), (2, 20), (3, 42)):
+        rows += [{"seat": seat, "t": t, "x": 1000 + step * (t // 6), "z": 0, "goal_x": 3000, "goal_z": 0, "hp": 5}
+                 for t in (0, 6, 12, 18)]
+    ticks = pm.stuck_ticks(pd.DataFrame(rows))
+    assert ticks.to_dict() == {0: 18, 1: 18, 2: 0, 3: 0}
+
+
+def test_distance_bands_split_where_league_accuracy_changes():
+    assert pm.DISTANCE_BANDS == ((0, 1000), (1000, 3500), (3500, 5250))
+    assert pm.DISTANCE_BANDS[-1][1] == 5250   # gun range: every targeted shot lands in a band

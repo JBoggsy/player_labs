@@ -59,9 +59,11 @@ MODE_NAMES = {0: "hold", 1: "heart", 2: "cover", 3: "supply", 4: "retreat", 5: "
 REASON_NAMES = {0: "none", 1: "squad_pick", 2: "avoided_unreachable", 3: "outnumbered",
                 4: "low_hp", 5: "wanted_supply", 6: "heard_sound", 7: "teammate_in_line"}
 HEART_MODES = (1, 2, 4, 7)       # modes whose `h` is a heart the seat means to walk to
-HEART_APPROACH_TICKS = 72        # 3 s: an intended heart should be closer by then
-HEART_APPROACH_MIN_GAIN = 100    # units of distance the seat must close over that window
-HEART_ARRIVED = 400              # already this close to the heart: approach is not required
+# Checked 2026-09-30 against league walkers whose walk goal is a heart (no PWI lines in league episodes;
+# evidence in docs/tools/pw_intent.md § Thresholds). All three kept.
+HEART_APPROACH_TICKS = 72        # 3 s: an intended heart should be closer by then (a free walk closes up to 2,016)
+HEART_APPROACH_MIN_GAIN = 100    # 72-tick goal gain is bimodal: 30% of windows < 100 (almost all 0), ~1% per 100 above
+HEART_ARRIVED = 400              # share gaining < 100: 58% at 200-300, 38% at 300-400, 26% at 400-500, 13-18% beyond
 LEAGUE_GLORY = {"behind_lives": 5, "behind_cogs": 10}
 AUDIT_RULES = ("target_not_visible", "target_dead", "seen_mismatch",     # consistency: expect 0
                "target_is_ally", "seen_fooled",                           # deception by disguise

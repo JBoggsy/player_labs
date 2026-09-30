@@ -71,7 +71,7 @@ METAS: dict[str, FeatureMeta] = {
     # counts, rates and shares
     "gun_enemy_accuracy": _meta("gun_enemy_accuracy", "count", "enemy hits per gun ray fired",
                                 "targeting: lead, drift correction and fire gate"),
-    "long_range_shot_share": _meta("long_range_shot_share", "count", "share of rays whose aim target was 2,500-5,250 units away (inferred band)",
+    "long_range_shot_share": _meta("long_range_shot_share", "count", "share of rays whose aim target was 3,500-5,250 units away (inferred band)",
                                    "targeting: tighten the range gate before firing"),
     "shots_per_min": _meta("shots_per_min", "count", "gun rays fired per minute of match",
                            "targeting: fire gate and gun wait"),
@@ -133,7 +133,7 @@ METAS: dict[str, FeatureMeta] = {
                                        "territory squads: stop re-targeting between hearts"),
     "idle_alive_flags_per_min": _meta("idle_alive_flags_per_min", "count", "idle stretches of 2 s+ per minute",
                                       "hold logic: always have a goal"),
-    "death_alone_per_min": _meta("death_alone_per_min", "count", "deaths with no living teammate within 1,000 units, per minute",
+    "death_alone_per_min": _meta("death_alone_per_min", "count", "deaths with no living teammate within 1,280 units, per minute",
                                  "territory squads: keep the squad together"),
     "heart_lost_with_allies_per_min": _meta("heart_lost_with_allies_per_min", "count", "hearts lost with a teammate nearby, per minute",
                                             "cover seats: contest captures on owned hearts"),
@@ -185,7 +185,7 @@ def adapter(row: dict) -> Episode | None:
     shots = m.get("shots")
     optional = {
         "gun_enemy_accuracy": m.get("gun_enemy_accuracy"),
-        "long_range_shot_share": _ratio(m.get("gun_shots_band_2500_5250"), shots),
+        "long_range_shot_share": _ratio(m.get("gun_shots_band_3500_5250"), shots),
         "shots_per_min": _ratio(shots, minutes),
         "kills_per_min": _ratio(m.get("kills"), minutes),
         "deaths_per_min": _ratio(m.get("deaths"), minutes),

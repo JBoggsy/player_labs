@@ -43,19 +43,21 @@ import pw_episodes  # noqa: E402
 import pw_metrics  # noqa: E402
 
 # ---------------------------------------------------------------- named thresholds (printed with output)
+# Calibrated 2026-09-30 on 80 hash-verified main-league episodes at 0.3.79 (episode_data/audit-2026-09-29);
+# evidence per threshold in docs/tools/pw_flags.md § Thresholds. Engine constants from docs/mechanics.md.
 
-FLAG_STUCK_WINDOW_TICKS = 72           # 3 s
-FLAG_STUCK_MAX_DISPLACEMENT = 200      # units moved over the window
-FLAG_STUCK_MIN_GOAL_DISTANCE = 200     # goal still this far away (else it arrived and is holding)
-FLAG_OSCILLATION_WINDOW_TICKS = 144    # 6 s
-FLAG_OSCILLATION_MIN_FLIPS = 3         # A->B->A counts one flip
-FLAG_OSCILLATION_GOAL_MATCH = 100      # "back to where it was": within this many units
-FLAG_OSCILLATION_MIN_JUMP = 300        # ...and the intermediate goal at least this far from it
-FLAG_IDLE_MIN_TICKS = 48               # 2 s of empty commands while alive
-FLAG_ALONE_RADIUS = 1000               # no living teammate this close at death = alone
-FLAG_HEART_DEFENSE_RADIUS = 700        # teammates this close to a lost heart could have contested it
-FLAG_FF_MERGE_TICKS = 48               # friendly hits by one attacker this close in time are one flag
-FLAG_LONG_WADE_TICKS = 72              # 3 s in water in one stretch
+FLAG_STUCK_WINDOW_TICKS = 48           # zero-move runs: short-blockage density falls ~7x from 6 to 48 ticks, flat after
+FLAG_STUCK_MAX_DISPLACEMENT = 200      # 72-tick max excursion: 28% of windows exactly 0, flat trough 10-400, walkers ~2,000
+FLAG_STUCK_MIN_GOAL_DISTANCE = 200     # non-moving walkers: arrived < 50, blocked-by-wall 250-350; 200-250 is the minimum
+FLAG_OSCILLATION_WINDOW_TICKS = 144    # 6 s; inter-flip gaps show no break, kept
+FLAG_OSCILLATION_MIN_FLIPS = 3         # A->B->A counts one flip; kept
+FLAG_OSCILLATION_GOAL_MATCH = 100      # "back to where it was": within this many units; no break in the data, kept
+FLAG_OSCILLATION_MIN_JUMP = 500        # ...and the middle goal this far away: jump density falls 4x at 500 (goal jitter below)
+FLAG_IDLE_MIN_TICKS = 48               # 2 s of empty commands while alive; league has 0 idle ticks, uncalibrated
+FLAG_ALONE_RADIUS = 1280               # speech radius; death vs alive nearest-teammate ratio crosses from < 1 to > 1.15 at ~1,300
+FLAG_HEART_DEFENSE_RADIUS = 140 + 72 * 28  # capture reach + one capture time (72 ticks) of walking at 28 units/tick = 2,156
+FLAG_FF_MERGE_TICKS = 72               # armored/trench gun cooldown; friendly inter-hit gaps fall to background after 72
+FLAG_LONG_WADE_TICKS = 96              # water is quarter speed: 96 ticks wading lose 72 (one respawn delay) vs land
 VM_DISABLED_MIN_IDLE_TICKS = pw_metrics.VM_DISABLED_MIN_IDLE_TICKS
 
 THRESHOLDS = {name: value for name, value in globals().items()

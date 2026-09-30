@@ -185,7 +185,21 @@ often disguises fool the policy. `heart_not_approached` is a heuristic (a path a
 can move away from the heart for a while).
 
 Thresholds are named constants at the top of `pw_intent.py` (`HEART_APPROACH_TICKS`,
-`HEART_APPROACH_MIN_GAIN`, `HEART_ARRIVED`). Uncalibrated.
+`HEART_APPROACH_MIN_GAIN`, `HEART_ARRIVED`).
+
+### Thresholds (checked 2026-09-30)
+
+League episodes have no `PWI` lines, so the check used a proxy: league cogs whose walk goal is
+within 140 of a heart, which is the movement a heart intent asks for. Data: the 80
+hash-verified main-league episodes at coworld-v0.3.79 in `episode_data/audit-2026-09-29/`
+(34,849 72-tick windows, alive throughout). All three constants are kept. Recheck them when
+a real policy of ours emits the line.
+
+| Constant | Value | Evidence and rule |
+| --- | --- | --- |
+| `HEART_APPROACH_TICKS` | 72 (kept) | A free walk closes up to 2,016 units in 72 ticks (28 units/tick). At this window, walkers' goal gain is clearly bimodal (next row), so a shorter or longer window was not needed. |
+| `HEART_APPROACH_MIN_GAIN` | 100 (kept) | Goal gain over 72 ticks for walkers with an unchanged goal ≥ 200 away: 5,190 windows in 0-100 (almost all exactly 0: blocked), then ~200 per 100-unit bin. 100 is the break. |
+| `HEART_ARRIVED` | 400 (kept) | Share of heart-goal windows gaining < 100 by starting distance: 72% at 140-200, 58% at 200-300, 38% at 300-400, 26% at 400-500, and 13-18% beyond 500. Inside 400, holding at the heart is the usual behavior, so not approaching is not a divergence. |
 
 ## Verified
 
@@ -238,5 +252,5 @@ Thresholds are named constants at the top of `pw_intent.py` (`HEART_APPROACH_TIC
   episode with `player_failure` (exit 1) and names the compile error.
 - The observed-identity model is for teams matches (seat parity = team). FFA-kin matches are
   not audited.
-- Audit thresholds are uncalibrated. `seen_mismatch` means nothing for a policy whose
-  `e` counts something else.
+- The audit thresholds were checked only on league walking behavior, not on intent lines
+  (see Thresholds). `seen_mismatch` means nothing for a policy whose `e` counts something else.

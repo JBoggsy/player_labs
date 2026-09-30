@@ -41,15 +41,17 @@ import pw_episodes  # noqa: E402
 import pw_metrics  # noqa: E402
 
 # ---------------------------------------------------------------- named thresholds
+# Calibrated 2026-09-30 on 80 hash-verified main-league episodes at 0.3.79 (episode_data/audit-2026-09-29);
+# evidence per threshold in docs/tools/pw_fights.md § Thresholds.
 
-ENGAGEMENT_JOIN_TICKS = 48        # 2 s: events closer in time than this may join one engagement
-ENGAGEMENT_JOIN_DISTANCE = 1500   # ...if a participant of one is this close to a participant of the other
+ENGAGEMENT_JOIN_TICKS = 48        # same-pair hit gaps peak at 24-30 (gun cooldown) and 48-60 (one miss); 60-72 is a trough
+ENGAGEMENT_JOIN_DISTANCE = 500    # 1,500 linked 56% of concurrent unrelated events (76% of events in 12+ cog blobs); 500: 20%
 TRADE_WINDOW_TICKS = pw_metrics.TRADE_WINDOW_TICKS  # 72 ticks = 3 s (one definition, shared)
-SIGHTING_LOOKBACK_TICKS = 240     # look this far before the first hit for the first sighting
-HEART_AFFECT_RADIUS = 800         # a capture event at a heart this close to a participant...
-HEART_AFFECT_AFTER_TICKS = 120    # ...up to this long after the engagement's last event
-OPENING_DUEL_RADIUS = 1000        # an opening kill's victim must be this close to the contested heart
-OPENING_DUEL_LEAD_TICKS = 48      # the opening kill may come this long before the capture attempt starts
+SIGHTING_LOOKBACK_TICKS = 240     # p95 of sight-to-hit with a 480 lookback is 212; doubling adds 4% known sightings
+HEART_AFFECT_RADIUS = 400         # participant-to-heart distance of capture events: dense < 400, flat background beyond
+HEART_AFFECT_AFTER_TICKS = 72     # one capture time: a capture completing this soon after was underway during the fight
+OPENING_DUEL_RADIUS = 250         # kill victims near an attempted heart: 247 within 250, then ~30 per 250 units (background)
+OPENING_DUEL_LEAD_TICKS = 48      # the opening kill may come this long before the capture attempt starts; not calibrated
 
 THRESHOLDS = {name: value for name, value in globals().items() if name.isupper() and isinstance(value, int)}
 

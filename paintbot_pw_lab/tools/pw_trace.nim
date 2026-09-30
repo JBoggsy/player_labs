@@ -26,7 +26,7 @@ when not defined(pwTraining):
 
 const
   SchemaVersion = 1
-  AimTolerance = 150  # units off the aim line for the inferred intended target of a shot
+  AimTolerance = 110  # units off the aim line for the inferred intended target of a shot; calibrated 2026-09-30: real victims lie within 107 units of the aim line on 99.9% of 80-episode league hits
   PwRelease {.strdefine.} = "unknown"
   StateColumns = ["x", "z", "aim_x", "aim_z", "goal_x", "goal_z", "hp", "armor", "lives",
     "shield", "respawn", "cooldown", "disguised", "in_water", "trench", "grenade", "spray_can",

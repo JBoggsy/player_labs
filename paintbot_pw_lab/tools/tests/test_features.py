@@ -13,7 +13,7 @@ def row(**overrides):
     base = {
         "episode_id": "local:e1", "policy_key": "local:a.bas", "team": 0, "opponents": ["local:b.bas"],
         "source": "local", "ticks": 2880, "result": "win", "score_kind": "elo", "score": 0.75,
-        "metrics": {"shots": 100, "gun_shots_band_2500_5250": 40, "kills": 10, "deaths": 0, "kd": None,
+        "metrics": {"shots": 100, "gun_shots_band_3500_5250": 40, "kills": 10, "deaths": 0, "kd": None,
                     "deaths_traded": 0, "alive_ticks": 20000, "water_ticks": 500, "grenade_throws": 0,
                     "grenade_blasts_effective": 0, "glory_hearts_taken": 2, "captures_completed": 4},
         "team_metrics": {"first_capture_tick": 300, "capture_starts": 0, "capture_resets": 0, "contests": 0,

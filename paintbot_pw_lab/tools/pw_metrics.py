@@ -30,12 +30,14 @@ import pw_episodes  # noqa: E402
 # ---------------------------------------------------------------- named thresholds
 
 ELO_MARGIN_SCALE = 1000          # ladder Elo margin_scale (docs/mechanics.md §1)
-TRADE_WINDOW_TICKS = 72          # 3 s: a teammate's killer killed within this is a trade
-DISTANCE_BANDS = ((0, 750), (750, 1500), (1500, 2500), (2500, 5250))  # gun range is 5,250
+# Calibrated 2026-09-30 on 80 main-league 0.3.79 episodes (episode_data/audit-2026-09-29); evidence in
+# docs/tools/pw_metrics.md § Thresholds.
+TRADE_WINDOW_TICKS = 72          # killer's death hazard is ~2x its teammates' for 60-72 ticks, ~1.4x after; 60 vs 72 is noise
+DISTANCE_BANDS = ((0, 1000), (1000, 3500), (3500, 5250))  # accuracy ~0.50 / flat ~0.46 / ~0.35; gun range 5,250
 SPRAY_BURST_TICKS = 5            # SprayTicks: a burst deals damage on its first 5 ticks
-STUCK_MAX_DISPLACEMENT = 30      # units moved between two state samples to count as not moving
-STUCK_MIN_GOAL_DISTANCE = 200    # ...while the (unchanged) goal is at least this far away
-VM_DISABLED_MIN_IDLE_TICKS = 240  # 10 s of empty commands while alive, to the end: likely a dead VM
+STUCK_MAX_DISPLACEMENT = 10      # units per 6-tick sample: 92% of steps under 10 are exactly 0; slow movers start ~12
+STUCK_MIN_GOAL_DISTANCE = 200    # ...while the (unchanged) goal is this far: the density minimum (see pw_flags)
+VM_DISABLED_MIN_IDLE_TICKS = 240  # 10 s of empty commands while alive, to the end; league has 0 idle ticks, uncalibrated
 PICKUP_KINDS = ("grenade", "spray", "medkit", "armor", "uniform")
 GLORY_KINDS = ("quiet_supplies", "friendly_fire", "glory_heart", "behind_lives", "behind_cogs")
 WEAPONS = ("gun", "grenade", "spray")

@@ -154,8 +154,9 @@ at the first victim, a blocker or 5,250 units), `gun_aim_x/z` (aimed vector, pre
 `hit` (exact: a gun damage event from this seat this tick), `victim`, `victim_team`,
 `friendly`, `hit_distance` (exact, from the damage event; null on a miss).
 
-Inferred, never counted as hits: `aim_target` (nearest living enemy within 150 units of the
-aimed line; matched the real victim on 90% of hits in the samples), `aim_target_distance`
+Inferred, never counted as hits: `aim_target` (nearest living enemy within 110 units of the
+aimed line, `AimTolerance` in `pw_trace.nim`, calibrated 2026-09-30: it matches the real victim on 93.7% of
+enemy hits in the 80-episode league audit, vs 91.6% at the old 150, and tags 21% fewer misses with a guessed target; calibration: [pw_metrics.md](pw_metrics.md#thresholds-calibrated-2026-09-30)), `aim_target_distance`
 (along the line), `aim_target_across`; and for misses `inferred_shielded`, `inferred_dead`
 (ray ended at a spawn-shielded or just-killed cog, which `damage()` ignores silently) and
 `inferred_trench_dodge` (a trench cog within `Radius` of the ray: the 70% dodge), as lists
