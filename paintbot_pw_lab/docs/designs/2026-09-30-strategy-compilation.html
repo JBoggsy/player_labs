@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strategy Compilation</title>
+<!--
+  Ink & Print design/plan document template (Softmax house style).
+
+  HOW TO USE (renderer subagent):
+  - Replace everything inside <article id="doc"> with the real document content.
+    The placeholder content below doubles as a component style guide — copy the
+    markup patterns (masthead, TOC, section, figure, table, callout, code,
+    citation) and delete what you don't use.
+  - Do NOT modify anything between the DC-COMMENTS BEGIN/END markers. That block
+    is the tested commenting system; copy it verbatim. The one thing you may fill
+    is the CONTENT of <script id="dc-preload" type="application/json">: a
+    dc-comments/1 `comments` array, each comment optionally carrying
+    `replies: [{author, text, created}]`, so the reader sees their comments and
+    the agent's replies together in the sidebar.
+  - Keep the doc self-contained: inline SVG for figures, no JS deps beyond this
+    file. Google Fonts is the only permitted external fetch.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ Ink & Print tokens ============ */
+  :root {
+    --bg: #fffdf4;            /* cream paper */
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;            /* warm near-black — never pure #000 */
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --cta-foreground: #fffdf4;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Merriweather Sans', 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ============ Page grid: reading column + comment rail ============ */
+  .dc-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  article#doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 56px 40px 120px;
+    min-width: 0;
+  }
+
+  /* ============ Typography ============ */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+  }
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 8px 0 10px;
+  }
+  header.masthead .context { color: var(--fg-subtle); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-navy);
+    margin: 48px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; margin: 32px 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--ink-navy); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--cta); }
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 24px; margin: 0 0 14px; }
+  li { margin-bottom: 4px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Key-points opener: every section starts with scannable bullets */
+  .key-points {
+    list-style: none;
+    padding: 0 0 0 2px;
+    margin: 0 0 18px;
+  }
+  .key-points li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .key-points li::before { content: '—'; position: absolute; left: 0; color: var(--ink-gold); font-weight: 700; }
+
+  /* ============ TOC ============ */
+  nav.toc { margin: 28px 0 8px; }
+  nav.toc ol { list-style: none; padding: 0; column-count: 2; column-gap: 40px; margin: 10px 0 0; }
+  nav.toc li { margin-bottom: 5px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  nav.toc .toc-num { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-right: 8px; }
+
+  /* ============ Tables ============ */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+  th {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+    text-align: left;
+    padding: 6px 12px 6px 0;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-feature-settings: 'tnum' 1; }
+
+  /* ============ Figures ============ */
+  figure { margin: 24px 0 28px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+  }
+  figcaption .fig-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10.5px;
+    color: var(--ink-navy);
+    margin-right: 8px;
+  }
+
+  /* ============ Code & citations ============ */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 16px 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .cite {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    background: var(--surface-alt);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  /* Superscript source references — body prose never carries raw file paths.
+     Full citation lives in the title (hover) and in the numbered Sources list. */
+  sup.ref { line-height: 0; }
+  sup.ref a {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-navy);
+    text-decoration: none;
+    padding: 0 1px;
+  }
+  sup.ref a:hover { text-decoration: underline; }
+  ol.sources { margin: 12px 0; padding-left: 30px; }
+  ol.sources li {
+    font-size: 13px;
+    padding: 2px 0;
+  }
+  ol.sources li::marker {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--ink-navy);
+  }
+  ol.sources li:target { background: var(--accent-soft); }
+
+  /* ============ Callouts ============ */
+  .callout { padding: 12px 16px; margin: 18px 0; font-size: 13.5px; border-radius: 3px; }
+  .callout .callout-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .callout-info { background: var(--accent-soft); }
+  .callout-info .callout-label { color: var(--ink-navy); }
+  .callout-warn { background: rgba(179, 110, 78, 0.08); border-left: 3px solid var(--ink-terracotta); }
+  .callout-warn .callout-label { color: var(--ink-terracotta); }
+  .callout-open { background: rgba(212, 168, 83, 0.10); }
+  .callout-open .callout-label { color: #8a6a1f; }
+
+  /* Decision record */
+  .decision { border-top: 1px solid var(--border); padding: 14px 0 4px; margin: 14px 0; }
+  .decision .decision-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sage); }
+  .decision p { margin-top: 6px; }
+
+  @media (max-width: 1100px) {
+    .dc-page { grid-template-columns: 1fr; }
+  }
+  @media print {
+    #dc-sidebar, #dc-fab, #dc-toggle { display: none !important; }
+    .dc-page { grid-template-columns: 1fr; }
+  }
+
+  /* ================================================================
+     DC-COMMENTS BEGIN — styles (copy verbatim; do not modify)
+     ================================================================ */
+  ::highlight(dc-hl) { background: rgba(212, 168, 83, 0.28); }
+  ::highlight(dc-hl-active) { background: rgba(212, 168, 83, 0.6); }
+
+  #dc-fab {
+    position: absolute;
+    z-index: 40;
+    display: none;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cta-foreground);
+    background: var(--cta);
+    border: 1px solid #0a1c42;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  #dc-fab:hover { background: var(--ink-navy); }
+
+  #dc-sidebar {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px 60px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  #dc-sidebar h2.dc-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+    margin: 0 0 4px;
+  }
+  .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .dc-btn {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .dc-btn:hover { background: var(--surface-alt); }
+  .dc-btn:focus-visible, #dc-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dc-empty { color: var(--fg-muted); font-style: italic; }
+  .dc-item { border-top: 1px solid var(--border-subtle); padding: 12px 0; cursor: pointer; }
+  .dc-item.dc-resolved { opacity: 0.5; }
+  .dc-quote {
+    border-left: 2px solid var(--ink-gold);
+    padding-left: 8px;
+    color: var(--fg-subtle);
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+  }
+  .dc-orphan-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-terracotta);
+    background: rgba(179, 110, 78, 0.12);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+  }
+  .dc-text { white-space: pre-wrap; overflow-wrap: break-word; }
+  .dc-item textarea {
+    width: 100%;
+    min-height: 64px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    resize: vertical;
+  }
+  .dc-item textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--fg-muted); }
+  .dc-meta label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dc-meta .dc-del { margin-left: auto; color: var(--ink-terracotta); background: none; border: none; font-size: 11px; cursor: pointer; padding: 0; }
+  .dc-meta .dc-del:hover { text-decoration: underline; }
+  #dc-status { font-size: 11px; color: var(--ink-sage); min-height: 16px; margin-top: 8px; }
+
+  #dc-toggle { display: none; }
+  @media (max-width: 1100px) {
+    #dc-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      max-width: 90vw;
+      transform: translateX(100%);
+      transition: transform 200ms ease-out;
+      z-index: 50;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+    }
+    #dc-sidebar.dc-open { transform: translateX(0); }
+    #dc-toggle {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 51;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cta-foreground);
+      background: var(--cta);
+      border: 1px solid #0a1c42;
+      border-radius: 999px;
+      padding: 9px 15px;
+      cursor: pointer;
+    }
+  }
+  /* ============ DC-COMMENTS END — styles ============ */
+</style>
+</head>
+<body>
+<div class="dc-page">
+<article id="doc">
+
+  <!-- ============ Masthead ============ -->
+  <header class="masthead">
+    <span class="eyebrow">Design doc · 2026-09-30 · Proposal, not implemented</span>
+    <h1>Compilation of the strategy file to BASIC</h1>
+    <p class="context">A process that turns the committed strategy file into the plain BASIC file that the league runs for each seat. Each build has a version record, a compile report, and local gates.</p>
+  </header>
+
+  <!-- ============ Executive summary ============ -->
+  <section id="summary">
+    <h2>Executive Summary</h2>
+    <p><strong>The strategy file is the only artifact that we edit, and the process makes the BASIC from it.</strong> Spec-driven development calls this model spec-as-source (§3). The process turns the committed <code>STRATEGY.md</code> into the plain BASIC file that the league runs for each seat. Python does every step that it can do exactly: the lint, the hashes, the rule table, the constants, the telemetry tables, the assembly, and the gates. One LLM agent writes BASIC only for the components whose text changed. A small Python driver runs the process and calls Claude Code or Codex headless for that step. Each component becomes one unit file, thus a change to one component changes one unit.</p>
+    <p>Each build has an ID, a <code>version.json</code> record, and a compile report. The record links the build to its source commit, its compiler, and its gate results. The report lists every guess that the compiler made, thus the edit loop can resolve each guess in the source. Five local gates do checks of lint, compile, budget, a local screen, and telemetry. The local screen plays the build against a reference in the native engine on this machine. It is screening only: it finds a broken or clearly worse build, but it cannot show that a build is better in the league. Thus the local screen never vetoes a behavior change. A hosted A/B decides each behavior change (§8.2).</p>
+    <div class="callout callout-info">
+      <span class="callout-label">Status</span>
+      This proposal is dated 2026-09-30. Nothing here is implemented. The document covers the whole compilation process: versioning, the compile report, incremental builds, the compiler agent, and verification. It comes after the strategy file format design and depends on it<sup class="ref"><a href="#src-1" title="paintbot_pw_lab/docs/designs/2026-09-30-strategy-file-format.md">1</a></sup>. That design defines the source (<code>STRATEGY.md</code>, <code>skills/</code>) and the compile contract that this process must obey. The <code>pw.py strategy</code> subcommands and all paths under <code>strategy/compiled/</code> are proposed names.
+    </div>
+  </section>
+
+  <!-- ============ TOC ============ -->
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><span class="toc-num">1</span><a href="#problem">Problem</a></li>
+      <li><span class="toc-num">2</span><a href="#goals">Goals and non-goals</a></li>
+      <li><span class="toc-num">3</span><a href="#prior-art">Prior art</a></li>
+      <li><span class="toc-num">4</span><a href="#architecture">Architecture: deterministic steps around one LLM step</a></li>
+      <li><span class="toc-num">5</span><a href="#layout">Build layout</a></li>
+      <li><span class="toc-num">6</span><a href="#versioning">Versioning</a></li>
+      <li><span class="toc-num">7</span><a href="#report">The compile report</a></li>
+      <li><span class="toc-num">8</span><a href="#gates">Verification gates</a></li>
+      <li><span class="toc-num">8.2</span><a href="#screen-no-veto">The local screen never vetoes a strategy change</a></li>
+      <li><span class="toc-num">9</span><a href="#agent">The compiler agent</a></li>
+      <li><span class="toc-num">10</span><a href="#incremental">Incremental builds</a></li>
+      <li><span class="toc-num">11</span><a href="#rollout">Rollout</a></li>
+      <li><span class="toc-num">12</span><a href="#alternatives">Alternatives considered</a></li>
+      <li><span class="toc-num">13</span><a href="#risks">Risks</a></li>
+      <li><span class="toc-num">14</span><a href="#decisions">Decisions (2026-09-30)</a></li>
+      <li><span class="toc-num">15</span><a href="#sources">Sources</a></li>
+    </ol>
+  </nav>
+
+  <!-- ============ 1 ============ -->
+  <section id="problem">
+    <h2>1 · Problem</h2>
+    <ul class="key-points">
+      <li><code>STRATEGY.md</code> is written in precise natural language. The league runs one plain BASIC file for each seat.</li>
+      <li>We need a process that turns the first into the second.</li>
+      <li>The process must change only what changed, record its guesses, and make each build traceable.</li>
+    </ul>
+    <p><code>STRATEGY.md</code> is the source of truth for our policy, and we write it in precise natural language. The league runs one plain BASIC file for each seat. We need a process that turns the first into the second. The process must obey these requirements:</p>
+    <ul>
+      <li>It makes BASIC that compiles, stays inside the per-tick budgets, and logs telemetry v2.</li>
+      <li>It changes only the BASIC for components whose text changed.</li>
+      <li>It records every guess that it makes, thus the edit loop can resolve each guess in the source.</li>
+      <li>It makes every build traceable to its exact source, compiler, and verification results.</li>
+      <li>It operates inside a session, or unattended in an autonomous loop.</li>
+    </ul>
+  </section>
+
+  <!-- ============ 2 ============ -->
+  <section id="goals">
+    <h2>2 · Goals and non-goals</h2>
+    <ul class="key-points">
+      <li>Python does all work that it can do exactly. One component gives one unit file.</li>
+      <li>Each build names the source and the compiler that made it. A small build takes minutes.</li>
+      <li>Not in scope: byte-identical recompiles, upload and hosted evaluation, and a custom agent harness.</li>
+    </ul>
+
+    <h3>Goals</h3>
+    <ul>
+      <li><strong>Reliable where it can be exact.</strong> Python does all work that it can compute deterministically. The LLM does not do this work.</li>
+      <li><strong>Modular output.</strong> One component gives one BASIC unit file. A change to one component changes one unit.</li>
+      <li><strong>Reproducible record.</strong> A build names its source commit, compiler model, compiler instructions, and lessons file.</li>
+      <li><strong>Fast.</strong> A small incremental build, with verification, takes minutes.</li>
+    </ul>
+
+    <h3>Non-goals</h3>
+    <ul>
+      <li><strong>Byte-identical recompiles.</strong> Two LLM runs can make different BASIC from the same text. We accept this (strategy file format §9)<sup class="ref"><a href="#src-1" title="paintbot_pw_lab/docs/designs/2026-09-30-strategy-file-format.md">1</a></sup>.</li>
+      <li><strong>Upload, league submission, and hosted evaluation.</strong> The process stops at the local gate. The current skills (<code>paintbot-pw-ab</code><sup class="ref"><a href="#src-2" title="paintbot_pw_lab/.claude/skills/paintbot-pw-ab/SKILL.md">2</a></sup> and the upload skill) take a build ID from there.</li>
+      <li><strong>A custom agent harness.</strong> v1 calls a current coding agent headless (Claude Code or Codex) from a small Python driver.</li>
+    </ul>
+  </section>
+
+  <!-- ============ 3 ============ -->
+  <section id="prior-art">
+    <h2>3 · Prior art</h2>
+    <ul class="key-points">
+      <li>Spec-driven development is an established category. Our model is the spec-as-source variant.</li>
+      <li>We borrow three ideas: validate first, one written contract, and an ID for each item.</li>
+      <li>We do not adopt a toolkit. Our pipeline is small and specific.</li>
+    </ul>
+    <p>Spec-driven development is an established category<sup class="ref"><a href="#src-3" title="Thoughtworks, &quot;Spec-driven development: unpacking 2025's new engineering practices&quot;">3</a></sup>. In one variant, people edit only the specification, and a tool makes the code from it. This variant has the name <strong>spec-as-source</strong><sup class="ref"><a href="#src-3" title="Thoughtworks, &quot;Spec-driven development: unpacking 2025's new engineering practices&quot;">3</a></sup><sup class="ref"><a href="#src-4" title="arXiv 2602.00180, &quot;Spec-Driven Development&quot;">4</a></sup>, and it is our model. The best-known toolkit is GitHub Spec Kit. It uses Markdown specifications, validation, and generation through any LLM<sup class="ref"><a href="#src-5" title="SparkFabrik, spec-driven development guide (GitHub Spec Kit)">5</a></sup>.</p>
+    <p>We borrow three ideas:</p>
+    <ul>
+      <li>Validate the specification before generation.</li>
+      <li>Keep one written contract that the generator obeys.</li>
+      <li>Give every item in the specification an ID that code and tests trace to.</li>
+    </ul>
+    <p>We do not adopt a toolkit. The toolkits are for one-shot application code, one feature at a time. They do not handle incremental regeneration of a single BASIC file under hard per-tick budgets and a fixed runtime skeleton. Our pipeline is small and specific. Thus a few hundred lines of Python and one instruction file cost less than the adaptation of a framework.</p>
+  </section>
+
+  <!-- ============ 4 ============ -->
+  <section id="architecture">
+    <h2>4 · Architecture: deterministic steps around one LLM step</h2>
+    <ul class="key-points">
+      <li>Five steps. Python does four of them.</li>
+      <li>Only step 2 (Generate) uses an LLM, and its input is small.</li>
+      <li>A Python driver, <code>pw.py strategy compile</code>, runs all five steps and owns the process. Any supported agent can do step 2.</li>
+      <li>Python makes the rule table, constants, telemetry tables, and header, because exact code is testable. A hand-written runtime library holds the skeleton, the telemetry print routines, and the comms codec.</li>
+    </ul>
+
+    <table>
+      <thead>
+        <tr><th>Step</th><th>Done by</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1. Prepare</td><td>Python: <code>pw.py strategy prepare</code></td><td>Refuse uncommitted source. Lint <code>STRATEGY.md</code>. Hash the source. Compare the component texts with the <code>map.json</code> of the previous build, and list each component as <strong>new</strong>, <strong>changed</strong>, <strong>unchanged</strong>, or <strong>removed</strong>. Write a work order for the agent.</td></tr>
+        <tr><td>2. Generate</td><td><strong>LLM compiler agent</strong></td><td>Write one unit file for each new or changed component (Knowledge, Situations, Capabilities, Communication). Record guesses.</td></tr>
+        <tr><td>3. Assemble</td><td>Python: <code>pw.py strategy assemble</code></td><td>Copy unchanged units from the previous build. Copy each <code>skill.bas</code> unchanged. Copy each runtime library unit unchanged. Make the rule table, the constants block, the telemetry code tables, and the header. Join everything into <code>policy.bas</code> in the fixed per-tick order. Write <code>map.json</code> and <code>version.json</code>.</td></tr>
+        <tr><td>4. Verify</td><td>Python: <code>pw.py strategy verify</code></td><td>Do the gates (§8). If a gate fails, the agent gets the error and repairs its units, for a maximum of 3 rounds.</td></tr>
+        <tr><td>5. Report</td><td>Python + agent</td><td>Write <code>report.json</code> and <code>report.md</code> (§7).</td></tr>
+      </tbody>
+    </table>
+
+    <p>A Python driver, <code>pw.py strategy compile</code>, runs all five steps and calls the agent for step 2 (§9). The driver owns the process, and the agent does not. Thus any supported agent can do step 2.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 350" role="img" aria-label="The five compile steps from left to right, inside a frame labelled as run by the driver pw.py strategy compile: Prepare (Python), Generate (LLM agent: Claude Code or Codex, the only LLM step), Assemble (Python), Verify (Python, gates G1 to G5), and Report. Prepare reads the committed source and the map.json of the previous build. Generate reads the work order, the changed components, the previous units, the interfaces of used units, LESSONS.md, and policy-surface.md. A dashed arrow goes from Verify back to Generate: on a G2, G3, or G5 failure, repair for a maximum of 3 rounds.">
+        <defs>
+          <marker id="f1-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <path d="M0,0 L9,5 L0,10" fill="none" stroke="#859ebe" stroke-width="1.4"/>
+          </marker>
+        </defs>
+
+        <!-- Prepare inputs -->
+        <rect x="20" y="24" width="118" height="90" rx="3" fill="#f8f6ef" stroke="#d4c9b5" stroke-dasharray="5 4"/>
+        <text x="79" y="46" text-anchor="middle" font-family="Merriweather Sans" font-size="11" font-weight="700" fill="#555555">Prepare reads</text>
+        <text x="79" y="68" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#111827">committed source</text>
+        <text x="79" y="86" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#111827">previous build's</text>
+        <text x="79" y="103" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#111827">map.json</text>
+        <line x1="79" y1="114" x2="79" y2="157" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+
+        <!-- Generate inputs -->
+        <rect x="160" y="24" width="316" height="90" rx="3" fill="#f8f6ef" stroke="#d4c9b5" stroke-dasharray="5 4"/>
+        <text x="176" y="46" font-family="Merriweather Sans" font-size="11" font-weight="700" fill="#555555">Generate reads</text>
+        <text x="176" y="68" font-family="Merriweather Sans" font-size="12" fill="#111827">work order</text>
+        <text x="176" y="86" font-family="Merriweather Sans" font-size="12" fill="#111827">changed components</text>
+        <text x="176" y="104" font-family="Merriweather Sans" font-size="12" fill="#111827">previous units</text>
+        <text x="318" y="68" font-family="Merriweather Sans" font-size="12" fill="#111827">interfaces of used units</text>
+        <text x="318" y="86" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#111827">LESSONS.md</text>
+        <text x="318" y="104" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#111827">policy-surface.md</text>
+        <line x1="219" y1="114" x2="219" y2="157" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+
+        <!-- Driver frame: the whole pipeline is run by pw.py strategy compile -->
+        <rect x="8" y="128" width="704" height="208" rx="4" fill="none" stroke="#1a3875" stroke-width="1.1" stroke-dasharray="3 3"/>
+        <text x="700" y="147" text-anchor="end" font-family="Merriweather Sans" font-size="11" font-weight="700" fill="#1a3875">Run by the driver <tspan font-family="ui-monospace, Menlo, monospace">pw.py strategy compile</tspan></text>
+
+        <!-- 1 Prepare -->
+        <rect x="20" y="160" width="118" height="80" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="79" y="192" text-anchor="middle" font-family="Merriweather Sans" font-size="14" font-weight="700" fill="#111827">1 Prepare</text>
+        <text x="79" y="212" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">Python</text>
+        <line x1="138" y1="200" x2="157" y2="200" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+
+        <!-- 2 Generate (the only LLM step) -->
+        <rect x="160" y="160" width="118" height="80" rx="3" fill="#eef2f7" stroke="#1a3875" stroke-width="1.6"/>
+        <text x="219" y="182" text-anchor="middle" font-family="Merriweather Sans" font-size="14" font-weight="700" fill="#1a3875">2 Generate</text>
+        <text x="219" y="200" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" font-weight="600" fill="#1a3875">LLM agent:</text>
+        <text x="219" y="215" text-anchor="middle" font-family="Merriweather Sans" font-size="10" font-weight="600" fill="#1a3875">Claude Code or Codex</text>
+        <text x="219" y="231" text-anchor="middle" font-family="Merriweather Sans" font-size="9.5" font-style="italic" fill="#1a3875">the only LLM step</text>
+        <line x1="278" y1="200" x2="297" y2="200" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+
+        <!-- 3 Assemble -->
+        <rect x="300" y="160" width="118" height="80" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="359" y="192" text-anchor="middle" font-family="Merriweather Sans" font-size="14" font-weight="700" fill="#111827">3 Assemble</text>
+        <text x="359" y="212" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">Python</text>
+        <line x1="418" y1="200" x2="437" y2="200" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+
+        <!-- 4 Verify -->
+        <rect x="440" y="160" width="118" height="80" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="499" y="192" text-anchor="middle" font-family="Merriweather Sans" font-size="14" font-weight="700" fill="#111827">4 Verify</text>
+        <text x="499" y="212" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">Python: G1–G5</text>
+        <line x1="558" y1="200" x2="577" y2="200" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+
+        <!-- 5 Report -->
+        <rect x="580" y="160" width="118" height="80" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="639" y="192" text-anchor="middle" font-family="Merriweather Sans" font-size="14" font-weight="700" fill="#111827">5 Report</text>
+        <text x="639" y="212" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">Python + agent</text>
+
+        <!-- Repair loop -->
+        <path d="M499,240 L499,276 L219,276 L219,243" fill="none" stroke="#859ebe" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#f1-arrow)"/>
+        <text x="359" y="298" text-anchor="middle" font-family="Merriweather Sans" font-size="12" font-weight="700" fill="#1a3875">G2/G3/G5 failure: repair, max 3 rounds</text>
+        <text x="359" y="318" text-anchor="middle" font-family="Merriweather Sans" font-size="11" fill="#555555">G4 does not start a repair. Its outcome rule depends on build intent (§8.2).</text>
+      </svg>
+      <figcaption><span class="fig-label">Figure 1</span>The five compile steps. The driver <code>pw.py strategy compile</code> runs all of them, and it calls Claude Code or Codex headless for Generate. Generate is the only step that uses an LLM, and the dashed boxes show its small input. The dashed arrow is the repair loop: after a G2, G3, or G5 failure, the agent repairs its units, for a maximum of 3 rounds.</figcaption>
+    </figure>
+
+    <p><strong>Only step 2 uses an LLM.</strong> Its input is small:</p>
+    <ul>
+      <li>The work order.</li>
+      <li>The text of the changed components.</li>
+      <li>The previous unit files of those components.</li>
+      <li>The interfaces of the units that they use.</li>
+      <li><code>docs/policy-surface.md</code><sup class="ref"><a href="#src-6" title="paintbot_pw_lab/docs/policy-surface.md §3 (budgets, print limits, PW_BASIC_PEAKS) and §4 (failure modes)">6</a></sup>.</li>
+      <li><code>compiler/LESSONS.md</code>.</li>
+    </ul>
+
+    <h3>4.1 What the LLM does not write, and why</h3>
+    <table>
+      <thead>
+        <tr><th>Made by Python</th><th>Reason</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Rule table</strong> from <code>ST.rules</code> (conditions, priorities, capability calls, roles)</td><td>The rule syntax is structured (<code>R.id [priority]: WHEN ... DO ...</code>). Deterministic code is exact and testable. The "acted properly" audit also needs it, because the audit does the rule selection again from logged inputs.</td></tr>
+        <tr><td><strong>Adaptations table</strong> from <code>A.</code> components</td><td>The same reason, when an Adaptation is only a change of priority. If the condition of an Adaptation needs new logic, the LLM writes a condition unit for it. The change of priority stays generated.</td></tr>
+        <tr><td><strong>Commitment logic</strong> from <code>ST.commitment</code> parameters</td><td>Minimum hold, preemption margin, and hysteresis are numbers that apply to the rule table.</td></tr>
+        <tr><td><strong>Constants block</strong> from all <code>Params</code></td><td>One init block. Each tunable parameter gets <code>' @tune min max step</code><sup class="ref"><a href="#src-7" title="paintbot_pw_lab/tools/pw_tune.py:13-14 (the ' @tune convention)">7</a></sup>.</td></tr>
+        <tr><td><strong>Telemetry code tables</strong> (made by Python)</td><td>The codes for every ID go into <code>map.json</code> and into the script as constants.</td></tr>
+        <tr><td><strong>Runtime library</strong> (hand-written in <code>compiler/runtime/</code>, copied unchanged): the per-tick skeleton, the telemetry v2 print routines, and the comms codec for the wire format of <code>strategy/comms.md</code><sup class="ref"><a href="#src-8" title="paintbot_pw_lab/strategy/comms.md (comms v1 wire format)">8</a></sup></td><td>This code is fixed: the per-tick order, a print budget that we check one time, and exact arithmetic (packing, check, scrambling). We write and review it as we do <code>skill.bas</code>. LLM-written <code>COM.</code> units decide which message to send and what a received message does.</td></tr>
+        <tr><td><strong>Header</strong> (made by Python)</td><td>The build ID, the source commit, and "generated, do not edit". The per-tick order that the skeleton obeys is in the strategy file format §3<sup class="ref"><a href="#src-1" title="paintbot_pw_lab/docs/designs/2026-09-30-strategy-file-format.md">1</a></sup>.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ 5 ============ -->
+  <section id="layout">
+    <h2>5 · Build layout</h2>
+    <ul class="key-points">
+      <li>The source, the compiler instructions, configuration, memory, and runtime, and one directory for each build all live under <code>strategy/</code>.</li>
+      <li>We commit builds to git.</li>
+      <li>Unit files describe themselves. The runtime units are authored source, like <code>skill.bas</code>.</li>
+    </ul>
+
+<pre><code>paintbot_pw_lab/strategy/
+  STRATEGY.md, skills/, comms.md            # source (edited by the edit loop)
+  compiler/
+    AGENT.md                                # compiler instructions, agent-neutral
+    config.json                             # default agent and model
+    LESSONS.md                             # compiler memory, reviewed like code
+    runtime/                                # hand-written library units: skeleton, telemetry, comms codec
+  compiled/
+    &lt;build-id&gt;/
+      units/&lt;ID&gt;.bas                        # one per component (generated or copied)
+      policy.bas                            # assembled upload file
+      map.json                              # ID -&gt; unit, code, globals prefix, text hash, log fields
+      version.json                          # §6
+      report.json, report.md                # §7
+      verify/                               # gate outputs: compile.json, peaks.json, screen summary
+    uploads.jsonl                           # append-only: build-id -&gt; uploaded policy ref, date</code></pre>
+
+    <figure>
+      <svg viewBox="0 0 760 372" role="img" aria-label="Build assembly. On the left, the source side: STRATEGY.md, comms.md, the previous build, skills/*.bas, and compiler/runtime/. In the middle, units/&lt;ID&gt;.bas of four kinds: Python-generated (rule table, constants, telemetry tables), LLM-written (new and changed components), copied from the previous build (unchanged components), and copied verbatim (skill.bas and runtime units). The units are joined in per-tick order into policy.bas, with map.json, version.json, and the report beside it.">
+        <defs>
+          <marker id="f2-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <path d="M0,0 L9,5 L0,10" fill="none" stroke="#859ebe" stroke-width="1.4"/>
+          </marker>
+        </defs>
+
+        <!-- Source column -->
+        <text x="20" y="44" font-family="Merriweather Sans" font-size="11" font-weight="700" fill="#555555" letter-spacing="1">SOURCE</text>
+        <rect x="20" y="70" width="160" height="44" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="100" y="97" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#111827">STRATEGY.md</text>
+        <rect x="20" y="140" width="160" height="40" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="100" y="165" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#111827">comms.md</text>
+        <rect x="20" y="206" width="160" height="40" rx="3" fill="#f8f6ef" stroke="#d4c9b5" stroke-dasharray="5 4"/>
+        <text x="100" y="231" text-anchor="middle" font-family="Merriweather Sans" font-size="12.5" fill="#555555">previous build</text>
+        <rect x="20" y="262" width="160" height="36" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="100" y="285" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#111827">skills/*.bas</text>
+        <rect x="20" y="306" width="160" height="36" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="100" y="329" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#111827">compiler/runtime/</text>
+
+        <!-- Units frame -->
+        <rect x="230" y="30" width="270" height="322" rx="3" fill="none" stroke="#d4c9b5"/>
+        <text x="365" y="52" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#1a3875">units/&lt;ID&gt;.bas</text>
+
+        <rect x="244" y="64" width="242" height="58" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="256" y="87" font-family="Merriweather Sans" font-size="13" font-weight="700" fill="#111827">Python-generated</text>
+        <text x="254" y="108" font-family="Merriweather Sans" font-size="10.5" fill="#555555">rule table, constants, telemetry tables</text>
+
+        <rect x="244" y="130" width="242" height="58" rx="3" fill="#eef2f7" stroke="#1a3875" stroke-width="1.4"/>
+        <text x="256" y="153" font-family="Merriweather Sans" font-size="13" font-weight="700" fill="#1a3875">LLM-written</text>
+        <text x="256" y="174" font-family="Merriweather Sans" font-size="11" fill="#1a3875">new and changed components</text>
+
+        <rect x="244" y="196" width="242" height="58" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="256" y="219" font-family="Merriweather Sans" font-size="13" font-weight="700" fill="#111827">Copied from previous build</text>
+        <text x="256" y="240" font-family="Merriweather Sans" font-size="11" fill="#555555">unchanged components</text>
+
+        <rect x="244" y="262" width="242" height="80" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="256" y="289" font-family="Merriweather Sans" font-size="13" font-weight="700" fill="#111827">Copied verbatim</text>
+        <text x="256" y="310" font-family="Merriweather Sans" font-size="11" fill="#555555">skill.bas and runtime units</text>
+        <text x="256" y="328" font-family="Merriweather Sans" font-size="11" fill="#555555">(authored source)</text>
+
+        <!-- Source -> unit arrows -->
+        <line x1="180" y1="88" x2="241" y2="93" stroke="#859ebe" stroke-width="1.4" marker-end="url(#f2-arrow)"/>
+        <line x1="180" y1="100" x2="241" y2="152" stroke="#859ebe" stroke-width="1.4" marker-end="url(#f2-arrow)"/>
+        <line x1="180" y1="160" x2="241" y2="164" stroke="#859ebe" stroke-width="1.4" marker-end="url(#f2-arrow)"/>
+        <line x1="180" y1="226" x2="241" y2="225" stroke="#859ebe" stroke-width="1.4" marker-end="url(#f2-arrow)"/>
+        <line x1="180" y1="280" x2="241" y2="294" stroke="#859ebe" stroke-width="1.4" marker-end="url(#f2-arrow)"/>
+        <line x1="180" y1="324" x2="241" y2="312" stroke="#859ebe" stroke-width="1.4" marker-end="url(#f2-arrow)"/>
+
+        <!-- Join -> policy.bas -->
+        <line x1="500" y1="178" x2="587" y2="178" stroke="#859ebe" stroke-width="1.6" marker-end="url(#f2-arrow)"/>
+        <text x="544" y="152" text-anchor="middle" font-family="Merriweather Sans" font-size="10.5" fill="#555555">joined in</text>
+        <text x="544" y="167" text-anchor="middle" font-family="Merriweather Sans" font-size="10.5" fill="#555555">per-tick order</text>
+
+        <rect x="590" y="150" width="150" height="56" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+        <text x="665" y="175" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="14" font-weight="700" fill="#1a3875">policy.bas</text>
+        <text x="665" y="195" text-anchor="middle" font-family="Merriweather Sans" font-size="11" fill="#555555">the upload file</text>
+
+        <!-- Beside it -->
+        <text x="590" y="232" font-family="Merriweather Sans" font-size="10.5" fill="#555555">beside it:</text>
+        <rect x="590" y="240" width="150" height="30" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="665" y="260" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#111827">map.json</text>
+        <rect x="590" y="276" width="150" height="30" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="665" y="296" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#111827">version.json</text>
+        <rect x="590" y="312" width="150" height="30" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="665" y="332" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#111827">report.json, .md</text>
+      </svg>
+      <figcaption><span class="fig-label">Figure 2</span>How a build is assembled. The LLM writes units only for new and changed components. Python copies the unchanged units from the previous build, copies <code>skill.bas</code> and the runtime units verbatim, and makes the rule table, constants, and telemetry tables. Python then joins all units in the per-tick order into <code>policy.bas</code>, and it writes <code>map.json</code>, <code>version.json</code>, and the report beside it.</figcaption>
+    </figure>
+
+    <ul>
+      <li><strong>Build ID:</strong> <code>&lt;source short SHA&gt;-&lt;n&gt;</code>, for example <code>a1b2c3d-2</code>. <code>n</code> counts the builds of the same source commit.</li>
+      <li><strong>Builds are committed to git.</strong> They are small text files, and their diffs are worth a review. Also, the uploaded artifact stays recoverable.</li>
+      <li><strong>Unit files describe themselves.</strong> Each unit file starts with a comment that gives the component ID, the hash of the source text, and "generated, do not edit". The globals of each unit share a prefix that comes from its ID, and <code>map.json</code> records the prefix. Thus units cannot collide.</li>
+      <li><strong><code>compiler/runtime/</code> is authored source,</strong> like <code>skill.bas</code>. People write and review it by hand, and the build copies it unchanged.</li>
+    </ul>
+  </section>
+
+  <!-- ============ 6 ============ -->
+  <section id="versioning">
+    <h2>6 · Versioning</h2>
+    <ul class="key-points">
+      <li>The compiler makes a build only from committed source.</li>
+      <li><code>version.json</code> names the source, the compiler, the engine, and the gate results.</li>
+      <li>Uploads go into an append-only log, thus a build directory never changes after the process writes it.</li>
+    </ul>
+    <p>The compiler makes a build only from a committed <code>STRATEGY.md</code>, <code>skills/</code>, and <code>comms.md</code> (compile contract item 2)<sup class="ref"><a href="#src-1" title="paintbot_pw_lab/docs/designs/2026-09-30-strategy-file-format.md">1</a></sup>. Each build writes <code>version.json</code> with these fields:</p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>build_id</code></td><td>The build ID (§5).</td></tr>
+        <tr><td><code>source_commit</code></td><td>The git SHA of the source.</td></tr>
+        <tr><td><code>source_hashes</code></td><td>sha256 of <code>STRATEGY.md</code>, <code>comms.md</code>, every <code>skill.bas</code>, and every runtime unit.</td></tr>
+        <tr><td><code>previous_build</code></td><td>The build ID that the incremental step used, or null for a full build.</td></tr>
+        <tr><td><code>compiler</code></td><td>The agent (<code>claude</code> or <code>codex</code>) and its CLI version, the model ID, the sha256 of <code>AGENT.md</code>, and the sha256 of <code>LESSONS.md</code>.</td></tr>
+        <tr><td><code>engine</code></td><td>The <code>coworld</code> tag and commit that the gates used (<code>tools/release.env</code>)<sup class="ref"><a href="#src-9" title="paintbot_pw_lab/tools/release.env (engine pin)">9</a></sup>.</td></tr>
+        <tr><td><code>policy_sha256</code></td><td>sha256 of <code>policy.bas</code>.</td></tr>
+        <tr><td><code>gates</code></td><td>Pass or fail for each gate (§8).</td></tr>
+        <tr><td><code>created</code></td><td>Date and time.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Uploads</strong> add a line to <code>compiled/uploads.jsonl</code> (<code>build_id</code>, the policy ref <code>name:vN</code>, and the date). Thus a build directory never changes after the process writes it. The link from a league policy version back to its source is: policy ref → build ID → <code>version.json</code> → source commit.</p>
+  </section>
+
+  <!-- ============ 7 ============ -->
+  <section id="report">
+    <h2>7 · The compile report</h2>
+    <ul class="key-points">
+      <li>Two files for each build: <code>report.json</code> for loops and <code>report.md</code> for people.</li>
+      <li>Each guess has a stable ID, a severity, and a state.</li>
+      <li>Guesses carry forward from build to build. An open guess of severity <code>high</code> blocks <code>Status: tested</code> for its component.</li>
+    </ul>
+    <p>Each build has two report files: <code>report.json</code> for loops and <code>report.md</code> for people. The report has these contents:</p>
+    <ul>
+      <li><strong>Units:</strong> each component, with the status <code>new</code>, <code>changed</code>, <code>reused</code>, or <code>removed</code>.</li>
+      <li><strong>Guesses:</strong> one entry for each place where <code>Spec</code> was ambiguous or not possible. The table below gives the fields.</li>
+      <li><strong>Gaps:</strong> each thing that the spec needs and the engine does not give, with the substitute that the compiler used.</li>
+      <li><strong>Gates:</strong> the result of every gate, with numbers.</li>
+      <li><strong>Budget:</strong> the peak instructions, work units, and print use per tick.</li>
+    </ul>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>id</code></td><td>A stable guess ID, <code>G-&lt;component&gt;-&lt;n&gt;</code>.</td></tr>
+        <tr><td><code>component</code></td><td>The component ID.</td></tr>
+        <tr><td><code>spec_quote</code></td><td>The exact text that the guess reads.</td></tr>
+        <tr><td><code>decision</code></td><td>What the compiler implemented.</td></tr>
+        <tr><td><code>why</code></td><td>The reason for that decision.</td></tr>
+        <tr><td><code>severity</code></td><td><code>low</code> (a detail), <code>medium</code> (changes behavior in some situations), or <code>high</code> (the spec is contradictory or not possible).</td></tr>
+        <tr><td><code>state</code></td><td><code>open</code>, <code>possibly resolved</code> (the text of the component changed since the guess), or <code>closed</code> (the edit loop confirmed it).</td></tr>
+      </tbody>
+    </table>
+    <p>Guesses carry forward from one build to the next. The edit loop closes a guess when it changes the component. It can also record in <code>STRATEGY.md</code> that the guess is the intended behavior. The next build then shows the guess as <code>possibly resolved</code>, and the edit loop makes it <code>closed</code>. Any open guess of severity <code>high</code> blocks <code>Status: tested</code> for its component.</p>
+  </section>
+
+  <!-- ============ 8 ============ -->
+  <section id="gates">
+    <h2>8 · Verification gates</h2>
+    <ul class="key-points">
+      <li>Five gates operate locally against the pinned engine.</li>
+      <li>On a G2, G3, or G5 failure, the agent repairs its units, for a maximum of 3 rounds.</li>
+      <li>G4 never starts a repair, because "worse" is a strategy question. A bad seat always fails the build.</li>
+      <li>The local screen is screening only. It finds broken or clearly worse builds, not better ones.</li>
+      <li>The local screen never vetoes a behavior change. For a behavior change, G4 is advisory (§8.2).</li>
+    </ul>
+    <p>All gates operate locally against the pinned engine (<code>tools/release.env</code>)<sup class="ref"><a href="#src-9" title="paintbot_pw_lab/tools/release.env (engine pin)">9</a></sup>.</p>
+    <table>
+      <thead>
+        <tr><th>Gate</th><th>Tool</th><th>Passes when</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>G1 Lint</td><td><code>pw.py strategy lint</code></td><td>There are no errors (strategy file format §10)<sup class="ref"><a href="#src-1" title="paintbot_pw_lab/docs/designs/2026-09-30-strategy-file-format.md">1</a></sup>.</td></tr>
+        <tr><td>G2 Compile</td><td><code>pw.py local compile policy.bas</code></td><td>All 16 seats compile and operate for 720 ticks, and the engine disables no seat.</td></tr>
+        <tr><td>G3 Budget</td><td>A <code>paintbot-headless</code> match with <code>PW_BASIC_PEAKS=1</code> (per-seat peaks)<sup class="ref"><a href="#src-6" title="paintbot_pw_lab/docs/policy-surface.md §3 (budgets, print limits, PW_BASIC_PEAKS) and §4 (failure modes)">6</a></sup></td><td>Peak instructions and work units are at most 80% of 50,000 and 125,000 per tick. The worst-case telemetry print is at most 50% of 1,024 bytes and 128 events.</td></tr>
+        <tr><td>G4 Screen</td><td><code>pw.py local screen</code> (§8.1)<sup class="ref"><a href="#src-10" title="paintbot_pw_lab/docs/tools/pw_local.md (compile and screen)">10</a></sup></td><td>No match has a bad seat. The outcome rule depends on the intent of the build (§8.2).</td></tr>
+        <tr><td>G5 Telemetry</td><td>Record local episodes with seat logs (<code>pw_intent.py record</code>)<sup class="ref"><a href="#src-11" title="paintbot_pw_lab/tools/pw_intent.py (record keeps seat logs)">11</a></sup>, then parse them with the v2 parser. The native library behind <code>pw.py local</code> discards PRINT output.</td><td>Every line kind parses, the codes decode through <code>map.json</code>, and the log fields of every check appear.</td></tr>
+      </tbody>
+    </table>
+    <p>On a G2, G3, or G5 failure, the agent gets the error and repairs its units. After 3 failed rounds, the build stops with a <code>failed</code> report. G4 never starts a repair, because "worse" is a strategy question. A bad seat (a crash or a disabled seat) in G4 always fails the build.</p>
+
+    <h3 id="local-screen">8.1 What the local screen is</h3>
+    <p><code>pw.py local screen A.bas B.bas --seeds 1-28</code> plays A against B in the native engine of the game on this machine<sup class="ref"><a href="#src-10" title="paintbot_pw_lab/docs/tools/pw_local.md (compile and screen)">10</a></sup>. It uses the rules and glory settings of the league. The screen plays every seed two times: first with A on the even seats, then with A on the odd seats. This cancels the side advantage. The result is 56 matches in approximately 20 seconds with the terrain cache of the lab.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 300" role="img" aria-label="The local screen: 28 seeds times 2 sides gives 56 matches. For each seed, one match has A on the even seats and one has A on the odd seats. The screen averages the two sides for each seed, then gives seed_balanced mean outcome with a 95% confidence interval. A number line from 0 to 1 marks 0.5. One example interval has its upper end at or above 0.5 (not clearly worse). The other has its upper end below 0.5 (clearly worse).">
+        <defs>
+          <marker id="f3-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <path d="M0,0 L9,5 L0,10" fill="none" stroke="#859ebe" stroke-width="1.4"/>
+          </marker>
+        </defs>
+
+        <text x="20" y="24" font-family="Merriweather Sans" font-size="12.5" font-weight="700" fill="#1a3875">28 seeds × 2 sides = 56 matches (approximately 20 s)</text>
+
+        <!-- Seed -->
+        <rect x="20" y="66" width="150" height="48" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="95" y="87" text-anchor="middle" font-family="Merriweather Sans" font-size="13" font-weight="700" fill="#111827">Seed s</text>
+        <text x="95" y="105" text-anchor="middle" font-family="Merriweather Sans" font-size="11" fill="#555555">s = 1 … 28</text>
+
+        <!-- Two sides -->
+        <rect x="220" y="38" width="190" height="42" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="315" y="56" text-anchor="middle" font-family="Merriweather Sans" font-size="12.5" font-weight="700" fill="#111827">A on even seats</text>
+        <text x="315" y="72" text-anchor="middle" font-family="Merriweather Sans" font-size="11" fill="#555555">B on odd seats</text>
+        <rect x="220" y="100" width="190" height="42" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="315" y="118" text-anchor="middle" font-family="Merriweather Sans" font-size="12.5" font-weight="700" fill="#111827">A on odd seats</text>
+        <text x="315" y="134" text-anchor="middle" font-family="Merriweather Sans" font-size="11" fill="#555555">B on even seats</text>
+
+        <line x1="170" y1="84" x2="217" y2="62" stroke="#859ebe" stroke-width="1.4" marker-end="url(#f3-arrow)"/>
+        <line x1="170" y1="96" x2="217" y2="118" stroke="#859ebe" stroke-width="1.4" marker-end="url(#f3-arrow)"/>
+        <line x1="410" y1="62" x2="457" y2="84" stroke="#859ebe" stroke-width="1.4" marker-end="url(#f3-arrow)"/>
+        <line x1="410" y1="118" x2="457" y2="96" stroke="#859ebe" stroke-width="1.4" marker-end="url(#f3-arrow)"/>
+
+        <!-- Result -->
+        <rect x="460" y="58" width="240" height="66" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+        <text x="580" y="78" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#111827">averaged per seed over both sides</text>
+        <text x="580" y="98" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12" font-weight="700" fill="#1a3875">seed_balanced.mean_outcome</text>
+        <text x="580" y="115" text-anchor="middle" font-family="Merriweather Sans" font-size="11" fill="#555555">mean over 28 seeds, 95% CI</text>
+
+        <!-- Number line -->
+        <line x1="360" y1="162" x2="360" y2="236" stroke="#1a3875" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="360" y="156" text-anchor="middle" font-family="Merriweather Sans" font-size="11" font-weight="700" fill="#1a3875">0.5: a policy against itself</text>
+
+        <!-- Pass interval: 0.44 to 0.58, point 0.51 -->
+        <line x1="326.4" y1="178" x2="404.8" y2="178" stroke="#6e8050" stroke-width="2"/>
+        <line x1="326.4" y1="172" x2="326.4" y2="184" stroke="#6e8050" stroke-width="2"/>
+        <line x1="404.8" y1="172" x2="404.8" y2="184" stroke="#6e8050" stroke-width="2"/>
+        <circle cx="365.6" cy="178" r="4" fill="#6e8050"/>
+        <text x="418" y="182" font-family="Merriweather Sans" font-size="11.5" font-weight="700" fill="#6e8050">not clearly worse (ci95_high ≥ 0.5)</text>
+
+        <!-- Fail interval: 0.30 to 0.46, point 0.38 -->
+        <line x1="248" y1="202" x2="337.6" y2="202" stroke="#b36e4e" stroke-width="2"/>
+        <line x1="248" y1="196" x2="248" y2="208" stroke="#b36e4e" stroke-width="2"/>
+        <line x1="337.6" y1="196" x2="337.6" y2="208" stroke="#b36e4e" stroke-width="2"/>
+        <circle cx="292.8" cy="202" r="4" fill="#b36e4e"/>
+        <text x="418" y="206" font-family="Merriweather Sans" font-size="11.5" font-weight="700" fill="#b36e4e">clearly worse (ci95_high &lt; 0.5)</text>
+
+        <!-- Axis -->
+        <line x1="80" y1="228" x2="640" y2="228" stroke="#d4c9b5" stroke-width="1.4"/>
+        <line x1="80" y1="224" x2="80" y2="232" stroke="#999999"/>
+        <line x1="220" y1="224" x2="220" y2="232" stroke="#999999"/>
+        <line x1="500" y1="224" x2="500" y2="232" stroke="#999999"/>
+        <line x1="640" y1="224" x2="640" y2="232" stroke="#999999"/>
+        <text x="80" y="248" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#555555">0</text>
+        <text x="220" y="248" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#555555">0.25</text>
+        <text x="360" y="248" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" font-weight="700" fill="#1a3875">0.5</text>
+        <text x="500" y="248" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#555555">0.75</text>
+        <text x="640" y="248" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#555555">1</text>
+        <text x="360" y="276" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">mean Elo outcome score of A (seed_balanced, 95% CI)</text>
+      </svg>
+      <figcaption><span class="fig-label">Figure 3</span>The local screen. Each of the 28 seeds gives two matches, one on each side, and the screen averages the two sides for each seed. The number line shows two example intervals. The dots and interval ends are examples, not measurements. The rule <code>ci95_high &gt;= 0.5</code> blocks only a build with no intended behavior change. For a behavior change, the rule is advisory: the report shows the result, and the build does not fail (§8.2).</figcaption>
+    </figure>
+
+    <p>The screen reports these results:</p>
+    <ul>
+      <li><code>seed_balanced.mean_outcome</code>: the mean Elo outcome score of A (<code>clamp(0.5 + (A glory - B glory) / 2000, 0, 1)</code>)<sup class="ref"><a href="#src-12" title="paintbot_pw_lab/docs/mechanics.md §1 (Elo outcome score formula)">12</a></sup>. The screen first calculates the mean of both sides for each seed, then it gives the mean with a 95% confidence interval. A policy against itself scores exactly 0.5.</li>
+      <li><code>bad_seats</code>: each seat that did not compile, or that the engine disabled during the match.</li>
+      <li><code>identical_play</code>: true when the two files played identically, move for move.</li>
+      <li>Per-seat stats: damage, hits, kills, deaths, captures, and first friendly fire.</li>
+    </ul>
+
+    <div class="callout callout-info">
+      <span class="callout-label">Screening only</span>
+      The local screen is <strong>screening only</strong>. The only opponents are the files that we seat, the LLM oracle is off, and the seeds are not the seeds of the league. The screen answers the question "is this build broken or clearly worse?" It never answers the question "is it better in the field?" The hosted A/B skill (<code>paintbot-pw-ab</code>) answers the second question<sup class="ref"><a href="#src-2" title="paintbot_pw_lab/.claude/skills/paintbot-pw-ab/SKILL.md">2</a></sup>.
+    </div>
+
+    <h3 id="screen-no-veto">8.2 The local screen never vetoes a strategy change</h3>
+    <p>The previous build is a weak judge of a behavior change. It can use a weakness that exists only against itself. Also, play is not transitive. A build that loses to the previous build locally can still do better against the league field. The reverse is also possible.</p>
+    <div class="callout callout-info">
+      <span class="callout-label">Principle</span>
+      <strong style="font-family: var(--serif); font-size: 16px; line-height: 1.5;">A behavior change is decided by a hosted A/B, never by the local screen.</strong>
+    </div>
+    <p>Thus the G4 outcome rule depends on the intent of the build. <code>prepare</code> finds the intent from the source diff. G4 compares the new build (A) with a reference (B):</p>
+    <table>
+      <thead>
+        <tr><th>Build intent</th><th>How <code>prepare</code> knows</th><th>Reference</th><th>G4 outcome rule</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Behavior change</strong></td><td>A field that the compiler reads changed (<code>Spec</code>, <code>Params</code>, <code>Uses</code>, <code>Done when</code>, <code>Abort when</code>, <code>Log</code>). Or a rule, an Adaptation, <code>comms.md</code>, or a <code>skill.bas</code> changed.</td><td>The <code>policy.bas</code> of the previous build</td><td><strong>Advisory.</strong> The report shows the score with its interval. The score never fails the build.</td></tr>
+        <tr><td><strong>No behavior change</strong></td><td>Nothing that the compiler reads changed. Examples: a <code>--full</code> recompile, or a change to the runtime library, <code>LESSONS.md</code>, the agent, or the engine pin.</td><td>The <code>policy.bas</code> of the previous build</td><td><strong>Blocking.</strong> <code>ci95_high &gt;= 0.5</code>. A clear regression here means that the compiler or the runtime broke something.</td></tr>
+        <tr><td><strong>Milestone M1</strong> (the <code>base.bas</code> description, §11)</td><td>The driver option <code>--milestone m1</code> declares it.</td><td><code>reference/base.bas</code></td><td><strong>Blocking.</strong> The 95% interval contains 0.5. <code>identical_play</code> true is the ideal, but it is not necessary.</td></tr>
+      </tbody>
+    </table>
+    <p>In every case, a bad seat fails the build. A behavior-change build can score clearly below its previous build. Then the report gives it a prominent note, thus the edit loop sees it before the hosted A/B. The build is not blocked.</p>
+  </section>
+
+  <!-- ============ 9 ============ -->
+  <section id="agent">
+    <h2>9 · The compiler agent</h2>
+    <ul class="key-points">
+      <li>The compiler works with both Claude Code and Codex. All important parts are plain files and a Python driver.</li>
+      <li>The driver calls the agent headless and enforces the write scope with a git check.</li>
+      <li>Each build records the agent and the model. The compiler memory is <code>LESSONS.md</code> in the repo, and the context for each unit stays small.</li>
+    </ul>
+    <p>The compiler works with both <strong>Claude Code</strong> and <strong>Codex</strong>. All important parts are in plain files and a Python driver. Each agent needs only a thin wrapper.</p>
+    <ul>
+      <li><strong>Instructions:</strong> one plain Markdown file, <code>strategy/compiler/AGENT.md</code>. It holds the compile contract (strategy file format §7)<sup class="ref"><a href="#src-1" title="paintbot_pw_lab/docs/designs/2026-09-30-strategy-file-format.md">1</a></sup> and the rules for unit files in this document. It names no feature that only one agent has.</li>
+      <li><strong>Driver:</strong> <code>pw.py strategy compile [--agent claude|codex] [--model M] [--full] [--milestone m1] --json</code>. It runs prepare. Then it calls the agent headless for step 2 (<code>claude -p</code> or <code>codex exec</code>) with <code>AGENT.md</code> and the work order. Then it runs assemble, verify, and report, and it repeats the repair loop. It obeys the agent CLI contract of the lab (one JSON envelope, exit codes)<sup class="ref"><a href="#src-13" title="paintbot_pw_lab/docs/tools/README.md#agent-contract (agent CLI contract)">13</a></sup>. Thus an autonomous loop can drive it.</li>
+      <li><strong>The driver enforces the write scope, not the permission system of the agent.</strong> After the agent returns, the driver uses git to make sure that only files under <code>strategy/compiled/&lt;build-id&gt;/units/</code> and the report draft changed. Any other change fails the build, and the driver reverts it. This operates the same for every agent.</li>
+      <li><strong>Wrappers:</strong> a Claude Code subagent (<code>.claude/agents/pw-compiler.md</code>) and a lab skill (<code>paintbot-pw-compile</code>) for use in a Claude session. Codex gets the matching <code>AGENTS.md</code> pointer. Each wrapper only points to <code>AGENT.md</code> and the driver.</li>
+      <li><strong>The build records the agent and the model.</strong> The <code>compiler</code> field of <code>version.json</code> records the agent (<code>claude</code> or <code>codex</code>), its CLI version, the model ID, and the hashes of <code>AGENT.md</code> and <code>LESSONS.md</code>. One config file sets a default agent and model. Thus builds are comparable, unless a person selects a different agent or model.</li>
+      <li><strong>Memory:</strong> <code>strategy/compiler/LESSONS.md</code>, in the repo. It holds the BASIC pitfalls that the compiler learned. For example, <code>NOT</code> binds tighter than <code>=</code>, <code>rnd</code> is a reserved name, and division by zero disables the seat<sup class="ref"><a href="#src-6" title="paintbot_pw_lab/docs/policy-surface.md §3 (budgets, print limits, PW_BASIC_PEAKS) and §4 (failure modes)">6</a></sup>. The agent reads the file on every run and can propose additions in its report. A person or the edit loop accepts an addition with a commit. The file is in the repo and not in personal memory, thus any agent reproduces the same build.</li>
+      <li><strong>Context for each unit:</strong> the text of the component, its previous unit (if one exists), and the interfaces of the units that it uses (from <code>map.json</code>: globals and SUB signatures). It also gets the applicable <code>policy-surface.md</code> sections and <code>LESSONS.md</code>. It does not get the whole strategy file. This keeps the context small and the output focused.</li>
+    </ul>
+  </section>
+
+  <!-- ============ 10 ============ -->
+  <section id="incremental">
+    <h2>10 · Incremental builds</h2>
+    <ul class="key-points">
+      <li>A component is changed when the hash of the fields that the compiler reads is different.</li>
+      <li>A change to an interface also makes the dependent components again.</li>
+      <li>The deterministic parts are made again on every build, and unchanged input gives unchanged output.</li>
+    </ul>
+    <ul>
+      <li><code>prepare</code> makes a hash of the normalized text of each component. The hash uses only the fields that the compiler reads: <code>Spec</code>, <code>Params</code>, <code>Uses</code>, <code>Done when</code>, <code>Abort when</code>, and <code>Log</code>. It does not use <code>Rationale</code>, <code>Evidence</code>, or <code>Status</code>. A component is <strong>changed</strong> when that hash is different from the hash in <code>map.json</code>.</li>
+      <li>The process also makes a component again when a component that it uses changed its interface (globals or SUB signature). <code>prepare</code> calculates this from <code>map.json</code>.</li>
+      <li><code>--full</code> makes every unit again. Use it when the runtime skeleton changes or when drift accumulates.</li>
+      <li>Each build makes the rule tables, constants, and telemetry tables again. They are deterministic, thus unchanged input gives unchanged output.</li>
+    </ul>
+  </section>
+
+  <!-- ============ 11 ============ -->
+  <section id="rollout">
+    <h2>11 · Rollout</h2>
+    <ul class="key-points">
+      <li>Four milestones, M0 to M3.</li>
+      <li>M1 describes <code>base.bas</code> in the strategy file, and G4 against <code>base.bas</code> must have 0.5 in its interval.</li>
+      <li>Telemetry v2 (M2) and comms v1 (M3) come after M1.</li>
+    </ul>
+    <table>
+      <thead>
+        <tr><th>Milestone</th><th>Content</th><th>Done when</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>M0 Tooling</td><td><code>pw.py strategy lint</code>, <code>prepare</code>, <code>assemble</code>, <code>verify</code>, <code>compile</code>, <code>trace</code>. The runtime skeleton. <code>AGENT.md</code>, and the Claude and Codex wrappers. An empty <code>LESSONS.md</code>.</td><td>Tests for the deterministic parts. A trivial two-component strategy builds from start to end with each agent.</td></tr>
+        <tr><td>M1 <code>base.bas</code> description</td><td><code>STRATEGY.md</code> describes <code>base.bas</code> faithfully. Full build.</td><td>G1 to G5 pass. G4 against <code>base.bas</code> has 0.5 in its interval.</td></tr>
+        <tr><td>M2 Telemetry v2</td><td>v2 print routines in the runtime. <code>pw.py strategy audit</code>.</td><td>G5 passes. The five-level audit operates on local recordings. One hosted episode shows that the lines arrive.</td></tr>
+        <tr><td>M3 Comms v1</td><td>Codec runtime unit. <code>COM.</code> components from <code>strategy/comms.md</code><sup class="ref"><a href="#src-8" title="paintbot_pw_lab/strategy/comms.md (comms v1 wire format)">8</a></sup>.</td><td>The decode rate between our own seats is near 100% in local recordings. Hosted A/B against the M1 build.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ 12 ============ -->
+  <section id="alternatives">
+    <h2>12 · Alternatives considered</h2>
+    <ul class="key-points">
+      <li>Seven alternatives lost.</li>
+      <li>The main reasons: exactness is cheap in Python, a change must stay local, v1 needs no custom harness, the compiler must not depend on one agent, and the local screen must not veto a behavior change.</li>
+    </ul>
+    <table>
+      <thead>
+        <tr><th>Alternative</th><th>Why not</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Adopt a spec-driven toolkit (Spec Kit and similar)<sup class="ref"><a href="#src-5" title="SparkFabrik, spec-driven development guide (GitHub Spec Kit)">5</a></sup></td><td>The toolkits are for one-shot application features. They do not support incremental regeneration of one file under per-tick budgets.</td></tr>
+        <tr><td>The LLM compiles everything, rules and priorities too</td><td>It is less reliable where exactness is cheap. The rule table must agree exactly with the rule selection that the audit does again.</td></tr>
+        <tr><td>One monolithic <code>policy.bas</code> that each build writes again</td><td>Large diffs with much noise. There is no guarantee that a change stays local.</td></tr>
+        <tr><td>A custom harness on the Claude Agent SDK or Codex SDK</td><td>More to make and maintain for v1. The headless modes of both CLIs, with a small Python script to drive them, already give the loop that we need.</td></tr>
+        <tr><td>A Claude-only subagent and skill as the driver</td><td>This ties the process to one agent. The Python driver is agent-neutral, and a loop can drive it.</td></tr>
+        <tr><td>The local screen as a blocking gate for every build</td><td>It vetoes behavior changes on the judgment of a self-play opponent. A hosted A/B decides behavior changes (§8.2).</td></tr>
+        <tr><td>Builds kept out of git</td><td>We lose the review diffs and the link from an uploaded policy to its exact file.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ 13 ============ -->
+  <section id="risks">
+    <h2>13 · Risks</h2>
+    <ul class="key-points">
+      <li>The largest risk: BASIC that compiles but does not match the spec. G4 blocks only builds that are not intended to change behavior.</li>
+      <li>Three more risks: interface drift, budget creep, and local tools that lag the league.</li>
+    </ul>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk 1 · BASIC that compiles but does not match the spec</span>
+      The LLM can write BASIC that compiles but does not match the spec. G4 blocks only builds that are not intended to change behavior. Even then, it catches only gross regressions. Mitigations: small context for each unit, <code>LESSONS.md</code>, the five-level checks in telemetry, and hosted A/B for changes of behavior.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk 2 · Interface drift between units</span>
+      A unit changes a global that another unit reads. Mitigation: <code>map.json</code> records interfaces, and <code>prepare</code> makes the dependent units again.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk 3 · Budget creep</span>
+      Many small units can add up. G3 measures the whole file on every build.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk 4 · Local tools lag the league</span>
+      The gates operate against the pinned engine<sup class="ref"><a href="#src-9" title="paintbot_pw_lab/tools/release.env (engine pin)">9</a></sup>. The pin must stay the same as the league build (<code>pw.py deployed-ref</code>).
+    </div>
+  </section>
+
+  <!-- ============ 14 ============ -->
+  <section id="decisions">
+    <h2>14 · Decisions (2026-09-30)</h2>
+    <ul class="key-points">
+      <li>Six decisions. Python makes all exact parts, builds go into git, and the process stops at the local gate.</li>
+      <li>The compiler is agent-neutral, and the local screen never vetoes a behavior change.</li>
+    </ul>
+    <div class="decision">
+      <span class="decision-label">Decision 1 · What the LLM does not write</span>
+      <p><strong>Python makes the rules, priorities, Adaptations (changes of priority), commitment, constants, telemetry tables, and header. A hand-written runtime library holds the skeleton, the telemetry print routines, and the comms codec, and the build copies it unchanged.</strong> The LLM does not make any of these.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Decision 2 · Builds in git</span>
+      <p><strong>We commit builds to git.</strong></p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Decision 3 · Build ID</span>
+      <p><strong>The build ID is <code>&lt;source short SHA&gt;-&lt;n&gt;</code>.</strong></p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Decision 4 · End of the process</span>
+      <p><strong>The process stops at the local gate.</strong> Upload and A/B use the current skills with the build ID.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Decision 5 · Agent-neutral compiler</span>
+      <p><strong>The compiler is agent-neutral.</strong> A Python driver calls Claude Code or Codex headless with one plain <code>AGENT.md</code>. The driver enforces the write scope itself, and it records the agent and the model. Each agent has a thin wrapper. The lessons file is in the repo. v1 has no custom harness.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Decision 6 · The local screen never vetoes a behavior change</span>
+      <p><strong>The local screen never vetoes a behavior change.</strong> It blocks only builds that are not intended to change behavior, the M1 milestone, and any build with a bad seat.</p>
+    </div>
+  </section>
+
+  <!-- ============ Sources ============ -->
+  <section id="sources">
+    <h2>15 · Sources</h2>
+    <p>Paths are relative to the <code>personal_labs_paintbot_pw</code> checkout. The entries are in the order of first citation.</p>
+    <ol class="sources">
+      <li id="src-1"><span class="cite">paintbot_pw_lab/docs/designs/2026-09-30-strategy-file-format.md</span> The strategy file format design. It gives the source format, the per-tick order (§3), the checks (§5), telemetry v2 (§6), the compile contract (§7), and the lint (§10).</li>
+      <li id="src-2"><span class="cite">paintbot_pw_lab/.claude/skills/paintbot-pw-ab/SKILL.md</span> The hosted A/B skill. It decides if a change helped in the field.</li>
+      <li id="src-3">Thoughtworks, "Spec-driven development: unpacking 2025's new engineering practices." <a href="https://www.thoughtworks.com/insights/blog/agile-engineering-practices/spec-driven-development-unpacking-2025-new-engineering-practices">thoughtworks.com</a>. The category and its spec-as-source variant.</li>
+      <li id="src-4">arXiv 2602.00180, "Spec-Driven Development." <a href="https://arxiv.org/abs/2602.00180v1">arxiv.org/abs/2602.00180v1</a>.</li>
+      <li id="src-5">SparkFabrik, spec-driven development guide (GitHub Spec Kit). <a href="https://www.sparkfabrik.com/en/blog/spec-driven-development-guide/">sparkfabrik.com</a>.</li>
+      <li id="src-6"><span class="cite">paintbot_pw_lab/docs/policy-surface.md §3, §4</span> §3: the budgets of 50,000 instructions and 125,000 work units per tick, the print limits of 1,024 bytes and 128 events, and <code>PW_BASIC_PEAKS</code>. §4: the failure modes.</li>
+      <li id="src-7"><span class="cite">paintbot_pw_lab/tools/pw_tune.py:13-14</span> The <code>' @tune</code> convention for tunable constants.</li>
+      <li id="src-8"><span class="cite">paintbot_pw_lab/strategy/comms.md</span> The comms v1 wire format.</li>
+      <li id="src-9"><span class="cite">paintbot_pw_lab/tools/release.env</span> The engine pin that all lab tools use.</li>
+      <li id="src-10"><span class="cite">paintbot_pw_lab/docs/tools/pw_local.md</span> Local compile and local screen: seeds × sides, <code>seed_balanced</code>, <code>identical_play</code>, <code>bad_seats</code>, a throughput (56 matches in approximately 20 s with the terrain cache), and the statement that the screen is screening only.</li>
+      <li id="src-11"><span class="cite">paintbot_pw_lab/tools/pw_intent.py</span> The <code>record</code> command keeps seat logs. The native library discards PRINT output.</li>
+      <li id="src-12"><span class="cite">paintbot_pw_lab/docs/mechanics.md §1</span> The Elo outcome score formula.</li>
+      <li id="src-13"><span class="cite">paintbot_pw_lab/docs/tools/README.md#agent-contract</span> The agent CLI contract of the lab: one JSON envelope (<code>ok</code>, <code>outputs</code>, <code>counts</code>, <code>failures</code>, <code>result</code>, <code>next</code>) and exit codes 0 to 3.</li>
+    </ol>
+  </section>
+
+</article>
+
+<!-- ================================================================
+     DC-COMMENTS BEGIN — markup + script (copy verbatim; do not modify)
+     ================================================================ -->
+<aside id="dc-sidebar" aria-label="Comments">
+  <h2 class="dc-title">Comments <span id="dc-count"></span></h2>
+  <div class="dc-actions">
+    <button class="dc-btn" id="dc-export">Export JSON</button>
+    <button class="dc-btn" id="dc-copy">Copy JSON</button>
+    <button class="dc-btn" id="dc-import">Import…</button>
+    <input type="file" id="dc-file" accept=".json,application/json" hidden>
+  </div>
+  <div id="dc-status" role="status"></div>
+  <div id="dc-list"><p class="dc-empty">No comments yet. Select text in the document to add one.</p></div>
+</aside>
+<button id="dc-fab" type="button">+ Comment</button>
+<button id="dc-toggle" type="button">Comments</button>
+<!-- Preload slot: a renderer may put a dc-comments/1 `comments` array here (each comment optionally carrying `replies`). Merged by id into the stored comments on load. Leave empty otherwise. -->
+<script id="dc-preload" type="application/json">[{"id": "cmuop3ggn1", "text": "This is important to note somewhere. We don't want to block a behavior change because the old version takes advantage of a behavior which is actually advantageous in the league.", "created": "2026-09-30T22:47:00.119Z", "resolved": false, "exact": "A behavior change is decided by a hosted A/B, never by the local screen.", "prefix": "", "suffix": "", "replies": [{"author": "Claude", "text": "Done: new \u00a78.2 'The local screen never vetoes a strategy change'. prepare classifies each build's intent from the source diff. Behavior-change builds: G4 is advisory only (reported, never fails the build); hosted A/B decides. No-behavior-change builds (full recompile, runtime/LESSONS/agent/pin changes) and the M1 milestone: G4 blocks, because a regression there means the compiler broke something. A bad seat always fails. Also added as a decision in \u00a714 and an alternative in \u00a712.", "created": "2026-09-30T22:49:56+00:00"}]}, {"id": "cmuop4oi72", "text": "Make this compatible with Codex as well", "created": "2026-09-30T22:47:57.199Z", "resolved": false, "exact": "All important parts are plain files and a Python driver.", "prefix": "", "suffix": "", "replies": [{"author": "Claude", "text": "Done (\u00a79): the compiler is agent-neutral. One plain strategy/compiler/AGENT.md holds the instructions; a Python driver `pw.py strategy compile --agent claude|codex` runs the pipeline and calls `claude -p` or `codex exec` headless; the driver enforces write scope itself with a git check (same for both agents); thin wrappers for each agent; version.json records agent, CLI version and model.", "created": "2026-09-30T22:49:56+00:00"}]}]</script>
+
+<script>
+(() => {
+  'use strict';
+  const FORMAT = 'dc-comments/1';
+  const CTX = 32; // prefix/suffix context length, chars
+  const doc = document.getElementById('doc');
+  const fab = document.getElementById('dc-fab');
+  const listEl = document.getElementById('dc-list');
+  const countEl = document.getElementById('dc-count');
+  const statusEl = document.getElementById('dc-status');
+  const sidebar = document.getElementById('dc-sidebar');
+  const storeKey = 'dc:' + document.title;
+
+  let comments = []; // {id, exact, prefix, suffix, text, created, resolved}
+  let ranges = new Map(); // id -> Range (null if orphaned)
+  let seq = 0;
+
+  // ---- text indexing: one global string over #doc's text nodes ----
+  function docText() {
+    const r = document.createRange();
+    r.selectNodeContents(doc);
+    return r.toString();
+  }
+  function globalOffset(container, offset) {
+    const r = document.createRange();
+    r.setStart(doc, 0);
+    r.setEnd(container, offset);
+    return r.toString().length;
+  }
+  function offsetsToRange(start, end) {
+    const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+    let pos = 0, range = document.createRange(), haveStart = false;
+    while (walker.nextNode()) {
+      const node = walker.currentNode, len = node.data.length;
+      if (!haveStart && pos + len >= start) {
+        range.setStart(node, start - pos);
+        haveStart = true;
+      }
+      if (haveStart && pos + len >= end) {
+        range.setEnd(node, end - pos);
+        return range;
+      }
+      pos += len;
+    }
+    return null;
+  }
+
+  // ---- anchoring: TextQuoteSelector-style exact + prefix/suffix ----
+  function selectorFromRange(range) {
+    const text = docText();
+    const start = globalOffset(range.startContainer, range.startOffset);
+    const end = globalOffset(range.endContainer, range.endOffset);
+    return {
+      exact: text.slice(start, end),
+      prefix: text.slice(Math.max(0, start - CTX), start),
+      suffix: text.slice(end, end + CTX),
+    };
+  }
+  function locate(c) {
+    const text = docText();
+    let i = text.indexOf(c.prefix + c.exact + c.suffix);
+    if (i >= 0) return offsetsToRange(i + c.prefix.length, i + c.prefix.length + c.exact.length);
+    i = text.indexOf(c.exact);
+    if (i >= 0) return offsetsToRange(i, i + c.exact.length);
+    return null;
+  }
+  function reanchorAll() {
+    ranges = new Map(comments.map(c => [c.id, locate(c)]));
+    paint();
+  }
+
+  // ---- painting via CSS Custom Highlight API ----
+  const hl = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  const hlActive = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  if (hl) { CSS.highlights.set('dc-hl', hl); CSS.highlights.set('dc-hl-active', hlActive); }
+  function paint(activeId) {
+    if (!hl) return;
+    hl.clear(); hlActive.clear();
+    for (const [id, r] of ranges) {
+      if (!r) continue;
+      (id === activeId ? hlActive : hl).add(r);
+    }
+  }
+
+  // ---- persistence (best-effort; file:// storage varies by browser) ----
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(comments)); } catch (e) { /* unavailable on some file:// setups */ }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      if (raw) comments = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- sidebar rendering ----
+  function flash(msg) {
+    statusEl.textContent = msg;
+    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 2500);
+  }
+  function sortedComments() {
+    const pos = c => {
+      const r = ranges.get(c.id);
+      return r ? globalOffset(r.startContainer, r.startOffset) : Infinity; // orphans last
+    };
+    return [...comments].sort((a, b) => pos(a) - pos(b));
+  }
+  function render(editingId) {
+    countEl.textContent = comments.length ? '(' + comments.length + ')' : '';
+    listEl.textContent = '';
+    if (!comments.length) {
+      const p = document.createElement('p');
+      p.className = 'dc-empty';
+      p.textContent = 'No comments yet. Select text in the document to add one.';
+      listEl.appendChild(p);
+      return;
+    }
+    for (const c of sortedComments()) {
+      const item = document.createElement('div');
+      item.className = 'dc-item' + (c.resolved ? ' dc-resolved' : '');
+      item.dataset.id = c.id;
+
+      const quote = document.createElement('div');
+      quote.className = 'dc-quote';
+      quote.textContent = c.exact.length > 90 ? c.exact.slice(0, 90) + '…' : c.exact;
+      if (!ranges.get(c.id)) {
+        const tag = document.createElement('span');
+        tag.className = 'dc-orphan-tag';
+        tag.textContent = 'orphaned';
+        quote.appendChild(tag);
+      }
+      item.appendChild(quote);
+
+      if (c.id === editingId) {
+        const ta = document.createElement('textarea');
+        ta.value = c.text;
+        ta.placeholder = 'Write a comment… (⌘/Ctrl+Enter to save, Esc to cancel)';
+        ta.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        });
+        ta.addEventListener('click', e => e.stopPropagation());
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'dc-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginTop = '6px';
+        saveBtn.addEventListener('click', e => { e.stopPropagation(); commit(); });
+        function commit() {
+          c.text = ta.value.trim();
+          if (!c.text) return cancel();
+          save(); render();
+        }
+        function cancel() {
+          if (!c.text) { comments = comments.filter(x => x.id !== c.id); ranges.delete(c.id); paint(); }
+          save(); render();
+        }
+        item.appendChild(ta);
+        item.appendChild(saveBtn);
+        listEl.appendChild(item);
+        requestAnimationFrame(() => ta.focus());
+        continue;
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dc-text';
+      text.textContent = c.text;
+      item.appendChild(text);
+
+      if (Array.isArray(c.replies) && c.replies.length) {
+        const box = document.createElement('div');
+        box.className = 'dc-replies';
+        for (const r of c.replies) {
+          const who = document.createElement('div');
+          who.className = 'dc-reply-author';
+          who.textContent = 'Reply from ' + (r.author || 'agent') + (r.created ? ' · ' + String(r.created).slice(0, 10) : '');
+          const body = document.createElement('div');
+          body.className = 'dc-reply-text';
+          for (const part of String(r.text || '').split(/(https?:\/\/[^\s)]+)/g)) {
+            if (/^https?:\/\//.test(part)) {
+              const a = document.createElement('a');
+              a.href = part; a.target = '_blank'; a.rel = 'noopener';
+              a.textContent = part;
+              a.addEventListener('click', e => e.stopPropagation());
+              body.appendChild(a);
+            } else body.appendChild(document.createTextNode(part));
+          }
+          box.append(who, body);
+        }
+        item.appendChild(box);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'dc-meta';
+      const when = document.createElement('span');
+      when.textContent = c.created.slice(0, 10);
+      const resolved = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!c.resolved;
+      cb.addEventListener('click', e => e.stopPropagation());
+      cb.addEventListener('change', () => { c.resolved = cb.checked; save(); render(); });
+      resolved.append(cb, 'resolved');
+      const del = document.createElement('button');
+      del.className = 'dc-del';
+      del.textContent = 'delete';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        comments = comments.filter(x => x.id !== c.id);
+        ranges.delete(c.id);
+        paint(); save(); render();
+      });
+      meta.append(when, resolved, del);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        const r = ranges.get(c.id);
+        if (!r) return flash('Anchor not found in this version of the document.');
+        const rect = r.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + rect.top - 160, behavior: 'smooth' });
+        paint(c.id);
+        setTimeout(() => paint(), 2000);
+      });
+      // double-click text to edit
+      text.addEventListener('dblclick', e => { e.stopPropagation(); render(c.id); });
+      listEl.appendChild(item);
+    }
+  }
+
+  // ---- selection -> floating Comment button ----
+  document.addEventListener('mouseup', e => {
+    if (fab.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) { fab.style.display = 'none'; return; }
+      const range = sel.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer) || !range.toString().trim()) {
+        fab.style.display = 'none';
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      fab.style.display = 'block';
+      fab.style.left = Math.min(rect.right + 8 + window.scrollX, window.scrollX + document.documentElement.clientWidth - 120) + 'px';
+      fab.style.top = (rect.top + window.scrollY - 4) + 'px';
+      fab.dataset.pending = '1';
+    }, 0);
+  });
+  fab.addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const c = Object.assign({ id: 'c' + Date.now().toString(36) + (seq++), text: '', created: new Date().toISOString(), resolved: false }, selectorFromRange(range));
+    comments.push(c);
+    ranges.set(c.id, range.cloneRange());
+    paint(c.id);
+    sel.removeAllRanges();
+    fab.style.display = 'none';
+    sidebar.classList.add('dc-open');
+    render(c.id);
+  });
+
+  // ---- export / import ----
+  function payload() {
+    return JSON.stringify({
+      format: FORMAT,
+      doc: document.title,
+      exported: new Date().toISOString(),
+      comments: comments,
+    }, null, 2);
+  }
+  document.getElementById('dc-export').addEventListener('click', () => {
+    const blob = new Blob([payload()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'doc') + '.comments.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Downloaded.');
+  });
+  document.getElementById('dc-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(payload()); flash('Copied to clipboard.'); }
+    catch (e) { flash('Clipboard blocked — use Export instead.'); }
+  });
+  document.getElementById('dc-import').addEventListener('click', () => document.getElementById('dc-file').click());
+  document.getElementById('dc-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(raw => {
+      const data = JSON.parse(raw);
+      if (data.format !== FORMAT || !Array.isArray(data.comments)) { flash('Not a dc-comments file.'); return; }
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of data.comments) byId.set(c.id, c);
+      comments = [...byId.values()];
+      reanchorAll(); save(); render();
+      flash('Imported ' + data.comments.length + ' comment(s).');
+    }).catch(() => flash('Could not parse that file.'));
+    e.target.value = '';
+  });
+
+  document.getElementById('dc-toggle').addEventListener('click', () => sidebar.classList.toggle('dc-open'));
+
+  // ---- init ----
+  load();
+  // Merge the renderer's preloaded comments (with replies) by id: a stored
+  // comment keeps its own text/resolved state and takes the preloaded replies.
+  try {
+    const pre = document.getElementById('dc-preload');
+    const preloaded = pre && pre.textContent.trim() ? JSON.parse(pre.textContent) : [];
+    if (Array.isArray(preloaded) && preloaded.length) {
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of preloaded) {
+        const existing = byId.get(c.id);
+        if (existing) { if (c.replies) existing.replies = c.replies; }
+        else byId.set(c.id, c);
+      }
+      comments = [...byId.values()];
+      save();
+    }
+  } catch (e) { /* malformed preload: ignore */ }
+  reanchorAll();
+  render();
+})();
+</script>
+<!-- ============ DC-COMMENTS END ============ -->
+</div>
+</body>
+</html>  /* replies rendered under a comment (from the comment's `replies` array) */
+  .dc-replies { margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--border-strong); }
+  .dc-reply-author { font-family: var(--sans); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-navy); }
+  .dc-reply-text { font-size: 12.5px; line-height: 1.5; color: var(--fg); white-space: pre-wrap; margin-top: 2px; }
+  .dc-reply-text a { color: var(--ink-navy); word-break: break-all; }
+

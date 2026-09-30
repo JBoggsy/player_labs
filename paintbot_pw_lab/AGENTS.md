@@ -72,7 +72,8 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 | `docs/evidence-pipeline.md` | Artifact inventory, replay format, re-simulation constraints, local runs. |
 | `docs/reports/` | Dated evidence reports (not maintained as current truth): [2026-09-29-league-field-analysis.md](docs/reports/2026-09-29-league-field-analysis.md) (80 league episodes: endings, sides, seeds, champion styles, shout protocols, friendly fire). The readable game overview is the repo-level [onboarding report](../docs/reports/paintbot-pw-onboarding-2026-09-28.html). |
 | `docs/tools/` | One reference per tool (agent contract, commands, outputs, limits); `README.md` is the generated index, `tables.md` the Parquet table contract. |
-| `docs/designs/` | Design documents. [`2026-09-29-tooling-plan.html`](docs/designs/2026-09-29-tooling-plan.html) is the tools-and-skills plan, now implemented (brief: `.tooling-plan-brief.md`). |
+| `strategy/` | The policy source (layout: strategy-file-format design §4.1). **Load-bearing: `STRATEGY.md` is the source of truth; compiled BASIC is never edited by hand.** Today only [`comms.md`](strategy/comms.md) exists (draft comms v1). `STRATEGY.md`, `skills/`, `compiler/`, and `compiled/` come with milestones M0-M1. |
+| `docs/designs/` | Design documents. [`2026-09-29-tooling-plan.html`](docs/designs/2026-09-29-tooling-plan.html) is the tools-and-skills plan, now implemented (brief: `.tooling-plan-brief.md`). [`2026-09-30-strategy-file-format.md`](docs/designs/2026-09-30-strategy-file-format.md) (rendered: `.html`) is the **accepted** format for the load-bearing strategy file (2026-09-30). [`2026-09-30-strategy-compilation.md`](docs/designs/2026-09-30-strategy-compilation.md) (rendered: `.html`) is the **accepted** compile process: deterministic Python around one LLM step, unit files, versioning, report, gates. |
 | `tools/` | The instruments: `pw.py` (dispatcher, catalog, doctor), `pw_cli.py` (shared CLI contract), `release.env` / `pw_release.py` (engine pin), Nim `pw_trace` / `pw_map`, Python readers, metrics, visuals, A/B, local harness, scouting, miner, win probability, tuning; `tests/`. Build products go to gitignored `tools/bin/` and `tools/.cache/`. |
 | `.claude/skills/` | The seven lab skills listed above. |
 | `reference/base.bas`, `reference/jev.bas` | Official teams starters at the pinned release, from `coworld/paintbot/players/` (the files the manifest's `player[]` hashes name). The repo's `examples/paintbot/players/base.bas` is an older engine-test copy; do not use it. Keep reference files distinct from candidates. |
@@ -100,18 +101,21 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
   costs more. Never infer a win from anything but the result. The canonical, source-cited
   statement of scoring and rank is [docs/mechanics.md §1](docs/mechanics.md); update it there.
 - **A BASIC compile error fails the whole episode** (no results, no data from that
-  eval slot); it shows up as failed hosted episodes, which is the signal to read. When
+  eval slot); it shows up as failed hosted episodes, which is the signal to read. Using a host
+  function name as a variable is a compile error too: `rnd` became one in 0.3.89. A file the host
+  rejects at staging also shows up as a failed episode on the platform (live, 2026-09-30). When
   the platform attributes a failure to one policy, Elo scores that side as a forfeit loss
   (`elo.py:174-179`) and 3 consecutive failures disqualify a league entry, so only submit
   a version with completed hosted episodes. A runtime error or budget overrun disables
   only that seat for the rest of the episode.
 - **Budgets are 50,000 instructions and 125,000 work units per decision**
-  (`bots.nim:154-155` at `d0728ab1`; scaled up by seats/16 above 16 seats); the guide and starter headers still say 20,000.
+  (`bots.nim:41-42` at `118e1619`; scaled up by seats/16 above 16 seats); the guide and starter headers still say 20,000.
 - **Teams-only vs FFA-only names.** Calling an FFA-kin function (`kin()`, `gene()`, …) in
   the teams game is a compile error. Keep Heartland code paths separate.
 - **Replays re-simulate across versions and Nim builds.** The newest build replays older rules
-  versions hash-exactly (rules-44 replays under 0.3.65-0.3.79 builds), and hosted tapes built with
-  Nim 2.2.10 replay exactly under local Nim 2.2.6 (80 of 80 hosted 0.3.79 episodes, 2026-09-29). Always hash-check:
+  versions hash-exactly (rules-44 replays under 0.3.65-0.3.89 builds), and hosted tapes built with
+  Nim 2.2.10 replay exactly under local Nim 2.2.6 (80 of 80 hosted 0.3.79 episodes and 12 of 12
+  hosted 0.3.89 episodes under a 0.3.89 build, 2026-09-30). Always hash-check:
   `pw_trace` does; the repo's `replay_stats.nim` does not.
 - **Experience-request rosters:** pin all 8 opponent seats to one explicit policy to match
   league conditions; `top_n`/`random` draw per seat and mix opponents. Never put our policy on

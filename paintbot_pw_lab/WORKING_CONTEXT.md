@@ -10,15 +10,31 @@ Replace completed or superseded context in place.
 
 ## Objective
 
-Next session (James, 2026-09-30): **write a proper strategy document** for our Paintbot PW
-policy, as a design doc in `docs/designs/`. The lab is stood up and fully instrumented: docs
-verified at `d0728ab1` (tools pinned to 0.3.80, rule files identical), the tooling of the
-[tooling plan](docs/designs/2026-09-29-tooling-plan.html) with one agent entry point
-(`uv run python paintbot_pw_lab/tools/pw.py doctor|tools|<subcommand> --json`), and seven lab
-skills including the autonomous [paintbot-pw-loop](.claude/skills/paintbot-pw-loop/SKILL.md).
-Our only policy is the unchanged starter `jb-pw-base:v1`.
+**Build the strategy-as-source pipeline, then write the policy in it.** Both designs were
+accepted on 2026-09-30 (James):
 
-Inputs the strategy document should build on:
+- [Strategy file format](docs/designs/2026-09-30-strategy-file-format.md): `strategy/STRATEGY.md`
+  is the load-bearing source of truth (structured Markdown in Simplified Technical English;
+  Knowledge, Situations, Skills, Capabilities, prioritized rules, Adaptations, Communication;
+  five-level checks; telemetry v2). Compiled BASIC is never edited by hand; Skills carry authored
+  `skill.bas`.
+- [Compilation](docs/designs/2026-09-30-strategy-compilation.md): a Python driver
+  (`pw.py strategy compile --agent claude|codex`) around one LLM step; one unit per component;
+  `version.json` + compile report; gates G1-G5; the local screen never vetoes an intended
+  behavior change.
+- [Comms v1](strategy/comms.md): 9 scrambled 20-digit message types (focus calls, disguise
+  friend/foe, sightings, grenades, glory hearts, pickups). Three engine questions to verify first
+  (its §11).
+
+**Next:** milestone M0 (tooling: `pw.py strategy lint|prepare|assemble|verify|compile|trace`, the
+runtime skeleton, `AGENT.md` and wrappers), then M1: the first `STRATEGY.md` is a faithful
+description of `base.bas` and must compile to base-equivalent play in a local screen. Our only
+uploaded policy is still the unchanged starter `jb-pw-base:v1`. The lab is fully instrumented:
+docs verified at `118e1619` (0.3.89), tools pinned to the same build with a shared terrain cache,
+one agent entry point (`uv run python paintbot_pw_lab/tools/pw.py doctor|tools|<subcommand>
+--json`), and seven lab skills including [paintbot-pw-loop](.claude/skills/paintbot-pw-loop/SKILL.md).
+
+Inputs the policy (`STRATEGY.md`) should build on:
 
 - What wins and how it is scored: [mechanics.md §1](docs/mechanics.md) (glory, margin-scaled Elo:
   speed and survival dominate; a win at t seconds is worth ~600 − t).
@@ -60,9 +76,8 @@ James fills this in; until then an agent proposes a charter and stops.
 
 ## Decisions for James
 
-1. **Starting policy lane** (the strategy document's first fork): plain BASIC from `base.bas`, the
-   Jev LLM advisor (`jev.bas`; its model is allowed and the league sets no LLM cap; locally it plays
-   exactly like base.bas), or the neural ZIP lane (David's `daveey-pw-neural` is a top-3 champion).
+1. ~~Starting policy lane~~ **Decided 2026-09-30: plain BASIC**, compiled from `STRATEGY.md`
+   (not the Jev advisor, not the neural ZIP lane).
 2. **Player identity** for the real policy (James Botts, which already runs `jb-pw-base:v1`, or
    Games Bond / a new player). Ratings belong to the player.
 3. **Heartland memberships:** submitting to the paintbot-pw league auto-entered `jb-pw-base:v1`
@@ -79,7 +94,8 @@ James fills this in; until then an agent proposes a charter and stops.
 
 ## Next step (proposed)
 
-Write the strategy document (above). Before or alongside it, get a baseline measurement: read
+Build milestone M0 of the [compilation design](docs/designs/2026-09-30-strategy-compilation.md)
+(§11), then M1 (the `base.bas` description). Alongside it, get a baseline measurement: read
 `jb-pw-base:v1`'s free league episodes as they accumulate (`pw.py scout fetch` / `pw.py episodes`)
 or run an unseeded `field` request against each current champion (`pw.py leaders`; about 80
 episodes, ~24 credits), then `paintbot-pw-diagnose`. The 4-episode seed pilot (2026-09-30) already
@@ -130,10 +146,26 @@ Tooling facts:
 
 ## Open constraints
 
-- The docs are verified at `d0728ab1` (coworld-v0.3.79); the league moved to 0.3.80 (`c8dd1def`,
-  viewer-only change, rule-bearing files identical) the same evening and the tools pin it.
-  Releases ship several times a day: `pw.py deployed-ref --json` lists rule-file changes since
-  `PW_DOCS_SHA`; record `coworld_version` per episode and never pool rules versions.
+- The docs are verified at, and the tools pinned to, `118e1619` (coworld-v0.3.89, the league's
+  build on 2026-09-30; `tools/release.env` moved from 0.3.80 the same day). From 0.3.80 no teams
+  rule changed (same hashes, same BASIC peaks), but 0.3.89 added `rnd(n)` (now a reserved host
+  name: `pw.py local compile` accepts `x = rnd(10)` and rejects `rnd = 3`), moved BASIC perception
+  into `seat_view.nim`, and retired every earlier neural contract. `pw_trace.nim` and `pw_map.nim`
+  now define the wading test locally (0.3.89 removed `neural_contract.inWater`), and
+  `deployed-ref` also diffs `seat_view.nim`, `neural_contract.nim` and `guide.md`. Record
+  `coworld_version` per episode and never pool rules versions.
+- 0.3.89's `-d:pwTraining` terrain table fills whole 64 × 64 blocks on first touch (upstream
+  #183), which made every fresh lab process pay ~20 s. The tools now share one terrain file
+  instead (`tools/.cache/terrain/<tag>/island-f2047.pwterrain`, 621 MB). It is built once per
+  release in ~27 s, and later runs take `pw_trace` ~0.3 s per tape, `pw_map` 0.08 s, and a
+  16-match screen 10.6 s. Results are identical. Disk is bounded: one file per release and
+  terrain flag set, other releases' files deleted, LRU cap 2 GB (`PW_TERRAIN_CACHE_MAX_GB`),
+  off with `PW_TERRAIN_CACHE=0`, inspect with `pw.py terrain-cache status`
+  ([pw_release.md § Terrain cache](docs/tools/pw_release.md#terrain-cache)). This Mac's disk was
+  99% full (4.6 GB free) on 2026-09-30, so the file is a real share of what is left.
+- A seat that fails host staging now fails the whole hosted episode on the platform (no scores,
+  no replay; round 2510, 2026-09-30), like a compile error. Findings about Alpha
+  (`daveey-pw-neural`) from before 2026-09-30 describe a policy on the retired neural contracts.
 - The Observatory replay wrapper does not forward a tick (`t=`); only the game's own viewer URL
   honors `?t=`. Match reports link episodes without a tick.
 - Thresholds in `pw_flags`, `pw_fights`, `pw_metrics` and `pw_intent` are uncalibrated

@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strategy File Format</title>
+<!--
+  Ink & Print design/plan document template (Softmax house style).
+
+  HOW TO USE (renderer subagent):
+  - Replace everything inside <article id="doc"> with the real document content.
+    The placeholder content below doubles as a component style guide — copy the
+    markup patterns (masthead, TOC, section, figure, table, callout, code,
+    citation) and delete what you don't use.
+  - Do NOT modify anything between the DC-COMMENTS BEGIN/END markers. That block
+    is the tested commenting system; copy it verbatim. The one thing you may fill
+    is the CONTENT of <script id="dc-preload" type="application/json">: a
+    dc-comments/1 `comments` array, each comment optionally carrying
+    `replies: [{author, text, created}]`, so the reader sees their comments and
+    the agent's replies together in the sidebar.
+  - Keep the doc self-contained: inline SVG for figures, no JS deps beyond this
+    file. Google Fonts is the only permitted external fetch.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ Ink & Print tokens ============ */
+  :root {
+    --bg: #fffdf4;            /* cream paper */
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;            /* warm near-black — never pure #000 */
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --cta-foreground: #fffdf4;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Merriweather Sans', 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ============ Page grid: reading column + comment rail ============ */
+  .dc-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  article#doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 56px 40px 120px;
+    min-width: 0;
+  }
+
+  /* ============ Typography ============ */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+  }
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 8px 0 10px;
+  }
+  header.masthead .context { color: var(--fg-subtle); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-navy);
+    margin: 48px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; margin: 32px 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--ink-navy); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--cta); }
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 24px; margin: 0 0 14px; }
+  li { margin-bottom: 4px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Key-points opener: every section starts with scannable bullets */
+  .key-points {
+    list-style: none;
+    padding: 0 0 0 2px;
+    margin: 0 0 18px;
+  }
+  .key-points li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .key-points li::before { content: '—'; position: absolute; left: 0; color: var(--ink-gold); font-weight: 700; }
+
+  /* ============ TOC ============ */
+  nav.toc { margin: 28px 0 8px; }
+  nav.toc ol { list-style: none; padding: 0; column-count: 2; column-gap: 40px; margin: 10px 0 0; }
+  nav.toc li { margin-bottom: 5px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  nav.toc .toc-num { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-right: 8px; }
+
+  /* ============ Tables ============ */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+  th {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+    text-align: left;
+    padding: 6px 12px 6px 0;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-feature-settings: 'tnum' 1; }
+
+  /* ============ Figures ============ */
+  figure { margin: 24px 0 28px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+  }
+  figcaption .fig-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10.5px;
+    color: var(--ink-navy);
+    margin-right: 8px;
+  }
+
+  /* ============ Code & citations ============ */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 16px 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .cite {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    background: var(--surface-alt);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  /* Superscript source references — body prose never carries raw file paths.
+     Full citation lives in the title (hover) and in the numbered Sources list. */
+  sup.ref { line-height: 0; }
+  sup.ref a {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-navy);
+    text-decoration: none;
+    padding: 0 1px;
+  }
+  sup.ref a:hover { text-decoration: underline; }
+  ol.sources { margin: 12px 0; padding-left: 30px; }
+  ol.sources li {
+    font-size: 13px;
+    padding: 2px 0;
+  }
+  ol.sources li::marker {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--ink-navy);
+  }
+  ol.sources li:target { background: var(--accent-soft); }
+
+  /* ============ Callouts ============ */
+  .callout { padding: 12px 16px; margin: 18px 0; font-size: 13.5px; border-radius: 3px; }
+  .callout .callout-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .callout-info { background: var(--accent-soft); }
+  .callout-info .callout-label { color: var(--ink-navy); }
+  .callout-warn { background: rgba(179, 110, 78, 0.08); border-left: 3px solid var(--ink-terracotta); }
+  .callout-warn .callout-label { color: var(--ink-terracotta); }
+  .callout-open { background: rgba(212, 168, 83, 0.10); }
+  .callout-open .callout-label { color: #8a6a1f; }
+
+  /* Decision record */
+  .decision { border-top: 1px solid var(--border); padding: 14px 0 4px; margin: 14px 0; }
+  .decision .decision-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sage); }
+  .decision p { margin-top: 6px; }
+
+  @media (max-width: 1100px) {
+    .dc-page { grid-template-columns: 1fr; }
+  }
+  @media print {
+    #dc-sidebar, #dc-fab, #dc-toggle { display: none !important; }
+    .dc-page { grid-template-columns: 1fr; }
+  }
+
+  /* ================================================================
+     DC-COMMENTS BEGIN — styles (copy verbatim; do not modify)
+     ================================================================ */
+  ::highlight(dc-hl) { background: rgba(212, 168, 83, 0.28); }
+  ::highlight(dc-hl-active) { background: rgba(212, 168, 83, 0.6); }
+
+  #dc-fab {
+    position: absolute;
+    z-index: 40;
+    display: none;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cta-foreground);
+    background: var(--cta);
+    border: 1px solid #0a1c42;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  #dc-fab:hover { background: var(--ink-navy); }
+
+  #dc-sidebar {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px 60px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  #dc-sidebar h2.dc-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+    margin: 0 0 4px;
+  }
+  .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .dc-btn {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .dc-btn:hover { background: var(--surface-alt); }
+  .dc-btn:focus-visible, #dc-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dc-empty { color: var(--fg-muted); font-style: italic; }
+  .dc-item { border-top: 1px solid var(--border-subtle); padding: 12px 0; cursor: pointer; }
+  .dc-item.dc-resolved { opacity: 0.5; }
+  .dc-quote {
+    border-left: 2px solid var(--ink-gold);
+    padding-left: 8px;
+    color: var(--fg-subtle);
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+  }
+  .dc-orphan-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-terracotta);
+    background: rgba(179, 110, 78, 0.12);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+  }
+  .dc-text { white-space: pre-wrap; overflow-wrap: break-word; }
+  .dc-item textarea {
+    width: 100%;
+    min-height: 64px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    resize: vertical;
+  }
+  .dc-item textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--fg-muted); }
+  .dc-meta label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dc-meta .dc-del { margin-left: auto; color: var(--ink-terracotta); background: none; border: none; font-size: 11px; cursor: pointer; padding: 0; }
+  .dc-meta .dc-del:hover { text-decoration: underline; }
+  #dc-status { font-size: 11px; color: var(--ink-sage); min-height: 16px; margin-top: 8px; }
+
+  #dc-toggle { display: none; }
+  @media (max-width: 1100px) {
+    #dc-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      max-width: 90vw;
+      transform: translateX(100%);
+      transition: transform 200ms ease-out;
+      z-index: 50;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+    }
+    #dc-sidebar.dc-open { transform: translateX(0); }
+    #dc-toggle {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 51;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cta-foreground);
+      background: var(--cta);
+      border: 1px solid #0a1c42;
+      border-radius: 999px;
+      padding: 9px 15px;
+      cursor: pointer;
+    }
+  }
+  /* ============ DC-COMMENTS END — styles ============ */
+</style>
+</head>
+<body>
+<div class="dc-page">
+<article id="doc">
+
+  <!-- ============ Masthead ============ -->
+  <header class="masthead">
+    <span class="eyebrow">Design doc · 2026-09-30 · Proposal, revised after review — not implemented</span>
+    <h1>The strategy file and its compilation to BASIC</h1>
+    <p class="context">The Paintbot PW lab writes its policy as one structured Markdown file. A separate LLM agent compiles that file into a plain BASIC script.</p>
+  </header>
+
+  <!-- ============ Executive summary ============ -->
+  <section id="summary">
+    <h2>Executive Summary</h2>
+    <p><strong>The strategy file is the source of truth for our Paintbot PW policy. The compiled BASIC script is a build product.</strong> We change the policy only when we edit <code>STRATEGY.md</code>. Then a separate LLM agent compiles that file into <code>policy.bas</code>, and nobody edits the compiled script by hand. The compiler never edits the strategy file. It writes each guess and each gap into a versioned compile report, and the edit loop decides which guesses go into the strategy file. There is one kind of authored BASIC: skill code. Each Skill has a <code>skill.bas</code> file that we write directly, and the compiler copies it into the build unchanged, because it is source and not output.</p>
+    <p>The file has six layers, from Primitives at the bottom to Strategy at the top, and two side sections: Adaptations and Communication. Each layer can refer only to layers below it. Each component is precise Simplified Technical English prose with a fixed set of labeled fields, thus a linter can check the file. Every component carries checks at five levels: true, believed, acted, acted properly, and result. Telemetry v2 logs the beliefs and decisions that these checks need, because the replay already holds every position and every executed command.</p>
+    <div class="callout callout-info">
+      <span class="callout-label">Status</span>
+      This proposal is dated 2026-09-30. We revised it after James's review. Nothing here is implemented. The <code>strategy/</code> paths, the telemetry v2 line kinds, and the <code>pw.py strategy lint</code>, <code>pw.py strategy trace</code>, and <code>pw.py strategy audit</code> commands are proposed names. The compile process (versioning, reports, incremental builds) gets its own design document later. This document sets only the constraints that the compile process must obey.
+    </div>
+  </section>
+
+  <!-- ============ TOC ============ -->
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><span class="toc-num">1</span><a href="#rule">The load-bearing rule</a></li>
+      <li><span class="toc-num">2</span><a href="#goals">Goals and non-goals</a></li>
+      <li><span class="toc-num">3</span><a href="#structure">Structure: six layers and two side sections</a></li>
+      <li><span class="toc-num">4</span><a href="#format">Format: structured Markdown in Simplified Technical English</a></li>
+      <li><span class="toc-num">5</span><a href="#checks">Checks: five levels</a></li>
+      <li><span class="toc-num">6</span><a href="#telemetry">Telemetry v2</a></li>
+      <li><span class="toc-num">7</span><a href="#loops">The two loops</a></li>
+      <li><span class="toc-num">8</span><a href="#versioning">Versioning (outline)</a></li>
+      <li><span class="toc-num">9</span><a href="#limits">What this does not solve</a></li>
+      <li><span class="toc-num">10</span><a href="#tooling">Tooling (proposed, small)</a></li>
+      <li><span class="toc-num">11</span><a href="#alternatives">Alternatives considered</a></li>
+      <li><span class="toc-num">12</span><a href="#decisions">Decisions and open questions</a></li>
+      <li><span class="toc-num">13</span><a href="#sources">Sources</a></li>
+    </ol>
+  </nav>
+
+  <!-- ============ 1 ============ -->
+  <section id="rule">
+    <h2>1 · The load-bearing rule</h2>
+    <ul class="key-points">
+      <li>The strategy file is the source. The compiled <code>.bas</code> is a build product, and nobody edits it by hand.</li>
+      <li>The compiler never edits the source. Its guesses and gaps go into a versioned compile report.</li>
+      <li><code>skill.bas</code> files are authored source. The compiler copies them unchanged.</li>
+    </ul>
+
+    <div class="callout callout-info">
+      <span class="callout-label">The rule</span>
+      <strong>The strategy file is the source of truth for our Paintbot PW policy. The compiled BASIC script is a build product.</strong>
+      <ul style="margin: 8px 0 0;">
+        <li>We design, discuss, and change the policy when we edit the strategy file.</li>
+        <li>A separate compile step (an LLM agent) turns the strategy file into a <code>.bas</code> script.</li>
+        <li>Nobody edits the compiled <code>.bas</code> by hand. To change behavior, change the source and recompile.</li>
+        <li><strong>The compiler never edits the strategy file.</strong> It writes every guess and every gap into a separate compile report. The report is versioned and linked to the policy version. The edit loop reads the report and decides if a guess goes into the strategy file.</li>
+        <li>We can trace every compiled script to the exact source that made it (section 8).</li>
+      </ul>
+    </div>
+
+    <p>There is one kind of authored BASIC: <strong>skill code</strong> (section 4.1). Each Skill has a <code>skill.bas</code> file that we write and improve directly. We do this because work on mechanics is more productive in code than in prose. <code>skill.bas</code> is source, not output. The compiler copies it into the build unchanged and never makes it again. The rule above still applies to the compiled <code>.bas</code>, with no exception.</p>
+    <p>The rule must be visible at every level. It appears as a banner at the top of the strategy file and as a "generated, do not edit" header in every compiled <code>.bas</code>. It also appears as a line in the lab <code>AGENTS.md</code> and in the lab <code>WORKING_CONTEXT.md</code><sup class="ref"><a href="#src-1" title="paintbot_pw_lab/WORKING_CONTEXT.md, Objective section">1</a></sup>.</p>
+    <p>We use plain BASIC. The neural lane and the <code>jev.bas</code> oracle lane are out of scope.</p>
+  </section>
+
+  <!-- ============ 2 ============ -->
+  <section id="goals">
+    <h2>2 · Goals and non-goals</h2>
+    <ul class="key-points">
+      <li>One readable specification that a compiler agent can use and a script can lint.</li>
+      <li>Modular: one component maps to one named unit of BASIC.</li>
+      <li>Checks against replays at five levels, and traceability in two directions.</li>
+    </ul>
+
+    <h3>Goals</h3>
+    <ul>
+      <li><strong>One readable specification.</strong> It says what our agent knows, what situations it recognizes, and what it can do. It also says how the agent chooses, how it adapts, and what it tells teammates.</li>
+      <li><strong>Machine-usable.</strong> A compiler agent can find every component, resolve every reference, and report what it could not compile. A script can lint the file.</li>
+      <li><strong>Modular.</strong> One component maps to one named unit of BASIC. When a component changes, the compiler knows which unit to change, and nothing else changes. We can practice and improve a Skill or a Capability alone. The improvement touches other code only where it must.</li>
+      <li><strong>Checkable against replays</strong> at five levels (section 5). Was it true? Did the agent believe it? Did the agent act? Did it act properly? Was the result what we expected?</li>
+      <li><strong>Traceable in two directions.</strong> We can go from a component to its BASIC. We can also go from a replay, through telemetry, back to the component, the rule, and the beliefs that were active.</li>
+    </ul>
+
+    <h3>Non-goals</h3>
+    <ul>
+      <li><strong>A general behavior-tree or planning language.</strong> The file describes one policy for one game.</li>
+      <li><strong>Exact executable semantics.</strong> Components are precise technical prose, not code. Precision comes from numbers in <code>Spec</code> and <code>Params</code>. It also comes from the compiler, which reports each point that was not clear.</li>
+    </ul>
+  </section>
+
+  <!-- ============ 3 ============ -->
+  <section id="structure">
+    <h2>3 · Structure: six layers and two side sections</h2>
+    <ul class="key-points">
+      <li>Six layers, bottom to top: Primitives, Knowledge, Situations, Skills, Capabilities, Strategy.</li>
+      <li>A layer can refer only to layers below it.</li>
+      <li>Two side sections, Adaptations and Communication, come after the layers. Each has stated exceptions.</li>
+      <li>Each tick has a fixed order of seven steps, and the compiler must obey it.</li>
+    </ul>
+
+    <p>The file has six layers, bottom to top, and two side sections after them. A layer can refer only to layers below it. The side sections have the specific exceptions that their rows in the table give. Figure 1 shows the structure.</p>
+
+    <figure>
+      <svg viewBox="0 0 700 396" role="img" aria-label="Six layers stacked bottom to top: Primitives, Knowledge, Situations, Skills, Capabilities, Strategy, with a downward arrow meaning each layer refers only to layers below it. To the right, Adaptations points to Strategy, and Communication receives this tick's decision from Strategy and sends heard messages into Knowledge.">
+        <defs>
+          <marker id="f1-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <path d="M0,0 L9,5 L0,10" fill="none" stroke="#859ebe" stroke-width="1.4"/>
+          </marker>
+        </defs>
+
+        <!-- Downward rule arrow -->
+        <line x1="36" y1="24" x2="36" y2="376" stroke="#859ebe" stroke-width="1.6" marker-end="url(#f1-arrow)"/>
+        <text transform="translate(22,200) rotate(-90)" text-anchor="middle" font-family="Merriweather Sans" font-size="12.5" font-weight="700" fill="#1a3875">each layer refers only to layers below it</text>
+
+        <!-- Strategy -->
+        <rect x="60" y="20" width="360" height="52" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+        <text x="78" y="42" font-family="Merriweather Sans" font-size="15" font-weight="700" fill="#1a3875">Strategy</text>
+        <text x="78" y="62" font-family="Merriweather Sans" font-size="12.5" fill="#555555">roles, prioritized rules, commitment</text>
+        <text x="404" y="42" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="14" font-weight="700" fill="#1a3875">ST. / R.</text>
+
+        <!-- Capabilities -->
+        <rect x="60" y="82" width="360" height="52" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="78" y="104" font-family="Merriweather Sans" font-size="15" font-weight="700" fill="#111827">Capabilities</text>
+        <text x="78" y="124" font-family="Merriweather Sans" font-size="12.5" fill="#555555">tactical sub-objectives with done / abort</text>
+        <text x="404" y="104" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="14" font-weight="700" fill="#6e8050">C.</text>
+
+        <!-- Skills -->
+        <rect x="60" y="144" width="360" height="52" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="78" y="166" font-family="Merriweather Sans" font-size="15" font-weight="700" fill="#111827">Skills</text>
+        <text x="78" y="186" font-family="Merriweather Sans" font-size="12.5" fill="#555555">motor skills, authored in skill.bas</text>
+        <text x="404" y="166" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="14" font-weight="700" fill="#6e8050">SK.</text>
+
+        <!-- Situations -->
+        <rect x="60" y="206" width="360" height="52" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="78" y="228" font-family="Merriweather Sans" font-size="15" font-weight="700" fill="#111827">Situations</text>
+        <text x="78" y="248" font-family="Merriweather Sans" font-size="12.5" fill="#555555">named states of the world, over Knowledge</text>
+        <text x="404" y="228" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="14" font-weight="700" fill="#6e8050">S.</text>
+
+        <!-- Knowledge -->
+        <rect x="60" y="268" width="360" height="52" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="78" y="290" font-family="Merriweather Sans" font-size="15" font-weight="700" fill="#111827">Knowledge</text>
+        <text x="78" y="310" font-family="Merriweather Sans" font-size="12.5" fill="#555555">host reads, beliefs, and memory</text>
+        <text x="404" y="290" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="14" font-weight="700" fill="#6e8050">K.</text>
+
+        <!-- Primitives -->
+        <rect x="60" y="330" width="360" height="52" rx="3" fill="#f8f6ef" stroke="#d4c9b5" stroke-dasharray="5 4"/>
+        <text x="78" y="352" font-family="Merriweather Sans" font-size="15" font-weight="700" fill="#555555">Primitives</text>
+        <text x="78" y="372" font-family="Merriweather Sans" font-size="12.5" fill="#555555">listed, not authored</text>
+        <text x="404" y="352" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="14" font-weight="700" fill="#999999">P.</text>
+
+        <!-- Adaptations side box -->
+        <rect x="500" y="20" width="190" height="64" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="595" y="44" text-anchor="middle" font-family="Merriweather Sans" font-size="14" font-weight="700" fill="#111827">Adaptations (A.)</text>
+        <text x="595" y="66" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">changes R. rule priorities</text>
+        <line x1="500" y1="46" x2="424" y2="46" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+
+        <!-- Communication side box -->
+        <rect x="500" y="170" width="190" height="80" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="595" y="194" text-anchor="middle" font-family="Merriweather Sans" font-size="13.5" font-weight="700" fill="#111827">Communication (COM.)</text>
+        <text x="595" y="216" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">messages sent and heard</text>
+        <text x="595" y="236" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">a parallel track</text>
+
+        <!-- Strategy -> Communication: this tick's decision -->
+        <path d="M420,62 L455,62 L455,210 L497,210" fill="none" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+        <text transform="translate(466,136) rotate(90)" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">this tick's decision</text>
+
+        <!-- Communication -> Knowledge: heard messages -->
+        <path d="M595,250 L595,300 L423,300" fill="none" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1-arrow)"/>
+        <text x="509" y="292" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">heard messages</text>
+      </svg>
+      <figcaption><span class="fig-label">Figure 1</span>The six layers of the strategy file, bottom to top, with the ID prefix of each layer. Primitives have a dashed outline because the engine gives them: we list them but do not write them. Adaptations change the priorities of <code>R.</code> rules in Strategy. Communication sends heard messages into Knowledge and reports the decision of this tick.</figcaption>
+    </figure>
+
+    <table>
+      <thead>
+        <tr><th>Section</th><th>Prefix</th><th>What it is</th><th>May refer to</th><th>Paintbot PW examples</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Primitives</td><td><code>P.</code></td><td>What the engine already does. <strong>Listed, not authored.</strong></td><td>—</td><td><code>walkTo</code>, <code>lookAt</code>, <code>shootAt</code>, <code>chargeGrenade</code>, <code>sneak</code>, <code>shout</code><sup class="ref"><a href="#src-2" title="paintbot_pw_lab/docs/policy-surface.md §5.6–5.7 (actions; speech and sound)">2</a></sup></td></tr>
+        <tr><td>Knowledge</td><td><code>K.</code></td><td>What the agent knows at runtime: direct reads from the host, plus beliefs and memory built from them.</td><td><code>P.</code>, and <code>COM.</code> messages as a source</td><td>visible enemies and their motion; remembered pickups; heart ownership; team lives lead; last-heard gunfire sector</td></tr>
+        <tr><td>Situations</td><td><code>S.</code></td><td>Named states of the world, defined over Knowledge.</td><td><code>K.</code></td><td>outnumbered near our heart; enemy capturing a heart we own; ahead on lives late in the match</td></tr>
+        <tr><td>Skills</td><td><code>SK.</code></td><td>Motor skills: parameterized chains of primitives that we must execute better than other bots. No goals of their own.</td><td><code>P.</code>, <code>K.</code>, <code>S.</code></td><td>move-and-shoot (strafe legs timed to gun windup); lead aim; grenade throw at range; dry routing around water</td></tr>
+        <tr><td>Capabilities</td><td><code>C.</code></td><td>Tactical sub-objectives, built from Skills, each with success and abort conditions.</td><td><code>K.</code>, <code>S.</code>, <code>SK.</code></td><td>push to heart, hold heart, attack heart, retreat to heart, grab supply, snatch glory heart</td></tr>
+        <tr><td>Strategy</td><td><code>ST.</code> / <code>R.</code></td><td>Roles, the prioritized rules (<code>R.</code>) from Situation to Capability, and commitment.</td><td>all layers above</td><td>"two cogs per squad capture, two cover"; "when ahead on lives after 5:00, hunt instead of capture"</td></tr>
+        <tr><td>Adaptations</td><td><code>A.</code></td><td>Rules that change rule priorities during a match.</td><td><code>K.</code>, <code>S.</code>, and <code>R.</code> rules (priorities only)</td><td>"if our pushes to the far heart fail 3 times, lower <code>R.push_far</code> by 20"</td></tr>
+        <tr><td>Communication</td><td><code>COM.</code></td><td>Messages we send and understand: content, encoding, when sent, and which Knowledge a heard message updates. A parallel track to the main decision.</td><td>everything (the send side reads this tick's decision)</td><td>"announce my target heart"; "report enemy count at my heart"</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Why Skills and Capabilities are separate.</strong> Skills hold mechanical quality (aim, footwork, timing), and many Capabilities use the same Skill. Capabilities hold tactical intent. Thus we can improve "move and shoot" once, and every capability that fights gets the benefit. We can also A/B a tactic and not touch the mechanics.</p>
+    <p><strong>Why Situations are separate from Strategy.</strong> Several rules can use the same situation. A situation is also a claim about the world that we can check against replays. A rule is a choice that we can A/B.</p>
+    <p><strong>Why Adaptations and Communication are side sections, not layers.</strong> An Adaptation must name the rules that it changes, thus it comes after Strategy. Communication operates on both ends of the tick. Heard messages become Knowledge before the decision, and sent messages report the decision after it. When both stay outside the stack, the downward-only rule of the stack stays simple. The linter checks the two stated exceptions.</p>
+
+    <h3>Per-tick order (the compiler must obey it)</h3>
+    <p>The engine starts the script from the top every tick, and only globals and arrays persist<sup class="ref"><a href="#src-3" title="paintbot_pw_lab/docs/policy-surface.md §3 (per-tick execution and budgets)">3</a></sup>. In each tick, the compiled script does these steps in this order:</p>
+    <ol>
+      <li>Decode heard messages (<code>COM.</code> receive side) and update Knowledge (<code>K.</code>).</li>
+      <li>Evaluate every Situation (<code>S.</code>) once, into flags.</li>
+      <li>Apply Adaptations (<code>A.</code>) to rule priorities.</li>
+      <li>Select the rule (<code>R.</code>): the highest current priority whose condition holds, subject to <code>ST.commitment</code>.</li>
+      <li>Run the selected Capability (<code>C.</code>). It calls Skills (<code>SK.</code>), and the Skills call primitives.</li>
+      <li>Send messages (<code>COM.</code> send side).</li>
+      <li>Write telemetry (section 6).</li>
+    </ol>
+
+    <figure>
+      <svg viewBox="0 0 640 340" role="img" aria-label="The seven steps of each tick in order: decode heard messages and update Knowledge; evaluate Situations; apply Adaptations; select the rule; run the Capability and its Skills; send messages; write telemetry. A dashed arrow returns from step 7 to step 1 for the next tick.">
+        <defs>
+          <marker id="f2-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <path d="M0,0 L9,5 L0,10" fill="none" stroke="#859ebe" stroke-width="1.4"/>
+          </marker>
+        </defs>
+
+        <!-- Step 1 -->
+        <rect x="70" y="14" width="530" height="34" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="88" y="36" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#1a3875">1</text>
+        <text x="110" y="36" font-family="Merriweather Sans" font-size="13" fill="#111827">Decode heard messages and update Knowledge</text>
+        <text x="586" y="36" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="12.5" font-weight="700" fill="#6e8050">COM. → K.</text>
+        <line x1="335" y1="48" x2="335" y2="58" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f2-arrow)"/>
+
+        <!-- Step 2 -->
+        <rect x="70" y="60" width="530" height="34" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="88" y="82" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#1a3875">2</text>
+        <text x="110" y="82" font-family="Merriweather Sans" font-size="13" fill="#111827">Evaluate every Situation once, into flags</text>
+        <text x="586" y="82" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="12.5" font-weight="700" fill="#6e8050">S.</text>
+        <line x1="335" y1="94" x2="335" y2="104" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f2-arrow)"/>
+
+        <!-- Step 3 -->
+        <rect x="70" y="106" width="530" height="34" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="88" y="128" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#1a3875">3</text>
+        <text x="110" y="128" font-family="Merriweather Sans" font-size="13" fill="#111827">Apply Adaptations to rule priorities</text>
+        <text x="586" y="128" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="12.5" font-weight="700" fill="#6e8050">A.</text>
+        <line x1="335" y1="140" x2="335" y2="150" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f2-arrow)"/>
+
+        <!-- Step 4 -->
+        <rect x="70" y="152" width="530" height="34" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+        <text x="88" y="174" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#1a3875">4</text>
+        <text x="110" y="174" font-family="Merriweather Sans" font-size="13" font-weight="700" fill="#1a3875">Select the rule, subject to ST.commitment</text>
+        <text x="586" y="174" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="12.5" font-weight="700" fill="#1a3875">R.</text>
+        <line x1="335" y1="186" x2="335" y2="196" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f2-arrow)"/>
+
+        <!-- Step 5 -->
+        <rect x="70" y="198" width="530" height="34" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="88" y="220" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#1a3875">5</text>
+        <text x="110" y="220" font-family="Merriweather Sans" font-size="13" fill="#111827">Run the selected Capability and its Skills</text>
+        <text x="586" y="220" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="12.5" font-weight="700" fill="#6e8050">C. → SK. → P.</text>
+        <line x1="335" y1="232" x2="335" y2="242" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f2-arrow)"/>
+
+        <!-- Step 6 -->
+        <rect x="70" y="244" width="530" height="34" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="88" y="266" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#1a3875">6</text>
+        <text x="110" y="266" font-family="Merriweather Sans" font-size="13" fill="#111827">Send messages</text>
+        <text x="586" y="266" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="12.5" font-weight="700" fill="#6e8050">COM.</text>
+        <line x1="335" y1="278" x2="335" y2="288" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f2-arrow)"/>
+
+        <!-- Step 7 -->
+        <rect x="70" y="290" width="530" height="34" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="88" y="312" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#1a3875">7</text>
+        <text x="110" y="312" font-family="Merriweather Sans" font-size="13" fill="#111827">Write telemetry (section 6)</text>
+        <text x="586" y="312" text-anchor="end" font-family="ui-monospace, Menlo, monospace" font-size="12.5" font-weight="700" fill="#6e8050">PWD … PWC</text>
+
+        <!-- Next tick loop -->
+        <path d="M70,307 L46,307 L46,31 L67,31" fill="none" stroke="#859ebe" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#f2-arrow)"/>
+        <text transform="translate(32,169) rotate(-90)" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">next tick: the script starts again at the top</text>
+      </svg>
+      <figcaption><span class="fig-label">Figure 2</span>The seven steps of each tick, in the order that the compiler must obey. Step 4 is the decision. The dashed line shows that the engine starts the script again at the top on the next tick. Only globals and arrays persist from one tick to the next.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ============ 4 ============ -->
+  <section id="format">
+    <h2>4 · Format: structured Markdown in Simplified Technical English</h2>
+    <ul class="key-points">
+      <li>One Markdown file with a fixed heading scheme, stable IDs, and a fixed set of labeled fields for each component.</li>
+      <li>Rules have numeric priorities. The highest current priority whose condition holds wins.</li>
+      <li>Learned constants go in <code>Params</code>, not in Knowledge.</li>
+      <li>All prose is ASD-STE100 Simplified Technical English, because the reader is a compiler agent.</li>
+    </ul>
+
+    <p>The format is <strong>one Markdown file with a fixed heading scheme, stable IDs, and a fixed set of labeled fields for each component.</strong> It is not JSON, YAML, or XML. Section 11 gives the comparison.</p>
+
+    <h3>4.1 File layout</h3>
+<pre><code>paintbot_pw_lab/strategy/
+  STRATEGY.md                  # the source of truth (this format)
+  skills/&lt;skill_name&gt;/
+    skill.md                   # optional: the full Skill spec, linked from STRATEGY.md
+    skill.bas                  # authored skill code (source, not output)
+  compiled/&lt;build&gt;/
+    policy.bas                 # compiler output; generated, never hand-edited
+    map.json                   # component ID -&gt; BASIC unit, telemetry codes, @tune constants
+    report.md                  # guesses, gaps, questions, budget measurements
+    version.json               # section 8</code></pre>
+    <p>There is one <code>STRATEGY.md</code> for now. Any section can link to a separate file for that section when it becomes large. Every Skill has a directory from the start, because every Skill has its own code.</p>
+
+    <h3>4.2 Headings and IDs</h3>
+<pre><code># Strategy: &lt;policy name&gt;
+&lt;load-bearing banner, thesis, version&gt;
+
+## Primitives
+## Knowledge
+### K.enemy_contacts
+## Situations
+### S.outnumbered
+## Skills
+### SK.move_and_shoot
+## Capabilities
+### C.hold_heart
+## Strategy
+### ST.roles
+### ST.rules
+### ST.commitment
+## Adaptations
+### A.demote_failed_push
+## Communication
+### COM.target_heart
+## Open questions</code></pre>
+    <ul>
+      <li>Every component is a level-3 heading, and the heading text is its ID: a prefix plus a <code>snake_case</code> name.</li>
+      <li>Rules inside <code>ST.rules</code> have their own IDs (<code>R.&lt;name&gt;</code>). Thus logs, checks, and Adaptations can name them.</li>
+      <li>IDs are stable. A new name for an ID is a deliberate change, and the linter reports it.</li>
+      <li>A reference is the bare ID in backticks (<code>`S.outnumbered`</code>). The linter resolves it.</li>
+    </ul>
+
+    <h3>4.3 Fields</h3>
+    <p>Each component is a heading, then a bullet list of labeled fields, then optional prose. A field with * is necessary.</p>
+    <table>
+      <thead>
+        <tr><th>Field</th><th>Used by</th><th>Meaning</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>Summary</code>*</td><td>all</td><td>One sentence.</td></tr>
+        <tr><td><code>Spec</code>*</td><td>all</td><td>What the compiler must implement. Precise: distances, ticks, order.</td></tr>
+        <tr><td><code>Sources</code></td><td>K</td><td>Host reads it uses (<code>playerX</code>, <code>controlOwner</code>, <code>heardX</code> ...) and <code>COM.</code> messages that update it.</td></tr>
+        <tr><td><code>Memory</code></td><td>K</td><td>What persists across ticks and for how long.</td></tr>
+        <tr><td><code>Log</code></td><td>K</td><td>The belief values telemetry records, and how often (section 6). Required if the component has a <code>Believed</code> check.</td></tr>
+        <tr><td><code>Uses</code></td><td>S, SK, C, R, A, COM</td><td>IDs of components it depends on.</td></tr>
+        <tr><td><code>Params</code></td><td>S, SK, C, R, A</td><td>Named numbers: value, units, range <code>[min, max, step]</code> if tunable, and <strong>why this value</strong> (hand-set, or tuned, with a link to the tune run).</td></tr>
+        <tr><td><code>Code</code></td><td>SK</td><td>Path to <code>skill.bas</code>.</td></tr>
+        <tr><td><code>Done when</code> / <code>Abort when</code></td><td>C</td><td>Success condition; conditions that give control back to Strategy. Each has a stable name, so telemetry can say which one fired.</td></tr>
+        <tr><td><code>Checks</code>*</td><td>all but P</td><td>The five-level checks (section 5).</td></tr>
+        <tr><td><code>Evidence</code></td><td>all</td><td>Links: TENTATIVE_LESSONS<sup class="ref"><a href="#src-4" title="paintbot_pw_lab/TENTATIVE_LESSONS.md (the lab evidence log)">4</a></sup>, reports, A/B results, tune runs.</td></tr>
+        <tr><td><code>Status</code>*</td><td>all</td><td><code>idea</code>, <code>specified</code>, <code>compiled</code>, <code>tested</code>, or <code>proven</code>, with date.</td></tr>
+        <tr><td><code>Rationale</code></td><td>all</td><td>Why. For people and the edit loop. <strong>The compiler does not implement rationale.</strong></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Learned constants go in <code>Params</code></strong> of the component that uses them (for example, "lead a moving target by <code>lead_ticks</code> = 6"). They do not go in Knowledge. Knowledge is what the agent learns about the world while it plays. When the tuning loop finds a better value, the edit loop writes the new value into <code>Params</code> with an <code>Evidence</code> link to the tune run. If the edit loop does not do this, the next recompile loses the value.</p>
+
+    <h3>4.4 Strategy: rules with priorities</h3>
+    <p><code>ST.rules</code> is a list of rules. Each rule has an ID and a default priority (0-1000). In each tick, the rule with the <strong>highest current priority whose condition holds</strong> wins. File order breaks ties.</p>
+<pre><code>### ST.rules
+- `R.dump_grenade` [900]: WHEN `S.about_to_die_with_charge` DO `C.dump_grenade`
+- `R.retreat` [700]: WHEN `S.outnumbered` AND NOT `S.on_owned_heart` DO `C.retreat_to_heart`(toward=nearest_friend)
+- `R.defend` [600]: WHEN `S.enemy_capturing_our_heart` DO `C.attack_heart`(heart=that_heart) FOR role=cover
+- `R.hunt` [400]: WHEN `S.ahead_on_lives` AND `S.late_match` DO `C.hunt`
+- `R.push` [100]: ALWAYS DO `C.push_to_heart`(heart=squad_target)</code></pre>
+    <p><code>ST.roles</code> says how the eight cogs on a team divide into roles. All eight cogs operate the same file. Thus roles are a function of <code>selfId</code>, as the squads in <code>base.bas</code> are<sup class="ref"><a href="#src-5" title="paintbot_pw_lab/reference/base.bas:204-298 (squads by selfId)">5</a></sup>.</p>
+    <p><code>ST.commitment</code> says when a new rule can interrupt a capability that is active. It gives minimum hold times, the priority margin that a new rule needs to preempt, and hysteresis. As a result, the agent does not change capability every tick.</p>
+
+    <h3>4.5 Adaptations</h3>
+    <p>An Adaptation changes rule priorities during a match. This is the first form of a policy that changes its own structure. We keep it small on purpose.</p>
+<pre><code>### A.demote_failed_push
+- Summary: Stop pushing a heart that keeps failing.
+- Spec: When `K.push_history` shows `fail_limit` failed pushes to one heart within
+  `window` ticks, lower `R.push` priority for that heart by `step`. Restore it after `window`.
+- Uses: `K.push_history`, `R.push`
+- Params: fail_limit = 3; window = 1440 ticks [480, 2880, 240]; step = 50 [10, 100, 10]</code></pre>
+    <p>There are two limits. First, globals reset every episode, thus an Adaptation lasts only for one match. Second, telemetry must log every priority change (section 6). If it does not, we cannot compute the "acted properly" check.</p>
+
+    <h3>4.6 Communication</h3>
+    <p>A Communication component defines one message type. It has these fields:</p>
+    <ul>
+      <li><code>Content</code>: the beliefs or intentions that the message carries (for example, my target heart, or the enemies that I see).</li>
+      <li><code>Encoding</code>: the exact text or numeric format. Keep it short, because <code>shout</code> costs 68 work units.</li>
+      <li><code>Send when</code>: the condition. It can refer to the rule and capability that this tick selected.</li>
+      <li><code>On receipt</code>: the <code>K.</code> component that the message updates, and how much to trust it.</li>
+      <li><code>Checks</code>: Was the message sent when it must be? Did teammates decode it correctly? Did it change the result?</li>
+    </ul>
+    <div class="callout callout-info">
+      <span class="callout-label">Engine constraints</span>
+      Every living cog within 12.8 m hears a shout, and <strong>this includes enemies</strong>. A cog can send at most 4 shouts per tick. Delivery occurs on the next tick. A heard message gives the observed seat and the exact position of the speaker<sup class="ref"><a href="#src-2" title="paintbot_pw_lab/docs/policy-surface.md §5.6–5.7 (actions; speech and sound)">2</a></sup>. Communication needs more design (section 12).
+    </div>
+
+    <h3>4.7 A worked component</h3>
+    <p>The example below shows a full Capability with all of its fields.</p>
+<pre><code>### C.hold_heart
+- Summary: Keep a heart that we own from capture.
+- Spec: Stand inside the capture ring of `heart`. Stay off the line between the ring center
+  and the nearest remembered enemy. Face the most recent threat direction. Fight with
+  `SK.move_and_shoot`. Do not go more than `leash` outside the ring.
+- Uses: `K.enemy_contacts`, `K.threat_direction`, `SK.move_and_shoot`, `SK.lead_aim`
+- Params: heart (heart index); leash = 300 cm [100, 800, 50], hand-set, no tune run yet
+- Done when: never (runs until Strategy selects a different rule)
+- Abort when: `outnumbered_hold` = `S.outnumbered` true for 24 ticks; `heart_lost` = the heart
+  is not ours
+- Checks:
+  - Acted properly: while active, the cog is within ring + `leash` in &gt;= 95% of ticks. (script:
+    `pw.py strategy audit --check C.hold_heart.leash`)
+  - Result: the heart stays ours for the whole activation in &gt;= 60% of activations. (replay stat)
+- Status: idea (2026-09-30)
+- Rationale: base.bas has no hold behavior. It moves on when a heart is ours ...</code></pre>
+
+    <h3>4.8 Prose style</h3>
+    <p>All prose in <code>STRATEGY.md</code> and <code>skill.md</code> is <strong>ASD-STE100 Simplified Technical English</strong>. It has short sentences, one meaning per word, active voice, and no hedges. The text is a technical specification for a compiler agent, not a guide for people. Precision and no ambiguity come first. <code>Rationale</code> uses the same style. The linter flags the mechanical violations: semicolons, "may/should/would", and sentences over 25 words.</p>
+  </section>
+
+  <!-- ============ 5 ============ -->
+  <section id="checks">
+    <h2>5 · Checks: five levels</h2>
+    <ul class="key-points">
+      <li>Five levels, each on top of the one before it: True, Believed, Acted, Acted properly, Result.</li>
+      <li>Each check has a semantic description, a script, or a replay statistic. At least one is necessary.</li>
+      <li>A check that the logs cannot compute reports unmeasurable. It never passes by default.</li>
+    </ul>
+
+    <p>Every component carries checks that we can compute from replays and telemetry. There are five levels, and each level builds on the level before it.</p>
+    <table>
+      <thead>
+        <tr><th>Level</th><th>Question</th><th>Data needed</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>True</strong></td><td>Was the thing actually true or applicable?</td><td>The replay (ground truth).</td></tr>
+        <tr><td><strong>Believed</strong></td><td>Did the agent believe it was true?</td><td>Telemetry: logged beliefs and situation flags.</td></tr>
+        <tr><td><strong>Acted</strong></td><td>If it believed it, did it act on the belief?</td><td>Telemetry: the rule and capability selected.</td></tr>
+        <tr><td><strong>Acted properly</strong></td><td>If it acted, did it act as the strategy says?</td><td>Telemetry: the decision inputs (flags, priorities, commitment state), capability events; replay for the executed commands.</td></tr>
+        <tr><td><strong>Result</strong></td><td>If it acted properly and the belief was correct, was the result what we expected?</td><td>Replay outcomes over the capability's activation window.</td></tr>
+      </tbody>
+    </table>
+
+    <p>The next table shows the levels that apply to each section.</p>
+    <table>
+      <thead>
+        <tr><th>Section</th><th>Checks that apply</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Knowledge</td><td>True vs Believed = <strong>belief accuracy</strong> (for example, logged enemy positions against replay positions; error in cm, false and missed contacts).</td></tr>
+        <tr><td>Situations</td><td>True, Believed, and their agreement (precision and recall of the flag).</td></tr>
+        <tr><td>Rules</td><td>Acted (the rule fired when its condition held and it was the top priority), Acted properly (the audit re-runs the selection from logged inputs and gets the same rule).</td></tr>
+        <tr><td>Capabilities</td><td>Acted properly (Spec, Done/Abort), Result.</td></tr>
+        <tr><td>Skills</td><td>Acted properly (execution: for example, shots fired only after windup), Result (for example, hit rate at range).</td></tr>
+        <tr><td>Adaptations</td><td>Acted (fired when its condition held), Result (did the new priorities help).</td></tr>
+        <tr><td>Communication</td><td>Sent correctly, decoded correctly by teammates, Result.</td></tr>
+      </tbody>
+    </table>
+
+    <p>Each check has one or more of these: a semantic description, a script to run, and a replay statistic. At least one is necessary. A check that the logs cannot compute reports <strong>unmeasurable</strong>. It never passes by default.</p>
+    <p>Belief building (Knowledge) is imperfect by nature, because the data has fog. Belief-accuracy checks let us optimize belief building from replays, as we do for any other component.</p>
+  </section>
+
+  <!-- ============ 6 ============ -->
+  <section id="telemetry">
+    <h2>6 · Telemetry v2</h2>
+    <ul class="key-points">
+      <li>Telemetry v2 logs only what is in the head of the agent: beliefs and decisions.</li>
+      <li>Five proposed line kinds, with integer fields only. <code>map.json</code> decodes every code.</li>
+      <li>The print budget per tick is a hard limit. If a tick goes above it, the seat is disabled for the episode.</li>
+      <li>Hosted episodes return our seat logs. No hosted episode has carried our telemetry lines yet.</li>
+    </ul>
+
+    <p>Telemetry v1 prints one <code>PWI</code> line with a mode code, a target, and a reason<sup class="ref"><a href="#src-6" title="paintbot_pw_lab/reference/intent_telemetry.bas (v1 PWI line; print budget math)">6</a></sup>. <code>pw.py intent</code> parses that line<sup class="ref"><a href="#src-7" title="paintbot_pw_lab/tools/pw_intent.py (v1 parser and audit; tick alignment)">7</a></sup>. v2 must give <strong>every value that a Believed, Acted, or Acted properly check needs</strong>. The replay already contains every position and every executed command. Thus telemetry logs only what is in the head of the agent: beliefs and decisions.</p>
+    <p>The line kinds below are proposed names. All fields are integers, and <code>map.json</code> decodes every code to its ID.</p>
+    <table>
+      <thead>
+        <tr><th>Line</th><th>When</th><th>Fields</th><th>Serves</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>PWD</code> decision</td><td>on any change, and every 24 ticks</td><td>tick; rule code; capability code; capability params (up to 3); situation flag words (31 flags per word); <code>held</code> (1 = kept by commitment, 0 = new selection); priority-set version</td><td>Situations Believed; Rules Acted and Acted properly; Capabilities Acted</td></tr>
+        <tr><td><code>PWP</code> priorities</td><td>at start, and when an Adaptation changes one</td><td>tick; adaptation code; rule code; old priority; new priority; priority-set version</td><td>re-running the selection; Adaptations Acted</td></tr>
+        <tr><td><code>PWE</code> capability event</td><td>on start, done, abort</td><td>tick; capability code; event; condition code (which Done/Abort condition)</td><td>Capabilities Acted properly and Result (activation windows)</td></tr>
+        <tr><td><code>PWB</code> belief</td><td>per the <code>K.</code> component's <code>Log</code> field</td><td>tick; knowledge code; the logged values (for example seat, x, y, age for each believed enemy)</td><td>Knowledge belief accuracy; Situations Believed</td></tr>
+        <tr><td><code>PWC</code> communication</td><td>on send and on decode</td><td>tick; send or receive; message code; speaker seat; decoded values</td><td>Communication checks</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Rules for telemetry v2</h3>
+    <ul>
+      <li><strong>Alignment.</strong> <code>tick</code> is <code>worldTick</code> at decision time. It equals the replay table tick of the world that the agent used for the decision. The command appears at tick + 1, as in v1<sup class="ref"><a href="#src-7" title="paintbot_pw_lab/tools/pw_intent.py (v1 parser and audit; tick alignment)">7</a></sup>.</li>
+      <li><strong>Coverage is checked, not assumed.</strong> For each check, <code>map.json</code> lists the log fields that the check reads. The linter fails a check when no component logs its fields.</li>
+      <li><strong>Budget.</strong> In each tick, the engine permits 1,024 printed bytes and 128 print events. If a tick goes above either limit, a runtime error disables the seat for the rest of the episode<sup class="ref"><a href="#src-3" title="paintbot_pw_lab/docs/policy-surface.md §3 (per-tick execution and budgets)">3</a></sup>. The compiler reports the worst-case total per tick and keeps it at or below half of each limit<sup class="ref"><a href="#src-6" title="paintbot_pw_lab/reference/intent_telemetry.bas (v1 PWI line; print budget math)">6</a></sup>. Large belief lists are split across ticks (for example, 4 enemies per tick). The engine cuts the seat log at 10 MiB per episode<sup class="ref"><a href="#src-3" title="paintbot_pw_lab/docs/policy-surface.md §3 (per-tick execution and budgets)">3</a></sup>. The target is at most 2 MiB for a 14,400-tick match.</li>
+      <li><strong>Kill switch.</strong> <code>telemetryOff = 1</code> stops all lines.</li>
+      <li><strong>Tooling.</strong> <code>pw_intent.py</code> gets a v2 parser and the five-level audit (section 10).</li>
+    </ul>
+
+    <div class="callout callout-warn">
+      <span class="callout-label">Hosted logs: available, with two caveats</span>
+      Our XP episodes return one seat log for each of our seats (<code>logs/policy_agent_&lt;seat&gt;.log</code>). The seed pilot of 2026-09-30 confirmed this, and the engine writes PRINT output into that file<sup class="ref"><a href="#src-8" title="paintbot_pw_lab/docs/field.md:206-210 (hosted seat logs returned for our seats, confirmed 2026-09-30 seed pilot); engine print callback writes the seat log: paintbot-pw src/polyworld/coworld.nim:150-170">8</a></sup>. Caveat 1: no hosted policy of ours printed anything yet, because <code>base.bas</code> prints nothing. Thus the first telemetry v2 upload must confirm that the lines arrive complete. Caveat 2: some logs are missing for minutes after an episode ends (5 of 32 of our seat logs in the first fetch of the pilot). Refetch with <code>--force</code>. The audit reports a seat with no log as unmeasurable. Logs come back only for our own seats, thus belief checks apply only to our own seats.
+    </div>
+  </section>
+
+  <!-- ============ 7 ============ -->
+  <section id="loops">
+    <h2>7 · The two loops</h2>
+    <ul class="key-points">
+      <li>The edit loop (people and an LLM) changes the source. It never edits compiled output.</li>
+      <li>The compile loop (a separate LLM agent) makes one build directory. It never edits the source.</li>
+      <li>Compiler guesses go back to the edit loop, and the edit loop decides.</li>
+      <li>Nothing uploads without a clean local compile and a local screen.</li>
+    </ul>
+
+    <p>Different actors operate the two loops, and the source is where the loops meet. Figure 3 shows how they connect.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 528" role="img" aria-label="Evidence feeds the edit loop, which edits the source (STRATEGY.md and skills). The compile loop reads the source plus policy-surface.md and the reference starters, and writes compiled/build with policy.bas, map.json, report.md and version.json. A dashed arrow returns from report.md to the edit loop. The build passes a local gate before upload.">
+        <defs>
+          <marker id="f3-arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <path d="M0,0 L9,5 L0,10" fill="none" stroke="#859ebe" stroke-width="1.4"/>
+          </marker>
+          <marker id="f3-arrow-t" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <path d="M0,0 L9,5 L0,10" fill="none" stroke="#b36e4e" stroke-width="1.4"/>
+          </marker>
+        </defs>
+
+        <!-- Evidence -->
+        <rect x="20" y="20" width="220" height="70" rx="3" fill="#f8f6ef" stroke="#d4c9b5"/>
+        <text x="130" y="44" text-anchor="middle" font-family="Merriweather Sans" font-size="14" font-weight="700" fill="#111827">Evidence</text>
+        <text x="130" y="63" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">field reports, replays, checks,</text>
+        <text x="130" y="79" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">A/B results, compile reports</text>
+        <line x1="130" y1="90" x2="130" y2="117" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+
+        <!-- Edit loop -->
+        <rect x="20" y="120" width="220" height="100" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="130" y="145" text-anchor="middle" font-family="Merriweather Sans" font-size="15" font-weight="700" fill="#111827">Edit loop</text>
+        <text x="130" y="166" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">people + an LLM</text>
+        <text x="130" y="186" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">edits STRATEGY.md, skills/*.bas</text>
+        <text x="130" y="206" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#b36e4e">never edits compiled output</text>
+
+        <!-- Edit -> source -->
+        <line x1="240" y1="170" x2="277" y2="170" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+        <text x="259" y="161" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">edits</text>
+
+        <!-- Source -->
+        <rect x="280" y="128" width="160" height="84" rx="3" fill="#eef2f7" stroke="#859ebe" stroke-width="1.5"/>
+        <text x="360" y="148" text-anchor="middle" font-family="Merriweather Sans" font-size="11" font-weight="700" fill="#555555" letter-spacing="1.2">SOURCE</text>
+        <text x="360" y="172" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13.5" font-weight="700" fill="#1a3875">STRATEGY.md</text>
+        <text x="360" y="194" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" fill="#1a3875">skills/</text>
+
+        <!-- Source -> compile -->
+        <line x1="440" y1="170" x2="477" y2="170" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+        <text x="459" y="161" text-anchor="middle" font-family="Merriweather Sans" font-size="11.5" fill="#555555">reads</text>
+
+        <!-- Library -->
+        <rect x="480" y="20" width="220" height="70" rx="3" fill="#f8f6ef" stroke="#d4c9b5"/>
+        <text x="590" y="48" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12.5" fill="#111827">policy-surface.md</text>
+        <text x="590" y="70" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">+ reference/ starters</text>
+        <line x1="590" y1="90" x2="590" y2="117" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+        <text x="600" y="108" font-family="Merriweather Sans" font-size="11.5" fill="#555555">reads</text>
+
+        <!-- Compile loop -->
+        <rect x="480" y="120" width="220" height="100" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="590" y="152" text-anchor="middle" font-family="Merriweather Sans" font-size="15" font-weight="700" fill="#111827">Compile loop</text>
+        <text x="590" y="174" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#555555">separate LLM agent</text>
+        <text x="590" y="196" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#b36e4e">never edits the source</text>
+        <line x1="590" y1="220" x2="590" y2="257" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+        <text x="600" y="243" font-family="Merriweather Sans" font-size="11.5" fill="#555555">writes</text>
+
+        <!-- Compiled output -->
+        <rect x="480" y="260" width="220" height="116" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+        <text x="590" y="284" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="13" font-weight="700" fill="#111827">compiled/&lt;build&gt;/</text>
+        <text x="590" y="306" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#555555">policy.bas</text>
+        <text x="590" y="326" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#555555">map.json</text>
+        <text x="590" y="346" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12" font-weight="700" fill="#b36e4e">report.md</text>
+        <text x="590" y="366" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#555555">version.json</text>
+
+        <!-- Return: report.md -> edit loop -->
+        <path d="M480,342 L130,342 L130,223" fill="none" stroke="#b36e4e" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#f3-arrow-t)"/>
+        <text x="305" y="333" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#b36e4e">guesses and gaps:</text>
+        <text x="305" y="360" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#b36e4e">the edit loop decides</text>
+
+        <!-- Gate -->
+        <line x1="590" y1="376" x2="590" y2="407" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+        <rect x="480" y="410" width="220" height="58" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+        <text x="590" y="434" text-anchor="middle" font-family="Merriweather Sans" font-size="13.5" font-weight="700" fill="#1a3875">Local gate</text>
+        <text x="590" y="454" text-anchor="middle" font-family="Merriweather Sans" font-size="12" fill="#1a3875">clean compile + local screen</text>
+        <line x1="590" y1="468" x2="590" y2="495" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f3-arrow)"/>
+        <text x="590" y="516" text-anchor="middle" font-family="Merriweather Sans" font-size="13" font-weight="700" fill="#111827">upload</text>
+      </svg>
+      <figcaption><span class="fig-label">Figure 3</span>The edit loop reads evidence and edits the source: <code>STRATEGY.md</code> and <code>skills/*.bas</code>. It never edits compiled output. The compile loop reads the source, the policy surface, and the reference starters. It writes one <code>compiled/&lt;build&gt;/</code> directory and never edits the source. Guesses and gaps in <code>report.md</code> go back to the edit loop (dashed line), and the edit loop decides. Nothing uploads before a clean local compile and a local screen. The figure does not show one input: an incremental compile also reads the <code>policy.bas</code> and <code>map.json</code> of the previous build.</figcaption>
+    </figure>
+
+    <h3>The edit loop</h3>
+    <p>People and an LLM operate the edit loop on <code>STRATEGY.md</code> and <code>skills/</code>. The edit loop does these tasks:</p>
+    <ul>
+      <li>Read the evidence: field reports, replays, check results, A/B results, and compile reports.</li>
+      <li>Change components.</li>
+      <li>Practice skills: improve <code>skill.bas</code> against the checks of the skill.</li>
+      <li>Keep <code>Status</code>, the <code>Params</code> values, and <code>Evidence</code> current.</li>
+    </ul>
+    <p>The edit loop never edits compiled output.</p>
+
+    <h3>The compile loop and its contract</h3>
+    <p>A separate LLM agent operates the compile loop. Its input is <code>STRATEGY.md</code>, the <code>skill.bas</code> files, the policy surface of the lab, and the <code>reference/</code> starters as a library of proven BASIC. Its output is one <code>compiled/&lt;build&gt;/</code> directory. Its contract has nine items:</p>
+    <ol>
+      <li><strong>Never edit the source.</strong> Do not write to <code>STRATEGY.md</code> or <code>skills/</code>.</li>
+      <li><strong>Compile only committed source.</strong> If <code>STRATEGY.md</code> or <code>skills/</code> has uncommitted changes, refuse to build. Thus the commit SHA in <code>version.json</code> identifies the input exactly.</li>
+      <li><strong>Structure and modularity.</strong> Obey the per-tick order (section 3). Write one <code>SUB</code> (or one delimited block) for each component. Name it from its ID, and put the ID in a comment. The globals of each component share a prefix that comes from its ID. <code>map.json</code> records every unit. Thus a later build can change only the units whose components changed.</li>
+      <li><strong>Skills verbatim.</strong> Copy each <code>skill.bas</code> unchanged. If the code of a skill does not fit (a missing global, a budget problem), report it. Do not rewrite it.</li>
+      <li><strong>Parameters</strong> become constants in one init block. Each tunable constant carries <code>' @tune min max step</code><sup class="ref"><a href="#src-9" title="paintbot_pw_lab/tools/pw_tune.py:13-14 (' @tune convention)">9</a></sup>. Thus the paintbot-pw-tune skill can search them without a recompile<sup class="ref"><a href="#src-10" title="paintbot_pw_lab/.claude/skills/paintbot-pw-tune/SKILL.md (' @tune convention)">10</a></sup>.</li>
+      <li><strong>Telemetry v2</strong> as section 6 specifies, with the budget report.</li>
+      <li><strong>Report every guess.</strong> Where <code>Spec</code> is ambiguous or impossible, choose the most conservative reading and implement it. Record it in <code>report.md</code> with the component ID. An unresolved guess blocks <code>Status: tested</code>.</li>
+      <li><strong>Safety and budget.</strong> The build must compile locally (<code>pw.py local compile</code>)<sup class="ref"><a href="#src-11" title="paintbot_pw_lab/tools/pw_local.py:581 (local compile) and :601 (local screen)">11</a></sup>. The report gives peak instructions and work units against the per-tick budgets of 50,000 and 125,000<sup class="ref"><a href="#src-3" title="paintbot_pw_lab/docs/policy-surface.md §3 (per-tick execution and budgets)">3</a></sup>. A compile error fails the whole hosted episode<sup class="ref"><a href="#src-12" title="paintbot_pw_lab/docs/policy-surface.md §4 (failure modes: a BASIC compile error fails the whole hosted episode)">12</a></sup>. Thus nothing uploads without a clean local compile and a local screen<sup class="ref"><a href="#src-11" title="paintbot_pw_lab/tools/pw_local.py:581 (local compile) and :601 (local screen)">11</a></sup>.</li>
+      <li><strong>Header.</strong> <code>policy.bas</code> starts with a banner: the build ID from <code>version.json</code>, and "generated, do not edit".</li>
+    </ol>
+    <p><strong>Compile incrementally.</strong> A full recompile for every change makes large diffs with much noise. The compiler takes the <code>policy.bas</code> and <code>map.json</code> of the previous build and changes only the units whose components changed. A full recompile stays available.</p>
+  </section>
+
+  <!-- ============ 8 ============ -->
+  <section id="versioning">
+    <h2>8 · Versioning (outline)</h2>
+    <ul class="key-points">
+      <li>A build must identify exactly what it came from.</li>
+      <li>The compiler uses only a committed source.</li>
+      <li>The compile design document gives the details later.</li>
+    </ul>
+
+    <p>A build must identify exactly what it came from. The compiler uses only a <strong>committed</strong> <code>STRATEGY.md</code> and <code>skills/</code> (contract item 2), because an uncommitted edit has no commit SHA. Each build writes <code>version.json</code> with these values:</p>
+    <ul>
+      <li>The source commit SHA.</li>
+      <li>The sha256 of <code>STRATEGY.md</code> and of each <code>skill.bas</code>.</li>
+      <li>The sha256 of <code>policy.bas</code>.</li>
+      <li>The date of the compiler run.</li>
+      <li>After upload, the policy ref (<code>name:vN</code>).</li>
+    </ul>
+    <p>The compile report sits next to <code>version.json</code>. Thus a policy version, its source, and its compiler guesses always stay together.</p>
+  </section>
+
+  <!-- ============ 9 ============ -->
+  <section id="limits">
+    <h2>9 · What this does not solve</h2>
+    <ul class="key-points">
+      <li>Natural language is ambiguous. We accept this and decrease it.</li>
+      <li>Beliefs can be wrong. Belief-accuracy checks measure this.</li>
+      <li>Hosted telemetry is not yet seen end to end.</li>
+    </ul>
+
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk: natural language is ambiguous</span>
+      The same <code>Spec</code> can compile to different BASIC in two runs. We accept this. The mitigations are STE prose, numbers in <code>Spec</code> and <code>Params</code>, the incremental compile, and the compile report.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk: beliefs can be wrong</span>
+      Knowledge comes from data with fog. Belief-accuracy checks measure this, and we optimize beliefs like any other component.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk: hosted telemetry is not yet seen end to end</span>
+      Retrieval of hosted seat logs works, but no hosted episode has carried our telemetry lines yet (section 6).
+    </div>
+  </section>
+
+  <!-- ============ 10 ============ -->
+  <section id="tooling">
+    <h2>10 · Tooling (proposed, small)</h2>
+    <ul class="key-points">
+      <li>Three proposed commands: <code>pw.py strategy lint</code>, <code>pw.py strategy trace</code>, and <code>pw.py strategy audit</code>.</li>
+      <li>The lint exits nonzero on errors, thus a loop can gate on it.</li>
+      <li>No new dependency.</li>
+    </ul>
+
+    <ul>
+      <li><code>pw.py strategy lint STRATEGY.md --json</code> checks that IDs are unique and well formed. It checks that references resolve and obey the section rules (section 3). It checks that the necessary fields are present. It checks that each Situation, Capability, and rule has a user, and that a component logs the data of each check. It also checks that <code>Params</code> ranges are well formed, and it finds mechanical STE violations. It exits nonzero on errors, thus a loop can gate on it.</li>
+      <li><code>pw.py strategy trace &lt;build&gt;</code> compares <code>version.json</code> with the current source. It lists the components that changed since that build.</li>
+      <li><code>pw.py strategy audit &lt;episodes&gt; --json</code> parses telemetry v2 and joins it to the hash-checked replay. Then it computes every check at all five levels. It extends <code>pw_intent.py</code><sup class="ref"><a href="#src-7" title="paintbot_pw_lab/tools/pw_intent.py (v1 parser and audit; tick alignment)">7</a></sup>.</li>
+    </ul>
+    <p>No new dependency is necessary.</p>
+  </section>
+
+  <!-- ============ 11 ============ -->
+  <section id="alternatives">
+    <h2>11 · Alternatives considered</h2>
+    <ul class="key-points">
+      <li>Structured Markdown wins, because the content is precise prose.</li>
+      <li>Numeric priorities replace ordered rules where the first match wins.</li>
+      <li>Authored <code>skill.bas</code> replaces skills as prose only.</li>
+    </ul>
+
+    <table>
+      <thead>
+        <tr><th>Option</th><th>For</th><th>Against</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Structured Markdown</strong> (chosen)</td><td>The content is precise prose, which LLM editors write well. Readable and diffable. Headings give structure a linter can parse.</td><td>Structure is by convention, so it needs a linter.</td></tr>
+        <tr><td>JSON / YAML</td><td>Exact structure, trivial to parse.</td><td>Long prose inside strings is hard to write and review; escaping and indentation errors; LLM edits churn whole blocks.</td></tr>
+        <tr><td>XML</td><td>LLMs handle tags well; exact structure.</td><td>Noisy for people to read; no gain over Markdown headings at this depth.</td></tr>
+        <tr><td>Ordered rules, first match wins</td><td>Simplest to read and check.</td><td>Priorities cannot change during a match. Replaced by numeric priorities (section 4.4).</td></tr>
+        <tr><td>Skills as prose only, compiled like everything else</td><td>One rule, no authored BASIC.</td><td>Mechanics improve faster in code than in prose, and a recompile would discard tuned skill code. Replaced by authored <code>skill.bas</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <p>The design borrows concepts from prior art. Situations plus prioritized rules are utility-based selection: a behavior-tree priority selector with numeric scores. Commitment is BDI-style intention. BDI means belief-desire-intention: an agent keeps a chosen plan until it has a reason to drop it. Skills and Capabilities form a hierarchical state machine.</p>
+    <p>We borrow the concepts, not a runtime or a file format. There is no behavior-tree runtime in BASIC, and the consumer is an LLM compiler.</p>
+  </section>
+
+  <!-- ============ 12 ============ -->
+  <section id="decisions">
+    <h2>12 · Decisions and open questions</h2>
+    <ul class="key-points">
+      <li>Three decisions on 2026-09-30: one file, the evidence log, and <code>base.bas</code> as the starting point.</li>
+      <li>Three open questions: communication design, the first hosted telemetry run, and the design of the compile process.</li>
+    </ul>
+
+    <h3>Decided (2026-09-30)</h3>
+    <div class="decision">
+      <span class="decision-label">Decision 1 · One file</span>
+      <p><strong>There is one <code>STRATEGY.md</code>, with optional links to separate files for each section.</strong> Skills are directories.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Decision 2 · Evidence log</span>
+      <p><strong><code>TENTATIVE_LESSONS.md</code> stays the evidence log</strong><sup class="ref"><a href="#src-4" title="paintbot_pw_lab/TENTATIVE_LESSONS.md (the lab evidence log)">4</a></sup>. <code>STRATEGY.md</code> links to it through <code>Evidence</code>. A lesson becomes policy only when it goes into a component.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Decision 3 · Starting point</span>
+      <p><strong>The first <code>STRATEGY.md</code> is a faithful description of <code>base.bas</code> in this format</strong><sup class="ref"><a href="#src-5" title="paintbot_pw_lab/reference/base.bas:204-298 (squads by selfId)">5</a></sup>. Its compiled output must play like <code>base.bas</code> in a local screen before we change any behavior. Thus we test the compiler before we test strategy.</p>
+    </div>
+
+    <h3>Open</h3>
+    <div class="callout callout-open">
+      <span class="callout-label">Open 1 · Communication design</span>
+      The comms v1 draft is in <code>strategy/comms.md</code>. It is policy content that changes frequently, thus it is not part of this format document. The field already has public shout protocols, for example Aaron's <code>FIRE22</code> and <code>ITEM23</code><sup class="ref"><a href="#src-13" title="paintbot_pw_lab/docs/reports/2026-09-29-league-field-analysis.md (public shout protocols)">13</a></sup>.
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">Open 2 · First hosted telemetry run</span>
+      Retrieval is confirmed. Make sure that telemetry v2 lines arrive complete in hosted seat logs (section 6).
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">Open 3 · Compile process design</span>
+      One design document covers the whole compilation process: versioning, the report format, incremental builds, and the setup of the compiler agent.
+    </div>
+  </section>
+
+  <!-- ============ Sources ============ -->
+  <section id="sources">
+    <h2>13 · Sources</h2>
+    <p>Paths are relative to the <code>personal_labs_paintbot_pw</code> checkout. The entries are in the order of first citation.</p>
+    <ol class="sources">
+      <li id="src-1"><span class="cite">paintbot_pw_lab/WORKING_CONTEXT.md</span> Objective section. The lab working context, where the load-bearing rule must also appear.</li>
+      <li id="src-2"><span class="cite">paintbot_pw_lab/docs/policy-surface.md §5.6–5.7</span> Primitives and speech. A <code>shout</code> costs 68 WU, and a cog can send at most 4 per tick. All living cogs within 12.8 m hear it, and enemies also hear it. Delivery is on the next tick. A heard shout gives the observed seat and the exact position of the speaker.</li>
+      <li id="src-3"><span class="cite">paintbot_pw_lab/docs/policy-surface.md §3</span> Per-tick execution. Only globals and arrays persist. Budgets are 50,000 instructions and 125,000 WU per tick. Print limits are 1,024 bytes and 128 events per decision, and a runtime error disables the seat. The seat log is cut at 10 MiB.</li>
+      <li id="src-4"><span class="cite">paintbot_pw_lab/TENTATIVE_LESSONS.md</span> The lab evidence log.</li>
+      <li id="src-5"><span class="cite">paintbot_pw_lab/reference/base.bas:204-298</span> Squads by <code>selfId</code> in the baseline policy.</li>
+      <li id="src-6"><span class="cite">paintbot_pw_lab/reference/intent_telemetry.bas</span> The v1 <code>PWI</code> line and its print budget math.</li>
+      <li id="src-7"><span class="cite">paintbot_pw_lab/tools/pw_intent.py</span> The v1 parser and audit. Tick alignment: <code>t</code> = <code>worldTick</code> = replay table tick, and the command is at <code>t+1</code>.</li>
+      <li id="src-8"><span class="cite">paintbot_pw_lab/docs/field.md:206-210</span> Hosted seat logs come back for our seats (seed pilot, 2026-09-30). The engine print callback writes the seat log (paintbot-pw <span class="cite">src/polyworld/coworld.nim:150-170</span>).</li>
+      <li id="src-9"><span class="cite">paintbot_pw_lab/tools/pw_tune.py:13-14</span> The <code>' @tune</code> convention for tunable constants.</li>
+      <li id="src-10"><span class="cite">paintbot_pw_lab/.claude/skills/paintbot-pw-tune/SKILL.md</span> The tune skill that searches <code>' @tune</code> constants.</li>
+      <li id="src-11"><span class="cite">paintbot_pw_lab/tools/pw_local.py:581, :601</span> Local compile (line 581) and local screen (line 601).</li>
+      <li id="src-12"><span class="cite">paintbot_pw_lab/docs/policy-surface.md §4</span> Failure modes. A BASIC compile error fails the whole hosted episode.</li>
+      <li id="src-13"><span class="cite">paintbot_pw_lab/docs/reports/2026-09-29-league-field-analysis.md</span> League field analysis. Public shout protocols, for example Aaron's <code>FIRE22</code> and <code>ITEM23</code>.</li>
+    </ol>
+  </section>
+
+</article>
+
+<!-- ================================================================
+     DC-COMMENTS BEGIN — markup + script (copy verbatim; do not modify)
+     ================================================================ -->
+<aside id="dc-sidebar" aria-label="Comments">
+  <h2 class="dc-title">Comments <span id="dc-count"></span></h2>
+  <div class="dc-actions">
+    <button class="dc-btn" id="dc-export">Export JSON</button>
+    <button class="dc-btn" id="dc-copy">Copy JSON</button>
+    <button class="dc-btn" id="dc-import">Import…</button>
+    <input type="file" id="dc-file" accept=".json,application/json" hidden>
+  </div>
+  <div id="dc-status" role="status"></div>
+  <div id="dc-list"><p class="dc-empty">No comments yet. Select text in the document to add one.</p></div>
+</aside>
+<button id="dc-fab" type="button">+ Comment</button>
+<button id="dc-toggle" type="button">Comments</button>
+<!-- Preload slot: a renderer may put a dc-comments/1 `comments` array here (each comment optionally carrying `replies`). Merged by id into the stored comments on load. Leave empty otherwise. -->
+<script id="dc-preload" type="application/json"></script>
+
+<script>
+(() => {
+  'use strict';
+  const FORMAT = 'dc-comments/1';
+  const CTX = 32; // prefix/suffix context length, chars
+  const doc = document.getElementById('doc');
+  const fab = document.getElementById('dc-fab');
+  const listEl = document.getElementById('dc-list');
+  const countEl = document.getElementById('dc-count');
+  const statusEl = document.getElementById('dc-status');
+  const sidebar = document.getElementById('dc-sidebar');
+  const storeKey = 'dc:' + document.title;
+
+  let comments = []; // {id, exact, prefix, suffix, text, created, resolved}
+  let ranges = new Map(); // id -> Range (null if orphaned)
+  let seq = 0;
+
+  // ---- text indexing: one global string over #doc's text nodes ----
+  function docText() {
+    const r = document.createRange();
+    r.selectNodeContents(doc);
+    return r.toString();
+  }
+  function globalOffset(container, offset) {
+    const r = document.createRange();
+    r.setStart(doc, 0);
+    r.setEnd(container, offset);
+    return r.toString().length;
+  }
+  function offsetsToRange(start, end) {
+    const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+    let pos = 0, range = document.createRange(), haveStart = false;
+    while (walker.nextNode()) {
+      const node = walker.currentNode, len = node.data.length;
+      if (!haveStart && pos + len >= start) {
+        range.setStart(node, start - pos);
+        haveStart = true;
+      }
+      if (haveStart && pos + len >= end) {
+        range.setEnd(node, end - pos);
+        return range;
+      }
+      pos += len;
+    }
+    return null;
+  }
+
+  // ---- anchoring: TextQuoteSelector-style exact + prefix/suffix ----
+  function selectorFromRange(range) {
+    const text = docText();
+    const start = globalOffset(range.startContainer, range.startOffset);
+    const end = globalOffset(range.endContainer, range.endOffset);
+    return {
+      exact: text.slice(start, end),
+      prefix: text.slice(Math.max(0, start - CTX), start),
+      suffix: text.slice(end, end + CTX),
+    };
+  }
+  function locate(c) {
+    const text = docText();
+    let i = text.indexOf(c.prefix + c.exact + c.suffix);
+    if (i >= 0) return offsetsToRange(i + c.prefix.length, i + c.prefix.length + c.exact.length);
+    i = text.indexOf(c.exact);
+    if (i >= 0) return offsetsToRange(i, i + c.exact.length);
+    return null;
+  }
+  function reanchorAll() {
+    ranges = new Map(comments.map(c => [c.id, locate(c)]));
+    paint();
+  }
+
+  // ---- painting via CSS Custom Highlight API ----
+  const hl = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  const hlActive = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  if (hl) { CSS.highlights.set('dc-hl', hl); CSS.highlights.set('dc-hl-active', hlActive); }
+  function paint(activeId) {
+    if (!hl) return;
+    hl.clear(); hlActive.clear();
+    for (const [id, r] of ranges) {
+      if (!r) continue;
+      (id === activeId ? hlActive : hl).add(r);
+    }
+  }
+
+  // ---- persistence (best-effort; file:// storage varies by browser) ----
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(comments)); } catch (e) { /* unavailable on some file:// setups */ }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      if (raw) comments = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- sidebar rendering ----
+  function flash(msg) {
+    statusEl.textContent = msg;
+    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 2500);
+  }
+  function sortedComments() {
+    const pos = c => {
+      const r = ranges.get(c.id);
+      return r ? globalOffset(r.startContainer, r.startOffset) : Infinity; // orphans last
+    };
+    return [...comments].sort((a, b) => pos(a) - pos(b));
+  }
+  function render(editingId) {
+    countEl.textContent = comments.length ? '(' + comments.length + ')' : '';
+    listEl.textContent = '';
+    if (!comments.length) {
+      const p = document.createElement('p');
+      p.className = 'dc-empty';
+      p.textContent = 'No comments yet. Select text in the document to add one.';
+      listEl.appendChild(p);
+      return;
+    }
+    for (const c of sortedComments()) {
+      const item = document.createElement('div');
+      item.className = 'dc-item' + (c.resolved ? ' dc-resolved' : '');
+      item.dataset.id = c.id;
+
+      const quote = document.createElement('div');
+      quote.className = 'dc-quote';
+      quote.textContent = c.exact.length > 90 ? c.exact.slice(0, 90) + '…' : c.exact;
+      if (!ranges.get(c.id)) {
+        const tag = document.createElement('span');
+        tag.className = 'dc-orphan-tag';
+        tag.textContent = 'orphaned';
+        quote.appendChild(tag);
+      }
+      item.appendChild(quote);
+
+      if (c.id === editingId) {
+        const ta = document.createElement('textarea');
+        ta.value = c.text;
+        ta.placeholder = 'Write a comment… (⌘/Ctrl+Enter to save, Esc to cancel)';
+        ta.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        });
+        ta.addEventListener('click', e => e.stopPropagation());
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'dc-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginTop = '6px';
+        saveBtn.addEventListener('click', e => { e.stopPropagation(); commit(); });
+        function commit() {
+          c.text = ta.value.trim();
+          if (!c.text) return cancel();
+          save(); render();
+        }
+        function cancel() {
+          if (!c.text) { comments = comments.filter(x => x.id !== c.id); ranges.delete(c.id); paint(); }
+          save(); render();
+        }
+        item.appendChild(ta);
+        item.appendChild(saveBtn);
+        listEl.appendChild(item);
+        requestAnimationFrame(() => ta.focus());
+        continue;
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dc-text';
+      text.textContent = c.text;
+      item.appendChild(text);
+
+      if (Array.isArray(c.replies) && c.replies.length) {
+        const box = document.createElement('div');
+        box.className = 'dc-replies';
+        for (const r of c.replies) {
+          const who = document.createElement('div');
+          who.className = 'dc-reply-author';
+          who.textContent = 'Reply from ' + (r.author || 'agent') + (r.created ? ' · ' + String(r.created).slice(0, 10) : '');
+          const body = document.createElement('div');
+          body.className = 'dc-reply-text';
+          for (const part of String(r.text || '').split(/(https?:\/\/[^\s)]+)/g)) {
+            if (/^https?:\/\//.test(part)) {
+              const a = document.createElement('a');
+              a.href = part; a.target = '_blank'; a.rel = 'noopener';
+              a.textContent = part;
+              a.addEventListener('click', e => e.stopPropagation());
+              body.appendChild(a);
+            } else body.appendChild(document.createTextNode(part));
+          }
+          box.append(who, body);
+        }
+        item.appendChild(box);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'dc-meta';
+      const when = document.createElement('span');
+      when.textContent = c.created.slice(0, 10);
+      const resolved = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!c.resolved;
+      cb.addEventListener('click', e => e.stopPropagation());
+      cb.addEventListener('change', () => { c.resolved = cb.checked; save(); render(); });
+      resolved.append(cb, 'resolved');
+      const del = document.createElement('button');
+      del.className = 'dc-del';
+      del.textContent = 'delete';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        comments = comments.filter(x => x.id !== c.id);
+        ranges.delete(c.id);
+        paint(); save(); render();
+      });
+      meta.append(when, resolved, del);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        const r = ranges.get(c.id);
+        if (!r) return flash('Anchor not found in this version of the document.');
+        const rect = r.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + rect.top - 160, behavior: 'smooth' });
+        paint(c.id);
+        setTimeout(() => paint(), 2000);
+      });
+      // double-click text to edit
+      text.addEventListener('dblclick', e => { e.stopPropagation(); render(c.id); });
+      listEl.appendChild(item);
+    }
+  }
+
+  // ---- selection -> floating Comment button ----
+  document.addEventListener('mouseup', e => {
+    if (fab.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) { fab.style.display = 'none'; return; }
+      const range = sel.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer) || !range.toString().trim()) {
+        fab.style.display = 'none';
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      fab.style.display = 'block';
+      fab.style.left = Math.min(rect.right + 8 + window.scrollX, window.scrollX + document.documentElement.clientWidth - 120) + 'px';
+      fab.style.top = (rect.top + window.scrollY - 4) + 'px';
+      fab.dataset.pending = '1';
+    }, 0);
+  });
+  fab.addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const c = Object.assign({ id: 'c' + Date.now().toString(36) + (seq++), text: '', created: new Date().toISOString(), resolved: false }, selectorFromRange(range));
+    comments.push(c);
+    ranges.set(c.id, range.cloneRange());
+    paint(c.id);
+    sel.removeAllRanges();
+    fab.style.display = 'none';
+    sidebar.classList.add('dc-open');
+    render(c.id);
+  });
+
+  // ---- export / import ----
+  function payload() {
+    return JSON.stringify({
+      format: FORMAT,
+      doc: document.title,
+      exported: new Date().toISOString(),
+      comments: comments,
+    }, null, 2);
+  }
+  document.getElementById('dc-export').addEventListener('click', () => {
+    const blob = new Blob([payload()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'doc') + '.comments.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Downloaded.');
+  });
+  document.getElementById('dc-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(payload()); flash('Copied to clipboard.'); }
+    catch (e) { flash('Clipboard blocked — use Export instead.'); }
+  });
+  document.getElementById('dc-import').addEventListener('click', () => document.getElementById('dc-file').click());
+  document.getElementById('dc-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(raw => {
+      const data = JSON.parse(raw);
+      if (data.format !== FORMAT || !Array.isArray(data.comments)) { flash('Not a dc-comments file.'); return; }
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of data.comments) byId.set(c.id, c);
+      comments = [...byId.values()];
+      reanchorAll(); save(); render();
+      flash('Imported ' + data.comments.length + ' comment(s).');
+    }).catch(() => flash('Could not parse that file.'));
+    e.target.value = '';
+  });
+
+  document.getElementById('dc-toggle').addEventListener('click', () => sidebar.classList.toggle('dc-open'));
+
+  // ---- init ----
+  load();
+  // Merge the renderer's preloaded comments (with replies) by id: a stored
+  // comment keeps its own text/resolved state and takes the preloaded replies.
+  try {
+    const pre = document.getElementById('dc-preload');
+    const preloaded = pre && pre.textContent.trim() ? JSON.parse(pre.textContent) : [];
+    if (Array.isArray(preloaded) && preloaded.length) {
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of preloaded) {
+        const existing = byId.get(c.id);
+        if (existing) { if (c.replies) existing.replies = c.replies; }
+        else byId.set(c.id, c);
+      }
+      comments = [...byId.values()];
+      save();
+    }
+  } catch (e) { /* malformed preload: ignore */ }
+  reanchorAll();
+  render();
+})();
+</script>
+<!-- ============ DC-COMMENTS END ============ -->
+</div>
+</body>
+</html>  /* replies rendered under a comment (from the comment's `replies` array) */
+  .dc-replies { margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--border-strong); }
+  .dc-reply-author { font-family: var(--sans); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-navy); }
+  .dc-reply-text { font-size: 12.5px; line-height: 1.5; color: var(--fg); white-space: pre-wrap; margin-top: 2px; }
+  .dc-reply-text a { color: var(--ink-navy); word-break: break-all; }
+
