@@ -24,6 +24,12 @@ reference), then compiles `examples/paintbot/native_env.nim` with
 (`tag`, `commit`, `nim`, `sha256`). About 30 s when the worktree exists. Everything under
 `tools/bin/` and `tools/.cache/` is gitignored.
 
+Terrain cache: every worker process (and `compile`) loads the lab's shared terrain file
+right after it creates its handle. Without it, each worker spends ~20 s on its first match filling the
+0.3.89 terrain table (#183). The first worker to start builds the file once per release (~27 s)
+while the others wait on its lock. Match results are identical either way. `PW_TERRAIN_CACHE=0`
+turns it off: [pw_release.md § Terrain cache](pw_release.md#terrain-cache).
+
 ## Commands
 
 Run from the repo root with `uv run` (stdlib + numpy only).
@@ -68,7 +74,7 @@ in `bad_seats`.
 | Outputs | `--out DIR`: `matches.jsonl`, `summary.json` (overwritten); `--record DIR`: `NAME.replay` + `NAME.meta.json` per recorded match |
 | `--json` result | `compile`: `{build, rules, policy: {path, sha256}, seed, ticks, ok, seats: [{seat, team, set_script, status, message}]}`; `match`/`screen`: the `summary.json` object (build, parity, `summary.{all, a_side_0, a_side_1, seed_balanced}`, recorded, ...) |
 | Exit codes | 0 ok; 1 a seat failed to compile or was disabled (one `failures[]` entry per seat, code `compile_failed` or `disabled`), some matches had a bad seat (code `bad_seats`), or a recording's hash differed (code `record_hash_mismatch`); 2 a missing `.bas`, bad `--seeds` or `--glory`, `screen --record` without `--record-seeds`, `--record-seeds` outside the batch (code `usage_error`); 3 the library or `paintbot-headless` is missing, stale, or disagrees with the library on the parity matches (`next[0]` = `paintbot_pw_lab/tools/build_native.sh`) |
-| Idempotence / cache | deterministic: the same files, seeds, glory and build give the same rows |
+| Idempotence / cache | deterministic: the same files, seeds, glory and build give the same rows. Reads (and builds once) the shared [terrain cache](pw_release.md#terrain-cache) |
 | Typical next step | `uv run python paintbot_pw_lab/tools/pw.py episodes <record dir> --json` to read a recorded match |
 
 ## Guards (the tool refuses to run)
@@ -125,6 +131,16 @@ stderr prints one line per match and the parity lines; stdout prints the summary
 
 ## Verified (2026-09-29, coworld-v0.3.78, local Nim 2.2.6, 14-core M-series Mac: 10 P + 4 E)
 
+Re-checked at coworld-v0.3.89 (2026-09-30): `compile` base.bas ok (rules 48); `x = rnd(10)` ok and
+`rnd = 3` `compile_failed` (exit 1); `screen` base vs base seeds 1-4 with `--record-seeds 1,2`
+(8 matches, parity hashes match, 4 replays that `pw_trace` verifies). Uncached, throughput
+dropped (16 matches at 0.51 matches/s versus 0.98 for the 0.3.80 build back to back) because
+each worker process fills whole terrain blocks on first touch (#183). With the
+[terrain cache](pw_release.md#terrain-cache) (2026-09-30), a 16-match base-vs-base screen
+(seeds 1-8) takes 10.6 s end to end (match phase 3.9 matches/s). The run that builds the file
+takes 33.0 s, and 50.5 s uncached (0.56 matches/s). The 16 final hashes are the same in all three.
+`compile` takes 3.6 s (19.5 s uncached).
+
 Re-checked at coworld-v0.3.79 (2026-09-29): `compile` on base.bas (ok) and on a one-line syntax
 error (`compile_failed` per seat, exit 1), `match … --record DIR` (records the match seed, hash
 matches the library, `rules` [48]), `screen --seeds 1-4 --record DIR --record-seeds 1-4` (8
@@ -169,3 +185,10 @@ Heartwick (the tool has no `--map`; the league plays Heartwick).
   pw_episodes, compare.py and `--policy` filters see `local:<file name>` identities.
 - Screening results are not field evidence: use hosted A/B (`paintbot-pw-ab` / `coworld-ab`)
   for anything that decides a submission.
+- **`compile` answers for the pinned build, not the league's.** Keep the pin on the league's
+  build (`pw.py deployed-ref`); when they differ, new or removed host names compile differently.
+  At the 0.3.89 pin (2026-09-30) `compile` accepts `x = rnd(10)` and rejects `rnd = 3` ("host
+  function cannot be assigned"), as the league does; a name used as a variable fails every hosted
+  episode it plays. The same holds for the neural builtin `neuralLogit`; the neural names 0.3.89
+  removed (`paintbot_act`, `neuralDecode`, `neuralIssue`, `cmd*`, `neuralGoalX/Z`,
+  `neuralAimX/Z`) are free names again ([policy-surface.md](../policy-surface.md)).

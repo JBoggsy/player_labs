@@ -48,6 +48,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pw_cli  # noqa: E402
 import pw_release  # noqa: E402
+import pw_terrain  # noqa: E402
 
 LAB = Path(__file__).resolve().parents[1]
 DEFAULT_TAG = pw_release.current_tag()  # tools/release.env, shared with build_native.sh
@@ -217,7 +218,7 @@ _lib = None
 _handle = None
 
 
-def _load_library(lib_path: str, glory: dict) -> int:
+def _load_library(lib_path: str, glory: dict, terrain_dir: str | None = None) -> int:
     global _lib, _handle
     lib = ctypes.CDLL(lib_path)
     lib.pw_create.restype = ctypes.c_void_p
@@ -248,12 +249,15 @@ def _load_library(lib_path: str, glory: dict) -> int:
     error = ctypes.create_string_buffer(512)
     if lib.pw_set_config_json(handle, config, len(config), error, len(error)) != 0:
         raise RuntimeError(f"pw_set_config_json refused {config!r}: {error.value.decode()}")
+    # The shared terrain file (pw_terrain.py): without it every worker computes most of the
+    # island's terrain blocks itself (~20 s) on its first match.
+    pw_terrain.attach_native(lib, handle, rules, terrain_dir and Path(terrain_dir))
     _lib, _handle = lib, handle
     return rules
 
 
-def _init_worker(lib_path: str, glory: dict) -> None:
-    _load_library(lib_path, glory)
+def _init_worker(lib_path: str, glory: dict, terrain_dir: str | None) -> None:
+    _load_library(lib_path, glory, terrain_dir)
 
 
 def _install_scripts(sources: list[bytes]) -> list[int]:
@@ -420,7 +424,9 @@ def batch(args, seeds: list[int], sides: list[int]) -> dict:
             for s in seeds for side in sides]
     workers = max(1, min(args.workers, len(jobs)))
     context = multiprocessing.get_context("spawn")
-    with context.Pool(max(workers, 2), initializer=_init_worker, initargs=(build["lib"], glory)) as pool:
+    with pw_terrain.session(args.tag) as terrain_dir, \
+            context.Pool(max(workers, 2), initializer=_init_worker,
+                         initargs=(build["lib"], glory, terrain_dir and str(terrain_dir))) as pool:
         parity = parity_guard(build, pool, a_path, b_path, a_src, b_src, seeds, args.max_ticks, glory)
         started = time.time()
         rows = []
@@ -529,7 +535,8 @@ def report_batch(report, summary: dict, out: str | None, record: str | None) -> 
 def cmd_compile(args, report) -> dict:
     policy = policy_path(args.policy, "policy")
     build = check_build(args.tag)
-    rules = _load_library(build["lib"], parse_glory(args.glory))
+    with pw_terrain.session(args.tag) as terrain_dir:
+        rules = _load_library(build["lib"], parse_glory(args.glory), terrain_dir and str(terrain_dir))
     seats = compile_check(policy.read_bytes(), args.seed, args.ticks)
     bad = [s for s in seats if s["status"] != "running" or s["set_script"] != 0]
     print(f"{args.policy}: {'OK' if not bad else 'FAILED'} ({args.ticks} ticks, seed {args.seed}, "

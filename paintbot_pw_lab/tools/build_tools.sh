@@ -13,7 +13,7 @@
 # whose tmp/paintbot-coworld engine
 # lets coworld/paintbot/local.py run there.
 #
-# The lab's own .nim sources (pw_trace.nim, pw_map.nim) are copied into the worktree's
+# The lab's own .nim sources (pw_trace.nim, pw_map.nim, pw_terrain_cache.nim) are copied into the worktree's
 # examples/paintbot/ as lab_*.nim and compiled there, so the engine's config.nims and
 # dependency pins apply (the Gods of the Arena build_expand_replay.sh pattern).
 #
@@ -44,6 +44,8 @@ nim c -d:coworld -o:tmp/paintbot-coworld examples/paintbot/paintbot.nim
 
 # Lab tools. -d:pwTraining exposes damageObserver/damageWeapon/combatTelemetry, which
 # pw_trace needs; it does not change the simulation (the per-tick hash check proves it).
+# Both import lab_pw_terrain_cache (the shared terrain-table file, tools/pw_terrain_cache.nim).
+cp "$LAB/tools/pw_terrain_cache.nim" examples/paintbot/lab_pw_terrain_cache.nim
 for tool in pw_trace pw_map; do
   cp "$LAB/tools/$tool.nim" "examples/paintbot/lab_$tool.nim"
   nim c --hints:off -d:release -d:headless -d:pwTraining --threads:on -d:PwRelease="$TAG" \

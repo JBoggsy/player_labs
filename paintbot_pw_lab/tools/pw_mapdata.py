@@ -29,6 +29,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pw_cli  # noqa: E402
 import pw_release  # noqa: E402
+import pw_terrain  # noqa: E402
 
 DEFAULT_TAG = pw_release.current_tag()  # tools/release.env, shared with build_tools.sh
 FLAG_BITS = {"water": 1, "blocked": 2, "trench": 4, "off_island": 8, "blocked_for_cog": 16}
@@ -79,8 +80,10 @@ def load_map(map_name: str = "", *, rules: int = 47, step: int = 25, tag: str | 
         cache.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=cache) as work:
             prefix = Path(work) / stem
-            subprocess.run([str(binary), str(prefix), "--map", map_name, "--rules", str(rules),
-                            "--step", str(step)], check=True, capture_output=True, text=True)
+            with pw_terrain.session(tag) as terrain_dir:
+                subprocess.run([str(binary), str(prefix), "--map", map_name, "--rules", str(rules),
+                                "--step", str(step)], check=True, capture_output=True, text=True,
+                               env=pw_terrain.env(terrain_dir))
             meta = json.loads(prefix.with_suffix(".json").read_text())
             raw = prefix.with_suffix(".bin").read_bytes()
             cells = meta["nx"] * meta["nz"]

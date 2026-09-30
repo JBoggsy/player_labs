@@ -50,6 +50,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pw_cli  # noqa: E402
 import pw_release  # noqa: E402
+import pw_terrain  # noqa: E402
 
 TOOLS = Path(__file__).resolve().parent
 LAB = TOOLS.parent
@@ -263,7 +264,8 @@ def cached(source: Source, expected: dict) -> bool:
         return False  # a missing or corrupt cache is rebuilt, never used as evidence
 
 
-def run_trace(source: Source, binary: Path, options: TraceOptions, work: Path) -> Path:
+def run_trace(source: Source, binary: Path, options: TraceOptions, work: Path, tag: str | None = None) -> Path:
+    """tag: the release whose shared terrain cache the trace uses (pw_terrain.py); None = uncached."""
     tape = raw_tape(source.replay.read_bytes())
     header = tape_header(tape)
     if header["game"] != "paintbot_pw":
@@ -271,7 +273,9 @@ def run_trace(source: Source, binary: Path, options: TraceOptions, work: Path) -
     raw = work / "tape.replay"
     raw.write_bytes(tape)
     out = work / "trace.jsonl"
-    run = subprocess.run([str(binary), str(raw), str(out), *options.args()], capture_output=True, text=True)
+    with pw_terrain.session(tag) as terrain_dir:
+        run = subprocess.run([str(binary), str(raw), str(out), *options.args()], capture_output=True, text=True,
+                             env=pw_terrain.env(terrain_dir))
     raw.unlink()
     if run.returncode:
         detail = run.stderr.strip() or run.stdout.strip()
@@ -649,7 +653,7 @@ def load_episode(source: Source | Path, binary: Path | None = None, *, tag: str 
         source.cache.parent.mkdir(parents=True, exist_ok=True)
         work = Path(tempfile.mkdtemp(prefix=".pw_cache-", dir=source.cache.parent))
         try:
-            trace = run_trace(source, binary, options, work)
+            trace = run_trace(source, binary, options, work, trace_tag)
             meta, events, states, visibility, summary = read_trace(trace)
             tables = build_tables(episode_id, source, meta, events, states, visibility, summary,
                                   _read_json(source.episode_json), _read_json(source.results_json),

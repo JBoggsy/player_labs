@@ -38,6 +38,7 @@ TOOLS = Path(__file__).resolve().parent
 sys.path.insert(0, str(TOOLS))
 import pw_cli  # noqa: E402
 import pw_release  # noqa: E402
+import pw_terrain  # noqa: E402
 
 LAB = TOOLS.parent
 REPO = LAB.parent
@@ -173,6 +174,17 @@ CATALOG: list[dict] = [
                 "--png file",
      "exit_codes": "0 ok; 2 usage or unknown map; 3 pw_map not built (run paintbot_pw_lab/tools/build_tools.sh)",
      "doc": "pw_map.md", "skill": None},
+    {"name": "terrain-cache", "target": ("py", "pw_terrain.py"),
+     "purpose": "Show or clear the shared terrain-table cache the -d:pwTraining tools (trace, map, local) load "
+                "instead of recomputing ~20 s of terrain per process. One ~0.62 GB file per release and terrain "
+                "flag set, capped (LRU) at PW_TERRAIN_CACHE_MAX_GB (default 2); other releases' files are deleted.",
+     "when_to_use": "To see what the cache holds on disk, or to delete it (e.g. after a 'rejected' warning).",
+     "questions": ["How much disk does the terrain cache use?", "Why is pw_trace slow again?"],
+     "inputs": "status | clear, --json. Env: PW_TERRAIN_CACHE=0 disables the cache in every tool, "
+               "PW_TERRAIN_CACHE_MAX_GB sets the cap",
+     "outputs": "status: nothing written; clear: deletes <cache root>/terrain/*/*.pwterrain",
+     "exit_codes": "0 ok; 2 usage (unknown action, bad PW_TERRAIN_CACHE_MAX_GB)",
+     "doc": "pw_release.md#terrain-cache", "skill": None},
     {"name": "map-raw", "target": ("bin", "pw_map"),
      "purpose": "Raw pw_map export (Nim): OUT_PREFIX.json + .bin (+ .ppm).",
      "when_to_use": "Rarely; `map` caches it.", "questions": [],
@@ -716,7 +728,8 @@ def forward(entry: dict, argv: list[str]) -> int:
             report.suggest(err.fix)
             print(json.dumps(report.envelope(pw_cli.EXIT_ENVIRONMENT)))
         return pw_cli.EXIT_ENVIRONMENT
-    return subprocess.call([str(binary), *argv])
+    with pw_terrain.session(tag or pw_release.current_tag()) as terrain_dir:
+        return subprocess.call([str(binary), *argv], env=pw_terrain.env(terrain_dir))
 
 
 def usage() -> str:

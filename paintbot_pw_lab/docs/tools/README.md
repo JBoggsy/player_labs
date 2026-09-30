@@ -34,6 +34,8 @@ uv run python paintbot_pw_lab/tools/pw.py <subcommand> --help    # every flag, w
 | What went wrong in our worst losses, and at which tick? | `flags` | `paintbot-pw-diagnose` |
 | Is a seat stuck or its VM dead? | `flags` | `paintbot-pw-diagnose` |
 | Where are the hearts, water, trenches and cover? | `map` |  |
+| How much disk does the terrain cache use? | `terrain-cache` |  |
+| Why is pw_trace slow again? | `terrain-cache` |  |
 | Show me seat N's movement from 0:40 to 1:05. | `viz` | `paintbot-pw-replay` |
 | Where does policy X go / die? | `viz` | `paintbot-pw-replay` |
 | How do two policies' positions differ? | `viz` | `paintbot-pw-replay` |
@@ -188,6 +190,17 @@ Map geometry (terrain raster, water, trenches, cover, hearts, pickups) cached pe
 - **Outputs:** tools/.cache/maps/<tag>/<map>-r<rules>-s<step>.{npz,json} (under $PW_CACHE_DIR when set); --png file
 - **Exit codes:** 0 ok; 2 usage or unknown map; 3 pw_map not built (run paintbot_pw_lab/tools/build_tools.sh)
 - **Reference:** [pw_map.md](pw_map.md)
+
+### terrain-cache
+
+Show or clear the shared terrain-table cache the -d:pwTraining tools (trace, map, local) load instead of recomputing ~20 s of terrain per process. One ~0.62 GB file per release and terrain flag set, capped (LRU) at PW_TERRAIN_CACHE_MAX_GB (default 2); other releases' files are deleted.
+
+- **Command:** `uv run python paintbot_pw_lab/tools/pw.py terrain-cache` (runs `paintbot_pw_lab/tools/pw_terrain.py`)
+- **When:** To see what the cache holds on disk, or to delete it (e.g. after a 'rejected' warning).
+- **Inputs:** status | clear, --json. Env: PW_TERRAIN_CACHE=0 disables the cache in every tool, PW_TERRAIN_CACHE_MAX_GB sets the cap
+- **Outputs:** status: nothing written; clear: deletes <cache root>/terrain/*/*.pwterrain
+- **Exit codes:** 0 ok; 2 usage (unknown action, bad PW_TERRAIN_CACHE_MAX_GB)
+- **Reference:** [pw_release.md#terrain-cache](pw_release.md#terrain-cache)
 
 ### map-raw
 

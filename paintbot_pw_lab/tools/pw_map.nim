@@ -14,7 +14,13 @@
 ## --map "" (default) is the procedural Heartwick island. --rules defaults to LiveRules.
 ## Contract and the Python loader (pw_mapdata.py): docs/tools/pw_map.md.
 import std/[os, json, monotimes, times, strutils]
-import sim, neural_contract
+import sim, lab_pw_terrain_cache
+
+proc inWater(p: Point): bool =
+  ## Standing in the river's water: the predicate mechanics.nim uses to quarter a wading
+  ## seat's speed (rules >= 30). Was neural_contract.inWater until 0.3.89 removed it (#185).
+  visionRulesVersion >= 30 and riverBlend(p.x.int, p.z.int) > 0 and
+    terrainHeight(p.x.int, p.z.int) < RiverWaterHeight
 
 const SchemaVersion = 1
 const PwRelease {.strdefine.} = "unknown"
@@ -43,6 +49,7 @@ proc main() =
   configureRules(rules)
   visionRulesVersion = rules
   configureMap(mapName)
+  let terrain = useTerrainCache()   # see pw_terrain_cache.nim
   var w = newWorld(1, 0)
   let x0 = minX(); let z0 = minZ(); let x1 = maxX(); let z1 = maxZ()
   let nx = (x1-x0) div step; let nz = (z1-z0) div step
@@ -95,6 +102,6 @@ proc main() =
     "cover": %w.cover, "cover_note": "h == 0: circle of diameter w at (x + w/2, z + w/2); else rectangle",
     "homes": [[home(0).x, home(0).z], [home(1).x, home(1).z]]}))
   echo nx, "x", nz, " ms=", (getMonoTime()-t0).inMilliseconds, " cover=", w.cover.len,
-    " trenches=", w.trenches.len
+    " trenches=", w.trenches.len, " terrain=", terrain
 
 main()

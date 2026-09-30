@@ -98,7 +98,8 @@ def cache_root() -> Path:
     """Where lab tools keep rebuildable caches: $PW_CACHE_DIR when set, else tools/.cache/.
 
     Holds the per-release source worktree (<tag>/, written by build_tools.sh, which honours the
-    same variable) and the map rasters (maps/<tag>/). Read at call time so a caller can point
+    same variable), the map rasters (maps/<tag>/) and the shared terrain tables (terrain/<tag>/,
+    pw_terrain.py). Read at call time so a caller can point
     it at a scratch directory. Per-episode trace caches are NOT here: they live beside the
     episode (pw_episodes.py)."""
     return Path(os.environ.get("PW_CACHE_DIR") or TOOLS / ".cache").expanduser()

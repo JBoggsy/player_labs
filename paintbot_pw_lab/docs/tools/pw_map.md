@@ -54,7 +54,7 @@ row, col = m.cell(x, z)
 | Outputs | cache `tools/.cache/maps/<tag>/<map>-r<rules>-s<step>.{npz,json}` (`$PW_CACHE_DIR/maps/<tag>/...` when set); `--png FILE`. The envelope's `outputs[]` lists only the `--png` file, never the cache (even when this run created it): read the cache paths from `result.cache_json` / `result.cache_npz` |
 | `--json` result | `{map, cache_json, cache_npz, nx, nz, step, bounds, hearts, pickups, trenches, cover, water_share}` (counts, not the feature lists: read `cache_json` for those) |
 | Exit codes | 0 ok; 2 `pw_map` failed for that map/rules (an unknown map; the engine's message, e.g. `Unknown Paintbot map: NAME`, is in `failures[0].message`); 3 `pw_map` not built for `--tag` (`next[0]` = `paintbot_pw_lab/tools/build_tools.sh [TAG]`) |
-| Idempotence / cache | one run of `pw_map` per (release, map, rules, step); later calls read the cache |
+| Idempotence / cache | one run of `pw_map` per (release, map, rules, step); later calls read the cache. `pw_map` itself reads (and builds once) the shared [terrain cache](pw_release.md#terrain-cache); its stdout line ends with `terrain=loaded\|built\|rejected\|off` |
 | Typical next step | `viz` (it loads the same cache) |
 
 The raw exporter is `pw.py map-raw [--tag TAG] OUT_PREFIX ...`: a Nim binary without the envelope (the dispatcher still exits 3 with an envelope under `--json` when it is not built). Its exit codes: 0 ok; 2 bad arguments (usage on stderr); 1 an unknown map (an unhandled engine exception).
@@ -70,7 +70,19 @@ The raw exporter is `pw.py map-raw [--tag TAG] OUT_PREFIX ...`: a Nim binary wit
   island, cover), 4 trench, 8 off-island, 16 blocked for a cog centre (radius 55).
 - `OUT_PREFIX.ppm` with `--ppm`: a quick-look image.
 
+Water: `inWater` is defined in `pw_map.nim` itself (0.3.89 removed `neural_contract.inWater`,
+#185), as the wading test `mechanics.nim` uses to quarter a cog's speed
+([pw_trace.md](pw_trace.md#limits)).
+
 ## Verified (2026-09-29, coworld-v0.3.78 and coworld-v0.3.79)
+
+Re-checked at coworld-v0.3.89 (2026-09-30, local `inWater`): Heartwick at 25 units, 640 × 384,
+224 cover, 6 trenches, 6,867 water cells (2.8%). Uncached it takes about 25 s, not 0.2 s,
+because 0.3.89's training terrain table computes every block the grid touches in full (#183).
+With the shared [terrain cache](pw_release.md#terrain-cache) (set up by `pw.py map` / `map-raw`,
+2026-09-30) it takes 0.08 s, and 26 s on the run that builds the file. The `.bin`, `.json` and `.ppm`
+are byte-identical to the uncached run. `--map twin-mesas` reports `terrain=off`: generated maps are
+never tabled.
 
 Heartwick at 25 units: 640 × 384 in 0.2 s, 10 hearts, 16 pickups, 6 trenches, 224 cover,
 2.8% water (same on both builds; the 0.3.78 run used `PW_CACHE_DIR` and wrote

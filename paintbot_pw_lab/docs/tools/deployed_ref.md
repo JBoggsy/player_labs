@@ -102,9 +102,11 @@ written), `counts` (`processed` = leagues read), `failures` (`id`/`code`/`messag
 ## Files in the diffstat
 
 `examples/paintbot/{sim,mechanics,bots,game,match_config}.nim`, `src/polyworld/basic.nim`,
-`coworld/paintbot/coworld_manifest_template.json` (rules, host API, manifest), plus the files
-`docs/policy-surface.md` names as its re-verify triggers: `examples/paintbot/oracle.nim`,
-`examples/paintbot/neural_host.nim`, `coworld/paintbot/runtime/host.py`,
+`examples/paintbot/seat_view.nim` (every BASIC perception builtin since 0.3.89),
+`coworld/paintbot/coworld_manifest_template.json` and `coworld/paintbot/guide.md` (rules, host
+API, manifest, maintainer guide), plus the files `docs/policy-surface.md` names as its re-verify
+triggers: `examples/paintbot/oracle.nim`, `examples/paintbot/neural_host.nim`,
+`examples/paintbot/neural_contract.nim`, `coworld/paintbot/runtime/host.py`,
 `coworld/paintbot/runtime/neural_package.py`. A non-zero count does not by itself mean a doc is
 wrong: read the diff. At 0.3.79 the BASIC teams game is unchanged (bots/sim lines are
 `-d:pwTraining` array widths; mechanics adds `controlHeartCount`), while the neural lane changed.
@@ -131,3 +133,12 @@ when a commit is missing. Do not loop it.
 - 2026-09-29: league on `coworld-v0.3.79` = `d0728ab1`; with release.env at 0.3.78, plain run
   exit 1 (BEHIND); `--write --json` exit 1 with `outputs: [release.env]`, `after` = 0.3.79;
   the next plain run exit 0. Heartland resolves to `heartland-v0.1.10` = `d0728ab1`.
+- 2026-09-30: league on `coworld-v0.3.89` = `118e1619` (`cow_f741e7d2-…`), Heartland on
+  `heartland-v0.1.20` = `118e1619`; with release.env at 0.3.80, plain `--json` run exit 1
+  (BEHIND), 7 rule-bearing files changed since `d0728ab1`. That run showed a gap in the file
+  list: it does not include `examples/paintbot/seat_view.nim` (new in 0.3.89, now the home of
+  every BASIC perception builtin), `neural_contract.nim` or `coworld/paintbot/guide.md`, all of
+  which 0.3.89 changed. The list now includes all three: the `--write` run that moved
+  release.env to 0.3.89 (exit 1, `written`) listed 10 changed files, `guide.md` +44 -19,
+  `neural_contract.nim` +528 -1937 and `seat_view.nim` +468 -0 among them. `PW_DOCS_SHA` was then
+  moved to `118e1619` by hand, since the docs were already re-verified there.

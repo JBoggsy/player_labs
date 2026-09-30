@@ -44,13 +44,16 @@ TAG_PREFIX = {"paintbot-pw": "coworld-v", "heartland": "heartland-v"}  # coworld
 SOURCE_REPO = "https://github.com/Metta-AI/paintbot-pw"
 DEFAULT_CLONE = Path(os.environ.get("PW_CLONE", Path.home() / "coding/coworlds/paintbot-pw"))
 # Source files whose changes can change a rule, a host call, the upload surface or a line
-# citation in the lab docs: the rules engine, the BASIC dialect, plus the files
-# docs/policy-surface.md names as its re-verify triggers (oracle, neural lane, upload staging).
+# citation in the lab docs: the rules engine, the BASIC dialect and its perception builtins
+# (seat_view.nim since 0.3.89), the maintainer guide, plus the files docs/policy-surface.md
+# names as its re-verify triggers (oracle, neural lane, upload staging).
 RULE_FILES = (
     "examples/paintbot/sim.nim", "examples/paintbot/mechanics.nim", "examples/paintbot/bots.nim",
     "examples/paintbot/game.nim", "examples/paintbot/match_config.nim", "src/polyworld/basic.nim",
-    "coworld/paintbot/coworld_manifest_template.json",
+    "examples/paintbot/seat_view.nim", "coworld/paintbot/coworld_manifest_template.json",
+    "coworld/paintbot/guide.md",
     "examples/paintbot/oracle.nim", "examples/paintbot/neural_host.nim",
+    "examples/paintbot/neural_contract.nim",
     "coworld/paintbot/runtime/host.py", "coworld/paintbot/runtime/neural_package.py",
 )
 DOCS_TO_REVERIFY = ("docs/mechanics.md", "docs/policy-surface.md", "docs/evidence-pipeline.md")

@@ -19,7 +19,13 @@
 ## reflects every event at t. t = 0 is the initial world (initial spawns).
 import std/[os, json, monotimes, times, strutils, math, tables, algorithm]
 import zippy
-import game, sim, neural_contract
+import game, sim, lab_pw_terrain_cache
+
+proc inWater(p: Point): bool =
+  ## Standing in the river's water: the predicate mechanics.nim uses to quarter a wading
+  ## seat's speed (rules >= 30). Was neural_contract.inWater until 0.3.89 removed it (#185).
+  visionRulesVersion >= 30 and riverBlend(p.x.int, p.z.int) > 0 and
+    terrainHeight(p.x.int, p.z.int) < RiverWaterHeight
 
 when not defined(pwTraining):
   {.error: "pw_trace needs -d:pwTraining (damageObserver/damageWeapon)".}
@@ -217,6 +223,7 @@ proc main() =
   let tapePath = openTape(opt.replay)
   let r = loadRecording(tapePath)   # binds rules, mode, map, vision, glory and seat count
   if tapePath != opt.replay: removeFile(tapePath)
+  let terrain = useTerrainCache()   # rules and map are bound; see pw_terrain_cache.nim
   var w = newWorld(r.seed, r.endTick)
   let n = Seats
   let rules = replayRulesVersion
@@ -554,6 +561,7 @@ proc main() =
   if failure.len > 0:
     stderr.writeLine("pw_trace FAILED: ", failure)
     quit(1)
-  echo "verified ticks=", w.tick, " hash=", w.stateHash(), " ms=", (getMonoTime()-t0).inMilliseconds
+  echo "verified ticks=", w.tick, " hash=", w.stateHash(), " ms=", (getMonoTime()-t0).inMilliseconds,
+    " terrain=", terrain
 
 main()

@@ -31,9 +31,17 @@ Build notes: `build_tools.sh` copies the file into the release worktree as
 not change the simulation). The engine keeps match state in module globals: **one process
 per replay**. Seat count is per match (`Seats` is a runtime value); the code uses `seq`
 everywhere. The `SeatStats` telemetry (`CombatTelemetry`) is as wide as the build supports:
-`MaxSeats` = 256 at coworld-v0.3.79 (`sim.nim:264`, `kinship.nim:12`), 16 in older builds. A
-match wider than that skips it (its `seat_stats` and kill check are null); at 0.3.79 every
-match fits.
+`MaxSeats` = 256 from coworld-v0.3.79 (`sim.nim:264`, `kinship.nim:12`; same lines at
+0.3.89), 16 in older builds. A match wider than that skips it (its `seat_stats` and kill check
+are null); from 0.3.79 every match fits.
+
+Terrain cache: since 0.3.89 a fresh `-d:pwTraining` process pays ~18 s filling the terrain
+table (#183). `pw_trace` loads the lab's shared terrain file instead when
+`PW_TERRAIN_CACHE_DIR` is set, which `pw.py trace` and `pw_episodes.py` do. That brings a tape
+down to ~0.3 s, and the first run for a release builds the file (~27 s). The binary run by hand
+without the variable is uncached. The stdout line ends with `terrain=loaded|built|rejected|off`.
+Output is identical either way. File, bounds and switches (`PW_TERRAIN_CACHE=0`):
+[pw_release.md § Terrain cache](pw_release.md#terrain-cache).
 
 ## Agent contract
 
@@ -45,7 +53,7 @@ match fits.
 | Outputs | `OUT.jsonl` (meta, events, states, visibility, summary) |
 | `--json` | not supported: `pw_trace` is a Nim binary. Its `summary` row (`verified`, `hash`, `ticks`) is the machine-readable result. When the binary is not built, `pw.py trace ... --json` prints a lab envelope with exit 3 and the build command in `next[]` |
 | Exit codes | 0 verified; 1 hash mismatch, frames after the end, a short tape or a failed identity check; 2 bad arguments or not a tape; 3 (dispatcher) not built |
-| Idempotence / cache | none here; `pw.py episodes` caches traces per episode |
+| Idempotence / cache | none here; `pw.py episodes` caches traces per episode. Reads (and builds once) the shared [terrain cache](pw_release.md#terrain-cache) |
 | Typical next step | use `uv run python paintbot_pw_lab/tools/pw.py episodes` instead unless you need the raw JSONL |
 
 ## Output schema (`schema_version` 1)
@@ -107,6 +115,13 @@ One JSON object per line, each with `type`:
 
 ## Verified (2026-09-29, Nim 2.2.6, arm64 macOS)
 
+Re-checked with build `coworld-v0.3.89` (2026-09-30, local `inWater`): 11 of 11 tapes verified
+(the 3 rules-44 samples, the 4 hosted `seed-pilot-2026-09-30` tapes, 4 local base-vs-base
+recordings), the same hashes as the 0.3.80 build where both ran. Uncached, each run takes about
+18.5 s, not 0.7 s: 0.3.89's training terrain table fills whole 64 × 64 blocks on first touch
+(#183). With the terrain cache (2026-09-30) the same 7 hosted and sample tapes take 0.25-0.38 s
+each, with identical rows, summaries and hashes ([pw_release.md § Terrain cache](pw_release.md#terrain-cache)).
+
 Re-checked with build `coworld-v0.3.79`: the `ereq_e7d3e242` sample with `--vis-every 24
 --window 100:130` (verified, 4108 ticks; every field list above matches its rows, and
 across the 3 samples plus 8 local base-vs-jev recordings every listed event kind occurs), a
@@ -131,5 +146,11 @@ tape). The notes below are from build `coworld-v0.3.78`:
 - VM-disabled tick is not in the tape (see `pw_metrics` heuristic and our seat logs).
 - Pickup takers are attributed by state change within 120 units; two same-kind pickups
   taken by nearby seats on one tick are `ambiguous`.
-- Not exercised: FFA-kin tapes, generated maps (`map` non-empty), team vision, >16 seats
-  (`paintbot-headless` has no seat-count flag; only a coworld config sets it).
+- Not exercised: FFA-kin tapes, generated maps (`map` non-empty), team vision, `vision_range`
+  (ranged) tapes, >16 seats (`paintbot-headless` has no seat-count flag; only a coworld config
+  sets it).
+- `in_water` / water transitions use an `inWater` defined in `pw_trace.nim` itself (as in
+  `pw_map.nim`): `visionRulesVersion >= 30 and riverBlend(x, z) > 0 and terrainHeight(x, z) <
+  RiverWaterHeight`, the test `mechanics.nim:628-629` uses to slow a wading cog. It was imported
+  from `neural_contract` until 0.3.89 removed it (#185); if a future release changes the wading
+  rule in `mechanics.nim`, change both copies.

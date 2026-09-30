@@ -47,15 +47,20 @@ Log volume: the seat log is cut at 10 MiB (not fatal). Worst case one line every
 14,400 ticks = 1.53 MB. Measured: the largest seat log in 20 local matches was 18 KB.
 
 **Not in the line: instruction headroom.** BASIC has no builtin that reads its own
-instruction or work count (checked in `bots.nim` host registrations at `570174a2`), so the
+instruction or work count (checked in `bots.nim` host registrations at `570174a2`, and again at
+`118e1619`, 0.3.89, whose only new builtin is `rnd`), so the
 policy cannot report budget headroom. Measure peaks locally with `PW_BASIC_PEAKS=1` on a
 `paintbot-headless` run instead.
 
 ## Where seat logs come from
 
 - **Hosted**: `player-N.log` / `policy_agent_N.log` from `coworld-episode-artifacts`, for
-  episodes with our policy. Not yet exercised: whether hosted xp-requests return our logs
-  is still open (plan §13 Q6).
+  episodes with our policy. Confirmed 2026-09-30 (seed pilot): our XP episodes return
+  `logs/policy_agent_<seat>.log` for our seats ([field.md](../field.md#seeds-what-actually-reaches-the-engine)).
+  Individual logs can be missing for minutes after completion; refetch with `--force`. PRINT
+  output lands in these files (the engine's print callback writes the seat log,
+  `src/polyworld/coworld.nim:151-171` at `118e1619`), but no hosted episode has yet run a policy that prints,
+  so no `PWI` line has been seen in a hosted log.
 - **Local**: `paintbot-headless` and the native library (`pw_local.py`) **discard** PRINT
   output. `pw_intent.py record` runs the release's hosted handoff (`coworld/paintbot/runtime/host.py`
   with the `-d:coworld` engine that `build_tools.sh` leaves in the worktree), which writes one
@@ -160,8 +165,8 @@ at `t`, the three consistency rules find 0; joined at `t - 1` or `t + 1` they fi
 **Belief rule.** `s` and `e` are in the policy's **observed identities**, what BASIC's
 `visible(i)`/`playerX(i)` answer. A disguised body answers to `body xor 1` (a seat of the
 other team; moved on by 2 if that is the observer), and of two visible bodies with one
-identity the nearer is reported (`sim.nim` `observedSeat`, `bots.nim` `bodyForSeat`, rules ≥ 27,
-unchanged at 0.3.79). `observed_view()` in `pw_intent.py` reproduces this from the
+identity the nearer is reported (`sim.nim` `observedSeat`, `seat_view.nim` `bodyForSeat` since
+0.3.89, `bots.nim` before; rules ≥ 27, same answers through 0.3.89). `observed_view()` in `pw_intent.py` reproduces this from the
 `visibility` table (which is by body) and the `states` `disguised`/`x`/`z` columns. Disguise
 fools teammates too: a disguised teammate looks like an enemy to its own team.
 
@@ -244,7 +249,8 @@ a real policy of ours emits the line.
   `reference/wire_intent_base.py` (an instrumented copy of `base.bas`). The mode and reason
   codes follow base.bas's modules and should be revised with the first real policy (keep
   `MODE_NAMES`/`REASON_NAMES` in step).
-- Hosted seat-log retrieval for our own xp-request episodes is not yet exercised.
+- No hosted episode has yet carried `PWI` lines (the only uploaded policy, `jb-pw-base:v1`, prints
+  nothing); hosted seat-log retrieval itself works (see above).
 - `record` has no parity guard against `paintbot-headless`. The replay it writes is
   hash-checked by `pw_trace` when loaded, which is the check that matters for analysis.
 - `ffa.bas` and `ffa_blind.bas` (now in `reference/heartland/`) target the Heartland coworld

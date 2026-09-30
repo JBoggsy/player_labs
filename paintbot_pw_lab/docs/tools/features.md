@@ -124,7 +124,8 @@ signal) but also pay behind-in-lives glory to the side that is behind, and their
   version against the field.
 - Mix of opponents and sides confounds the corpus. Mine one opponent set at a time when the
   corpus is large enough, and read `notes` (team, opponents) on surprising rows.
-- `vm_error_logged` and the intent features exist only where our seat logs exist; hosted
-  retrieval of our own logs is not yet exercised.
+- `vm_error_logged` and the intent features exist only where our seat logs exist. Hosted XP
+  episodes return logs for our own seats ([field.md](../field.md#seeds-what-actually-reaches-the-engine)),
+  but no hosted policy of ours has printed intent lines yet.
 - Depends on `pw_fights.py` and `pw_flags.py` APIs as of 2026-09-29
   (`fight_policy_metrics`, `episode_flags`, `FLAG_NAMES`).
