@@ -11,10 +11,14 @@ uv run python paintbot_pw_lab/tools/pw.py doctor --json          # release pin v
 uv run python paintbot_pw_lab/tools/pw.py deployed-ref --json    # + diffstat of rule files since the docs' commit
 ```
 
-Two pins, on purpose (`tools/release.env`): **the tools** follow the league (`PW_RELEASE_TAG`,
-coworld-v0.3.79 = `d0728ab1` on 2026-09-29), while **the docs** stay at the commit their line
-citations are exact for (`PW_DOCS_SHA` = `570174a2`, coworld-v0.3.78, rules 47 teams). 0.3.79
-changed only the neural lane and training internals; the BASIC teams game is identical.
+Two pins (`tools/release.env`): **the tools** follow the league (`PW_RELEASE_TAG`), and **the
+docs** name the commit their line citations are exact for (`PW_DOCS_SHA`). On 2026-09-29 the tools
+pin coworld-v0.3.80 = `c8dd1def` and the docs cite `d0728ab1` (0.3.79); 0.3.80 changed only the web
+replay viewer, so every rule-bearing file is identical (teams game at rules 47). When the league moves, `deployed-ref`
+reports which rule-bearing files changed since `PW_DOCS_SHA`.
+
+For a readable overview, start with the [onboarding report](../docs/reports/paintbot-pw-onboarding-2026-09-28.html)
+(revised 2026-09-29; Markdown twin beside it).
 
 ## The game in one paragraph
 
@@ -30,16 +34,17 @@ kept only by the winner. Every seat is a BASIC script run inside the engine.
 
 | Topic | What is established | Document |
 | --- | --- | --- |
-| **Scoring and rank (canonical)** | The meter decides the winner; `scores` are the winner's glory, loser and draws 0. League Elo rates the **glory margin** (`margin_scale: 1000` since 2026-09-28): each episode counts as `clamp(0.5 + (our glory - their glory) / 2000, 0, 1)`, so a 500-glory win is 0.75, a 0-glory win a draw, and a forfeit 0 or 1. Verified at `570174a2` (rules 47) and live settings, 2026-09-29. | [mechanics.md §1](docs/mechanics.md#1-the-one-thing-to-get-right-winning-glory-and-rank) |
+| **Scoring and rank (canonical)** | The meter decides the winner; `scores` are the winner's glory, loser and draws 0. League Elo rates the **glory margin** (`margin_scale: 1000` since 2026-09-28): each episode counts as `clamp(0.5 + (our glory - their glory) / 2000, 0, 1)`, so a 500-glory win is 0.75, a 0-glory win a draw, and a forfeit 0 or 1. Verified at `d0728ab1` (rules 47) and live settings, 2026-09-29. | [mechanics.md §1](docs/mechanics.md#1-the-one-thing-to-get-right-winning-glory-and-rank) |
 | Glory awards | Countdown −1/s; +10 per 30 s with no team pickup; +20 per glory heart; league config: +5 per life behind and +10 per extra cog out of the match, each every 5 s (engine defaults 1 and 1). | [mechanics.md §1.2](docs/mechanics.md#12-how-glory-is-earned-and-lost-rules-37-47) |
 | Rules | Hearts and capture, lives and respawn, gun/spray/grenade, armor, trenches, disguises, lake, vision cone and hearing, maps and modes. | [mechanics.md](docs/mechanics.md) |
 | Policy language | Polyworld BASIC; per-tick decision; 50,000 instructions and 125,000 work units per decision; 128 KiB source; PRINT limits. | [policy-surface.md §2-3](docs/policy-surface.md) |
 | Failure modes | Compile error fails the whole episode; runtime error or budget overrun disables that seat for the episode; a rejected file forfeits only its seat. | [policy-surface.md §4](docs/policy-surface.md) |
 | Host API | Self fields, fog-gated players/pickups, public hearts and capture state, map geometry, actions, `shout`, the advisor oracle, FFA-only names, the neural-BASIC ZIP lane. | [policy-surface.md §5](docs/policy-surface.md) |
-| Starters | `base.bas` (league baseline), `jev.bas` (base plus LLM advisor), `ffa.bas` / `ffa_blind.bas` (Heartland). | [policy-surface.md §6](docs/policy-surface.md), [reference/](reference/) |
-| Leagues and field | Main teams ladder: two policies per episode, each filling a whole team, seed 2026, 12 episodes every 10 min. Leaders (2026-09-28): Aaron L (two entries) and David B (the game's maintainer; a neural policy and an LLM-advisor policy). Heartland (FFA-kin) opened 2026-09-28. | [field.md](docs/field.md) |
+| Starters | `base.bas` (league baseline; peaks at 9,116 instructions / 15,538 work units per decision), `jev.bas` (base plus LLM advisor; plays exactly like base.bas without an oracle). Heartland starters are in `reference/heartland/` and do not compile here. | [policy-surface.md §6](docs/policy-surface.md), [reference/](reference/) |
+| League and field | One league on this coworld (the main teams ladder): two policies per episode, each filling a whole team, 12 episodes every 10 min, a per-episode engine seed (the API's seed 2026 is a placeholder). Heartland is now a separate coworld (out of scope). Live champions: `pw.py leaders --json`. | [field.md](docs/field.md) |
+| How the field plays | 97.5% of matches end by elimination (median 82 s); speed dominates glory; no side advantage; champion styles and shout protocols; friendly fire 7.1% of hits; uniforms are a liability (80 episodes, 2026-09-29). | [field.md](docs/field.md#how-the-field-plays-80-league-episodes-2026-09-29), [field analysis report](docs/reports/2026-09-29-league-field-analysis.md) |
 | Evaluation budget | Experience-request fields, the roster trap (pin all 8 opponent seats), credits (~0.3 per episode). | [field.md §Experience requests](docs/field.md) |
-| Community | Forum empty; wiki is a stale README copy; the maintainer's guide carries the only measurements. | [community.md](docs/community.md) |
+| Community | Forum empty; wiki is a stale README copy; the maintainer's guide and DEPLOYMENT notes carry the only measurements, and some are out of date. | [community.md](docs/community.md) |
 | Evidence pipeline | Artifacts, the `POLYWORLDREPLAY` tape, hash-checked re-simulation (one build replays older rules), local runs. The tools built on it are indexed in [docs/tools/README.md](docs/tools/README.md). | [evidence-pipeline.md](docs/evidence-pipeline.md) |
 
 ## Instruments

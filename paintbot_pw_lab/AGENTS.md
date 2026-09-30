@@ -24,9 +24,13 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 ```
 
 - **Tool index and the agent CLI contract:** [docs/tools/README.md](docs/tools/README.md)
-  (generated from `tools/pw.py`). Every tool takes `--json` (one object: `ok`, `outputs`,
-  `counts`, `failures`, `result`, `next`) and exits 0 ok / 1 some inputs failed / 2 usage
-  (valid values listed) / 3 build or environment missing (`next` holds the fix).
+  (generated from `tools/pw.py`; [contract](docs/tools/README.md#agent-contract)). Every Python
+  tool takes `--json` (one object: `ok`, `outputs`, `counts`, `failures`, `result`, `next`) and
+  exits 0 ok / 1 some inputs failed / 2 usage (valid values listed) / 3 build or environment
+  missing (`next` holds the fix). The shell and Nim wrappers (`build`, `build-native`, `trace`,
+  `map-raw`) and the shared `mine`/`test` passthroughs do not print the JSON envelope.
+- **Opponent refs:** `pw.py leaders --json` lists today's champions as exact `name:vN` refs
+  (it handles champions whose leaderboard label is null).
 - **Release pin:** `tools/release.env` is the single source of the engine tag every tool uses;
   `pw.py deployed-ref --write --json` moves it when the league moves.
 - **Skills** (in [.claude/skills/](.claude/skills/); read the SKILL.md directly when working from
@@ -66,6 +70,7 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 | `docs/field.md` | Both leagues' configuration and ranking rule, dated standings, entrants, our account's presence, experience-request fields and credit costs. |
 | `docs/community.md` | Forum/wiki digest (the forum is empty; the wiki is a stale README copy), maintainer measurements, gotchas, release cadence. |
 | `docs/evidence-pipeline.md` | Artifact inventory, replay format, re-simulation constraints, local runs. |
+| `docs/reports/` | Dated evidence reports (not maintained as current truth): [2026-09-29-league-field-analysis.md](docs/reports/2026-09-29-league-field-analysis.md) (80 league episodes: endings, sides, seeds, champion styles, shout protocols, friendly fire). The readable game overview is the repo-level [onboarding report](../docs/reports/paintbot-pw-onboarding-2026-09-28.html). |
 | `docs/tools/` | One reference per tool (agent contract, commands, outputs, limits); `README.md` is the generated index, `tables.md` the Parquet table contract. |
 | `docs/designs/` | Design documents. [`2026-09-29-tooling-plan.html`](docs/designs/2026-09-29-tooling-plan.html) is the tools-and-skills plan, now implemented (brief: `.tooling-plan-brief.md`). |
 | `tools/` | The instruments: `pw.py` (dispatcher, catalog, doctor), `pw_cli.py` (shared CLI contract), `release.env` / `pw_release.py` (engine pin), Nim `pw_trace` / `pw_map`, Python readers, metrics, visuals, A/B, local harness, scouting, miner, win probability, tuning; `tests/`. Build products go to gitignored `tools/bin/` and `tools/.cache/`. |
@@ -73,7 +78,7 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 | `reference/base.bas`, `reference/jev.bas` | Official teams starters at the pinned release, from `coworld/paintbot/players/` (the files the manifest's `player[]` hashes name). The repo's `examples/paintbot/players/base.bas` is an older engine-test copy; do not use it. Keep reference files distinct from candidates. |
 | `reference/intent_telemetry.bas`, `reference/wire_intent_base.py` | The intent-line module for our policies, and a script that wires it into `base.bas` for audits. |
 | `reference/heartland/` | FFA-kin starters for the separate Heartland coworld; they do not compile in the teams game. |
-| `reference/manifest-0.3.79.json` | The deployed coworld manifest (config schema, variants, readme). |
+| `reference/manifest-0.3.80.json` | The deployed coworld manifest (config schema, variants, readme). |
 | `episode_data/`, `analysis/` | Downloaded episodes and tool outputs (gitignored). |
 
 ## Rules specific to this lab
@@ -97,12 +102,12 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
   a version with completed hosted episodes. A runtime error or budget overrun disables
   only that seat for the rest of the episode.
 - **Budgets are 50,000 instructions and 125,000 work units per decision**
-  (`bots.nim:147-148`); the guide and starter headers still say 20,000.
+  (`bots.nim:154-155` at `d0728ab1`; scaled up by seats/16 above 16 seats); the guide and starter headers still say 20,000.
 - **Teams-only vs FFA-only names.** Calling an FFA-kin function (`kin()`, `gene()`, …) in
   the teams game is a compile error. Keep Heartland code paths separate.
 - **Replays re-simulate across versions and Nim builds.** The newest build replays older rules
   versions hash-exactly (rules-44 replays under 0.3.65-0.3.79 builds), and hosted tapes built with
-  Nim 2.2.10 replay exactly under local Nim 2.2.6 (2 hosted 0.3.78 episodes). Always hash-check:
+  Nim 2.2.10 replay exactly under local Nim 2.2.6 (80 of 80 hosted 0.3.79 episodes, 2026-09-29). Always hash-check:
   `pw_trace` does; the repo's `replay_stats.nim` does not.
 - **Experience-request rosters:** pin all 8 opponent seats to one explicit policy to match
   league conditions; `top_n`/`random` draw per seat and mix opponents. Never put our policy on

@@ -94,18 +94,20 @@ Remove a task when it is complete.
 
 ## Paintbot PW
 
-- Tell the paintbot-pw maintainer (David B) that `coworld/paintbot/guide.md` (lines 678,
-  758) and the `base.bas` / `jev.bas` headers still give a 20,000-instruction budget while
-  `examples/paintbot/bots.nim:147-148` allows 50,000 instructions and 125,000 work units,
-  and that the guide says `jev.bas` ships with `useRetreat`/`useDial` off while the file
-  has them on (James sends it; see `paintbot_pw_lab/docs/mechanics.md` section 8).
-- Settle with the first hosted A/B: does `game_config_overrides.seed` fix the engine seed (a 2-3
-  episode pilot; decides whether `compare --design paired` pairs identical worlds), do hosted seat
-  logs come back for our own policy, and does a live episode's `game_config.glory` show
-  `behind_cogs: 10`. Update `paintbot_pw_lab/WORKING_CONTEXT.md` and mechanics §1.2.
+- Tell the paintbot-pw maintainer (David B; James sends it) about guide/code mismatches at
+  `d0728ab1`: `coworld/paintbot/guide.md` (lines 720, 800) and the `base.bas` / `jev.bas` headers
+  still give a 20,000-instruction budget while `examples/paintbot/bots.nim:154-155` allows 50,000
+  instructions and 125,000 work units; the guide says `jev.bas` ships with `useRetreat`/`useDial`
+  off while the file has them on; `coworld/paintbot/DEPLOYMENT.md` still says teams variants set
+  `behind_cogs: 5` (live is 10 since 0.3.77); `neural_basic.md` says policy.bas may be 64 KiB
+  while the code allows 128 KiB. Details: `paintbot_pw_lab/docs/mechanics.md` §8 and
+  `paintbot_pw_lab/docs/community.md`.
+- Paintbot PW, with the first hosted batch of our own policy: confirm hosted seat logs come back for
+  our policy (needed by intent telemetry and VM-error detection), and optionally a 2-episode pilot
+  with an explicit `game_config_overrides.seed` (source says both episodes replay the same world;
+  see `paintbot_pw_lab/docs/field.md` § Seeds). Update `paintbot_pw_lab/WORKING_CONTEXT.md`.
 - Calibrate `pw_flags`, `pw_fights`, `pw_metrics` and `pw_intent` thresholds on a 100+ episode
   batch (all are named constants with uncalibrated plan defaults).
-- Check whether the Observatory replay wrapper honors `t=<tick>`; update `pw_match_report`'s caveat.
 - Shared: `.claude/skills/coworld-ab/scripts/compare_report.py` help says "the compare.py --json
   output"; for paintbot_pw the input file now comes from `compare.py ... --out FILE`.
 - Shared: the hypothesis miner (`mine_hypotheses.py`) has no `--json` envelope and raises a

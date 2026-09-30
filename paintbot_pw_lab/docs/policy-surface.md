@@ -1,28 +1,21 @@
 # Paintbot PW policy surface: what a script can know and do
 
-> **Currency.** Verified 2026-09-29 against Metta-AI/paintbot-pw commit `570174a2` (tag
-> `coworld-v0.3.78`), coworld `paintbot-pw` 0.3.78, the build the league runs that day.
+> **Currency.** Verified 2026-09-29 against Metta-AI/paintbot-pw commit `d0728ab1` (tag
+> `coworld-v0.3.79`), coworld `paintbot-pw` 0.3.79, the build the league runs that day.
 > Recordings are stamped rules 48, whose only change is FFA-kin fog, so the teams game plays
-> rules 47. Line numbers are at `570174a2`, not `main`. Previous basis: `7b2b19f5`
-> (0.3.65, rules 45); the diff between the two was read in full for the files below.
-> `basic.nim`, `coworld.nim` and `oracle.py` did not change between them. Re-verify when the
-> coworld version changes (`tools/deployed_ref.py`): diff `examples/paintbot/bots.nim` (host
-> API and limits), `src/polyworld/basic.nim` (dialect), `examples/paintbot/oracle.nim`,
-> `examples/paintbot/neural_host.nim`, `coworld/paintbot/runtime/host.py` and
-> `neural_package.py` (upload staging).
->
-> **League moved to `d0728ab1` (tag `coworld-v0.3.79`, 2026-09-29); citations stay at
-> `570174a2`.** `tools/deployed_ref.py` diffstat, read in full for the BASIC-facing files:
-> `basic.nim`, `oracle.nim` and `game.nim` are unchanged; `bots.nim` changes only the
-> `-d:pwTraining` peak arrays (lines 423-426, no shift), so every BASIC host-API and limit claim
-> and its `bots.nim:` line still holds. `host.py` passes the seat count to `stage_package` (one
-> line). The **neural lane changed substantially** (`neural_host.nim` +230, `neural_package.py`
-> +155, new `ffa.v2` observation, pointer actions, `PWNET002` layout words; commit `5db6058`),
-> so the neural rows of §1 and §5 and their `neural_host.nim:` lines are **not re-verified** at
-> `d0728ab1`. Starter-policy files are unchanged (§6).
+> rules 47. Every `file:line` citation is at `d0728ab1`, not `main`, including the neural lane
+> (§1, §4, §5.10), which 0.3.79 rewrote (`neural_host.nim`, `neural_contract.nim`,
+> `neural_actor.nim`, `neural_package.py`, `neural_basic.md`, `neural_actor.md`; commit
+> `5db6058`). The BASIC dialect, host API, limits and oracle did not change in 0.3.79
+> (`basic.nim`, `oracle.nim`, `oracle.py`, `game.nim` identical to 0.3.78; `bots.nim` changed
+> only `-d:pwTraining` arrays). Re-verify when the coworld version changes (`pw.py
+> deployed-ref`): diff `examples/paintbot/bots.nim` (host API and limits),
+> `src/polyworld/basic.nim` (dialect), `examples/paintbot/oracle.nim`,
+> `examples/paintbot/neural_host.nim` and `neural_contract.nim`,
+> `coworld/paintbot/runtime/host.py` and `neural_package.py` (upload staging).
 
-Paths are relative to the repo root; `bots.nim`, `oracle.nim`, `neural_host.nim` are under
-`examples/paintbot/`, `basic.nim` and `coworld.nim` under `src/polyworld/`, `host.py` and
+Paths are relative to the repo root; `bots.nim`, `oracle.nim`, `neural_host.nim`,
+`neural_contract.nim` and the neural `.md` references are under `examples/paintbot/`, `basic.nim` and `coworld.nim` under `src/polyworld/`, `host.py` and
 `neural_package.py` under `coworld/paintbot/runtime/`. Rules and numbers of the game itself are in
 [mechanics.md](mechanics.md). Starter policies are in `../reference/` (Heartland's in
 `../reference/heartland/`).
@@ -35,9 +28,10 @@ seat's file before the engine starts (`host.py:99-124`):
 | Format | Detected by | Limits | Staging |
 | --- | --- | --- | --- |
 | Raw BASIC | anything not a ZIP | UTF-8, at most 128 KiB, not WASM (`host.py:43-53`) | written as the seat's source |
-| Neural BASIC ZIP | starts with `PK\x03\x04` | exactly `manifest.json` (8 KiB), `policy.bas` (128 KiB), `model.bin` (16 MiB); no encryption (`neural_package.py:662-680`) | manifest schema `paintbot-neural-basic/1` or `/2`, SHA-256 of both payloads must match, contract hashes validated (`neural_package.py:681-766`) |
+| Neural BASIC ZIP | starts with `PK\x03\x04` | exactly `manifest.json` (8 KiB), `policy.bas` (128 KiB), `model.bin` (16 MiB); no encryption (`neural_package.py:11-13`, `765-781`) | manifest schema `paintbot-neural-basic/1` or `/2`, SHA-256 of both payloads must match, contract hashes, decoder options and user inputs validated, and a PWNET002 model's structure and operation budget checked for the match's seat count (`neural_package.py:782-875`; the host passes the seat count, `host.py:105`). Writes `policy.bas` plus `.model.bin` / `.neural.json` sidecars (`neural_package.py:878-883`) |
 
-WASM is no longer accepted (`host.py:45-46`). There is no other format. The host refuses a roster
+WASM is no longer accepted (`host.py:45-46`). There is no other format. Any staging failure,
+including a rejected neural package, forfeits only that seat (§4). The host refuses a roster
 of fewer than 2 or more than 256 seats (`host.py:89-90`, since 0.3.76); the `paintbot-pw` manifest's config
 schema still requires exactly 16 `tokens`, so every paintbot-pw match has 16 seats.
 
@@ -78,18 +72,18 @@ memory** (`bots.nim:396-421`). The only cross-seat channel is speech.
 
 ### Commands: what persists and what does not
 
-Commands are cleared every tick (`bots.nim:469`), but the engine keeps some state on the cog
-(`mechanics.nim:609-613`):
+Commands are cleared every tick (`bots.nim:468`), but the engine keeps some state on the cog
+(`mechanics.nim:617-621`):
 
 | Call | Persists? |
 | --- | --- |
 | `walkTo(x, y)` | **Yes**: sets the cog's goal, which it keeps walking to until a new `walkTo` (or a respawn resets goal to the spawn point, `sim.nim:781`). |
-| `lookAt(x, y)` / `shootAt(x, y)` | The aim point persists; it is also the centre of the vision cone. A `walkTo` without any aim call this tick turns the aim to the walk goal (`mechanics.nim:611-612`). |
+| `lookAt(x, y)` / `shootAt(x, y)` | The aim point persists; it is also the centre of the vision cone. A `walkTo` without any aim call this tick turns the aim to the walk goal (`mechanics.nim:619-620`). |
 | `shootAt` (the trigger) | No; must be called on the tick you want to fire. |
 | `chargeGrenade(1)` | No; charge is kept, but **not calling it (or calling it with 0) releases the grenade** that tick if charge > 0. |
 | `sneak(1)` | No; call every tick you want to sneak. |
 
-The aim sentinel is the point (0, 0): `lookAt(0, 0)` does nothing (`mechanics.nim:611`, **inferred**
+The aim sentinel is the point (0, 0): `lookAt(0, 0)` does nothing (`mechanics.nim:619`, **inferred**
 edge case).
 
 ### Budgets per decision (`bots.nim:147-160`)
@@ -109,8 +103,10 @@ edge case).
 Work units: most VM ops cost 1-9 (`basic.nim:1776-1809`); each host call costs the value in its
 registration (listed in section 5). The budget is checked at the start of each basic block, so a
 block that would overrun fails before it runs (`basic.nim:2447-2458`). `PW_BASIC_PEAKS=1` prints
-per-seat peaks in a local run (`game.nim:552-557`). `base.bas` peaks near 5,670 instructions and
-8,722 work units (guide line 720; not re-measured here).
+per-seat peaks in a local run (`game.nim:552-557`). Measured at `d0728ab1` over 11 local
+seeds: `base.bas` peaks at 9,116 instructions (18% of 50,000) and 15,538 work units (12% of
+125,000); `jev.bas` without an oracle at 13,909 / 21,140. The guide's "5,670 / 8,722" (guide line
+720) is out of date ([field analysis §8](reports/2026-09-29-league-field-analysis.md)).
 
 Since 0.3.75 the instruction and work budgets scale with the seat count **above 16 seats only**
 (`50,000 × seats / 16`, `bots.nim:156-158`), for crowd matches such as Heartland Big. At 16 seats
@@ -120,12 +116,12 @@ Since 0.3.75 the instruction and work budgets scale with the seat count **above 
 
 | Failure | When | Consequence | Evidence |
 | --- | --- | --- | --- |
-| Host rejects the file (WASM, > 128 KiB, not UTF-8, bad ZIP, hash mismatch, failed download) | staging | Seat **forfeits**: replaced by an idle stub (`idle = 1`) for the whole episode; a player-failure record names the slot; the other 15 seats play on and the episode scores normally. | `host.py:96-124`, `31-40` |
+| Host rejects the file (WASM, > 128 KiB, not UTF-8, a neural ZIP that fails its package checks, hash mismatch, failed download) | staging | Seat **forfeits**: replaced by an idle stub (`idle = 1`) for the whole episode; a player-failure record names the slot; the other 15 seats play on and the episode scores normally. | `host.py:96-124`, `31-40` |
 | **BASIC compile error** (syntax, unknown name, calling an FFA-only function in the teams game, a limit exceeded at compile) | engine start | The engine writes a player-failure record naming the slot and **stops without writing results**: the whole episode fails for all 16 seats. | `bots.nim:417`, `coworld.nim:215-233` |
-| Neural model rejected at load (dimensions, contract mismatch, over 4,000,000 ops, observation contract v3 in FFA-kin, or a match that does not have exactly 16 seats) | engine start | Seat is marked failed and **never runs**, not even its BASIC. Its cog stands at spawn all match. | `bots.nim:404-415`, `420`, `neural_host.nim:552-590` |
+| Neural model rejected at load (dimensions, contract mismatch, over the operation budget, observation contract v3 in FFA-kin, or a fixed-width contract in a match that does not have exactly 16 seats) | engine start | Seat is marked failed and **never runs**, not even its BASIC. Its cog stands at spawn all match. | `bots.nim:404-415`, `420`, `neural_host.nim:597-622`, `641-694` |
 | **Runtime error**: instruction or work budget exceeded, divide by zero, array index out of range, bad string handle, string pool full, print limit, call depth, a neural host call used wrongly | any tick | Seat is **disabled for the rest of the episode**. The error goes to the seat's log ("BASIC error: ...") and its status becomes "BASIC VM disabled". | `bots.nim:502-504`, `491`, `coworld.nim:181-184`, `197-209` |
 
-What a disabled cog does afterwards (**inferred** from `mechanics.nim:608-615`): it issues no new
+What a disabled cog does afterwards (**inferred** from `mechanics.nim:616-623`): it issues no new
 commands, but the engine keeps walking it toward its last `walkTo` goal and keeps its last aim. It
 never shoots, charges or captures by intent. After its next death it respawns and stands still.
 It still counts toward team lives, so it can be farmed for kills.
@@ -139,7 +135,7 @@ cap `strNew` and `heardText` use (each distinct `strNew` literal is interned onc
 
 All values are int32. Coordinates are world units (1 unit = 1 cm); **"Y" is the second
 horizontal axis** (the engine's `z`). Unless noted, a function costs 4 work units. Source:
-`bots.nim:161-381`, plus `oracle.nim:247-340`, `basic.nim:3003-3093`, `neural_host.nim:811-973`.
+`bots.nim:161-381`, plus `oracle.nim:247-340`, `basic.nim:3003-3093`, `neural_host.nim:990-1180`.
 
 ### 5.1 Read-only data (set before each decision, `bots.nim:146`, `492`)
 
@@ -154,7 +150,7 @@ horizontal axis** (the engine's `z`). Unless noted, a function costs 4 work unit
 | `trenchId` | trench index you stand in, -1 outside |
 | `worldTick` | current tick |
 | `homeX`, `homeY` | your team's home point (base heart area); FFA-kin: your spawn anchor |
-| `heartX`, `heartY`, `ownHeartX`, `ownHeartY`, `ownHeartStolen`, `carrying` | **legacy capture-the-flag fields.** Under rules 47 nothing sets `carrying` (only rules < 13 code does, `mechanics.nim:814`), so these read the enemy home, your home, 0 and 0. Use `control*` instead. |
+| `heartX`, `heartY`, `ownHeartX`, `ownHeartY`, `ownHeartStolen`, `carrying` | **legacy capture-the-flag fields.** Under rules 47 nothing sets `carrying` (only rules < 13 code does, `mechanics.nim:822`), so these read the enemy home, your home, 0 and 0. Use `control*` instead. |
 
 ### 5.2 Players (fog-gated)
 
@@ -179,7 +175,7 @@ in the repo is `base.bas` rewritten that way (guide line 129).
 
 | Function | Returns |
 | --- | --- |
-| `heartCount()` | 10 on Heartwick and the ten shipped-size generated maps; **100** on `big-twin-mesas` and **126** on `big-deep-forest` since 0.3.66 (verified locally at `570174a2`) |
+| `heartCount()` | 10 on Heartwick and the ten shipped-size generated maps; **100** on `big-twin-mesas` and **126** on `big-deep-forest` since 0.3.66 (verified with a local run; the map files are unchanged at `d0728ab1`) |
 | `controlX(i)`, `controlY(i)` | heart position |
 | `controlOwner(i)` | -1 neutral, 0 Red, 1 Blue (FFA-kin: seat) |
 | `controlCaptureTeam(i)` | team (FFA-kin: seat) currently capturing, -1 idle |
@@ -306,39 +302,109 @@ run_neural_net(neuralModel(), neuralObservation(), neuralLogits(), neuralState()
 paintbot_act(neuralLogits())
 ```
 
-- Costs 512, 16 and 128 work units (`neural_host.nim:818-852`). Each at most once per tick, in
-  that order; misuse raises a runtime error and disables the seat (`neural_host.nim:676-678`).
-- `paintbot_act` **replaces the whole command** for the tick (`neural_host.nim:848`,
-  `bots.nim:163`); action calls made before it are overwritten, calls after it amend it.
-- Model: 448 inputs (observation contract v1), 506 (v2, adds terrain) or, new in 0.3.72,
-  514 (v3 = v2 + an 8-float scoreboard: team lives, glory and the configured awards; teams game
-  only, refused at load in FFA-kin). User-input contracts `v2u<K>` / `v3u<K>` add K floats set
-  from BASIC with `neuralInput`; K may be 1-128 since 0.3.74 (was 1-64) (`neural_package.py:57-63`,
-  `neural_host.nim:543-556`, `examples/paintbot/neural_actor.md` §v3). 82 logits in heads
-  `[51, 25, 2, 2, 2]`; at most 4,000,000 counted operations, checked once at load
-  (`neural_host.nim:586-590`). Every contract lays out 16 seats, so a neural seat in a match
-  of any other size is refused at load (`neural_host.nim:562-564`). Recurrent state resets at
-  match start and on death (`neural_host.nim:633-637`).
-- Default decoding is argmax. Schema-2 manifests may add `decoder` options (sampling, forbidden
-  objectives, fire-hold, strafe legs and others) (`neural_package.py:14-29`). Lower-level calls
-  (`neuralObs`, `neuralMask`, `neuralSample`, `neuralDecode`, `neuralIssue`, `cmdSet`, ...) exist at
-  `neural_host.nim:855-973`. Full contract: `examples/paintbot/neural_basic.md` and
-  `neural_actor.md`.
+A secondary lane for this lab (we upload plain BASIC), documented so it can be used or read
+correctly. Upstream references: `neural_basic.md` (package, decoder options, BASIC I/O) and
+`neural_actor.md` (actor formats, observation and action contracts).
+
+**Per-tick calls.**
+
+- Costs 512, 16 and 128 work units; each at most once per tick, in that order; misuse (a
+  repeat, a wrong handle, inference without a fresh observation) is a runtime error that
+  disables the seat (`neural_host.nim:787-789`, `997-1031`).
+- `paintbot_act` is `neuralDecode()` then `neuralIssue()`: it **replaces the whole command**
+  for the tick (`neural_host.nim:1021-1031`, `bots.nim:163`); action calls made before it are
+  overwritten, calls after it amend it.
+- Recurrent state (and the aim memory used for lead) resets at match start, on death and on
+  respawn (`neural_host.nim:730-735`).
+- Native inference has its own budget: 4,000,000 counted operations per seat per tick at 16
+  seats, scaled by seats/16 above 16 (`neural_host.nim:7-12`), checked once at load against the
+  model's published operation count; over budget, the seat is refused at load and its log gets
+  a `neural: peak_ops=...` line. Every neural seat logs that line at match end
+  (`neural_basic.md` "Native inference").
+
+**Observation contracts** (the actor's embedded hash selects the encoder; the manifest must
+name the same hash; `neural_contract.nim:12-15`, `32-33`, `84-85`, `104-105`, `119-120`):
+
+| Contract | Id | Floats | Game |
+| --- | --- | --- | --- |
+| v1 | `paintbot-pw.rules37.obs.v1.float448` (`ed5d1676…`) | 448 | teams (16 seats) |
+| v2 | `paintbot-pw.rules37.obs.v2.float506` (`e0d7b0b9…`) | 506 = v1 + 58-float terrain block | teams (16 seats) |
+| v3 | `paintbot-pw.rules43.obs.v3.float514` (`06f16d62…`) | 514 = v2 + 8-float scoreboard (team lives, glory, the configured behind-in-lives award and period, quiet-supplies award, clock) | **teams only**: refused at load in FFA-kin (`neural_host.nim:572-576`) |
+| v2u*K*, v3u*K* | `paintbot-pw.rules39.obs.v2u<K>`, `paintbot-pw.rules43.obs.v3u<K>` | 506 + K, 514 + K | as v2 / v3; K user inputs, 1-128, set from BASIC with `neuralInput` (`neural_package.py:53-78`) |
+| ffa.v1 | `paintbot-pw.rules40.obs.ffa.v1.float810` (`6b19dc32…`) | 810 | FFA-kin, 16 seats |
+| ffa.v2 | `paintbot-pw.rules48.obs.ffa.v2` (`d0a10cee…`) | per match: `24 + (N−1)·44 + H·12 + 24` (828 at 16 seats and 10 hearts) | FFA-kin at any seat count (Heartland, Heartland Big) |
+
+For the teams game the choice is v1, v2, v3 or their user-input forms. The v3 scoreboard does
+not include the rules-47 behind-in-cogs award or `teamCogsOut` (columns 506-513,
+`neural_actor.md` "v3"); a v3 policy reads those through BASIC (§5.3) and `neuralInput`. The
+loader has no mode check for ffa.v1/ffa.v2 (only v3 has one), but they are built for FFA-kin
+(kin columns are zero outside it) and are of no use here.
+
+**Seat count.** Every contract except ffa.v2 lays out exactly 16 seats, so a v1/v2/v3/ffa.v1
+seat in a match of any other size is refused at load (`neural_host.nim:650-652`). An ffa.v2
+bundle is sized against the match at load (`neural_host.nim:593-622`). Every paintbot-pw match
+has 16 seats, so this never bites in the teams league.
+
+**Action contracts** (`neural_contract.nim:10-25`):
+
+| Contract | Heads | Identity aim resolves to |
+| --- | --- | --- |
+| v1 (`55922d42…`) | `[51, 25, 2, 2, 2]` = 82 logits: movement (0 stay, 1-10 hearts, 11-42 visible-pickup slots, 43-50 compass steps, so only hearts 0-9 and pickups 0-31 are addressable; `neural_contract.nim:893-905`), aim (0 keep, 1-16 identities, 17-24 compass), fire, grenade, sneak | the body's current position |
+| v2 (`51f602ef…`) | same | the body's lead-compensated point `P + 6u − 5v` (base.bas's rule) |
+| ffa.v2 pointer (`068fc981…`) | sized by the match: objective `11 + H`, aim `8 + N`, then 2, 2, 2; the objective and aim heads point at the ffa.v2 observation's rows of the same tick | a seen cog row's lead point; past the seen rows keeps the aim |
+
+ffa.v2 and ffa.v2 pointer must be used together (`neural_host.nim:578-582`,
+`neural_package.py:842-844`). A pointer seat accepts only the `sampling` decoder option and
+refuses `neuralMask`/`neuralMaskFrom` (`neural_package.py:831-835`).
+
+**Actor formats** (`neural_actor.md`). `PWNET001`: one fixed MinGRU, hidden 64/128/256.
+`PWNET002`: a layer stack from a fixed menu (1 DENSE, 2 RMSNORM, 3 MINGRU, 4 RESIDUAL,
+5 ENTITY_ATTN, 6 CONCAT_INPUT, 7 TOKEN_MLP, 8 TOKEN_MIX, 9 POINTER, 10 SEGMENT_NEAR,
+11 ATTN_POOL, 12 PAD), at most 64 layers, widths up to 4,096, 4,194,304 parameters, 4,096 state
+floats (`neural_package.py:363-365`). A PWNET002 structural integer may be a **layout word**
+(high 16 bits `0xFFFE`: section, field and addend in the low bits) that the host resolves
+against the match's ffa.v2 layout at load, so one `model.bin` serves 16 and 50 seats; staging
+checks such a model only up to its first layout word and leaves the rest to the load
+(`neural_package.py:356-362`, `416-436`). Layout words matter only under ffa.v2.
+
+**Manifest and decoder options** (schema `paintbot-neural-basic/2`). Default decoding is
+headwise argmax. A schema-2 manifest may add `decoder` options, validated identically at
+staging and load (`neural_package.py:20-31`, `795-835`; `neural_host.nim:470-540`):
+`fire_hold_teammates` (true or `{"radius": 1..2000}`), `sampling` (categorical, temperature
+0.01-10, chosen heads; a seat-owned stream seeded from the match seed and slot, so the world
+hash is untouched), `forbid_objectives`, `strafe_legs`, `aim_snap`, `steady_shot`,
+`aim_retarget`, `shot_gate`, `spray_aim`, `spray_gate`, `joint_sampling`; and `user_inputs`
+`{"count": K, "init": [...]}` for v2u*K*/v3u*K* (values ±1,000,000, read by the net as
+value/1000 one tick later). Semantics and their fixed order within a decision:
+`neural_basic.md` lines 26-197.
+
+**Head-level BASIC API** (`neural_host.nim:1033-1180`; `neural_basic.md` lines 222-300), all
+optional: `neuralInput(i, v)`; `neuralObs(i)` (observation × 1000); `neuralMask(h, bits)`,
+`neuralMaskFrom(h, first, bits)`, `neuralTemperature(h, milli)` before selection;
+`neuralSample()`, `neuralChoice(h)`, `neuralSetChoice(h, i)`; `neuralDecode()` into a command
+buffer read with `cmdWalk() … cmdDirect()` and edited with `cmdSet(field, value)`;
+`neuralIssue()`; candidate readers `neuralGoalX/Z(m)` (8 WU) and `neuralAimX/Z(k)` (16 WU);
+`neuralLayout(i)` (observation layout words 0-15, head sizes 16-20) and `neuralRow(section, k)`
+(ffa.v2 only: which seat or heart row k shows this tick).
+
+**Upstream doc/code mismatch:** `neural_basic.md` line 199 says the archive allows "64 KiB
+BASIC"; the staging code allows 128 KiB for `policy.bas` (`neural_package.py:12`,
+`MAX_SOURCE_BYTES`, "matches maxSourceBytes in bots.nim"). The code wins.
 
 ## 6. Starter policies (`../reference/`)
 
 The copies in `../reference/` are the files the league runs: `base.bas`
 (`sha256:3679f5bb...`) and `jev.bas` (`sha256:fec43ac7...`) from `coworld/paintbot/players/` at
 `d0728ab1` (tag `coworld-v0.3.79`). Their hashes equal the `player[].file` entries of the live
-coworld record saved as `../reference/manifest-0.3.79.json` (read 2026-09-29), and they are
-byte-identical to the files at `570174a2`, so every line number below holds. Against the
+coworld record saved as `../reference/manifest-0.3.80.json` (read 2026-09-29); every line
+number below is at `d0728ab1` (re-hashed against the tag). Against the
 **0.3.65** files (`sha256:587cbe41...`/`c36db417...`, `../reference/manifest-0.3.65.json`)
 they differ only in array sizes and loop caps raised from 16/32 to 64 (`avoidUntil`,
 `pickupMemory*`, the heart and pickup loops) so they do not overrun on the big maps' 100+
 hearts, on the same lines.
 
 `../reference/heartland/` holds `ffa.bas` and `ffa_blind.bas` from `coworld/heartland/players/`
-at `d0728ab1` (byte-identical to `570174a2`; 932/936 lines, rules-48 fog: remembered kin,
+at `d0728ab1` (932/936 lines, rules-48 fog: remembered kin,
 256-seat arrays). They target the separate Heartland coworld and **do not compile in the teams
 game** (`pw_local.py compile` at coworld-v0.3.79: `compile_failed` on every seat).
 
@@ -379,16 +445,17 @@ seeks glory hearts, and never reads `teamLives`/`teamCogsOut`. Its header commen
 ### `jev.bas` (manifest `basic-jev`, 2,644 lines)
 
 `base.bas` with an advisor layer spliced in by `coworld/paintbot/tools/make_jev_baseline.py`
-(`jev.bas:1-8`; the same 64-cap edit as `base.bas` at `570174a2`). One cog per squad asks the oracle to choose the squad objective from three
+(`jev.bas:1-8`; the same 64-cap edit as `base.bas`). One cog per squad asks the oracle to choose the squad objective from three
 code-ranked capture candidates (or keep current), relays the pick by shout (`"Alpha, push
 Forge."`), and squadmates adopt it silently. It carries dozens of switches in its init block
-(`jev.bas:567-700`); at `570174a2` (unchanged since `7b2b19f5`) `useObjective`, `useRetreat`,
-`useDial`, `useNouls`, `useRelay`, `useLeader`, `useExamples` are on and the rest off. With no
+(`jev.bas:570-713`): `useObjective`, `useRetreat`, `useDial`, `useNouls`, `useRelay`,
+`useLeader`, `useExamples` and the logging switch `useTrace` (one seat per team logs hearts held
+and score once a second, `jev.bas:705-707`) are on and the rest off. With no
 oracle every ask is refused and it plays exactly like `base.bas` (guide lines 833-837, not
 re-verified by running). Because its
 callouts are public within 12.8 m, enemies in earshot can read the squad plan.
 
-### `heartland/ffa.bas` (Heartland baseline, 932 lines at `570174a2`) and `heartland/ffa_blind.bas`
+### `heartland/ffa.bas` (Heartland baseline, 932 lines) and `heartland/ffa_blind.bas`
 
 FFA-kin only; it calls `kin`, `seatAlive` and other FFA functions, so **uploading it to a teams
 league fails the episode at compile**. It never shoots cogs with `kin >= 50` (nor cousins),

@@ -26,8 +26,8 @@ Each needs an A/B on the live roster before it is a lesson.
   fire is on. Evidence needed: how often it actually fires on them and the lives it costs
   (`pw.py metrics` friendly-fire columns), then an A/B of a check that skips a disguise-candidate
   target standing where a teammate was last seen.
-- **Lives decide matches, not the meter.** Local and public evidence: 38 of 40 league episodes and
-  57 of 60 local ones ended by elimination, and in the win-probability fit lives dominate while
+- **Lives decide matches, not the meter.** League evidence: 78 of 80 current league episodes
+  ended by elimination (median 82 s); earlier, 38 of 40 league and 57 of 60 local ones did, and in the win-probability fit lives dominate while
   meter plus hearts alone predicted nothing held-out (`pw.py winprob`, thin data: 40 league
   episodes). Evidence needed: a larger league sample; then whether survival changes (refusing
   fights earlier, fewer lone deaths) raise the Elo outcome more than capture changes do.
@@ -41,4 +41,13 @@ Each needs an A/B on the live roster before it is a lesson.
   itself and seats 4 and 6. Candidate fix: keep charging and throw at the last good aim point, or
   cancel only while the charge is 0. Evidence needed: a hosted A/B; the league field may punish
   or ignore this differently.
+- **Never pick up uniforms (unless teammates track our disguises).** League evidence (80 episodes,
+  2026-09-29): a disguised cog is hit about 31 times as often per tick, mostly by its own team
+  (74 teammate hits vs 15 enemy hits); every policy in the field except the neural one picks up
+  0.7-1.6 uniforms per episode. Evidence needed: an A/B of base.bas-derived play with the uniform
+  pickup avoided (walk around uniform stations), on the Elo outcome score.
+- **Win by killing, fast.** League evidence: the countdown (−88 glory on average) dwarfs all awards
+  (+42), and daveey-pw-neural wins with the fewest captures but the best K/D and the fastest wins
+  (74 s median). Evidence needed: whether a candidate that trades capture time for engagement
+  wins raises the Elo outcome against the leaders.
 

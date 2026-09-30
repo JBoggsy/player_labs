@@ -50,7 +50,8 @@ James fills this in; until then an agent proposes a charter and stops.
    like base.bas), or the neural ZIP lane (David's `daveey-pw-neural` is #2).
 4. **The loop charter** above, if the loop should run unattended.
 5. Defaults taken while building the tools (change any): A/B design = paired against a common
-   opponent on the Elo outcome score; paired/SPRT statistics added to the shared `coworld-ab`
+   opponent on the Elo outcome score (the measurements below argue for unpaired `field` as the
+   default: pairing costs one request per seed and barely reduced variance); paired/SPRT statistics added to the shared `coworld-ab`
    engine; the intent-telemetry knob defaults on; rerun.io not added.
 
 ## Next step (proposed)
@@ -59,36 +60,51 @@ Upload `base.bas` unchanged as our baseline, evaluate it against each current ch
 `field` request (`pw.py ab-requests --design field --baseline X --candidate X ...`), then run
 `paintbot-pw-diagnose` on that batch to choose the first change.
 
-## Measured findings (2026-09-29, tool verification runs)
+## Measured findings (2026-09-29)
 
-- Hosted tapes built with Nim 2.2.10 re-simulate hash-exactly under local Nim 2.2.6 (2 hosted
-  0.3.78 episodes). 0.3.78+ stamps teams tapes with header rules 48; the teams game plays rules 47.
-- 38 of 40 public league 0.3.78 episodes (and 57 of 60 local) ended by elimination; in the
-  win-probability fit, lives dominate and meter plus hearts alone predicted nothing held-out.
-- Local screening: `pw_local` runs about 1.5 matches/s on 14 cores. Base vs base has a large
-  side asymmetry locally (odd seats won 10 of 14 on seeds 1-14), so every local screen must
-  use both sides.
+League facts (80 hash-verified 0.3.79 episodes; [field.md](docs/field.md#how-the-field-plays-80-league-episodes-2026-09-29),
+[field analysis](docs/reports/2026-09-29-league-field-analysis.md)):
+
+- 78 of 80 matches end by elimination (median 82 s); winning glory median 544, of which the
+  countdown (−88) dominates and all awards add +42. Speed and survival decide rank.
+- No side advantage in the league (odd seats 43/80, Wilson 43-64%). The local base-vs-base
+  71% odd-side rate is a mirror-match effect, so keep local screens side-balanced anyway.
+- Every league episode has its own engine seed (`crc32("<division>:<round_index>") + job
+  index`); the API's `game_config.seed: 2026` is a placeholder. Live configs carry
+  `behind_lives: 5, behind_cogs: 10`.
+- Uniforms are a net liability: a disguised cog is hit ~31× as often per tick, mostly by its
+  own team; 7.1% of all hits are friendly. Grenades: 100 self-kills vs 164 enemy kills.
+- Top policies: the Aaron pair (flank opening, grenade-heavy, `FIRE22`/`ITEM23` shout
+  protocol) and daveey-pw-neural (silent, gun-only, wins by killing, 74 s median win).
+
+Tooling facts:
+
+- Hosted tapes built with Nim 2.2.10 re-simulate hash-exactly under local Nim 2.2.6 (80/80
+  0.3.79 episodes). Teams tapes carry header rules 48; the teams game plays rules 47.
+- `pw_local` runs about 1.5 matches/s on 14 cores; `jev.bas` without an oracle plays
+  move-for-move like `base.bas` (`local screen` reports `identical_play`).
 - Seed pairing barely reduced outcome-score variance locally (per-pair SD 0.40 vs ~0.44
-  unpaired; head-to-head per-episode SD 0.29); about 330 pairs detect +0.05 on the Elo outcome.
-- `base.bas` aims at its own disguised teammates: a disguise fools teammates too and base.bas
-  filters targets by observed seat parity (35 of 4,718 target lines in 6 local matches). Whether
-  it fires on them, and the cost, is not measured.
+  unpaired); about 330 pairs detect +0.05 on the Elo outcome. An explicit request seed makes
+  every episode of that request the same world, so a paired design needs one single-episode
+  request per (arm, opponent, side, seed). Given the small variance gain, consider the unpaired
+  `field` design the default (decision 5 below).
+- `base.bas` peaks at 9,116 instructions and 15,538 work units per decision (18% / 12% of the
+  budget); it aims at disguised teammates on ~1% of target lines and hits them in about half of
+  those cases.
 
 ## Open constraints
 
-- The league runs `coworld-v0.3.79` (`d0728ab1`); the docs are verified at `570174a2` (0.3.78).
-  0.3.79 changed only the neural lane and training internals. `pw.py deployed-ref --json`
-  lists rule-file changes since the docs' commit.
-- Not yet observed live: a league episode's `game_config.glory` showing `behind_cogs: 10`
-  (source and manifest say so). Check with the first hosted batch.
-- Does an explicit `game_config_overrides.seed` also fix the engine seed? This decides whether
-  paired A/B pairs identical worlds or only identical requests. Settle with a 2-3 episode
-  pilot in the first hosted A/B.
-- Hosted seat logs for our own policy in our experience requests: expected, not yet exercised
-  (needed for intent telemetry and VM-error detection).
-- Whether the Observatory replay wrapper honors a `t=<tick>` parameter (match reports link it
-  with a caveat).
-- Releases ship several times a day; record `coworld_version` per episode and never pool rules
-  versions in one comparison (`compare` refuses).
+- The docs are verified at `d0728ab1` (coworld-v0.3.79); the league moved to 0.3.80 (`c8dd1def`,
+  viewer-only change, rule-bearing files identical) the same evening and the tools pin it.
+  Releases ship several times a day: `pw.py deployed-ref --json` lists rule-file changes since
+  `PW_DOCS_SHA`; record `coworld_version` per episode and never pool rules versions.
+- Hosted seat logs for our own policy in our experience requests: expected, not exercised
+  (needs our first upload; required for intent telemetry and VM-error detection).
+- The Observatory replay wrapper does not forward a tick (`t=`); only the game's own viewer URL
+  honors `?t=`. Match reports link episodes without a tick.
+- The league sets no LLM spend cap; whether the oracle's model passes the platform allowlist and
+  Beta's oracle asks succeed in league play is unverified (needs a seat log).
+- MMRs across the ladder dropped sharply on 2026-09-29 (top ~2,370 → ~1,820), probably a re-rating
+  after `margin_scale` was set; unconfirmed.
 - Thresholds in `pw_flags`, `pw_fights`, `pw_metrics` and `pw_intent` are uncalibrated
-  defaults; calibrate them on the first 100+ episode batch.
+  defaults; calibrate them on the first 100+ episode batch of our own policy.

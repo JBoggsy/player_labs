@@ -412,10 +412,22 @@
 <div class="dc-page">
 <article id="doc">
   <header class="masthead">
-    <span class="eyebrow">Design Plan · 2026-09-29 · Proposal for review</span>
+    <span class="eyebrow">Design Plan · 2026-09-29 · Implemented 2026-09-29</span>
     <h1>Paintbot PW: tooling and skills plan</h1>
     <p class="context">This plan lists each tool and agent skill that the Paintbot PW lab must have to diagnose, test, and improve our BASIC policy, and it tells how to get each one. We did the research against paintbot-pw <code>0ff41d2d</code> (tag <code>coworld-v0.3.77</code>, rules 47). The league used that build on 2026-09-29.</p>
   </header>
+
+    <div class="callout callout-info">
+      <span class="callout-label">Status · implemented 2026-09-29</span>
+      We built all of T0–T15 and the skills on 2026-09-29. The tools, their commands, and their agent contract are in the lab tool index (<code>paintbot_pw_lab/docs/tools/README.md</code>, or run <code>pw.py tools</code>). The implementation differs from this plan in these ways:
+      <ul>
+        <li>There are seven skills, not six. The seventh is <code>paintbot-pw-loop</code>, which runs the improvement loop without a person, under a charter that James writes.</li>
+        <li>We added an agent layer that the plan did not have: the <code>pw.py</code> dispatcher with <code>doctor</code>, <code>tools</code> and <code>leaders</code>, a shared CLI contract (<code>--json</code>, exit codes 0/1/2/3), and one release pin (<code>tools/release.env</code>).</li>
+        <li>Design 2 (head-to-head) runs only locally. Two of our own policies in one hosted episode is self-play, and the lab preferences forbid hosted self-play.</li>
+        <li>The intent line cannot report the instruction headroom, because BASIC cannot read its own instruction count. Use <code>PW_BASIC_PEAKS=1</code> on a local run.</li>
+        <li>We did not add rerun.io.</li>
+      </ul>
+    </div>
 
   <section id="summary">
     <h2>Executive Summary</h2>

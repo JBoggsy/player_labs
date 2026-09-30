@@ -1,14 +1,16 @@
 # Paintbot PW mechanics (as deployed)
 
-> **Currency.** Verified 2026-09-29 against Metta-AI/paintbot-pw commit `570174a2` (tag
-> `coworld-v0.3.78`), which is coworld `paintbot-pw` 0.3.78
-> (`cow_12867c2e-aca8-4755-980b-5ba668a04ad4`), the build both leagues run that day
-> (`tools/deployed_ref.py`). Live games record rules **48**; rules 48 changed only FFA-kin fog,
-> so the teams game plays rules 47. Line numbers below are at `570174a2`. Previous basis:
-> `7b2b19f5` (0.3.65, rules 45); every section was re-checked against the full diff of
-> `examples/paintbot`, `src/polyworld`, `coworld/paintbot/guide.md` and the manifest template,
-> and the changed facts are marked with the release that introduced them. Re-verify when the
-> coworld version changes: diff `examples/paintbot/sim.nim`, `mechanics.nim`, `game.nim`,
+> **Currency.** Verified 2026-09-29 against Metta-AI/paintbot-pw commit `d0728ab1` (tag
+> `coworld-v0.3.79`), which is coworld `paintbot-pw` 0.3.79
+> (`cow_4335e79a-0da3-4a53-a8c6-b80e3e72041f`), the build the main league runs that day
+> (`pw.py deployed-ref`). Every `file:line` citation below was re-read at `d0728ab1`. Live
+> games record rules **48**; rules 48 changed only FFA-kin fog, so the teams game plays rules
+> 47. 0.3.79 changed no teams rule: its engine diff is the neural lane (policy-surface.md
+> §5.10), 16-to-256 widening of training-only telemetry arrays, and a new
+> `controlHeartCount` in `mechanics.nim` (which moved later `mechanics.nim` lines by 8); a
+> local 16-seat `base.bas` match gives the same final hash under 0.3.78 and 0.3.79.
+> Re-verify when the coworld version changes: `pw.py deployed-ref` lists the rule-bearing
+> files that changed; diff `examples/paintbot/sim.nim`, `mechanics.nim`, `game.nim`,
 > `match_config.nim`, `kinship.nim`, and the manifest template's `variants`.
 
 This is **Paintbot on Polyworld**: a Nim engine where every seat is a BASIC script run inside the
@@ -22,13 +24,14 @@ Paths are relative to the repo root. `sim.nim` and `mechanics.nim` are under `ex
 
 ## 1. The one thing to get right: winning, glory, and rank
 
-> **Currency of this section.** Verified 2026-09-29 against paintbot-pw `570174a2` (tag
-> `coworld-v0.3.78`, the league's build that day; rules 48, whose only change is FFA-kin fog, so
-> the teams game plays rules 47; teams recordings are nevertheless stamped 48, checked on a local
-> recording). Line numbers in this document are at `570174a2`. League ranking settings were read live the same day;
-> the Elo code is metta `packages/observatory-competitions/src/observatory_competitions/v2/ladders/rankings/elo.py`
-> at `49951fd7f6`. This section is the lab's canonical statement of scoring and rank; other docs
-> link here instead of restating it.
+> **Currency of this section.** Verified 2026-09-29 against paintbot-pw `d0728ab1` (tag
+> `coworld-v0.3.79`, the league's build that day; teams recordings are stamped rules 48 and play
+> rules 47). League ranking settings were read live the same day (authenticated
+> `GET /v2/leagues/league_b9458ff8-…`); the Elo code is metta
+> `packages/observatory-competitions/src/observatory_competitions/v2/ladders/rankings/elo.py`
+> at `29b22cc4d9` (unchanged since `6304974ffa`). The league glory config was read from 80
+> hosted 0.3.79 tapes. This section is the lab's canonical statement of scoring and rank; other
+> docs link here instead of restating it.
 
 Three different numbers matter, and only the last one is what the league ranks by:
 
@@ -44,24 +47,24 @@ Three different numbers matter, and only the last one is what the league ranks b
 | --- | --- | --- |
 | Starts at | 0 per team | match length in seconds: `endTick div 24` = 600 for 14,400 ticks (`sim.nim:864-865`) |
 | Changes | +1 tick-point per owned control heart per tick | -1 per second, floored at 0, plus the awards in 1.2 (`sim.nim:934-959`) |
-| Ends match when | a team reaches `hearts × HeartMeterFillTicks / 2` = 10 × 4,320 / 2 = 21,600 tick-points = 900 points on a ten-heart map (`sim.nim:13`, `912-914`; `mechanics.nim:774-785`; the big maps have 100 and 126 hearts, so their target is 10x and 12.6x larger), a team is eliminated, or tick 14,400 | never ends the match |
-| At match end | higher meter wins; equal = draw (`mechanics.nim:786`) | `settleGlory`: loser set to 0; a draw sets **both** to 0 (`sim.nim:1009-1013`, called at `mechanics.nim:787`) |
+| Ends match when | a team reaches `hearts × HeartMeterFillTicks / 2` = 10 × 4,320 / 2 = 21,600 tick-points = 900 points on a ten-heart map (`sim.nim:13`, `912-914`; `mechanics.nim:782-793`; the big maps have 100 and 126 hearts, so their target is 10x and 12.6x larger), a team is eliminated, or tick 14,400 | never ends the match |
+| At match end | higher meter wins; equal = draw (`mechanics.nim:794`) | `settleGlory`: loser set to 0; a draw sets **both** to 0 (`sim.nim:1009-1013`, called at `mechanics.nim:795`) |
 | Reported as | not reported | `results.scores[i]` = glory of seat i's team (`sim.nim:1015-1024`) |
 
 Every ending (meter full, elimination, time limit) passes through the same winner comparison
-and `settleGlory` call (`mechanics.nim:785-787`). Elimination fills the survivor's meter first,
+and `settleGlory` call (`mechanics.nim:793-795`). Elimination fills the survivor's meter first,
 so the survivor wins.
 
 ### 1.2 How glory is earned and lost (rules 37-47)
 
-Glory hearts are paid before the tick counter advances (`mechanics.nim:765`); the rest in
-`updateGlory` after it (`mechanics.nim:773`). Every award is logged as a `GloryEvent` with a
+Glory hearts are paid before the tick counter advances (`mechanics.nim:773`); the rest in
+`updateGlory` after it (`mechanics.nim:781`). Every award is logged as a `GloryEvent` with a
 kind (`sim.nim:142-146`, `916-920`).
 
 | Source | Rule | Kind | Code |
 | --- | --- | --- | --- |
 | Countdown | every 24 ticks (1 s), each team loses 1, floored at 0 | (not an event) | `sim.nim:943-944` |
-| Quiet supplies | when no teammate has **taken** a pickup for `quiet_supplies_seconds`, the team earns `quiet_supplies` and the stretch restarts. A pickup is only taken when useful (a medkit only when hurt, `mechanics.nim:534-549`), so walking over one at full health does not reset it | `gloryQuietSupplies` | `sim.nim:946-949` |
+| Quiet supplies | when no teammate has **taken** a pickup for `quiet_supplies_seconds`, the team earns `quiet_supplies` and the stretch restarts. A pickup is only taken when useful (a medkit only when hurt, `mechanics.nim:542-557`), so walking over one at full health does not reset it | `gloryQuietSupplies` | `sim.nim:946-949` |
 | Behind in lives (rules 39+) | every `behind_lives_seconds`, lives are summed per team (`teamLives`, counts the current life); the team with fewer earns `behind_lives × (enemy lives − own lives)` | `gloryBehindLives` | `sim.nim:922-926`, `950-954` |
 | Behind in cogs (rules 47+) | every `behind_cogs_seconds`, count each team's cogs **out of the match** (dead with no lives left, `teamCogsOut`); the team with **more** cogs out earns `behind_cogs × (own cogs out − enemy cogs out)` | `gloryBehindCogs` | `sim.nim:928-932`, `955-959` |
 | Glory heart (rules 38+) | the first living cog within 120 units of a glory heart earns `heart` for its team. Hearts spawn in mirrored pairs from 0:20, every 10-20 s (one pair per ten control hearts each time, so 10 pairs on `big-twin-mesas`), live 30 s, on random open dry spots, and are fog-gated for policies | `gloryHeart` | `sim.nim:36-43`, `974-1007` |
@@ -82,11 +85,12 @@ defaults `sim.nim:31-51`, `617-620`):
 | `heart` | 20 | 20 | glory per glory heart |
 
 Source for the league column: every teams variant in `coworld/paintbot/coworld_manifest_template.json`
-at `570174a2` sets `"glory": {"behind_lives": 5, "behind_cogs": 10}` (read 2026-09-29; the change
-to 10 is commit `0ff41d2`, "behind-in-cogs glory 5 -> 10"). **Not yet observed in a live episode's
-`game_config`** (the API was rate-limited when this was written); on 2026-09-28 live episodes
-showed `{"behind_lives": 5}`, which predates rules 47. Local runs through `local.py` use the engine
-defaults; `paintbot-headless` accepts `--glory:<json>` to match the league.
+at `d0728ab1` sets `"glory": {"behind_lives": 5, "behind_cogs": 10}` (the change to 10 is commit
+`0ff41d2`, "behind-in-cogs glory 5 -> 10"). **Observed live:** all 80 main-league episodes of
+rounds 2382-2388 (0.3.79, 2026-09-29) carry exactly this config in the tape header (`pw_trace`
+`meta.glory_config`: behind_lives 5, behind_cogs 10, the other five keys at their defaults).
+Local runs through the repo's `local.py` use the engine defaults; `pw.py local` and
+`paintbot-headless --glory:<json>` play the league config.
 
 **What a policy can read** (BASIC, teams game; `bots.nim:254-273`): `glory(team)`,
 `teamLives(team)`, `teamCogsOut(team)`, and the configured award values `awardBehind`,
@@ -128,15 +132,18 @@ leagues use it is not established.
 Arithmetic from the rules above, not measured:
 
 - **Speed is rank.** Each second of match time costs 1 glory, which is 0.0005 of Elo outcome.
-  A win at *t* seconds is worth about `600 − t + awards` glory. League winners scored 428-577 in
-  one round on 2026-09-28 and 527-551 in three episodes of one round on 2026-09-29 (public round listing), so
-  current wins end in roughly 1-3 minutes.
+  A win at *t* seconds is worth about `600 − t + awards` glory. In 80 main-league episodes of
+  0.3.79 (rounds 2382-2388, 2026-09-29) winners scored 458-996, median 544 (outcome 0.78 on
+  average), and matches lasted 1,354-5,034 ticks, median 1,965 (82 s; 10th-90th percentile
+  64-124 s). 78 ended by elimination and 2 by a full meter; none reached the time limit.
 - **Losing fast costs more than losing slow.** A loss is `0.5 − their glory / 2000`, so delaying
   an opponent's win reduces the rating loss even when the loss is certain.
 - **The two "behind" awards pay the team that is losing the fight.** Behind in lives pays 5 per
   life every 5 s; behind in cogs pays 10 per extra cog out every 5 s. A team 3 cogs down for a
   minute earns 12 × 30 = 360 from cogs alone. It is worth anything only if that team still wins
-  on the meter. The engine comment states the design intent: glory is "a self-imposed handicap:
+  on the meter. In the 80-episode sample the losers' pre-settle glory averaged 518 from lives
+  and 294 from cogs, all zeroed at the end; the one 996-glory win was a team that trailed
+  (455 from lives, 70 from cogs) and then won on the meter. The engine comment states the design intent: glory is "a self-imposed handicap:
   nothing that makes a team more likely to win pays it" (`sim.nim:28-30`).
 - **Supplies cost glory.** Every pickup a teammate takes forfeits the running quiet stretch
   (+10 per 30 s).
@@ -146,11 +153,12 @@ Arithmetic from the rules above, not measured:
 
 ### 1.5 Re-verifying this section
 
-Run `uv run python paintbot_pw_lab/tools/deployed_ref.py`. If the deployed commit changed, diff
+Run `uv run python paintbot_pw_lab/tools/pw.py deployed-ref --json`. If the deployed commit changed, diff
 `examples/paintbot/sim.nim` (constants at the top, `updateGlory`, `settleGlory`, `scores`),
 `examples/paintbot/match_config.nim` and the manifest template's `variants[].game_config.glory`.
 Re-read the league's `settings.ladder.ranking` (the `margin_scale` knob can change without any
-game release), and check one fresh league episode's `game_config.glory`.
+game release), and check one fresh league tape's glory config (`pw.py episodes` then the
+trace's `meta.glory_config`; round-listing `episode.json` rows carry no `game_config`).
 
 ## 2. Teams, seats, and match flow (teams mode)
 
@@ -166,15 +174,15 @@ game release), and check one fresh league episode's `game_config.glory`.
   run was checked). Recordings from rules 46 store the seat count; older ones are 16.
 - **Tick rate** 24/s (`sim.nim:10`). **Match length** `min(max_ticks, 14400)` ticks = at most
   10:00 (`sim.nim:12`, `857-858`). Every teams variant sets `max_ticks: 14400`.
-- **Ending** (`mechanics.nim:765-788`), checked every tick after scoring:
+- **Ending** (`mechanics.nim:773-796`), checked every tick after scoring:
   1. **Elimination**: a team is out when every cog has `hp <= 0` and `lives == 0`. The survivor's
      meter is raised to full, the match ends, and the higher meter wins, so the survivor wins
-     (`mechanics.nim:776-786`). Both out on the same tick: meters as they stand decide.
+     (`mechanics.nim:784-794`). Both out on the same tick: meters as they stand decide.
   2. **Meter full**: either team reaches 21,600 tick-points.
   3. **Time**: `tick >= endTick`; higher meter wins, equal is a draw.
-  Simultaneous fills: higher meter wins, equal is a draw (`mechanics.nim:786`).
+  Simultaneous fills: higher meter wins, equal is a draw (`mechanics.nim:794`).
 - **Seat order.** Seats act in slot order, but each even/odd pair is swapped on odd ticks, so
-  neither team always moves first (`mechanics.nim:518-525`).
+  neither team always moves first (`mechanics.nim:526-533`).
 
 ### Result fields
 
@@ -191,7 +199,7 @@ game release), and check one fresh league episode's `game_config.glory`.
 
 **Finding: `outcome: "time_limit"` means a draw, not "the clock ran out".** `matchOutcome` returns
 `"time_limit"` whenever `winner < 0`, and at rules 47 a teams match always ends with `winner` set
-to 0, 1 or -2 (draw) (`mechanics.nim:786`). A match decided on the meter at 10:00 reports `"0"` or
+to 0, 1 or -2 (draw) (`mechanics.nim:794`). A match decided on the meter at 10:00 reports `"0"` or
 `"1"`; a draw by any route (time, equal meters, mutual elimination) reports `"time_limit"`.
 
 ## 3. Hearts and territory (teams mode)
@@ -200,16 +208,16 @@ to 0, 1 or -2 (draw) (`mechanics.nim:786`). A match decided on the meter at 10:0
   (1 tick-point per tick each; big hearts ended at rules 27, `sim.nim:909-910`). Since 0.3.66
   the big maps carry **100** (`big-twin-mesas`) and **126** (`big-deep-forest`) hearts
   (verified with `heartCount()` in a local run); read the count at runtime. Hearts 0 and 1 start owned by Red and Blue; the rest start neutral
-  (`mechanics.nim:171`). Base hearts are ordinary hearts and can be captured.
+  (`mechanics.nim:179`). Base hearts are ordinary hearts and can be captured.
 - **Touching** a heart: alive, within 140 units, and a traversable line to it (no height step
-  over 25 units per 20-unit sample, `sim.nim:346-356`) (`mechanics.nim:327`).
-- **Capture** (`mechanics.nim:329-348`): one team touching and not the owner accumulates 1 tick per
+  over 25 units per 20-unit sample, `sim.nim:346-356`) (`mechanics.nim:335`).
+- **Capture** (`mechanics.nim:337-356`): one team touching and not the owner accumulates 1 tick per
   tick; at 72 ticks (3 s) ownership flips directly to the attacker (no neutral step). Both teams
   touching: progress pauses. Nobody, or only the owner: progress resets. A different attacking
   team starts from 0. More cogs do not speed it up.
 - **Territory** is the nearest-heart region (`sim.nim:1370-1378`). In the teams game it is only a
   display; it has no mechanical effect (the boost applies in FFA-kin only, `sim.nim:1385`).
-- **Heartwick heart positions** before nudging (`mechanics.nim:168-185`), each odd index the half
+- **Heartwick heart positions** before nudging (`mechanics.nim:174-193`), each odd index the half
   turn of the even one before it about (3200, 2000): 0 red home (960, 2000); 1 blue home
   (5440, 2000); 2 (-3000, 500); 4 (1000, -1600); 6 (-3000, 3500); 8 (3200, 1250) (lake heart).
   Read positions from `controlX/Y` at runtime rather than hard-coding them.
@@ -219,12 +227,12 @@ to 0, 1 or -2 (draw) (`mechanics.nim:786`). A match decided on the meter at 10:0
 | Item | Value | Source |
 | --- | --- | --- |
 | Base HP | 3 (FFA-kin 10) | `sim.nim:65`, `72`, `298-300` |
-| Lives | 4 per cog: the first life plus 3 respawns. `livesLeft` counts the current life | `mechanics.nim:138`, `436` |
-| Respawn delay | 72 ticks (3 s) | `sim.nim:23`, `mechanics.nim:439` |
-| Spawn protection | 36 ticks; all damage ignored (`shield > 0`) | `sim.nim:782`, `mechanics.nim:363` |
-| On death | equipment wiped (grenade, spray, armor, charge), uniform removed | `mechanics.nim:437-438` |
+| Lives | 4 per cog: the first life plus 3 respawns. `livesLeft` counts the current life | `mechanics.nim:146`, `444` |
+| Respawn delay | 72 ticks (3 s) | `sim.nim:23`, `mechanics.nim:447` |
+| Spawn protection | 36 ticks; all damage ignored (`shield > 0`) | `sim.nim:782`, `mechanics.nim:371` |
+| On death | equipment wiped (grenade, spray, armor, charge), uniform removed | `mechanics.nim:445-446` |
 
-- **Where you spawn** (`sim.nim:740-812`, `mechanics.nim:588-603`): if the team owns any heart,
+- **Where you spawn** (`sim.nim:740-812`, `mechanics.nim:596-611`): if the team owns any heart,
   within 350 units of an owned heart (wider by the square root of seats/16 in matches over 16
   seats, `sim.nim:768-772`) chosen by a softmax over the summed distance from living
   teammates (temperature 1000, distances quantized to 10). Larger sums (less-covered hearts) are
@@ -237,35 +245,36 @@ Units: 1 unit = 1 cm; `Radius` (body) = 55 (`sim.nim:17`).
 
 ### Movement
 
-- Speed 28 units/tick (`sim.nim:18`). Sneak halves it (`mechanics.nim:619`). Water quarters it
-  (7 units/tick) (`mechanics.nim:620-622`). Leaving a trench (moving away from its centre) is
-  slowed 5x per axis (`mechanics.nim:625-631`). Effects stack.
+- Speed 28 units/tick (`sim.nim:18`). Sneak halves it (`mechanics.nim:627`). Water quarters it
+  (7 units/tick) (`mechanics.nim:628-630`). Leaving a trench (moving away from its centre) is
+  slowed 5x per axis (`mechanics.nim:633-639`). Effects stack.
 - Bodies are solid to everyone (`sim.nim:731-739`). A blocked cog sidesteps
-  (`mechanics.nim:637-650`).
-- The engine pathfinds (`waypointFor`, `mechanics.nim:510-516`) on a 1 m grid where a lake cell
+  (`mechanics.nim:645-658`).
+- The engine pathfinds (`waypointFor`, `mechanics.nim:518-524`) on a 1 m grid where a lake cell
   costs 4 (rules 38), and from rules 45 routes into water when the goal itself is wet (lake hearts)
   (`sim.nim:1219-1369`).
 
-### Gun (the default weapon; `mechanics.nim:675-728`)
+### Gun (the default weapon; `mechanics.nim:683-736`)
 
 - `shootAt` with cooldown 0 starts a **5-tick windup**. The aim is locked at the order as a
   vector relative to the shooter; the ray leaves from wherever the shooter stands when the windup
   ends.
 - Cooldown 24 ticks (1 shot/s), **tripled to 72** if the shooter has armor or is in a trench
-  at the moment of the order (`mechanics.nim:726-728`). The check also reads `carrying`, which
+  at the moment of the order (`mechanics.nim:734-736`). The check also reads `carrying`, which
   nothing sets under rules 47.
 - Hitscan: samples every 20 units out to 5,250 units (FFA-kin 2,000); stops at cover or the map
   edge; the **first** body within 55 units of the ray with a clear sight line takes 1 damage.
-  **Friendly fire is on**: teammates block and take hits (`mechanics.nim:705-715`).
+  **Friendly fire is on**: teammates block and take hits (`mechanics.nim:713-723`).
 - Trench cover: a victim in a different trench from the shooter is skipped 70% of the time and
-  the ray continues (`mechanics.nim:711-713`).
+  the ray continues (`mechanics.nim:719-721`).
 - Spread: small random jitter scaled by height difference, 25% less per metre the shooter stands
-  above the target, clamped to 50-150% (`mechanics.nim:60-63`, `683-693`). At 20 m the lateral
-  error is at most about 24 units, less than the body radius; the main source of misses is the
-  target moving during the windup (**inferred** from the jitter bound).
-- All gun targets in a tick are chosen before damage, so mutual kills happen (`mechanics.nim:729-731`).
+  above the target, clamped to 50-150% (`mechanics.nim:60-63`, `691-701`). The jitter is at most
+  ±64/5,250 of the distance, so at 20 m the lateral error is at most about 24 units on level
+  ground and 37 at the 150% clamp, both less than the body radius; the main source of misses is
+  the target moving during the windup (**inferred** from the jitter bound).
+- All gun targets in a tick are chosen before damage, so mutual kills happen (`mechanics.nim:737-739`).
 
-### Spray can (`mechanics.nim:666-674`, `498-508`, `735-742`)
+### Spray can (`mechanics.nim:674-682`, `506-516`, `743-750`)
 
 - A carried can **replaces the gun** and is never used up; you keep it until death.
 - `shootAt` with spray cooldown 0 starts a 5-tick burst; next burst 13 ticks later (5 + 8).
@@ -273,15 +282,15 @@ Units: 1 unit = 1 cm; `Radius` (body) = 55 (`sim.nim:17`).
   line required. Each victim takes 3 damage once per burst. Hits teammates too; spawn-protected
   cogs are skipped.
 
-### Grenade (`mechanics.nim:656-665`, `472-496`)
+### Grenade (`mechanics.nim:664-673`, `480-504`)
 
 - Carry one. `chargeGrenade(1)` adds 1 charge per tick, up to 24. The tick you stop charging (charge
-  > 0), it is thrown along your aim: range `150 + 1130 * charge / 24` with charge clamped to at least 1, so about 197 to 1,280 units (`mechanics.nim:474-475`).
+  > 0), it is thrown along your aim: range `150 + 1130 * charge / 24` with charge clamped to at least 1, so about 197 to 1,280 units (`mechanics.nim:482-483`).
   It flies over walls and lands 10 ticks later.
 - Blast: every body within 360 + 55 units takes 3 damage in the open, 6 if in the trench it
   landed in, 2 if in a different trench. **Includes allies and the thrower.**
 
-### Armor, medkits, pickups (`mechanics.nim:527-553`)
+### Armor, medkits, pickups (`mechanics.nim:535-561`)
 
 | Kind (`pickupKind`) | Taken when | Effect | Respawn |
 | --- | --- | --- | --- |
@@ -293,9 +302,9 @@ Units: 1 unit = 1 cm; `Radius` (body) = 55 (`sim.nim:17`).
 
 Pickup reach is 120 units. On Heartwick the layout is 2 uniforms, 4 grenades, 2 sprays, 2 armors,
 6 medkits (the base pair plus two deep-wilderness pairs) and 6 trenches of 280 x 280
-(`mechanics.nim:133-185`; the per-kind split is **inferred** from the placement code; the totals,
-16 pickups and 6 trenches, were checked with `pickupCount()`/`trenchCount()` in a local run at
-`570174a2`). Generated maps place their own items (`mechanics.nim:108-127`): 14 pickups and 6
+(`mechanics.nim:137-193`). The per-kind split and the totals are **verified** at `d0728ab1` from the
+engine's map export (`pw.py map --json`), and every pickup kept one kind across all 3,050 pickups
+taken in 80 league episodes ([field analysis §7](reports/2026-09-29-league-field-analysis.md)). Generated maps place their own items (`mechanics.nim:108-127`): 14 pickups and 6
 trenches on the shipped-size maps; since 0.3.66, 140 / 60 on `big-twin-mesas` and 182 / 78 on
 `big-deep-forest` (checked the same way).
 
@@ -308,14 +317,14 @@ gunfire, heavy grenade damage inside (all covered above). Trench geometry is pub
 
 A disguised cog appears to others as seat `slot xor 1` (a real enemy seat number) and as the
 other team. The disguise drops on a gun order, spray burst, grenade release (charging alone keeps
-it) or death (`mechanics.nim:660`, `668`, `719`, `438`). Ownership and scoring always use the true
+it) or death (`mechanics.nim:668`, `676`, `727`, `446`). Ownership and scoring always use the true
 team.
 
 ## 6. Vision, hearing, sound
 
 - **Vision** (`sim.nim:704-730`): per cog, a 120-degree cone centred on the cog's current aim
   point, unlimited range, blocked by cover and terrain (eye height 120 over ground). Initial aim is
-  the enemy home (`mechanics.nim:139`). Aim persists between ticks; see policy-surface.md for what
+  the enemy home (`mechanics.nim:147`). Aim persists between ticks; see policy-surface.md for what
   sets it. Dead cogs see nothing.
 - **Team vision** (`"vision": "team"`, rules 42) is opt-in; no deployed variant sets it
   (manifest `variants`).
@@ -334,7 +343,7 @@ Config keys the engine reads (`coworld.nim:16-23`, `match_config.nim:43-109`, `g
 | Key | Values | Effect |
 | --- | --- | --- |
 | `tokens` | one per seat | the match's seat count (0.3.75+): 2-256 in the engine, exactly 16 in the paintbot-pw schema |
-| `seed` | int32 | world RNG; variants all set 2026 (whether the platform overrides it per episode is an **open question**) |
+| `seed` | int32 | world RNG. Variants all set 2026, but **league episodes do not play 2026**: each plays a per-round base plus its `job_index` (checked on 80 tapes in 7 rounds, 2026-09-29). How league and experience-request seeds are derived: [field.md](field.md) |
 | `max_ticks` | 1..28,800 | match cap; the engine clamps teams to 14,400 and FFA-kin to 8,640 (`sim.nim:855-859`) |
 | `mode` | `teams` (default), `ffa_kin` | game mode |
 | `map` | `""` (Heartwick) or one of 12 generated maps | terrain and item layout (`maps.nim:5-8`) |
@@ -342,7 +351,7 @@ Config keys the engine reads (`coworld.nim:16-23`, `match_config.nim:43-109`, `g
 | `glory` | object (section 1): 7 keys since rules 47 (`behind_cogs`, `behind_cogs_seconds` added) | teams only; rejected in FFA-kin |
 | `kin_layout` | `sampled`, `fours`, `pairs`, `trios_loner`, `cousins`, `strangers`, `clones`, `tribes` (0.3.75+: families of 5) | FFA-kin only |
 
-### Deployed variants (manifest 0.3.78)
+### Deployed variants (manifest 0.3.79)
 
 | Variant | Config beyond seed/players |
 | --- | --- |
@@ -351,11 +360,11 @@ Config keys the engine reads (`coworld.nim:16-23`, `match_config.nim:43-109`, `g
 | certification | no glory key, `max_ticks: 240`, 2 `basic-jev` + 14 `baseline` seats |
 
 The `heartland` and `heartland-big` variants were removed from this manifest in 0.3.71
-(commit `b08b6a1`). Heartland is now its own coworld, `heartland` (0.1.9 = `570174a2` on
+(commit `b08b6a1`). Heartland is now its own coworld, `heartland` (0.1.10 = `d0728ab1` on
 2026-09-29, tags `heartland-v*`), built from the same engine with `"mode": "ffa_kin"`; its
 `heartland-big` variant plays 50 seats in 10 tribes of 5 (guide lines 397-414). The main
-`paintbot-pw` league's `variant_rotation` lists only `1v1` ("Two policy teams"; live league
-settings read 2026-09-28, [field.md](field.md)); its engine config is identical to
+`paintbot-pw` league plays only `1v1` ("Two policy teams": every one of the 80 episodes of
+rounds 2382-2388; league settings in [field.md](field.md)); its engine config is identical to
 `competition`'s.
 
 ### Maps
@@ -375,7 +384,7 @@ settings read 2026-09-28, [field.md](field.md)); its engine config is identical 
   `base.bas`'s `isqrt` comment ("23170^2 exceeds any squared map distance") is false there
   (**inferred** from map size and BASIC's wrapping arithmetic).
 
-### FFA-kin (Heartland) differences (`mechanics.nim:266-318`, `753-764`, `sim.nim:1015-1022`)
+### FFA-kin (Heartland) differences (`mechanics.nim:274-326`, `761-772`, `sim.nim:1015-1022`)
 
 Heartland is a separate coworld now (section 7), so this is reference only.
 
@@ -391,27 +400,24 @@ Heartland is a separate coworld now (section 7), so this is reference only.
 - Ends at 8,640 ticks or when at most one cog is left; `outcome: "ended"`.
 - `scores[i]` = sum over j of r(i, j) x s_j, in points (s in tenths / 10), where r is 1 self or
   clone, 1/2 sibling, 1/4 cousin, 0 stranger (`kinship.nim:67-73`).
-- **Rules 48 fog of war** (0.3.78): a cog out of view reads -1 from `kin`, `gene`, `seatScore`
+- **Rules 48 fog of war** (0.3.78+): a cog out of view reads -1 from `kin`, `gene`, `seatScore`
   and `seatAlive`, and its ffa.v1 observation row is zeroed (`sim.nim:240-245`,
   `bots.nim:310-327`). Before rules 48 these were public.
 
 ## 8. Guide/code disagreements found
 
-| Guide says | Code at `570174a2` says |
+| Guide says | Code at `d0728ab1` says |
 | --- | --- |
 | "20,000 instructions" / "50,000 work units" budget (guide lines 720, 800; same in `base.bas` and `jev.bas` header comments) | 50,000 instructions and 125,000 work units per decision at 16 seats (`bots.nim:154-155`); guide line 140 has the right numbers |
 | `jev.bas` keeps `useRetreat`/`useDial` switched off (guide line 814) | both are `1` in the deployed `jev.bas` (`jev.bas:580-581`, comment "On since 2026-09-23") |
 | Spray "roughly 62-degree cone" (guide line 317) | half-width 4/5 of distance at rules 40+, about a 77-degree cone (`mechanics.nim:23-27`); guide line 88 agrees with the code |
 | "6400x4000 arena" (guide line 100) | playable Heartwick is 16,000 x 9,600 (`sim.nim:331-338`) |
 | `outcome` implied to report time limits | `"time_limit"` means draw; timed-out decisive matches report the winner (section 2) |
-| A seat that fails to load forfeits and the episode continues (guide lines 104-108, `host.py:112-124`) | true only for host-side checks (WASM, size, UTF-8, ZIP). A BASIC **compile** error ends the whole episode (see policy-surface.md, section 4) |
+| A seat that fails to load forfeits and the episode continues (guide lines 104-108, `host.py:112-124`) | true only for host-side staging checks (WASM, size, UTF-8, a neural ZIP's package checks). A BASIC **compile** error ends the whole episode (see policy-surface.md, section 4) |
 | Neural decoder "deterministically selects the largest logit" (guide line 855) | true by default; schema-2 bundles may enable sampling and other decoder options (`neural_basic.md`) |
 
 ## 9. Open questions
 
-- Whether the platform overrides `seed` per episode (variants fix 2026).
-- Whether live league episodes already carry `glory: {behind_lives: 5, behind_cogs: 10}` (the
-  0.3.78 manifest says so; not yet seen in a live `game_config`, section 1.2).
 - What the platform does with a `player_failure` file written by `forfeit_seat` when the episode
   still completes and writes results (`host.py:31-40`). The file is overwritten if more than one
   seat forfeits.
