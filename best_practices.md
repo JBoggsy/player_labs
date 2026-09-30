@@ -15,6 +15,8 @@ Use the owning game's reference for mechanics and the current user request for s
   when the decision requires it. Reassess the largest observed gap after each evaluation.
 - Uploading registers an artifact. League submission and public writing require
   explicit authorization; existing authorization for the action counts.
+- After any league submission, list all of the policy's memberships, not only the target league:
+  leagues can take their entrants from another league, so one submission can enter several.
 
 ## Measure the actual objective
 
@@ -40,6 +42,13 @@ Use the owning game's reference for mechanics and the current user request for s
   against the field. Verify that any intermediate metric maps to the actual objective.
 - Target hosted requests to the question and stream artifacts as episodes finish.
   Use the [credit allowance](docs/xp-credits.md); communicate the design and cost.
+- Resolve the ranking rule from the live league settings before choosing a metric. A ladder
+  setting can change what "better" means without any game release (paintbot-pw's Elo switched
+  from win/draw/loss to glory margin overnight); measure the quantity the ladder actually rates.
+- Check how a requested seed reaches the engine before designing paired or repeated runs. An
+  explicit request seed can make every episode of that request the same game, so extra episodes
+  per pinned seed add no information; conversely, a config seed shown by the API can be a stored
+  placeholder while each episode plays its own seed. Read the replay for what actually ran.
 
 ## Diagnose before explaining
 
@@ -63,6 +72,9 @@ Use the owning game's reference for mechanics and the current user request for s
   windows; a summed heatmap cannot establish who moved first or caused an engagement.
 - Inspect authoritative game code and actual logs when observations disagree.
   Verify exact thresholds, timers, scoring and failure signals before rule-based changes.
+- Treat maintainer-written guides, deployment notes, readmes and wikis as leads. They drift from
+  the deployed code (budgets, award values and size limits have all disagreed); verify each claim
+  against source at the deployed commit and record mismatches in the lab's docs.
 
 ## Make hypotheses testable
 
@@ -83,6 +95,9 @@ See [player engineering](docs/player-engineering.md) for architecture and naviga
 
 - Check current SDK/CLI behavior and the game's manifest before assuming a feature
   is absent. Match protocol, configuration and artifact identity to the evaluation.
+- Pin analysis tools to the deployed game release in one place and check for drift at the start
+  of each session; a game can ship several releases a day. Verify replays re-simulate (hash-check)
+  before trusting any number derived from them.
 - Account for renderer offsets when decoding sprite positions. A logical entity
   position and the drawn object's position need not be equal.
 - Blocking decision work can starve transport keepalives. Inspect the actual bridge

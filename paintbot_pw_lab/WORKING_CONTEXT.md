@@ -10,12 +10,28 @@ Replace completed or superseded context in place.
 
 ## Objective
 
-None chosen yet. The lab is stood up and fully instrumented (2026-09-29): source-verified
-references (docs at `570174a2`, coworld-v0.3.78), the tools of the
-[tooling plan](docs/designs/2026-09-29-tooling-plan.html) T0-T15 with one agent entry point
+Next session (James, 2026-09-30): **write a proper strategy document** for our Paintbot PW
+policy, as a design doc in `docs/designs/`. The lab is stood up and fully instrumented: docs
+verified at `d0728ab1` (tools pinned to 0.3.80, rule files identical), the tooling of the
+[tooling plan](docs/designs/2026-09-29-tooling-plan.html) with one agent entry point
 (`uv run python paintbot_pw_lab/tools/pw.py doctor|tools|<subcommand> --json`), and seven lab
 skills including the autonomous [paintbot-pw-loop](.claude/skills/paintbot-pw-loop/SKILL.md).
-No policy of ours has been written or uploaded.
+Our only policy is the unchanged starter `jb-pw-base:v1`.
+
+Inputs the strategy document should build on:
+
+- What wins and how it is scored: [mechanics.md §1](docs/mechanics.md) (glory, margin-scaled Elo:
+  speed and survival dominate; a win at t seconds is worth ~600 − t).
+- How the field plays and who leads: [field.md](docs/field.md#how-the-field-plays-80-league-episodes-2026-09-29)
+  and [the 80-episode analysis](docs/reports/2026-09-29-league-field-analysis.md) (elimination in
+  78/80, champion lineages and styles, the Aaron `FIRE22`/`ITEM23` shout protocol, friendly fire,
+  uniforms).
+- Candidate levers with their evidence: [TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md) (abandoned
+  grenade charges self-kill, uniforms are a liability or an infiltration tool, win by killing fast,
+  lives decide matches, targeting disguised teammates).
+- What a policy can do and afford: [policy-surface.md](docs/policy-surface.md) (BASIC surface,
+  budgets: base.bas uses 18% of instructions, the neural lane).
+- How we will test it: [paintbot-pw-ab](.claude/skills/paintbot-pw-ab/SKILL.md) and the loop charter below.
 
 ## Loop charter
 
@@ -37,33 +53,37 @@ James fills this in; until then an agent proposes a charter and stops.
   (unchanged `base.bas`, uploaded and submitted 2026-09-30, champion in the paintbot-pw league and,
   by `entrants_from_league_id` chaining, auto-entered into Heartland and Heartland Big; see
   [field.md § Our account](docs/field.md#our-account)). Confirm `uv run coworld player list`
-  marks the intended player (●) as active; `softmax status` shows only the user before the first upload (`coworld-player-swap` skill).
+  marks the intended player (●) as active before any upload; `softmax status` shows only the user.
 - Player session refreshed 2026-09-30 00:11 UTC; it expires 2026-10-01 00:11 UTC (`pw.py doctor` → `result.player`). Refresh with `uv run coworld player use ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce` before uploads.
 - Credits: 20,000 balance at the cap, refilling ~1,429/day (2026-09-28). A league-like
   episode costs ~0.3 credits.
 
 ## Decisions for James
 
-1. **Target league.** Recommended: the main teams ladder (`league_b9458ff8-…`), which has a
-   real field (Aaron L, David B, Richard H). Heartland is now its own coworld.
-2. **Player identity** for this game (James Botts, Games Bond, or a new one).
-3. **Starting policy lane:** plain BASIC from `base.bas`, the Jev LLM advisor (`jev.bas`;
-   needs the league to grant seats an LLM budget — locally, with no oracle, it plays exactly
-   like base.bas), or the neural ZIP lane (David's `daveey-pw-neural` is #2).
-4. **The loop charter** above, if the loop should run unattended.
-5. Defaults taken while building the tools (change any): A/B design = paired against a common
-   opponent on the Elo outcome score (the measurements below argue for unpaired `field` as the
-   default: pairing costs one request per seed and barely reduced variance); paired/SPRT statistics added to the shared `coworld-ab`
+1. **Starting policy lane** (the strategy document's first fork): plain BASIC from `base.bas`, the
+   Jev LLM advisor (`jev.bas`; its model is allowed and the league sets no LLM cap; locally it plays
+   exactly like base.bas), or the neural ZIP lane (David's `daveey-pw-neural` is a top-3 champion).
+2. **Player identity** for the real policy (James Botts, which already runs `jb-pw-base:v1`, or
+   Games Bond / a new player). Ratings belong to the player.
+3. **Heartland memberships:** submitting to the paintbot-pw league auto-entered `jb-pw-base:v1`
+   into Heartland and Heartland Big (FFA-kin, out of scope). Retire them, or leave them?
+4. **Evaluation roster:** `user_preferences.md` says hosted requests carry one copy of our policy
+   (stated for Gods of the Arena's 10 seats). The paintbot-pw league seats one policy on all 8 seats
+   of a team, so mirroring the league means 8 copies vs 8 pinned opponent seats (used so far).
+   Confirm this exception for paintbot-pw.
+5. **A/B default design:** paired on the Elo outcome score (built) vs unpaired `field` (the
+   measurements argue for `field`: pairing needs one request per seed and barely reduced variance).
+6. **The loop charter** above, if the loop should run unattended.
+7. Defaults already taken (change any): paired/SPRT statistics added to the shared `coworld-ab`
    engine; the intent-telemetry knob defaults on; rerun.io not added.
 
 ## Next step (proposed)
 
-`jb-pw-base:v1` (unchanged `base.bas`) is uploaded and competing. Evaluate it against each current
-champion with an unseeded `field` request (`pw.py ab-requests --design field --baseline
-jb-pw-base:v1 --candidate jb-pw-base:v1 --opponent <each pw.py leaders ref> --episodes 10 ...`), or
-read its league episodes as they accumulate (free), then run `paintbot-pw-diagnose` to choose the
-first change. The 4-episode seed pilot (2026-09-30) already shows `aaron-paintbot-pw:v42` beating
-it from both sides.
+Write the strategy document (above). Before or alongside it, get a baseline measurement: read
+`jb-pw-base:v1`'s free league episodes as they accumulate (`pw.py scout fetch` / `pw.py episodes`)
+or run an unseeded `field` request against each current champion (`pw.py leaders`; about 80
+episodes, ~24 credits), then `paintbot-pw-diagnose`. The 4-episode seed pilot (2026-09-30) already
+shows `aaron-paintbot-pw:v42` beating it from both sides.
 
 ## Measured findings (2026-09-29)
 

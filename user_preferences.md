@@ -61,3 +61,18 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   (slot -1) plus nine `random` opponents; five-copy rosters measure a roster that never occurs and
   distort ally behavior. Size the episode count for the hero-matches needed (one per episode).
   (Stated 2026-09-17 for Gods of the Arena; applies to every game unless James says otherwise.)
+
+- **Tools and skills must be drivable by autonomous agents.** Whatever the lab builds should be
+  easy for an agent to find from the repo root and run unattended in a loop, not only usable when
+  James asks: one discoverable entry point, machine-readable output, meaningful exit codes, and a
+  skill that says which command to run and how to act on each result. Human gates (league
+  submission, public writes) stay in place. (Stated 2026-09-29.)
+
+- **Update the existing canonical document instead of creating a new one.** When new knowledge
+  belongs to a topic that already has a home (e.g. a game's rules doc), revise that document and
+  point other docs at it; add a new page only for a genuinely new topic. (Stated 2026-09-29.)
+
+- **Maintainer-doc discrepancies are internal notes.** When a game maintainer's docs disagree with
+  the deployed code, verify against source, record the mismatch in the lab's docs, and move on; do
+  not raise it with the maintainer unless James asks. (Stated 2026-09-30.)
+
