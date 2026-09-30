@@ -1,15 +1,20 @@
 # Paintbot PW evidence pipeline
 
-> **Currency.** Verified 2026-09-29 against paintbot-pw tag `coworld-v0.3.79` = `d0728ab1`
-> (recordings stamped rules 48; the teams game plays rules 47), with the lab's tools built at
-> that tag by local Nim 2.2.6 on arm64 macOS. Measurements come from 80 hosted main-league
-> episodes of 0.3.79 (rounds 2382-2388, `episode_data/audit-2026-09-29/`) and the three
-> rules-44 samples of 2026-09-28 (`episode_data/20260928T214433_*`), all loaded with
-> `pw.py episodes` / `pw.py metrics`. **Re-verify when** a new `coworld-vX` tag appears:
+> **Currency.** Verified 2026-09-30 against paintbot-pw tag `coworld-v0.3.89` = `118e1619`
+> (recordings stamped rules 48; the teams game plays rules 47). Re-simulation at 0.3.89 was
+> checked with `paintbot-headless` and the lab's `pw_trace` built from that tag by local Nim
+> 2.2.6 on arm64 macOS; the tools are pinned to 0.3.89 (`pw_trace.nim` and `pw_map.nim` define
+> the wading test locally since 0.3.89 removed `neural_contract.inWater`,
+> [pw_trace.md](tools/pw_trace.md)).
+> Measurements come from 80 hosted main-league episodes of 0.3.79 (rounds 2382-2388,
+> `episode_data/audit-2026-09-29/`) and the three rules-44 samples of 2026-09-28
+> (`episode_data/20260928T214433_*`), all loaded with `pw.py episodes` / `pw.py metrics`, plus
+> 12 hosted 0.3.89 episodes of rounds 2509-2510 (`pw.py scout fetch`, 2026-09-30) for the
+> format checks. **Re-verify when** a new `coworld-vX` tag appears:
 > `pw.py deployed-ref`, the accepted rules list in `game.nim` `loadRecording`, and a
 > hash-checked re-simulation of fresh league tapes (`pw.py episodes <dir> --json`).
 
-Line references are to `d0728ab1` in `~/coding/coworlds/paintbot-pw` (abbreviated `pw:`).
+Line references are to `118e1619` in `~/coding/coworlds/paintbot-pw` (abbreviated `pw:`).
 **Verified** means exercised on the episodes above or a local run; **inferred** means read from
 source but not exercised.
 
@@ -26,8 +31,8 @@ is the reference for the artifacts and the re-simulation they rest on.
 | Question | Answer |
 | --- | --- |
 | Replay format | Polyworld `POLYWORLDREPLAY` tape: every seat's command every tick plus a per-tick state hash. **Verified.** |
-| Re-simulation | **One build replays many versions.** The header's version is the rules number and the sim keeps every old rules path. The 0.3.79 build re-simulated all 80 hosted rules-48 tapes and the three rules-44 samples with **no hash mismatch**. **Verified.** |
-| Hosted vs local build | Hosted images build with Nim 2.2.10 on linux/amd64; local Nim 2.2.6 on arm64 reproduces every hosted hash checked so far (83 tapes). The per-tick hash check stays the guard. **Verified.** |
+| Re-simulation | **One build replays many versions.** The header's version is the rules number and the sim keeps every old rules path. The 0.3.89 build re-simulated all 80 hosted 0.3.79 tapes, the three rules-44 samples and 12 hosted 0.3.89 tapes with **no hash mismatch**. **Verified.** |
+| Hosted vs local build | Hosted images build with Nim 2.2.10 on linux/amd64; local Nim 2.2.6 on arm64 reproduces every hosted hash checked so far (95 tapes). The per-tick hash check stays the guard. **Verified.** |
 | Per-seat stats | `pw_trace` expands a tape into events and per-seat counters, hash-checked; `pw_episodes` turns them into tables and `pw_metrics` into per-seat, per-policy and per-team metrics (section 5). The repo's own `replay_stats.nim` is per-team and not hash-checked (section 4). |
 | Local runs | `pw.py local` (native library, league glory config by default), `paintbot-headless --record`, and the repo's `local.py` (the exact hosted handoff, per-seat logs, engine-default glory only). Section 6. |
 | Seat logs | Returned only for episodes you have a policy in; league episodes without one of our policies return 403. **Verified.** |
@@ -48,8 +53,8 @@ Two ways to get an episode, with different files:
 - `participants[]` with explicit `position` 0-15, `policy_name`, `version`, `player_name`,
   `is_filler`. Each policy fills 8 seats (one `is_filler: false`, seven fillers). Seat parity is
   the team: even = Red/Ember, odd = Blue/Azure.
-- `coworld_version`, `coworld_id`, `variant_name` ("Two policy teams" on every 0.3.79 league
-  episode), `job_index`, `round_id`, `round_number`.
+- `coworld_version`, `coworld_id`, `variant_name` ("Two policy teams" on every 0.3.79 and
+  0.3.89 league episode checked), `job_index`, `round_id`, `round_number`.
 - `game_config` (fetcher rows only): `seed: 2026`, `max_ticks: 14400`, `glory:
   {"behind_lives": 5, "behind_cogs": 10}`, 16 `slots`, placeholder `players`. No `map` or
   `vision`: Heartwick with per-cog vision. **`seed` is a stored placeholder**, not the seed the
@@ -65,21 +70,22 @@ Two ways to get an episode, with different files:
 `{"scores": [16 floats], "ticks", "seed", "outcome", "banked_gold": [], "returned": []}`.
 
 - `scores[i]` is the team's settled glory, repeated on every seat of that team; the loser and
-  both sides of a draw hold 0 (`pw:examples/paintbot/sim.nim:1009-1024`,
+  both sides of a draw hold 0 (`pw:examples/paintbot/sim.nim:1071-1086`,
   [mechanics.md §1](mechanics.md)).
 - `seed` is the **engine seed** and equals the tape's (checked on the three rules-44 samples),
   not `game_config.seed`.
 - `outcome`: `"0"`/`"1"` = winning side, `"time_limit"` when there is no winner (a draw by any
-  route), `"ended"` in FFA-kin (`pw:examples/paintbot/game.nim:541-543`). A match decided on
+  route), `"ended"` in FFA-kin (`pw:examples/paintbot/game.nim:604-606`). A match decided on
   the meter at the time limit reports the **meter** leader, not `"time_limit"`
   ([mechanics.md §2](mechanics.md)).
 - `banked_gold` / `returned` are always empty, fields of the shared results type
-  (`pw:src/polyworld/coworld.nim:54-55`).
+  (`pw:src/polyworld/coworld.nim:55-56`).
 
 ### 2.3 Replay
 
 - Container (`pw:src/polyworld/tapes.nim:8-9`): `POLYWORLDREPLAY`, u16 file format 1,
-  u16 **gameVersion = rules number** (48 on 0.3.79 teams tapes; 1000 + rules for FFA-kin),
+  u16 **gameVersion = rules number** (48 on 0.3.79 and 0.3.89 teams tapes; 1000 + rules for
+  FFA-kin; plus 2000 when the match set `vision_range`, below),
   u16 name length, `paintbot_pw`, then a Flatty `Recording`
   (`pw:examples/paintbot/game.nim:94-105`): `seed`, `frames` (one per tick: one
   `Command{walk, shoot, direct, goal, aim, chargeGrenade, sneak}` per seat + `hash u32`),
@@ -87,15 +93,26 @@ Two ways to get an episode, with different files:
   `vision`, `glory` config, and from rules 46 `seats`. Rules 43-45 store exactly 16 commands and
   names in fixed arrays; rules 46 stores sequences plus the seat count with the 5-key glory
   config; rules 47-48 add the two behind-in-cogs keys (`pw:game.nim:61-105`, loader
-  `:322-396`). The loader checks every frame has `seats` commands.
-- It holds **every seat's executed command every tick**, not a request log (`pw:game.nim:540`):
+  `:358-448`). The loader checks every frame has `seats` commands.
+- **Ranged recordings (0.3.88+).** A match played with the opt-in `"vision_range"` config is
+  stamped 2000 above its usual version (2048 teams, 3048 FFA-kin) and appends the range as an
+  int32 in metres after the usual payload (`RecordingRanged`, `pw:game.nim:147-156`,
+  `216-221`, `230-233`); loading one binds the range for the re-simulation. Only rules 48 may
+  carry a range. A match without the key saves exactly as before, so builds before 0.3.88
+  cannot read ranged tapes but older tapes are unaffected. No league variant sets it: all 12
+  hosted 0.3.89 tapes checked carry 48. **Verified** (source; headers).
+- It holds **every seat's executed command every tick**, not a request log (`pw:game.nim:603`):
   about 400 bytes per tick at 16 seats; 0.54-2.0 MB uncompressed per 0.3.79 league match
   (80 tapes).
-- `names[i]` holds the **player display name**, deduplicated with " (2)"…" (8)". It usually
-  equals `participants[i].player_name`, but not always: in the 0.3.79 sample one player's 8
-  seats per episode were recorded as "Baseline" while `episode.json` names the player
-  `paintbot-pw-basic-r22` (160 of 1,280 seats). Join by `episode.json` position; use names only
-  as a cross-check.
+- `names[i]` holds the name the platform sent for the seat (`config.players[i].name`,
+  `pw:game.nim:566-567`), deduplicated with " (2)"…" (8)". On 0.3.79 tapes it was the player
+  display name, which usually equals `participants[i].player_name` but not always (one player's
+  8 seats were recorded as "Baseline" while `episode.json` names the player
+  `paintbot-pw-basic-r22`, 160 of 1,280 seats). **On 0.3.89 tapes (2026-09-30) it is
+  "player (owner)"**, e.g. "Andrew Brower B (Andrew B)" and "Andrew Brower B (Andrew B) (2)";
+  0.3.89 also added an optional `owner` field to the config's `players[]`
+  (`pw:src/polyworld/coworld.nim:14-16`). Join by `episode.json` position; use names only as a
+  cross-check, and do not parse them.
 - A freshly completed episode can briefly report `results`/`replay` unavailable; a `--force`
   refetch minutes later gets them. Treat a missing artifact as "retry", not "absent".
 
@@ -105,40 +122,45 @@ Two ways to get an episode, with different files:
   **403 for league episodes we have no policy in.** `--elevated` is not for lab use.
 - Log content, verified locally: `Player slot N started.`, then BASIC `print` output
   verbatim, then `Player slot N completed.`. Advisor oracle journal lines and neural telemetry
-  also go here (`pw:examples/paintbot/bots.nim:387`, `413`; `pw:game.nim:558-561`).
+  also go here (`pw:examples/paintbot/bots.nim:163`, `189`; `pw:game.nim:621-624`).
 - **Runtime BASIC errors** (instruction limit and so on) disable that seat for the rest of the
   match: it sends empty commands, the error goes to its log, and `status.json` records
-  `exit_code 1, reason "BASIC VM disabled"` (`pw:bots.nim:502-504`,
-  `pw:src/polyworld/coworld.nim:181-209`). The match continues.
+  `exit_code 1, reason "BASIC VM disabled"` (`pw:bots.nim:263-266`,
+  `pw:src/polyworld/coworld.nim:182-210`). The match continues.
 - **Compile errors fail the whole episode.** Verified locally: a seat with a syntax error
   wrote `failure.json` `{"message":"BASIC compilation failed for player slot 1",
   "failed_policy_index":1}` and no `results.json`. The engine parks in `waitForCollection`
-  (`pw:coworld.nim:211-233`), so `local.py` hangs until its 10-minute deadline. **Staging**
-  failures (a WASM upload, a hash mismatch, a rejected neural package) forfeit only that seat
-  and put an idle stub in its place (`pw:coworld/paintbot/runtime/host.py:99-124`). A hosted
-  compile failure shows up as failed episodes; treat that as the signal (lab AGENTS rules).
+  (`pw:coworld.nim:212-234`), so `local.py` hangs until its 10-minute deadline. **Staging**
+  failures (a WASM upload, a hash mismatch, a rejected neural package) put an idle stub in that
+  seat so the engine plays on (`pw:coworld/paintbot/runtime/host.py:99-124`), but the platform
+  still records the episode as `failed` (`error_type: player_error`, "Policy initialization
+  failed: <type>", no scores, no replay; live 2026-09-30, round 2510). Either kind of hosted
+  failure shows up as failed episodes; treat that as the signal (lab AGENTS rules).
 - Combined game log: optional and usually unavailable. The local `game.log` holds
   `ticks=… captures=[…] hash=…` and, with `PW_BASIC_PEAKS=1`, per-seat peak instructions, work
-  units, strings and neural ops (`pw:game.nim:550-557`).
+  units, strings and neural ops (`pw:game.nim:613-620`).
 
 ## 3. Re-simulation
 
 ### 3.1 Why one build replays many versions
 
 `loadRecording` reads the header version, sets `replayRulesVersion` and `visionRulesVersion`
-to it, and decodes the matching historical layout (`pw:game.nim:322-396`; rules 43-45 share a
-layout, `:363`; rules 47-48 share one, `:379`). The sim branches on those variables throughout
-(for example `stateHash` `pw:sim.nim:1034`, glory `pw:sim.nim:916-1013`, lives
-`pw:mechanics.nim:146,444`). The guide states the policy: "Earlier replay versions retain their
-original rules and hashes" (`pw:guide.md:142-148`).
+to it, and decodes the matching historical layout (`pw:game.nim:358-448`; rules 43-45 share a
+layout, `:413`; rules 47-48 share one, `:429`; ranged tapes `:373-382`). The sim branches on
+those variables throughout (for example `stateHash` `pw:sim.nim:1096`, glory
+`pw:sim.nim:978-1075`, lives `pw:mechanics.nim:146,444`). The guide states the policy: "Earlier
+replay versions retain their original rules and hashes" (`pw:guide.md:147-153`).
 
 Evidence:
 
 - The 0.3.79 build re-simulates all 80 hosted rules-48 tapes (rounds 2382-2388) and the three
   rules-44 samples with no mismatch; every final glory equals the episode's scores
   (`pw.py episodes --json`: `results_check` `participant_scores` / `results.json`). The
-  rules-44 sample `ereq_e97afe98` ends on hash 3587158643 at tick 2219 under the 0.3.65, 0.3.78 and
-  0.3.79 builds.
+  rules-44 sample `ereq_e97afe98` ends on hash 3587158643 at tick 2219 under the 0.3.65, 0.3.78,
+  0.3.79 and 0.3.89 builds.
+- The 0.3.89 build (`paintbot-headless --replay`, 2026-09-30) re-simulates the same 80 0.3.79
+  tapes, the three rules-44 samples and 12 hosted 0.3.89 tapes (rounds 2509-2510) with no
+  mismatch; a `pw_trace` built at 0.3.89 verified a 0.3.79 and a 0.3.89 tape end to end.
 - Negative control (run at 0.3.65): patching the header's rules byte from 44 to 45 on the
   rules-44 samples diverged at ticks 26-269, and `paintbot-headless --replay` raised
   `Replay hash mismatch at 26`; a tape with one flipped byte fails `pw_trace` the same way
@@ -206,7 +228,7 @@ FFA-kin tapes per seat (`:20-30`). Three pitfalls:
 ### 4.2 `examples/paintbot/analysis.nim`
 
 `indexReplay` is the viewer's indexer. It advances with `advance()`, which **is** hash-checked
-(`pw:game.nim:511-518`), and emits per-seat shot/hit counts and a `Moment` event feed (tag,
+(`pw:game.nim:574-581`), and emits per-seat shot/hit counts and a `Moment` event feed (tag,
 hit, down, heal, pickups, spray, grenade throw and blast, territory flip). It keeps a full
 per-tick array and 240-tick checkpoints in memory; `pw_trace` covers the same ground for batch
 work (read, not run standalone).
@@ -223,7 +245,7 @@ gun/grenade/spray kills, and hits from and to water, high ground and trenches.
 `pw:mechanics.nim:388-425` fills it inside `damage()` whenever `combatTelemetry` is set. It is
 outside `World` and the hash. `CombatTelemetry` is `array[MaxSeats, SeatStats]` (256 entries,
 `pw:sim.nim:264`; 16 before 0.3.79). The native training library points it at its own array
-per step (`pw:native_env.nim:1168-1172`); `pw_trace` does the same and cross-checks its kill
+per step (`pw:native_env.nim:943-947`); `pw_trace` does the same and cross-checks its kill
 events against it.
 
 `tools/kin_replay_counters.nim` + `tools/kin_replay_stats.py` are the repo's own hash-checked
@@ -277,17 +299,17 @@ league field.
   paired screens on the native library, with the league's glory config by default, and
   `--record` to write tapes `pw.py episodes` reads. The lab's default local path.
 - **`paintbot-headless`** (no host, no seat logs): takes the league's match config on the
-  command line, `--glory:<json>`, `--map:<name>`, `--vision:team`, `--mode:ffa_kin`,
-  `--kin-layout:<name>` (`pw:game.nim:450-471`). **BASIC `print` output is discarded** (the
-  headless build gives the VM no print handler, `pw:bots.nim:421`). `--bot FILE:N` fills seats
-  **in order** and the seat count is the sum of the `N`s (`pw:bots.nim:388-395`,
-  `pw:game.nim:472-476`): `--bot a.bas:8 --bot b.bas:8` puts `a` on seats 0-7, which mixes
+  command line, `--glory:<json>`, `--map:<name>`, `--vision:team`, `--vision-range:<metres>`
+  (0.3.88+), `--mode:ffa_kin`, `--kin-layout:<name>` (`pw:game.nim:505-532`). **BASIC `print`
+  output is discarded** (the headless build gives the VM no print handler, `pw:bots.nim:198`).
+  `--bot FILE:N` fills seats **in order** and the seat count is the sum of the `N`s
+  (`pw:bots.nim:164-171`, `pw:game.nim:533-537`): `--bot a.bas:8 --bot b.bas:8` puts `a` on seats 0-7, which mixes
   both teams; for A vs B pass 16 alternating `--bot` flags or use `pw.py local`.
 
   ```sh
   $B/paintbot-headless --bot paintbot_pw_lab/reference/base.bas:16 --seed 2026 --ticks 2400 \
       '--glory:{"behind_lives":5,"behind_cogs":10}' --record out.replay
-  #   ticks=2123 captures=[3, 5] hash=276551954   (4.4 s; the same hash under 0.3.78 and 0.3.79)
+  #   ticks=2123 captures=[3, 5] hash=276551954   (4.4 s; the same hash under 0.3.78, 0.3.79 and 0.3.89)
   $B/paintbot-headless --replay out.replay          # reproduces it; the tape is stamped rules 48
   ```
 
@@ -305,7 +327,7 @@ league field.
       --policy path/to/base.bas
   ```
 
-## 7. The guide's comparison workflow (`pw:guide.md:151-210`)
+## 7. The guide's comparison workflow (`pw:guide.md:156-215`)
 
 - It covers xp-requests over a pinned coworld with all 16 seats in the roster. `policy_ref` must
   be bare `name:vN` or a UUID, and `variant_id` goes in `target` **or** at the top level, not
@@ -327,7 +349,7 @@ league field.
 - **Episode seeds** are derived per episode by the platform, not `game_config.seed`
   ([field.md](field.md)). Consecutive jobs of a round get consecutive seeds; check a round's
   episodes are not near-duplicates before treating them as independent.
-- **Nim version**: local 2.2.6 vs hosted 2.2.10. 83 hosted tapes reproduced; the hash check is
+- **Nim version**: local 2.2.6 vs hosted 2.2.10. 95 hosted tapes reproduced; the hash check is
   the standing guard.
 - **`.gitignore` coverage**: the root `.gitignore` ignores every `episode_data/`, so
   `episode_data/README.md` is untracked unless the root adds a
