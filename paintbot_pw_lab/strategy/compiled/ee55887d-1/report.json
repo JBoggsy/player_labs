@@ -1,0 +1,380 @@
+{
+  "budget": {
+    "array_cells": 609,
+    "array_cells_limit": 4096,
+    "arrays": 13,
+    "arrays_limit": 256,
+    "globals": 57,
+    "globals_limit": 512,
+    "source_bytes": 11928,
+    "source_limit": 131072,
+    "telemetry": {
+      "bytes": 362,
+      "events": 43,
+      "limit_bytes": 512,
+      "limit_events": 64,
+      "lines": {
+        "PWB": {
+          "bytes": 40,
+          "count": 1,
+          "events": 5
+        },
+        "PWC": {
+          "bytes": 0,
+          "count": 0,
+          "events": 0
+        },
+        "PWD": {
+          "bytes": 130,
+          "count": 1,
+          "events": 19
+        },
+        "PWE": {
+          "bytes": 192,
+          "count": 3,
+          "events": 19
+        },
+        "PWP": {
+          "bytes": 0,
+          "count": 0,
+          "events": 0
+        }
+      },
+      "log_offsets": {
+        "K.position": 0
+      }
+    }
+  },
+  "build_id": "ee55887d-1",
+  "error": null,
+  "gaps": [],
+  "gates": {
+    "G1": {
+      "passed": true,
+      "summary": []
+    },
+    "G2": {
+      "passed": true,
+      "summary": {
+        "failures": [],
+        "seats": 16
+      }
+    },
+    "G3": {
+      "limits": {
+        "instructions": 40000,
+        "print_bytes": 512,
+        "print_events": 64,
+        "work": 100000
+      },
+      "max_ticks": 14400,
+      "passed": true,
+      "per_seat": {
+        "instructions": [
+          1045,
+          1045,
+          1045,
+          1045,
+          1045,
+          1045,
+          1045,
+          1045,
+          1045,
+          1045,
+          1045,
+          1045,
+          1045,
+          1045,
+          1045,
+          1045
+        ],
+        "work": [
+          1726,
+          1726,
+          1726,
+          1726,
+          1726,
+          1726,
+          1726,
+          1726,
+          1726,
+          1726,
+          1726,
+          1726,
+          1726,
+          1726,
+          1726,
+          1726
+        ]
+      },
+      "seed": 7,
+      "summary": {
+        "instructions": 1045,
+        "print_bytes": 362,
+        "print_events": 43,
+        "work": 1726
+      }
+    },
+    "G4": {
+      "identical_play": true,
+      "intent": "no_behavior_change",
+      "matches_with_bad_seats": 0,
+      "outcome_advisory": false,
+      "passed": true,
+      "summary": {
+        "ci95_high": 0.5,
+        "ci95_low": 0.5,
+        "mean_outcome": 0.5,
+        "n_seeds": 28
+      },
+      "warning": null
+    },
+    "G5": {
+      "failures": [],
+      "passed": true,
+      "seats": [
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a0/player-0.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 0
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a0/player-2.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 122,
+          "seat": 2
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a0/player-4.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 4
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a0/player-6.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 6
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a0/player-8.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 122,
+          "seat": 8
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a0/player-10.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 10
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a0/player-12.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 122,
+          "seat": 12
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a0/player-14.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 14
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a1/player-1.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 1
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a1/player-3.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 3
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a1/player-5.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 5
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a1/player-7.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 7
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a1/player-9.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 9
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a1/player-11.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 11
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a1/player-13.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 13
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/ee55887d-1/telemetry/policy-966558e1_vs_policy-b062aed3_s7_a1/player-15.log",
+          "kinds": {
+            "PWB": 30,
+            "PWD": 31,
+            "PWE": 1,
+            "PWP": 1
+          },
+          "lines": 63,
+          "missing_fields": [],
+          "peak_bytes": 123,
+          "seat": 15
+        }
+      ],
+      "summary": {
+        "failures": 0,
+        "lines": 1008,
+        "seat_recordings": 16
+      }
+    }
+  },
+  "guesses": [
+    {
+      "component": "C.idle",
+      "decision": "c_idle__start and c_idle__tick both copy k_position__x into c_idle__observed_x and set c_idle__status = 0 on every call; c_idle__cond is never set because the status is never nonzero and the component declares no conditions.",
+      "id": "G-C.idle-1",
+      "severity": "low",
+      "spec_quote": "Set status to zero. Issue no host commands.",
+      "state": "open",
+      "why": "Done when is 'never' and no conditions are declared, so the only valid status is 0 (running). Refreshing observed_x in start as well keeps it valid before the first tick."
+    },
+    {
+      "component": "K.position",
+      "decision": "The unit emits no log output; it only sets k_position__x = selfX in k_position__update.",
+      "id": "G-K.position-1",
+      "severity": "low",
+      "spec_quote": "x every 24 ticks",
+      "state": "open",
+      "why": "Units must never PRINT; telemetry is generated by the driver from the Log field."
+    }
+  ],
+  "status": "passed",
+  "units": {
+    "C.idle": "changed",
+    "K.position": "changed",
+    "ST.commitment": "changed",
+    "ST.roles": "changed",
+    "ST.rules": "changed"
+  }
+}

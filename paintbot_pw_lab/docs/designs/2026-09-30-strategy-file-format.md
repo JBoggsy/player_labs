@@ -1,6 +1,6 @@
 # Design: the strategy file format
 
-> **Status:** accepted 2026-09-30 (James). M0 in progress: the parser and linter
+> **Status:** accepted 2026-09-30 (James). M0 implemented and qualified: the parser and linter
 > (`tools/strategy_format.py`), the unit checks, table generation and assembly
 > (`tools/strategy_basic.py`), the runtime library with telemetry v2 emission
 > (`strategy/compiler/runtime/`), and the `pw.py strategy` driver exist; `strategy/STRATEGY.md`

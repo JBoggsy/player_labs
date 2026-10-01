@@ -1,9 +1,8 @@
 # Design: compiling the strategy file to BASIC
 
-> **Status:** accepted 2026-09-30 (James). M0 in progress: `pw.py strategy` (driver,
-> `tools/strategy_build.py`, `tools/strategy_gates.py`), `tools/strategy_format.py`,
-> `tools/strategy_basic.py`, and `strategy/compiler/` (instructions, lessons, config, runtime)
-> exist; no build has been committed yet. Build order: §11. Rendered,
+> **Status:** M0 implemented and qualified with real Claude and Codex builds
+> (`compiled/f4ffb408-1` and `compiled/ee55887d-1`, both G1–G5 passed). M1 has not started.
+> Accepted 2026-09-30 (James). Build order: §11. Rendered,
 > commentable copy: [2026-09-30-strategy-compilation.html](2026-09-30-strategy-compilation.html)
 > (may lag this file; this Markdown file is authoritative).
 >

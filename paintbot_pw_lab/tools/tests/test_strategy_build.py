@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -22,6 +23,32 @@ def test_incremental_metadata_and_full_regeneration():
     assert sb.changes({}, old) == {'K.enemy': 'removed'}
 
 
+def test_changed_units_receive_previous_source(tmp_path, monkeypatch):
+    from strategy_format import parse_strategy
+    source = Path(__file__).parent / 'fixtures/strategy_trivial/STRATEGY.md'
+    source = source.resolve()
+    prior = tmp_path / 'previous'
+    (prior / 'units').mkdir(parents=True)
+    (prior / 'units/K.position.bas').write_text('previous unit\n')
+    sb.dump(prior / 'map.json', {'components': sb.component_map(parse_strategy(source))})
+    sb.dump(prior / 'version.json', {'source_hashes': {}})
+    compiler = tmp_path / 'compiler'
+    sb.dump(compiler / 'config.json', {'agent': 'claude', 'models': {'claude': 'test-model'}})
+    for name in ('AGENT.md', 'LESSONS.md'):
+        (compiler / name).write_text('instructions')
+    monkeypatch.setattr(sb, 'COMPILER', compiler)
+    monkeypatch.setattr(sb, 'STAGING', tmp_path / 'stage')
+    monkeypatch.setattr(sb, 'BUILDS', tmp_path / 'builds')
+    monkeypatch.setattr(sb, 'committed_inputs', lambda _: {})
+    monkeypatch.setattr(sb, 'git', lambda *args: 'abcdef12')
+    monkeypatch.setattr(sb, 'previous_build', lambda *args: prior)
+    monkeypatch.setattr(sb.shutil, 'which', lambda _: '/fake/claude')
+    monkeypatch.setattr(sb.subprocess, 'run', lambda *args, **kw: SimpleNamespace(stdout='test-version'))
+    order = sb.prepare(source, full=True)
+    assert order['units']['K.position'] == 'changed'
+    assert (sb.STAGING / order['build_id'] / 'units/K.position.bas').read_text() == 'previous unit\n'
+
+
 def test_scope_checks_deletions_and_ignored_files(tmp_path):
     (tmp_path / 'source.md').write_text('source')
     (tmp_path / '.gitignore').write_text('hidden\n')
@@ -32,6 +59,18 @@ def test_scope_checks_deletions_and_ignored_files(tmp_path):
     (tmp_path / 'units/C.idle.bas').write_text('sub c_idle__tick()\nend sub\n')
     after = sb.snapshot(tmp_path)
     assert sb.scope_changes(before, after, {'units/C.idle.bas'}) == ['hidden', 'source.md']
+
+
+def test_previous_unit_cannot_satisfy_missing_generated_output(tmp_path):
+    stage, root = tmp_path / 'stage', tmp_path / 'agent'
+    (stage / 'units').mkdir(parents=True)
+    (root / 'units').mkdir(parents=True)
+    (stage / 'units/C.idle.bas').write_text('previous changed unit')
+    (stage / 'units/K.position.bas').write_text('unchanged unit')
+    sb.copy_unit_inputs(stage, root, ['C.idle'])
+    assert not (root / 'units/C.idle.bas').exists()
+    assert (root / 'context/previous/C.idle.bas').read_text() == 'previous changed unit'
+    assert (root / 'units/K.position.bas').read_text() == 'unchanged unit'
 
 
 def test_scope_detects_symlinks(tmp_path):

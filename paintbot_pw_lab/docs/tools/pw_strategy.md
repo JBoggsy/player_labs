@@ -46,7 +46,10 @@ is never reverted. This is repository write-scope detection, not a guarantee aga
 writes elsewhere on the machine. Codex additionally uses its workspace sandbox;
 Claude receives only file-reading/editing tools.
 
-Unchanged units are copied from the previous build. Source-declared interface changes
+Unchanged units are copied from the previous build. Changed components also receive
+their previous unit under read-only `context/previous/` as the agent's starting point.
+Requested output files start absent, so an untouched previous unit cannot masquerade as
+a freshly compiled result. Source-declared interface changes
 invalidate their direct consumers. Python generates rules, constants, roles,
 commitment and tables. Skills and runtime files are copied verbatim.
 

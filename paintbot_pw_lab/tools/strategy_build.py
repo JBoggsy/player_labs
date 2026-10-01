@@ -218,7 +218,7 @@ def prepare(source: Path, *, agent=None, model=None, full=False, milestone=None,
     (stage / 'units').mkdir()
     if prior:
         for key, status in statuses.items():
-            if status == 'reused' and (prior / 'units' / f'{key}.bas').is_file():
+            if status in ('reused', 'changed') and (prior / 'units' / f'{key}.bas').is_file():
                 shutil.copyfile(prior / 'units' / f'{key}.bas', stage / 'units' / f'{key}.bas')
     order = {'build_id': build_id, 'source_commit': commit,
              'source_path': str(source.relative_to(REPO)), 'source_hashes': hashes,
@@ -259,6 +259,15 @@ def agent_command(agent: str, model: str, directory: Path) -> list[str]:
             '--model', model, '-C', str(directory), '-']
 
 
+def copy_unit_inputs(stage: Path, root: Path, generated: list[str]) -> None:
+    """Keep previous generated units as references; each requested output must be written anew."""
+    previous = root / 'context/previous'
+    previous.mkdir(parents=True)
+    for path in (stage / 'units').glob('*.bas'):
+        target = previous if path.stem in generated else root / 'units'
+        shutil.copyfile(path, target / path.name)
+
+
 def generate(order: dict, *, errors=None, timeout=900) -> None:
     """Agent edits only a disposable independent Git repository, never this checkout."""
     stage = build_path(order['build_id'], staged=True)
@@ -273,8 +282,7 @@ def generate(order: dict, *, errors=None, timeout=900) -> None:
         root = Path(temporary)
         (root / 'units').mkdir()
         (root / 'context').mkdir()
-        for path in (stage / 'units').glob('*.bas'):
-            shutil.copyfile(path, root / 'units' / path.name)
+        copy_unit_inputs(stage, root, generated)
         shutil.copyfile(COMPILER / 'AGENT.md', root / 'AGENTS.md')
         shutil.copyfile(COMPILER / 'LESSONS.md', root / 'context/LESSONS.md')
         shutil.copyfile(LAB / 'docs/policy-surface.md', root / 'context/policy-surface.md')
