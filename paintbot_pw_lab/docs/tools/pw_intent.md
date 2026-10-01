@@ -260,3 +260,20 @@ a real policy of ours emits the line.
   not audited.
 - The audit thresholds were checked only on league walking behavior, not on intent lines
   (see Thresholds). `seen_mismatch` means nothing for a policy whose `e` counts something else.
+
+## Strategy telemetry v2
+
+The strategy compiler uses `parse_v2_line(line, mapping)` and
+`validate_v2_logs(root, mapping)` from this module for G5. The build's `map.json`
+is mandatory: numeric component codes are local to that build.
+
+V2 line kinds are `PWD` (decision), `PWP` (priorities), `PWE` (capability events),
+`PWB` (beliefs), and `PWC` (communication). The parser validates the version,
+ordered fields, int32 values, codes and vector lengths. G5 checks every candidate
+seat separately; missing logs or declared fields are unmeasurable and fail coverage.
+It also checks measured printed bytes per tick against the 512-byte strategy limit.
+The generator checks the static byte and print-event bounds.
+
+The existing `show` and `audit` commands still implement the v1 audit described above.
+G5 calls the v2 parser directly. A five-level strategy audit is deferred to M2;
+a valid v2 line is not proof that its gameplay claim is true.

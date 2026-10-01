@@ -26,13 +26,12 @@ accepted on 2026-09-30 (James):
   friend/foe, sightings, grenades, glory hearts, pickups). Three engine questions to verify first
   (its §11).
 
-**Next:** milestone M0 (tooling: `pw.py strategy lint|prepare|assemble|verify|compile|trace`, the
-runtime skeleton, `AGENT.md` and wrappers), then M1: the first `STRATEGY.md` is a faithful
-description of `base.bas` and must compile to base-equivalent play in a local screen. Our only
-uploaded policy is still the unchanged starter `jb-pw-base:v1`. The lab is fully instrumented:
-docs verified at `118e1619` (0.3.89), tools pinned to the same build with a shared terrain cache,
-one agent entry point (`uv run python paintbot_pw_lab/tools/pw.py doctor|tools|<subcommand>
---json`), and seven lab skills including [paintbot-pw-loop](.claude/skills/paintbot-pw-loop/SKILL.md).
+**Next:** qualify the implemented M0 tooling with real Claude and Codex builds of the
+committed trivial fixture, then M1: describe `base.bas` faithfully and pass G1–G5.
+Telemetry v2 emission and G5 parsing are part of M0–M1; the five-level audit remains M2.
+Priorities are per rule in v1. This task is local only: no uploads or hosted evaluations.
+See [compiler commands](docs/tools/pw_strategy.md). Tools remain pinned to
+`coworld-v0.3.89` (`118e1619`) with the shared terrain cache.
 
 Inputs the policy (`STRATEGY.md`) should build on:
 
@@ -91,15 +90,6 @@ James fills this in; until then an agent proposes a charter and stops.
 6. **The loop charter** above, if the loop should run unattended.
 7. Defaults already taken (change any): paired/SPRT statistics added to the shared `coworld-ab`
    engine; the intent-telemetry knob defaults on; rerun.io not added.
-
-## Next step (proposed)
-
-Build milestone M0 of the [compilation design](docs/designs/2026-09-30-strategy-compilation.md)
-(§11), then M1 (the `base.bas` description). Alongside it, get a baseline measurement: read
-`jb-pw-base:v1`'s free league episodes as they accumulate (`pw.py scout fetch` / `pw.py episodes`)
-or run an unseeded `field` request against each current champion (`pw.py leaders`; about 80
-episodes, ~24 credits), then `paintbot-pw-diagnose`. The 4-episode seed pilot (2026-09-30) already
-shows `aaron-paintbot-pw:v42` beating it from both sides.
 
 ## Measured findings (2026-09-29)
 

@@ -109,6 +109,161 @@ def parse_line(line: str) -> dict:
     return parse_fields(fields)
 
 
+
+# Strategy telemetry v2. Parsing is independent of the v1 gameplay audit: G5 validates
+# the wire contract and coverage; the five-level strategy audit is a later milestone.
+V2_KEYS = {
+    "PWD": ("t", "r", "c", "i", "h", "p", "f"),
+    "PWP": ("t", "a", "r", "o", "n", "p"),
+    "PWE": ("t", "c", "e", "k"),
+    "PWB": ("t", "k", "d"),
+    "PWC": ("t", "m", "s", "w", "d"),
+}
+
+
+def parse_v2_line(line: str, mapping: dict) -> dict:
+    """Validate a v2 line against its build's code table, including vector lengths."""
+    import re
+    parts = line.strip().split()
+    if not parts or parts[0] not in V2_KEYS:
+        raise IntentError("not a telemetry v2 line")
+    kind = parts[0]
+    keys = ("v", *V2_KEYS[kind])
+    if len(parts) != len(keys) + 1:
+        raise IntentError(f"{kind}: wrong field count")
+    values = {}
+    for expected, token in zip(keys, parts[1:]):
+        if "=" not in token:
+            raise IntentError(f"{kind}: malformed field")
+        key, text = token.split("=", 1)
+        if key != expected:
+            raise IntentError(f"{kind}: expected {expected}, got {key}")
+        vector = (kind == "PWD" and key in ("i", "f")) or (kind in ("PWB", "PWC") and key == "d")
+        entries = text.split(",") if vector else [text]
+        if any(not re.fullmatch(r"-?[0-9]+", entry) for entry in entries):
+            raise IntentError(f"{kind}.{key}: expected int32")
+        numbers = [int(entry) for entry in entries]
+        if any(not -(2**31) <= number < 2**31 for number in numbers):
+            raise IntentError(f"{kind}.{key}: int32 overflow")
+        values[key] = numbers if vector else numbers[0]
+    if values["v"] != 2 or values["t"] < 0:
+        raise IntentError("invalid version or tick")
+    codes = mapping["codes"]
+
+    def code(field, table, allow_zero=False):
+        valid = set(codes.get(table, {}).values())
+        if allow_zero:
+            valid.add(0)
+        if values[field] not in valid:
+            raise IntentError(f"{kind}.{field}: unknown {table} code {values[field]}")
+
+    if kind == "PWD":
+        code("r", "rule", True)
+        code("c", "capability", True)
+        if len(values["i"]) != 3 or len(values["f"]) != mapping["flag_words"]:
+            raise IntentError("PWD: wrong input or flag vector length")
+        if values["h"] not in (0, 1) or values["p"] < 0:
+            raise IntentError("PWD: invalid held flag or priority version")
+        count = len(codes.get("situation", {}))
+        for index, word in enumerate(values["f"]):
+            bits = min(31, max(0, count - index * 31))
+            if word < 0 or word >= 2**bits:
+                raise IntentError("PWD: unknown situation flag bits")
+        rule = next((r for r in mapping["rules"] if r["code"] == values["r"]), None)
+        expected_cap = codes["capability"][rule["capability"]] if rule else 0
+        if values["c"] != expected_cap:
+            raise IntentError("PWD: capability does not match rule")
+    elif kind == "PWP":
+        code("a", "adaptation", True)
+        code("r", "rule")
+        if not 0 <= values["o"] <= 1000 or not 0 <= values["n"] <= 1000 or values["p"] < 0:
+            raise IntentError("PWP: invalid priority or version")
+    elif kind == "PWE":
+        code("c", "capability")
+        code("e", "event")
+        capability = next(key for key, value in codes["capability"].items() if value == values["c"])
+        valid = set(codes.get("condition", {}).get(capability, {}).values())
+        if values["k"] not in valid | {0}:
+            raise IntentError("PWE: unknown capability condition")
+    elif kind == "PWB":
+        code("k", "knowledge")
+        knowledge = next(key for key, value in codes["knowledge"].items() if value == values["k"])
+        fields = mapping["components"][knowledge]["log_fields"]
+        if len(values["d"]) != sum(field["cells"] for field in fields):
+            raise IntentError("PWB: wrong belief vector length")
+    elif kind == "PWC":
+        code("m", "message")
+        if values["s"] not in (1, 2) or not 0 <= values["w"] < 16:
+            raise IntentError("PWC: invalid direction or speaker")
+        message = next(key for key, value in codes["message"].items() if value == values["m"])
+        fields = mapping["components"][message].get("log_fields", [])
+        cells = sum(field["cells"] for field in fields)
+        if len(values["d"]) != max(1, cells) or (not cells and values["d"] != [0]):
+            raise IntentError("PWC: wrong message vector length")
+    return {"kind": kind, **values}
+
+
+def validate_v2_logs(root: Path, mapping: dict) -> dict:
+    """G5: every candidate seat needs readable telemetry and declared check fields.
+
+    Checks that cannot be observed are explicitly unmeasurable and fail coverage.
+    This is wire/coverage validation, not a claim that gameplay checks passed.
+    """
+    failures, seats = [], []
+    required = {"PWD." + key for key in V2_KEYS["PWD"]}
+    for component in mapping["components"].values():
+        for check in component.get("checks", []):
+            required.update(item.replace("`", "") for item in check.get("reads", []) if item != "replay")
+    for key, component in mapping["components"].items():
+        required.update(f'{key}.{field["name"]}' for field in component.get("log_fields", []))
+    metas = sorted(root.rglob("*.meta.json"))
+    for meta_path in metas:
+        meta = json.loads(meta_path.read_text())
+        side = meta.get("a_side")
+        if side not in (0, 1):
+            failures.append({"file": str(meta_path), "message": "missing candidate side"})
+            continue
+        for seat in range(side, 16, 2):
+            path = meta_path.parent / f"player-{seat}.log"
+            seen, kinds, by_tick, count = set(), Counter(), Counter(), 0
+            if not path.is_file():
+                failures.append({"file": str(path), "message": "unmeasurable: missing seat log"})
+                continue
+            last_tick = -1
+            for number, line in enumerate(path.read_text().splitlines(), 1):
+                if "BASIC error:" in line or "BASIC VM disabled" in line:
+                    failures.append({"file": str(path), "line": number, "message": line})
+                if line.split(" ", 1)[0] not in V2_KEYS:
+                    continue
+                try:
+                    event = parse_v2_line(line, mapping)
+                    if event["t"] < last_tick:
+                        raise IntentError("telemetry ticks went backwards")
+                    last_tick = event["t"]
+                    kinds[event["kind"]] += 1
+                    seen.update(event["kind"] + "." + key for key in V2_KEYS[event["kind"]])
+                    if event["kind"] in ("PWB", "PWC"):
+                        table, code_key = ("knowledge", "k") if event["kind"] == "PWB" else ("message", "m")
+                        component = next(key for key, value in mapping["codes"][table].items() if value == event[code_key])
+                        seen.update(component + "." + field["name"] for field in mapping["components"][component].get("log_fields", []))
+                    by_tick[event["t"]] += len(line.encode()) + 1
+                    count += 1
+                except (IntentError, KeyError, ValueError) as error:
+                    failures.append({"file": str(path), "line": number, "message": str(error)})
+            missing = sorted(required - seen)
+            if not count or missing:
+                failures.append({"file": str(path), "message": "unmeasurable: missing telemetry fields", "fields": missing})
+            peak = max(by_tick.values(), default=0)
+            if peak > 512:
+                failures.append({"file": str(path), "message": f"print bytes per tick {peak} > 512"})
+            seats.append({"seat": seat, "file": str(path), "lines": count, "kinds": dict(kinds),
+                          "missing_fields": missing, "peak_bytes": peak})
+    if not metas:
+        failures.append({"message": "unmeasurable: no complete recording metadata"})
+    return {"passed": not failures and bool(seats), "summary": {"seat_recordings": len(seats),
+            "lines": sum(s["lines"] for s in seats), "failures": len(failures)}, "seats": seats, "failures": failures}
+
+
 def intents(ep) -> pd.DataFrame:
     """One row per intent line in the episode's policy_log. Malformed lines are kept with
     `parse_error` set and null typed fields, never dropped."""

@@ -40,7 +40,7 @@ def test_catalog_targets_docs_and_skills_exist():
 
 def test_every_python_tool_is_in_the_catalog():
     listed = {e["target"][1] for e in PY_TOOLS}
-    libraries = {"pw.py", "pw_cli.py", "pw_public.py", "features.py"}   # not CLIs of their own
+    libraries = {"pw.py", "pw_cli.py", "pw_public.py", "features.py", "strategy_build.py", "strategy_format.py", "strategy_basic.py", "strategy_gates.py"}   # not CLIs of their own
     assert {p.name for p in TOOLS.glob("*.py")} - libraries - listed == set()
 
 

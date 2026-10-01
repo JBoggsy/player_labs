@@ -64,6 +64,14 @@ NATIVE_EXITS = ("0 ok; 1 a seat failed to compile or was disabled, or a recordin
 # table in docs/tools/README.md. Keep this list and the tools in step: the README test fails
 # when the generated file is stale.
 CATALOG: list[dict] = [
+    {"name": "strategy", "target": ("py", "pw_strategy.py"),
+     "purpose": "Lint, incrementally compile, and locally verify committed strategy Markdown into immutable BASIC builds.",
+     "when_to_use": "After editing and committing strategy source; never uploads or submits.",
+     "questions": ["Does the strategy source lint?", "Compile a strategy with Claude or Codex?", "What changed since a build?"],
+     "inputs": "lint [STRATEGY.md] | prepare/compile [--source FILE --agent claude|codex --model MODEL --full --milestone m0|m1 --from ID] | assemble/verify/trace ID; --json",
+     "outputs": "strategy/compiled/<build-id>/ policy, units, map, version, reports and local gate evidence; staging under tmp/strategy/",
+     "exit_codes": "0 success; 1 lint/build/gate failure; 2 invalid source or arguments; 3 required tool missing",
+     "doc": "pw_strategy.md", "skill": "paintbot-pw-compile"},
     {"name": "doctor", "target": ("self", "doctor"),
      "purpose": "Check the lab is ready: release.env vs the league, built binaries and library, Python deps, "
                 "source clone, shared skill engines. Prints the exact fix command for each problem.",

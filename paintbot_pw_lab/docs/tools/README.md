@@ -15,6 +15,9 @@ uv run python paintbot_pw_lab/tools/pw.py <subcommand> --help    # every flag, w
 
 | Question | Subcommand | Skill |
 | --- | --- | --- |
+| Does the strategy source lint? | `strategy` | `paintbot-pw-compile` |
+| Compile a strategy with Claude or Codex? | `strategy` | `paintbot-pw-compile` |
+| What changed since a build? | `strategy` | `paintbot-pw-compile` |
 | Is the lab ready to run? What do I fix first? | `doctor` |  |
 | Is the loop charter filled in? | `doctor` |  |
 | Which player identity is active? | `doctor` |  |
@@ -58,6 +61,17 @@ uv run python paintbot_pw_lab/tools/pw.py <subcommand> --help    # every flag, w
 | Do the tools still pass their tests? | `test` |  |
 
 ## Tools
+
+### strategy
+
+Lint, incrementally compile, and locally verify committed strategy Markdown into immutable BASIC builds.
+
+- **Command:** `uv run python paintbot_pw_lab/tools/pw.py strategy` (runs `paintbot_pw_lab/tools/pw_strategy.py`)
+- **When:** After editing and committing strategy source; never uploads or submits.
+- **Inputs:** lint [STRATEGY.md] | prepare/compile [--source FILE --agent claude|codex --model MODEL --full --milestone m0|m1 --from ID] | assemble/verify/trace ID; --json
+- **Outputs:** strategy/compiled/<build-id>/ policy, units, map, version, reports and local gate evidence; staging under tmp/strategy/
+- **Exit codes:** 0 success; 1 lint/build/gate failure; 2 invalid source or arguments; 3 required tool missing
+- **Reference:** [pw_strategy.md](pw_strategy.md); skill [`paintbot-pw-compile`](../../.claude/skills/paintbot-pw-compile/SKILL.md)
 
 ### doctor
 
