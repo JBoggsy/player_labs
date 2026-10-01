@@ -178,6 +178,10 @@ def parse_v2_line(line: str, mapping: dict) -> dict:
         code("r", "rule")
         if not 0 <= values["o"] <= 1000 or not 0 <= values["n"] <= 1000 or values["p"] < 0:
             raise IntentError("PWP: invalid priority or version")
+        if values["a"] == 0:
+            rule = next(rule for rule in mapping["rules"] if rule['code'] == values['r'])
+            if values['p'] != 0 or values['o'] != rule['priority'] or values['n'] != rule['priority']:
+                raise IntentError("PWP: invalid initial priority snapshot")
     elif kind == "PWE":
         code("c", "capability")
         code("e", "event")
@@ -226,6 +230,7 @@ def validate_v2_logs(root: Path, mapping: dict) -> dict:
         for seat in range(side, 16, 2):
             path = meta_path.parent / f"player-{seat}.log"
             seen, kinds, by_tick, count = set(), Counter(), Counter(), 0
+            snapshots = set()
             if not path.is_file():
                 failures.append({"file": str(path), "message": "unmeasurable: missing seat log"})
                 continue
@@ -241,6 +246,8 @@ def validate_v2_logs(root: Path, mapping: dict) -> dict:
                         raise IntentError("telemetry ticks went backwards")
                     last_tick = event["t"]
                     kinds[event["kind"]] += 1
+                    if event["kind"] == "PWP" and event["a"] == 0 and event["p"] == 0:
+                        snapshots.add(event["r"])
                     seen.update(event["kind"] + "." + key for key in V2_KEYS[event["kind"]])
                     if event["kind"] in ("PWB", "PWC"):
                         table, code_key = ("knowledge", "k") if event["kind"] == "PWB" else ("message", "m")
@@ -251,6 +258,10 @@ def validate_v2_logs(root: Path, mapping: dict) -> dict:
                 except (IntentError, KeyError, ValueError) as error:
                     failures.append({"file": str(path), "line": number, "message": str(error)})
             missing = sorted(required - seen)
+            missing_snapshots = set(mapping['codes']['rule'].values()) - snapshots
+            if missing_snapshots:
+                failures.append({"file": str(path), "message": "missing initial priority snapshots",
+                                 "rules": sorted(missing_snapshots)})
             if not count or missing:
                 failures.append({"file": str(path), "message": "unmeasurable: missing telemetry fields", "fields": missing})
             peak = max(by_tick.values(), default=0)

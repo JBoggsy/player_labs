@@ -1,0 +1,338 @@
+{
+  "adaptations": [],
+  "build_id": "f4ffb408-1",
+  "codes": {
+    "adaptation": {},
+    "capability": {
+      "C.idle": 1
+    },
+    "condition": {
+      "C.idle": {}
+    },
+    "direction": {
+      "receive": 2,
+      "send": 1
+    },
+    "event": {
+      "abort": 3,
+      "died": 5,
+      "done": 2,
+      "preempted": 4,
+      "start": 1
+    },
+    "held": {
+      "kept": 1,
+      "new_or_idle": 0
+    },
+    "knowledge": {
+      "K.position": 1
+    },
+    "message": {},
+    "role": {
+      "role": {
+        "all": 1
+      }
+    },
+    "rule": {
+      "R.idle": 1
+    },
+    "situation": {}
+  },
+  "commitment": {
+    "interrupt_at": 1001,
+    "min_hold": 0,
+    "preempt_margin": 0
+  },
+  "components": {
+    "C.idle": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWD.c"
+          ],
+          "text": "Select this capability."
+        },
+        {
+          "level": "Acted properly",
+          "reads": [
+            "PWE.e"
+          ],
+          "text": "Start this capability."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "replay"
+          ],
+          "text": "Issue no movement commands."
+        }
+      ],
+      "code": 1,
+      "generated": false,
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": []
+      },
+      "kind": "C",
+      "llm": true,
+      "prefix": "c_idle",
+      "text_hash": "sha256:10c9eb9134b824a7d7cea1f76f6ec2a5ab9179d38e9f8153dfa129009df1f406",
+      "unit": "C.idle",
+      "unit_sha256": "076903d4391c22a5201981ba1f903e058d3b88ac0e8387586a57c0a46f82a35d",
+      "uses": [
+        "K.position"
+      ]
+    },
+    "K.position": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "`K.position`.x"
+          ],
+          "text": "Log our position."
+        }
+      ],
+      "code": 1,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "x": 1
+        },
+        "params": []
+      },
+      "kind": "K",
+      "llm": true,
+      "log_every": 24,
+      "log_fields": [
+        {
+          "cells": 1,
+          "name": "x"
+        }
+      ],
+      "log_offset": 0,
+      "prefix": "k_position",
+      "text_hash": "sha256:c192cacc49e8348ceef2371a9452b380c6c29b7f13062a7845921fde53cd8d44",
+      "unit": "K.position",
+      "unit_sha256": "303e2cb07dd2c5eb84a352feb186d870f263118b5492d3a80aa58a84533bea3f",
+      "uses": []
+    },
+    "ST.commitment": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "PWD.h"
+          ],
+          "text": "No alternative rule is held back."
+        }
+      ],
+      "code": null,
+      "generated": true,
+      "interface": {
+        "outputs": {},
+        "params": [
+          "min_hold",
+          "preempt_margin",
+          "interrupt_at"
+        ]
+      },
+      "kind": "ST",
+      "llm": false,
+      "prefix": "st_commitment",
+      "text_hash": "sha256:8c090ac383e8b632f227bd2ec38bcfcb3abdd0c0db979e5362899a4ee690a3d4",
+      "unit": "generated.tables",
+      "unit_sha256": "0fa9f2103e80d99632577de154fe5461a2a56bf776050980ad325d55a76eeafd",
+      "uses": []
+    },
+    "ST.roles": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r"
+          ],
+          "text": "Every seat selects the idle rule."
+        }
+      ],
+      "code": null,
+      "generated": true,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "ST",
+      "llm": false,
+      "prefix": "st_roles",
+      "text_hash": "sha256:45b58598421ed249deac903cbe1e632d4ebb6240849645d3b9e6e4f902481517",
+      "unit": "generated.tables",
+      "unit_sha256": "0fa9f2103e80d99632577de154fe5461a2a56bf776050980ad325d55a76eeafd",
+      "uses": []
+    },
+    "ST.rules": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWP.n"
+          ],
+          "text": "Select the only rule."
+        }
+      ],
+      "code": null,
+      "generated": true,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "ST",
+      "llm": false,
+      "prefix": "st_rules",
+      "text_hash": "sha256:9324e78bd540ec0ebf947ac4a9b15e5b3420d79f2d4cee0ff951dd1709a1f47a",
+      "unit": "generated.tables",
+      "unit_sha256": "0fa9f2103e80d99632577de154fe5461a2a56bf776050980ad325d55a76eeafd",
+      "uses": []
+    }
+  },
+  "flag_words": 1,
+  "priorities": {
+    "R.idle": 100
+  },
+  "roles": {
+    "role": {
+      "all": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    }
+  },
+  "rules": [
+    {
+      "args": {},
+      "capability": "C.idle",
+      "code": 1,
+      "condition": "ALWAYS",
+      "id": "R.idle",
+      "inputs": [],
+      "priority": 100,
+      "role_set": null,
+      "roles": null
+    }
+  ],
+  "runtime": {
+    "files": {
+      "runtime.lib": "f8f141333f8e341343096d83cf09bb459fb06d71ed7cc1bfb1c3d3e7d517a796",
+      "runtime.main": "929eeae5041973f76a0c75f154ee7f8918b5aca8cd4a6cdb5c12d9f05dbedb60"
+    }
+  },
+  "schema": "pw-strategy-map/1",
+  "skills": {},
+  "source_commit": "f4ffb4086aeb69ee2191234ce84f3c99f574fc06",
+  "telemetry": {
+    "lines": {
+      "PWB": [
+        "t",
+        "k",
+        "d"
+      ],
+      "PWC": [
+        "t",
+        "m",
+        "s",
+        "w",
+        "d"
+      ],
+      "PWD": [
+        "t",
+        "r",
+        "c",
+        "i",
+        "h",
+        "p",
+        "f"
+      ],
+      "PWE": [
+        "t",
+        "c",
+        "e",
+        "k"
+      ],
+      "PWP": [
+        "t",
+        "a",
+        "r",
+        "o",
+        "n",
+        "p"
+      ]
+    },
+    "list_keys": {
+      "PWB": [
+        "d"
+      ],
+      "PWC": [
+        "d"
+      ],
+      "PWD": [
+        "i",
+        "f"
+      ]
+    },
+    "version": 2,
+    "worst_case": {
+      "bytes": 362,
+      "events": 43,
+      "limit_bytes": 512,
+      "limit_events": 64,
+      "lines": {
+        "PWB": {
+          "bytes": 40,
+          "count": 1,
+          "events": 5
+        },
+        "PWC": {
+          "bytes": 0,
+          "count": 0,
+          "events": 0
+        },
+        "PWD": {
+          "bytes": 130,
+          "count": 1,
+          "events": 19
+        },
+        "PWE": {
+          "bytes": 192,
+          "count": 3,
+          "events": 19
+        },
+        "PWP": {
+          "bytes": 0,
+          "count": 0,
+          "events": 0
+        }
+      },
+      "log_offsets": {
+        "K.position": 0
+      }
+    }
+  }
+}

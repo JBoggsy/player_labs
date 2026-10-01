@@ -88,6 +88,13 @@ def run(args, report):
             except (ValueError, RuntimeError, BuildError) as error:
                 failure = str(error)
                 errors = [{'stage': 'generate/assemble', 'message': failure}]
+                if isinstance(error, BuildError):
+                    errors = [d.to_dict() for d in error.diagnostics]
+                    for diagnostic in error.diagnostics:
+                        key = diagnostic.component
+                        if key in order['components'] and order['components'][key]['llm']:
+                            order['units'][key] = 'changed'
+                    builds.dump(stage / 'work_order.json', order)
                 # Scope violations are not repairable compiler mistakes.
                 if 'write-scope violation' in failure:
                     break

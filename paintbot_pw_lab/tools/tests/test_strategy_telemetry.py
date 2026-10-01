@@ -15,7 +15,7 @@ def mapping():
             'situation': {'S.ready': 1}, 'knowledge': {'K.position': 1}, 'adaptation': {'A.push': 1},
             'condition': {'C.wait': {'done': 1}}, 'event': {'start': 1, 'done': 2, 'abort': 3},
             'message': {'COM.ping': 1}},
-            'rules': [{'id': 'R.wait', 'code': 1, 'capability': 'C.wait'}],
+            'rules': [{'id': 'R.wait', 'code': 1, 'capability': 'C.wait', 'priority': 100}],
             'components': {'K.position': {'log_fields': [{'name': 'x', 'cells': 1}],
                 'checks': [{'reads': ['K.position.x']} ]},
                 'COM.ping': {'log_fields': [{'name': 'payload', 'cells': 2}]}}}
@@ -43,6 +43,7 @@ def test_all_line_kinds_decode(line, mapping):
     'PWB v=2 t=0 k=1 d=1,2',
     'PWB v=2 t=0 k=1 k=1 d=2',
     'PWP v=2 t=0 a=99 r=1 o=100 n=50 p=1',
+    'PWP v=2 t=0 a=0 r=1 o=100 n=50 p=0',
     'PWC v=2 t=0 m=1 s=1 w=16 d=2',
     'PWC v=2 t=0 m=1 s=1 w=0 d=2',
 ])
@@ -58,7 +59,7 @@ def test_empty_logs_are_unmeasurable(tmp_path, mapping):
         (tmp_path / f'player-{seat}.log').write_text('Completed\n')
     result = validate_v2_logs(tmp_path, mapping)
     assert not result['passed']
-    assert len(result['failures']) == 8
+    assert len(result['failures']) == 16
 
 
 def test_coverage_is_per_seat_not_union(tmp_path, mapping):
@@ -66,9 +67,10 @@ def test_coverage_is_per_seat_not_union(tmp_path, mapping):
     for seat in range(0, 16, 2):
         (tmp_path / f'player-{seat}.log').write_text(
             'PWD v=2 t=0 r=1 c=1 i=0,0,0 h=0 p=0 f=0\nPWB v=2 t=0 k=1 d=25\n'
-            'PWC v=2 t=0 m=1 s=1 w=0 d=2,3\n')
+            'PWC v=2 t=0 m=1 s=1 w=0 d=2,3\nPWP v=2 t=0 a=0 r=1 o=100 n=100 p=0\n')
     assert validate_v2_logs(tmp_path, mapping)['passed']
     (tmp_path / 'player-14.log').write_text('PWD v=2 t=0 r=1 c=1 i=0,0,0 h=0 p=0 f=0\n')
     result = validate_v2_logs(tmp_path, mapping)
     assert not result['passed']
-    assert result['failures'][0]['fields'] == ['COM.ping.payload', 'K.position.x']
+    assert any(f.get('fields') == ['COM.ping.payload', 'K.position.x'] for f in result['failures'])
+    assert any(f.get('rules') == [1] for f in result['failures'])

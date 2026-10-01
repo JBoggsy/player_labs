@@ -62,6 +62,8 @@ def source_files(source: Path) -> list[Path]:
     paths.extend(LAB.joinpath('tools').glob('strategy_*.py'))
     paths.extend([LAB / 'tools/pw_strategy.py', LAB / 'tools/pw_intent.py', LAB / 'tools/release.env',
                   LAB / 'docs/policy-surface.md', LAB / 'reference/base.bas'])
+    paths.extend(LAB / 'tools' / name for name in ('pw_local.py', 'pw_release.py', 'pw_cli.py',
+                                                   'pw_terrain.py', 'pw.py'))
     return sorted(set(paths))
 
 
@@ -352,7 +354,7 @@ def validate_draft(draft: dict, order: dict) -> None:
         seen.add(guess['id'])
         if guess['severity'] not in ('low', 'medium', 'high') or guess['state'] not in ('open', 'kept', 'resolved'):
             raise ValueError('invalid guess severity or state')
-        text = '\n'.join(str(v) for v in order['components'][component]['fields'].values())
+        text = order['components'][component]['compiled_text']
         old = previous.get(guess['id'])
         if guess['state'] in ('kept', 'resolved'):
             if not old or old['component'] != component or old['spec_quote'] != guess['spec_quote']:
@@ -388,7 +390,7 @@ def carry_guesses(order: dict, draft: dict) -> list[dict]:
     guesses = {g['id']: dict(g) for g in previous}
     for guess in guesses.values():
         fields = order['components'].get(guess['component'], {}).get('fields', {})
-        if guess['id'] in str(fields.get('Accepts', '')):
+        if guess['id'] in {item.strip() for item in fields.get('Accepts', '').split(',')}:
             guess['state'] = 'closed'
         elif order['units'].get(guess['component']) in ('changed', 'removed') and guess['state'] != 'closed':
             guess['state'] = 'possibly resolved'
@@ -397,16 +399,17 @@ def carry_guesses(order: dict, draft: dict) -> list[dict]:
         item = dict(guess)
         fields = order['components'][item['component']]['fields']
         if item['state'] == 'kept':
-            item['state'] = guesses.get(item['id'], {}).get('state', 'open')
+            item['state'] = 'closed' if guesses.get(item['id'], {}).get('state') == 'closed' else 'open'
         elif item['state'] == 'resolved':
             item['state'] = 'possibly resolved'
-        if item['id'] in str(fields.get('Accepts', '')):
+        if item['id'] in {value.strip() for value in fields.get('Accepts', '').split(',')}:
             item['state'] = 'closed'
         guesses[item['id']] = item
     return list(guesses.values())
 
 
 def finalize(order: dict, gates: dict, *, error: str | None = None) -> Path:
+    assert_inputs(order)
     stage = build_path(order['build_id'], staged=True)
     target = BUILDS / order['build_id']
     if target.exists():
@@ -414,7 +417,7 @@ def finalize(order: dict, gates: dict, *, error: str | None = None) -> Path:
     draft = read(stage / 'report_draft.json') if (stage / 'report_draft.json').exists() else {'guesses': [], 'gaps': []}
     guesses = carry_guesses(order, draft)
     blocked = [g['id'] for g in guesses if g['severity'] == 'high' and g['state'] != 'closed'
-               and str(order['components'].get(g['component'], {}).get('fields', {}).get('Status', '')).startswith('tested')]
+               and str(order['components'].get(g['component'], {}).get('fields', {}).get('Status', '')).startswith(('tested', 'proven'))]
     if blocked:
         error = 'Status: tested is blocked by unresolved high-severity guesses: ' + ', '.join(blocked)
     status = 'passed' if not error and len(gates) == 5 and all(g['passed'] for g in gates.values()) else 'failed'

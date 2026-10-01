@@ -131,10 +131,11 @@ def test_tested_component_requires_high_guess_resolution(tmp_path, monkeypatch):
 
 
 def test_guess_quote_and_id_are_checked():
-    order = {'components': {'C.idle': {'fields': {'Spec': 'Do nothing.'}}}}
+    order = {'components': {'C.idle': {'compiled_text': '- Spec: Do nothing.', 'fields': {'Spec': 'Do nothing.'}}}}
     guess = {'id': 'G-C.idle-1', 'component': 'C.idle', 'spec_quote': 'Do nothing.',
              'decision': 'Wait.', 'why': 'No actions.', 'severity': 'low', 'state': 'open'}
     sb.validate_draft({'guesses': [guess], 'gaps': []}, order)
+    sb.validate_draft({'guesses': [{**guess, 'spec_quote': 'Spec: Do nothing.'}], 'gaps': []}, order)
     with pytest.raises(ValueError, match='quote'):
         sb.validate_draft({'guesses': [{**guess, 'spec_quote': 'invented'}], 'gaps': []}, order)
     with pytest.raises(ValueError, match='unique'):
@@ -155,7 +156,8 @@ def test_committed_input_check_includes_staged_edits_and_deletions(tmp_path, mon
     comms = source.parent / 'comms.md'
     comms.write_text('comms')
     (compiler / 'AGENT.md').write_text('instructions')
-    for name in ('pw_strategy.py', 'pw_intent.py', 'release.env'):
+    for name in ('pw_strategy.py', 'pw_intent.py', 'release.env', 'pw_local.py', 'pw_release.py',
+                 'pw_cli.py', 'pw_terrain.py', 'pw.py'):
         (lab / 'tools' / name).write_text('input')
     monkeypatch.setattr(sb, 'REPO', tmp_path)
     monkeypatch.setattr(sb, 'LAB', lab)
@@ -173,3 +175,15 @@ def test_committed_input_check_includes_staged_edits_and_deletions(tmp_path, mon
     sb.git('add', '.')
     with pytest.raises(pw_cli.UsageError, match='commit compiler'):
         sb.committed_inputs(source)
+
+
+def test_kept_guess_remains_open_and_accepts_matches_whole_id(tmp_path, monkeypatch):
+    previous = {'id': 'G-C.idle-1', 'component': 'C.idle', 'state': 'open', 'severity': 'high'}
+    sb.dump(tmp_path / 'report.json', {'guesses': [previous]})
+    monkeypatch.setattr(sb, 'build_path', lambda _: tmp_path)
+    order = {'previous_build': 'previous', 'units': {'C.idle': 'changed'},
+             'components': {'C.idle': {'fields': {'Accepts': 'G-C.idle-12'}}}}
+    result = sb.carry_guesses(order, {'guesses': [{**previous, 'state': 'kept'}]})
+    assert result[0]['state'] == 'open'
+    order['components']['C.idle']['fields']['Accepts'] = 'G-C.idle-1, G-C.idle-12'
+    assert sb.carry_guesses(order, {'guesses': []})[0]['state'] == 'closed'

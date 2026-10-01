@@ -63,7 +63,8 @@ commitment and tables. Skills and runtime files are copied verbatim.
   the interval to contain 0.5.
 - G5: two bounded local recordings through `pw_intent`, with seat logs. V2 lines
   must parse and decode with this build's map, and each candidate seat must supply
-  its declared check/log fields. Missing fields are unmeasurable and fail coverage.
+  its declared check/log fields and every initial rule-priority snapshot. Missing fields
+  are unmeasurable and fail coverage.
   This checks wire format and coverage, not whether gameplay checks are true.
 
 The compile driver allows at most three generation/gate rounds. G4 never requests a
@@ -81,7 +82,9 @@ renames the directory once. Finalized builds cannot be reassembled or overwritte
 Failed builds are retained for diagnosis and are never selected for incremental reuse.
 
 The caller commits completed builds after reviewing reports. The driver does not
-commit. Resolve guesses in the source and recompile. Tuning output is experimental:
+commit. Resolve guesses in the source and recompile. `Accepts` matches complete guess IDs;
+`kept` guesses remain open, and unresolved high-severity guesses block `tested` or
+`proven` component status. Report quotes are checked against compiler-read text. Tuning output is experimental:
 write accepted values back into `Params`, commit, and compile a new build.
 
 ## Agent CLI contract
