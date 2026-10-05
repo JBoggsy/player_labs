@@ -6,8 +6,9 @@ description: "Use when someone asks whether a Paintbot PW change actually helped
 # Paintbot PW A/B
 
 Decide whether a candidate BASIC policy beats the baseline **now**, on the ladder's own
-number: the **Elo outcome score** `clamp(0.5 + (our glory − their glory)/2000, 0, 1)` per
-episode ([docs/mechanics.md §1](../../../docs/mechanics.md)). Read the shared
+number: the **score outcome** `clamp(0.5 + (our mean result score − their mean result score)/(2 × margin_scale), 0, 1)` per
+episode. Recheck the live ranking scale; the 2026-10-05 OpenSkill scale is 600. Pass
+`--target score_outcome --margin-scale 600` explicitly; the default `elo_outcome` remains historical ([docs/mechanics.md §1](../../../docs/mechanics.md)). Read the shared
 [`coworld-ab`](../../../../.claude/skills/coworld-ab/SKILL.md) skill for the method (fresh,
 matched, pin every seat, respect inconclusive). This file is the Paintbot PW binding. Tool
 references: [compare.md](../../../docs/tools/compare.md),
@@ -19,7 +20,7 @@ references: [compare.md](../../../docs/tools/compare.md),
 Run from the repo root (`personal_labs_paintbot_pw/`).
 
 1. **Frame it.** Baseline and candidate as exact `name:vN` (both uploaded), the one change
-   between them, the target metric (default `elo_outcome`), and the metric list you will
+   between them, the target metric (use `score_outcome` with the verified margin scale), and the metric list you will
    report (`--metrics`; fewer metrics = a less strict BY correction). Write down the stopping
    rule: SPRT H0/H1/α/β (default 0 / +0.05 / 0.05 / 0.05) or a fixed N with no peeking.
 
@@ -80,7 +81,7 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
 
    ```bash
    uv run python paintbot_pw_lab/tools/pw.py compare sprt paintbot_pw_lab/episode_data/ab-v5-v4-1/episodes \
-       --design paired --baseline OURS:v4 --candidate OURS:v5 --h0 0 --h1 0.05 --json
+       --design paired --baseline OURS:v4 --candidate OURS:v5 --target score_outcome --margin-scale 600 --h0 0 --h1 0.05 --json
    ```
 
    The decision is `result.decision` (`continue`, `accept_h1`, `accept_h0`) with `result.llr` and
@@ -96,7 +97,7 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
    ```bash
    R=paintbot_pw_lab/episode_data/ab-v5-v4-1
    uv run python paintbot_pw_lab/tools/pw.py compare compare $R/episodes --design paired \
-       --baseline OURS:v4 --candidate OURS:v5 --metrics elo_outcome,win_rate,first_capture_rate,ops_fail_rate \
+       --baseline OURS:v4 --candidate OURS:v5 --target score_outcome --margin-scale 600 --metrics score_outcome,win_rate,first_capture_rate,ops_fail_rate \
        --requests $R/requests/manifest.json --out $R/ab.json --json
    uv run python .claude/skills/coworld-ab/scripts/compare_report.py $R/ab.json --out $R/ab.html \
        --eyebrow "Paintbot PW · A/B comparison" --finding finding.md --verdict "..."

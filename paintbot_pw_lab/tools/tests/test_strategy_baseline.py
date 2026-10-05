@@ -1,6 +1,6 @@
-"""The M1 baseline source (strategy/STRATEGY.md + skills/motor): source contract checks that the
+"""The current strategy source (strategy/STRATEGY.md + skills/motor): source contract checks that the
 compiler cannot catch for us. It lints with no diagnostics, the motor skill passes the unit ABI,
-the telemetry worst case fits, and the static roles and rule order match reference/base.bas."""
+the telemetry worst case fits, and the static roles and rule order still match reference/base.bas."""
 import sys
 from pathlib import Path
 

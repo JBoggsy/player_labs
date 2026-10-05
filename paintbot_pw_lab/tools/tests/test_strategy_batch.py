@@ -84,12 +84,18 @@ def test_g5_counts_physical_bytes_once(tmp_path, mapping):
     pwd = "PWD v=2 t=1 r=0 c=0 i=0,0,0 h=0 p=0 f=0"
     text = pwd + "\n" + batch() + "\n"
     for seat in range(0, 16, 2):
-        (tmp_path / f"player-{seat}.log").write_text(text)
+        messages = [cm.Message(0, sender, 0, 0, 123) for sender in range(0, 16, 2) if sender != seat]
+        messages.append(cm.Message(0, (seat + 2) % 16, 0, 0, 123))
+        records = [cm.batch_record(m, 1, 2) for m in messages]
+        records.append(cm.batch_record(cm.Message(2, seat, 24, 0, 456), 1, 1))
+        seat_text = pwd + "\nPWC v=3 t=1 b=" + "".join(records) + "\n"
+        (tmp_path / f"player-{seat}.log").write_text(seat_text)
     result = pw_intent.validate_v2_logs(tmp_path, mapping)
     assert all(s["peak_bytes"] == len(text.encode()) for s in result["seats"])
     assert all(s["lines"] == 2 and s["kinds"]["PWC"] == 9 for s in result["seats"])
-    # Other catalogue types were not exercised, so coverage must still fail.
-    assert not result["passed"]
+    # Rare types remain explicitly unexercised; their absence is not a wire failure.
+    assert result["passed"]
+    assert "COM.m7" in result["coverage"]["unexercised_message_types"]
 
 
 def test_transport_audit_matches_delivery_and_detects_missing_record():
@@ -128,3 +134,34 @@ def test_transport_audit_send_offset_and_missing_actual_shout():
     row["t"] = 4
     assert cm.audit_transport([row], [event], 0, {4})["status"] == "fail"
     assert cm.audit_transport([], [event], 0, {4})["status"] == "fail"
+
+
+@pytest.mark.parametrize("direction,missing", [(1, "received"), (2, "sent")])
+def test_g5_requires_both_transport_paths(tmp_path, mapping, direction, missing):
+    (tmp_path / "episode.meta.json").write_text(json.dumps({"a_side": 0}))
+    for seat in range(0, 16, 2):
+        sender = seat if direction == 1 else (seat + 2) % 16
+        record = cm.batch_record(cm.Message(0, sender, 0, 0, 123), 1, direction)
+        (tmp_path / f"player-{seat}.log").write_text(
+            "PWD v=2 t=1 r=0 c=0 i=0,0,0 h=0 p=0 f=0\nPWC v=3 t=1 b=" + record + "\n")
+    result = pw_intent.validate_v2_logs(tmp_path, mapping)
+    assert not result["passed"]
+    assert any(missing + " path not exercised" in f["message"] for f in result["failures"])
+
+
+def test_g5_still_requires_each_seat_unconditional_fields(tmp_path, mapping):
+    test_g5_counts_physical_bytes_once(tmp_path, mapping)
+    path = tmp_path / "player-0.log"
+    path.write_text("\n".join(path.read_text().splitlines()[1:]) + "\n")
+    result = pw_intent.validate_v2_logs(tmp_path, mapping)
+    assert not result["passed"]
+    assert any("PWD.t" in f.get("fields", []) for f in result["failures"])
+
+
+def test_g5_rejects_wrong_outgoing_speaker(tmp_path, mapping):
+    test_g5_counts_physical_bytes_once(tmp_path, mapping)
+    text = (tmp_path / "player-2.log").read_text()
+    (tmp_path / "player-0.log").write_text(text)
+    result = pw_intent.validate_v2_logs(tmp_path, mapping)
+    assert not result["passed"]
+    assert any("speaker does not match" in f["message"] for f in result["failures"])

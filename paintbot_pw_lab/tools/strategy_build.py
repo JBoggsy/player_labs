@@ -435,6 +435,10 @@ def finalize(order: dict, gates: dict, *, error: str | None = None) -> Path:
     dump(stage / 'report.json', report)
     lines = [f'# Build {order["build_id"]}', '', f'Status: **{status}**. Intent: {order["intent"]}.', '',
              '| Gate | Pass | Evidence |', '| --- | --- | --- |']
+    unexercised = gates.get("G5", {}).get("coverage", {}).get("unexercised_message_types", [])
+    if unexercised:
+        lines[3:3] = ["G5 event coverage: **not exercised**: " + ", ".join(unexercised) +
+                      ". Their semantic checks remain unproven.", ""]
     lines.extend(f'| {name} | {gate["passed"]} | {gate.get("summary", "")} |' for name, gate in gates.items())
     lines += ['', '## Units', '', *(f'- `{key}`: {state}' for key, state in order['units'].items()),
               '', '## Guesses', '']

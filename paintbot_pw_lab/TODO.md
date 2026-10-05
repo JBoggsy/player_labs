@@ -11,7 +11,7 @@
 - M3 in progress: integrate nine message components and receiver effects, qualify the unchanged
   baseline under compact-print runtime changes, then measure local decode coverage and hosted A/B.
   The codec and parser are implemented; the current strategy source still uses literal shouts.
-  Resolve the X targeting threshold and rare-message G5 coverage explicitly.
+  Implement the accepted corroboration threshold for X and explicit rare-event G5 coverage.
   Use `compare --target score_outcome --margin-scale 600` only after rechecking the live scale;
   the historical `elo_outcome` remains the default.
 - Audit partial-load accounting: a late seat I/O failure retains valid earlier-seat evidence

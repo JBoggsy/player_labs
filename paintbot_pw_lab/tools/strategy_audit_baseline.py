@@ -119,6 +119,8 @@ def audit_seat(ep, seat, states, events, runtime, issues, strategy, mapping, ref
     for key, check in evidence.checks.items():
         component = check['component']
         comp = strategy.components[component]
+        if mapping.get('comms') and comp.kind == 'COM':
+            continue  # Codec checks have their own source-bound evaluator.
         supported = semantics_match and any(binding(component, c) == check['binding']
                                              for c in reference['components'].get(component, {}).get('checks', []))
         def add(t, status, reason=None, **detail):

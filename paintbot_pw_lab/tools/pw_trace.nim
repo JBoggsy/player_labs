@@ -252,7 +252,7 @@ proc main() =
   emit(%*{"type": "meta", "schema_version": SchemaVersion, "tool": "pw_trace",
     "engine_release": PwRelease, "nim_version": NimVersion,
     "replay": opt.replay, "rules": rules, "mode": (if ffa(): "ffa_kin" else: "teams"),
-    "map": r.map, "vision": r.vision, "glory_config": %r.glory, "seats": n, "seed": r.seed,
+    "map": r.map, "bounds": [minX(), minZ(), maxX(), maxZ()], "vision": r.vision, "glory_config": %r.glory, "seats": n, "seed": r.seed,
     "end_tick": r.endTick, "frames": r.frames.len, "names": r.names, "tick_rate": TickRate,
     "meter_target_ticks": w.heartMeterTarget(), "hearts": hearts, "pickups": pickups,
     "trenches": %w.trenches, "cover_count": w.cover.len,

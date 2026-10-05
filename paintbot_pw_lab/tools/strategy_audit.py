@@ -19,6 +19,12 @@ LEVELS = ('True', 'Believed', 'Acted', 'Acted properly', 'Result')
 # A missing execution predicate cannot be treated as correct execution.
 RESULT_REQUIRES_FULL_EXECUTION = True
 BASELINE = 'b41ef1fc-1'
+# The second build changes only print generation and adds an empty flush phase.
+# Its unchanged component units passed G1-G5 and 56 identical-play matches.
+RUNTIME_BASELINES = (BASELINE, '3d0f8a4f-1')
+# The codec is qualified by real-engine roundtrip, transport and kill-switch tests.
+# Its surrounding skeleton is independently qualified by the immutable foundation build.
+COMMS_RUNTIME_SHA256 = '05639c3995e9d527f0e4b124a3d37b57d76636266102a8da7d21f5c4603d1e4e'
 
 
 # Exact contracts; a new release needs replay and semantic requalification, not a range.
@@ -265,6 +271,13 @@ def run(args, report):
     reference_path = builds.BUILDS / BASELINE
     builds.checked_build(reference_path)
     reference = builds.read(reference_path / 'map.json')
+    runtime_contracts = []
+    for build_id in RUNTIME_BASELINES:
+        runtime_path = builds.BUILDS / build_id
+        builds.checked_build(runtime_path)
+        runtime_contracts.append(builds.read(runtime_path / 'map.json')['runtime'])
+    foundation = runtime_contracts[-1]
+    runtime_contracts.append({'files': {**foundation['files'], 'runtime.comms': COMMS_RUNTIME_SHA256}})
     for source in sources:
         try:
             ep = pe.load_episode(source, binary, tag=version['engine']['tag'],
@@ -277,12 +290,13 @@ def run(args, report):
             paths = [p for p in (source.replay, source.local_meta, source.episode_json, source.results_json,
                                  ep.source.cache / 'receipt.json') if p and p.exists()]
             summaries = []
+            seat_data = {}
             for seat in seats:
                 events, issues, log_paths = read_log(ep.source.log_dir, seat, mapping)
                 paths.extend(log_paths)
                 runtime = reconstruct(strategy, mapping, events, states, seat, ep.summary['ticks'])
                 issues.extend(runtime['issues'])
-                if mapping['runtime'] != reference['runtime']:
+                if mapping['runtime'] not in runtime_contracts:
                     issues.append({'reason': 'runtime_model_mismatch', 't': None})
                 status_path = ep.source.log_dir / 'status.json'
                 if status_path.exists():
@@ -291,11 +305,16 @@ def run(args, report):
                     if any(row.get('slot') == seat and row.get('exit_code') not in (None, 0)
                            for row in status.get('players', [])):
                         issues.append({'reason': 'seat_disabled', 't': None})
+                seat_data[seat] = (events, issues, runtime)
+            seat_logs = {seat: (data[0], data[1]) for seat, data in seat_data.items()}
+            for seat, (events, issues, runtime) in seat_data.items():
                 # A malformed stream cannot establish unchanged fields between its lines.
                 raw.extend(audit_seat(ep, seat, states, events, runtime, issues, strategy, mapping, reference, evidence))
                 transport = None
                 if mapping.get('comms'):
                     from strategy_comms import audit_transport
+                    from strategy_audit_comms import audit_seat as audit_comms
+                    audit_comms(ep, seat, states, events, issues, strategy, mapping, evidence, seat_logs)
                     transport = audit_transport(
                         ep['shouts'].to_dict('records'), events, seat,
                         {t for (t, who), state in states.items() if who == seat and state['hp'] > 0

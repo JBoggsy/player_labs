@@ -62,6 +62,7 @@ CODEC_READS = {"cm__type", "cm__speaker", "cm__fa", "cm__fb", "cm__cell", "cm__p
                "cm__rx_slot", "cm__rx_x", "cm__rx_y", "cm__sent"}
 CODEC_ARRAYS = {"cm__heard_t", "cm__heard_x", "cm__heard_y", "cm__suspect_t", "cm__suspect_x", "cm__suspect_y",
                 "cm__rx_valid"}
+KNOWLEDGE_CODEC_ARRAYS = {"cm__heard_t", "cm__heard_x", "cm__heard_y"}
 SKILL_CODEC_ARRAYS = {"cm__rx_valid"}  # the motor's non-team speech cue
 CODEC_CALLS = {"cm__send"}
 CODEC_PACKET = "packet"
@@ -301,6 +302,10 @@ def unit_contract(strategy: sf.Strategy, component_id: str) -> dict:
                        f"priority order only while nothing was sent this tick and sets {p}__sent from cm__sent. "
                        f"Never write cm__* names or {p}__packet. Define only the SUBs of the declared Directions")
         scalars, arrays, subs = scalars | CODEC_READS, arrays | CODEC_ARRAYS, {**subs, "cm__send": 5}
+    if plan is not None and comp.kind == "K":
+        arrays |= KNOWLEDGE_CODEC_ARRAYS
+    if plan is not None and comp.kind == "SK":
+        arrays |= SKILL_CODEC_ARRAYS
     return {
         "id": comp.id, "kind": comp.kind, "prefix": p, "header": unit_header(comp),
         "required_subs": [f"{p}__{name}()" for name in required_subs(comp)],
@@ -338,6 +343,8 @@ def check_unit(strategy: sf.Strategy, component_id: str, text: str) -> list[sf.D
         dep_scalars, dep_arrays, dep_subs = dep_scalars | CODEC_READS, dep_arrays | CODEC_ARRAYS, dep_subs
     elif plan is not None and comp.kind == "SK":
         dep_arrays = dep_arrays | SKILL_CODEC_ARRAYS
+    elif plan is not None and comp.kind == "K":
+        dep_arrays = dep_arrays | KNOWLEDGE_CODEC_ARRAYS
     generated = _generated_names(comp)
     if codec:
         generated |= {own + name for name in ("got", "from", "sent")}

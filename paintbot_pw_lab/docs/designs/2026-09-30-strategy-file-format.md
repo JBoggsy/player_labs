@@ -481,11 +481,18 @@ Rules:
   either is a runtime error that disables the seat for the rest of the episode (the VM charges
   the limit before the host sees the text, so local runs that discard output enforce it too).
   The linter computes a static worst case per tick and fails above half of each limit (512
-  bytes, 64 events), counting every integer as 11 bytes and every print item and newline as one
-  event: one PWD (17 + 2 × words events), three PWE (19), one PWP per Adaptation (13 each), every
-  PWC direction, and the worst coincidence of PWB lines. The budget is tight: a PWD plus three
-  PWE already use 38 events. Belief logs print whole arrays; splitting a large array across ticks
-  is not implemented, so an over-budget source is rejected rather than truncated. The seat log is
+  bytes, 64 events). Each print item and newline costs one event. Component-written values,
+  ticks, nonconstant rule inputs and priority versions keep the signed-int32 bound of 11 bytes.
+  Only generated/runtime-controlled values use narrower proven bounds: codes, held flags,
+  condition bitsets and clamped priorities. A generated PWD folds constant zero inputs and
+  a constant zero priority version into literals; the serialized v2 fields do not change.
+  The common one-word folded line costs 11 events/50 bytes; three PWE cost 19/103.
+  Codec communication reserves 22 events/205 bytes for eight receives plus one send.
+  Other sources use their actual generated item counts. Belief logs print whole arrays;
+  splitting an array across ticks is not implemented, so over-budget source is rejected
+  rather than truncated. G5 records rare codec message types as not exercised while requiring
+  valid unconditional per-seat fields and both transport paths across the recording set.
+  Missing event coverage never establishes semantic correctness. The seat log is
   cut at 10 MiB per episode; target at most 2 MiB for a 14,400-tick match.
 - **Kill switch.** `telemetryOff = 1` turns all lines off. Generated code never resets it.
 - **Tooling.** The v2 emission (runtime library and generated print code) and the v2 parser are

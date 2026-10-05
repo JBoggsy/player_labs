@@ -180,7 +180,10 @@ Two cases produce a body with a label that is not its team:
 - Receivers keep a friendly-disguise record: the apparent label, the position from `heardX/Y`,
   and the tick. A body with that label within `friend_radius` of the record position is a
   friend. Update the record position from the visible body each tick. Drop the record after
-  `friend_ttl` ticks without a D, or when the label body attacks (a disguise ends on an attack).
+  `friend_ttl` ticks without a D, The host does not expose a teammate's attack or uniform state, so this implementation
+  cannot reliably invalidate the record at the instant of an attack; it expires by TTL.
+  A different body under the same label can therefore be protected incorrectly. The audit
+  must report that as uncertain or false protection, not guaranteed identity.
 - Risk: an enemy that hears D sees its "teammate" shout text that it cannot read. A policy that
   checks its own messages can use this to find our disguised cog. Send D only when the
   friendly-fire risk is real (a teammate is visible within range).
@@ -194,11 +197,17 @@ true:
 2. A body with label `k` is visible at `p`, and a valid message from our real seat `k` in the last
    `x_window` ticks came from a position more than `x_distance` units from `p`.
 
-The original proposal treated any such evidence as enough to target the body and send X.
-That targeting threshold is pending revision under James's uncertain-evidence decision.
-The following receiver effect is proposed, not yet authorized as an exact rule:
-Receivers treat the body with label `k` within `x_radius` of `p` as an enemy for `disguise_ttl`
-ticks. A D record for the same label and position overrides X.
+Either evidence type can cause an X alert. Targeting a teammate-labeled body requires
+one of these stronger conditions:
+
+- Our own visible conflicting-position evidence from case 2.
+- Matching X reports from two distinct teammate sender claims, within `x_radius` of the same
+  body and within `disguise_ttl`. Repeats from one sender do not count as two witnesses.
+
+A failed check alone does not change targeting. Reports expire according to their evidence
+age; receiving one does not reset its age. A matching D record overrides X. These are still
+uncertain beliefs: scrambling does not authenticate the two claimed witnesses, and spatial
+conflict can be mistaken. Telemetry must retain the evidence needed to audit this distinction.
 
 ## 9. Parameters
 
@@ -220,12 +229,14 @@ All become `' @tune` constants where a range is given.
 | `friend_radius` | 250 | 100-500 | units |
 | `friend_ttl` | 48 | 24-120 | ticks |
 | `x_window` | 24 | 12-72 | ticks |
-| `x_distance` | 600 | 300-1500 | units |
+| `x_distance` | 1000 | 700-1500 | units |
 | `x_radius` | 300 | 100-600 | units |
 | `disguise_ttl` | 72 | 24-240 | ticks |
 | `k1`-`k6` | see §5.3 | fixed per build | scrambling constants |
 
-Defaults are first guesses, not measured values.
+Defaults are first guesses, not measured values. The initial conflict threshold is 1000,
+above 24 ticks of normal walking (672 units) plus position uncertainty; the earlier 600 draft
+could flag a moving teammate. This is a new communication parameter, not baseline tuning.
 
 ## 10. Budget
 
@@ -249,8 +260,9 @@ String pool use: 2-3 handles per send, 1 per received message. Far below the 1,0
 - There is no teammate aim surface for the optional D aim trigger; omit that trigger.
 - Pickup-taking notices need an observable attribution rule; disappearance alone does not
   prove that we took a pickup.
-- The X targeting threshold is awaiting James's choice. Failed checks alone do not authorize
-  friendly fire. Do not implement a stronger targeting effect while that choice is pending.
+- James chose corroboration before targeting: our own conflicting-position evidence or
+  matching reports from two distinct teammate sender claims. A failed check alone never
+  authorizes friendly fire. D protection for the same body takes precedence.
 
 ## 12. Measure
 
@@ -296,3 +308,17 @@ scale (600 at the current lookup), with no claim of improvement from an inconclu
   `ITEM23 k` (pickup taken). Both are plain text and readable by any enemy in range.
 - Disguise mechanics: [mechanics.md](../docs/mechanics.md) "Disguise"; the uniform lessons in
   [TENTATIVE_LESSONS.md](../TENTATIVE_LESSONS.md).
+
+
+## 14. Telemetry coverage for rare events
+
+James chose event-based coverage for M3. G5 still requires valid logs, unconditional fields
+and priority snapshots from every candidate seat. Across the recording set it must exercise
+both the communication send and receive paths. It reports counts for each message type;
+a type with no event is `not_exercised`, not a failed wire-format check and not a passed
+semantic check. Missing unconditional fields, malformed batches, wrong sender/team claims
+in our own logs, and wholly unexercised send or receive paths still fail G5.
+
+Catalogue engine fixtures verify the codec for all types but are not evidence that an exact
+compiled strategy triggered those types. Local qualification and hosted evaluation expand
+exact-build evidence; any remaining absence stays visible in the build and audit reports.

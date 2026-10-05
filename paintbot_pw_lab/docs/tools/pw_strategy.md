@@ -5,8 +5,8 @@ an immutable BASIC build. It runs locally and never uploads or submits a policy.
 The [source format](../designs/2026-09-30-strategy-file-format.md) and
 [compilation design](../designs/2026-09-30-strategy-compilation.md) define the contract.
 
-The checked-in `strategy/STRATEGY.md` describes `reference/base.bas` at `coworld-v0.3.89`.
-Its [M1 build report](../../strategy/compiled/b41ef1fc-1/report.md) records passing G1–G5;
+The checked-in `strategy/STRATEGY.md` specifies M3 communications and receiver effects.
+The frozen baseline [M1 build report](../../strategy/compiled/b41ef1fc-1/report.md) records passing G1–G5;
 the side-balanced 28-seed screen reports identical play, and all 16 candidate-seat recordings
 pass telemetry parsing and coverage on the original 0.3.89 release.
 [Build `567feb38-1`](../../strategy/compiled/567feb38-1/report.md) requalifies the same
@@ -220,6 +220,10 @@ slot's values. “Was at” is not silently reinterpreted as “ready now”. Si
 checks are not declared in M1; logged flags alone do not prove their truth.
 
 Implementations: `strategy_audit.py` (identity, CLI/report), `strategy_audit_runtime.py`
-(change-log reconstruction), `strategy_audit_baseline.py` (reviewed predicates).
+(change-log reconstruction), `strategy_audit_baseline.py` (frozen baseline predicates), and
+`strategy_audit_comms.py` (source-bound codec message checks). Codec checks compare payloads
+with replay state and next-tick delivery to verified same-build teammates. Missing map bounds,
+untraced facts, unknown execution, and unsupported check text remain unmeasurable.
+Absent message types are not exercised. Receiver effects are not proven by transport success.
 Add an evaluator and negative tests when adding a check; never let unknown prose fall
 through to a pass. The immutable M1 report and its five compiler guesses remain unchanged.

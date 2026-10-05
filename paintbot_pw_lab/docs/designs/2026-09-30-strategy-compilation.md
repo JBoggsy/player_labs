@@ -241,7 +241,7 @@ All gates run locally against the pinned engine (`tools/release.env`).
 | G2 Compile | `pw.py local compile policy.bas` | All 16 seats compile and run 720 ticks without being disabled. |
 | G3 Budget | a `paintbot-headless` match with `PW_BASIC_PEAKS=1` (per-seat peaks) | Peak instructions and work units at most 80% of 50,000 and 125,000 per tick; worst-case telemetry print at most 50% of 1,024 bytes and 128 events. |
 | G4 Screen | `pw.py local screen` (§8.1) | No bad seats in any match. The outcome rule depends on the build's intent (§8.2). |
-| G5 Telemetry | record local episodes with seat logs (`pw_intent.py record`; the native library behind `pw.py local` discards PRINT output, although the VM still enforces the print limits) and parse them with the v2 parser | Every line kind this build emits parses, codes decode through `map.json`, and every declared `Log` field and check `Reads:` field appears. |
+| G5 Telemetry | record local episodes with seat logs (`pw_intent.py record`; the native library behind `pw.py local` discards PRINT output, although the VM still enforces the print limits) and parse them with the v2 parser | Every line emitted parses and codes decode through `map.json`. Unconditional `Log`/`Reads:` fields appear for every candidate seat. Legacy builds retain complete per-seat coverage. M3 codec event fields are measured across the recording set: both send and receive paths must be exercised; rare absent types are explicitly `not_exercised`, never semantic passes (James, 2026-10-05). |
 
 On G2, G3, or G5 failure the agent gets the error and repairs; after 3 failed rounds the build
 stops with a `failed` report. G4 never triggers repair, because "worse" is a strategy question.

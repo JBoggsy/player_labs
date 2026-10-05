@@ -270,7 +270,12 @@ is mandatory: numeric component codes are local to that build.
 V2 line kinds are `PWD` (decision), `PWP` (priorities), `PWE` (capability events),
 `PWB` (beliefs), and `PWC` (communication). The parser validates the version,
 ordered fields, int32 values, codes and vector lengths. G5 checks every candidate
-seat separately; missing logs or declared fields are unmeasurable and fail coverage.
+seat separately; missing logs or unconditional declared fields fail coverage. Legacy builds
+retain per-seat coverage of all declared fields. For codec builds, event-driven COM fields are
+covered across the recording set: both send and receive paths must run, and per-type counts
+and `coverage.unexercised_message_types` report absent types explicitly. Those absences do not
+pass semantic checks. Outgoing speaker claims must match the candidate seat, and incoming
+claims must be a different teammate seat.
 It also checks measured printed bytes per tick against the 512-byte strategy limit.
 The generator checks the static byte and print-event bounds.
 

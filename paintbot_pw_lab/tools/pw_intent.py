@@ -246,12 +246,18 @@ def validate_v2_logs(root: Path, mapping: dict) -> dict:
     This is wire/coverage validation, not a claim that gameplay checks passed.
     """
     failures, seats = [], []
+    codec = bool(mapping.get("comms"))
+    all_seen = set()
+    message_counts = {key: {"sent": 0, "received": 0} for key in mapping["codes"].get("message", {})}
     required = {"PWD." + key for key in V2_KEYS["PWD"]}
     for component in mapping["components"].values():
         for check in component.get("checks", []):
             required.update(item.replace("`", "") for item in check.get("reads", []) if item != "replay")
     for key, component in mapping["components"].items():
         required.update(f'{key}.{field["name"]}' for field in component.get("log_fields", []))
+    event_required = {field for field in required if codec and
+                      (field.startswith("PWC.") or field.startswith("COM."))}
+    required -= event_required
     metas = sorted(root.rglob("*.meta.json"))
     for meta_path in metas:
         meta = json.loads(meta_path.read_text())
@@ -286,6 +292,10 @@ def validate_v2_logs(root: Path, mapping: dict) -> dict:
                     by_tick[tick] += len(line.encode()) + 1
                     count += 1
                     for event in events:
+                        if codec and event["kind"] == "PWC":
+                            if (event["s"] == 1 and event["w"] != seat) or (
+                                    event["s"] == 2 and (event["w"] % 2 != seat % 2 or event["w"] == seat)):
+                                raise IntentError("PWC: speaker does not match direction and candidate team")
                         kinds[event["kind"]] += 1
                         if event["kind"] == "PWP" and event["a"] == 0 and event["p"] == 0:
                             snapshots.add(event["r"])
@@ -294,8 +304,12 @@ def validate_v2_logs(root: Path, mapping: dict) -> dict:
                             table, code_key = ("knowledge", "k") if event["kind"] == "PWB" else ("message", "m")
                             component = next(key for key, value in mapping["codes"][table].items() if value == event[code_key])
                             seen.update(component + "." + field["name"] for field in mapping["components"][component].get("log_fields", []))
+                            if event["kind"] == "PWC":
+                                direction = "sent" if event["s"] == 1 else "received"
+                                message_counts[component][direction] += 1
                 except (IntentError, KeyError, ValueError) as error:
                     failures.append({"file": str(path), "line": number, "message": str(error)})
+            all_seen.update(seen)
             missing = sorted(required - seen)
             missing_snapshots = set(mapping['codes']['rule'].values()) - snapshots
             if missing_snapshots:
@@ -310,8 +324,19 @@ def validate_v2_logs(root: Path, mapping: dict) -> dict:
                           "missing_fields": missing, "peak_bytes": peak})
     if not metas:
         failures.append({"message": "unmeasurable: no complete recording metadata"})
+    unexercised = [key for key, counts in message_counts.items() if not sum(counts.values())]
+    if codec:
+        for direction in ("sent", "received"):
+            if not any(counts[direction] for counts in message_counts.values()):
+                failures.append({"message": f"unmeasurable: communication {direction} path not exercised"})
+    coverage = {"messages": message_counts,
+                "unexercised_message_types": unexercised if codec else [],
+                "unexercised_event_fields": sorted(event_required - all_seen)}
     return {"passed": not failures and bool(seats), "summary": {"seat_recordings": len(seats),
-            "lines": sum(s["lines"] for s in seats), "failures": len(failures)}, "seats": seats, "failures": failures}
+            "lines": sum(s["lines"] for s in seats), "failures": len(failures),
+            "unexercised_message_types": coverage["unexercised_message_types"]},
+            "seats": seats, "failures": failures, "coverage": coverage}
+
 
 
 def intents(ep) -> pd.DataFrame:

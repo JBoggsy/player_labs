@@ -62,7 +62,7 @@ One JSON object per line, each with `type`:
 
 - `meta` (first line): `schema_version`, `tool`, `engine_release` (the build tag),
   `nim_version`, `replay`, `rules` (tape header), `mode` (`teams`/`ffa_kin`), `map`,
-  `vision`, `glory_config` (engine field names), `seats`, `seed`, `end_tick`, `frames`,
+  `bounds` (`minX, minZ, maxX, maxZ`, in centimetres), `vision`, `glory_config` (engine field names), `seats`, `seed`, `end_tick`, `frames`,
   `names`, `tick_rate`, `meter_target_ticks`, `hearts` (`idx`, `pos`, initial `owner`),
   `pickups` (`idx`, `kind`, `pos`), `trenches`, `cover_count`, `homes`, `options`,
   `state_columns`, `heart_columns`.
