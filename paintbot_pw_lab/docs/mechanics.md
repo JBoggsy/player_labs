@@ -19,6 +19,12 @@ Paths are relative to the repo root. `sim.nim` and `mechanics.nim` are under `ex
 
 ## 1. The one thing to get right: winning, glory, and rank
 
+> **Current ranking update (2026-10-05).** Authenticated settings for
+> `league_ae677105-0ab8-4561-81ec-c9cf6735821c` now report OpenSkill,
+> `margin_scale: 600`, `round_scoring_rule: mean`. The Elo formula below describes the
+> retired league, not the current ranking algorithm. Verify backend semantics and
+> requalify the A/B metric before performance comparisons; this is tracked in TODO.
+
 > **Currency of this section.** Rules verified 2026-09-30 against paintbot-pw `118e1619` (tag
 > `coworld-v0.3.89`, the league's build that day; teams recordings are stamped rules 48 and play
 > rules 47; the glory code is unchanged since `d0728ab1`, 0.3.79). League ranking settings were read live on 2026-09-29 (authenticated
@@ -34,8 +40,8 @@ Three different numbers matter, and only the last one is what the league ranks b
 1. **The heart meter decides who wins the match.**
 2. **Glory is the score the platform receives.** The winner keeps its glory; the loser and both
    sides of a draw get 0.
-3. **League rank (MMR) moves by the glory margin.** Since 2026-09-28 evening the ladder's Elo
-   uses `margin_scale: 1000`, so every point of winning glory moves rank, not just the win.
+3. **League rank (MMR) is platform-owned.** The current settings use OpenSkill with
+   `margin_scale: 600`; its precise score-to-rank semantics are not yet source-verified here.
 
 ### 1.1 Heart meter versus glory
 
@@ -93,7 +99,7 @@ Local runs through the repo's `local.py` use the engine defaults; `pw.py local` 
 `teamLives(team)`, `teamCogsOut(team)`, and the configured award values `awardBehind`,
 `awardBehindSeconds`, `awardBehindCogs`, `awardBehindCogsSeconds`.
 
-### 1.3 How glory becomes league rank
+### 1.3 Historical Elo conversion (retired league)
 
 The main league (`league_b9458ff8-…`) ranks by Elo with these live settings (read 2026-09-29):
 `k_factor 32`, `initial_rating 1500`, `round_scoring_rule "mean"`, **`margin_scale 1000`**.

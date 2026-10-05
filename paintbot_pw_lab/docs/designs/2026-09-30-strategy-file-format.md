@@ -4,7 +4,7 @@
 > (`tools/strategy_format.py`), the unit checks, table generation and assembly
 > (`tools/strategy_basic.py`), the runtime library with telemetry v2 emission
 > (`strategy/compiler/runtime/`), and the `pw.py strategy` driver exist. M1 `STRATEGY.md` is qualified in
-> `compiled/b41ef1fc-1`. The M2 audit is implemented locally; hosted confirmation remains open.
+> `compiled/b41ef1fc-1`. The M2 audit is qualified locally and with hosted telemetry on 0.3.115.
 > The exact grammar the parser implements is §4.9. The plan is in
 > [the compilation design](2026-09-30-strategy-compilation.md) §11. Rendered, commentable copy:
 > [2026-09-30-strategy-file-format.html](2026-09-30-strategy-file-format.html) (may lag this file;
@@ -562,9 +562,9 @@ document needs three more:
 - `pw.py strategy trace <build>`: compare `version.json` with the current source and list the
   components changed since that build.
 - `pw.py strategy audit <episodes> --json`: join telemetry v2 to the hash-checked replay and
-  report every declared check across all five levels (M2-local; hosted confirmation is pending).
+  report every declared check across all five levels (M2; local and hosted evidence qualified).
   An explicit `--build ID` selects the verified source/map. Checks without data or a reviewed
-  evaluator are unmeasurable, never implicitly passed. See the [audit contract](../tools/pw_strategy.md#five-level-audit-m2-local).
+  evaluator are unmeasurable, never implicitly passed. See the [audit contract](../tools/pw_strategy.md#five-level-audit-m2).
 
 No new dependency.
 

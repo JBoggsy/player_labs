@@ -95,13 +95,11 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
   the manifest readme and the wiki have all disagreed with the deployed code (budgets, glory
   values, size limits). Verify every mechanical claim against source at the deployed commit before
   relying on it; record mismatches in `docs/mechanics.md` §8 / `docs/community.md` and move on.
-- **Glory margin is the rank signal.** The result `scores` are the winning team's glory;
-  the loser and both sides of a draw get 0. Since 2026-09-28 the ladder's Elo uses
-  `margin_scale: 1000`: each episode counts as `clamp(0.5 + (our glory - their glory) / 2000,
-  0, 1)`, so a 500-glory win is 0.75, a 950-glory win about 0.98 and a 0-glory win a draw
-  (metta `elo.py:183-187`). Fast, high-glory wins move rank more; a loss to a fast winner
-  costs more. Never infer a win from anything but the result. The canonical, source-cited
-  statement of scoring and rank is [docs/mechanics.md §1](docs/mechanics.md); update it there.
+- **Resolve the current ranking rule before performance comparisons.** On 2026-10-05 the
+  current league reports OpenSkill, `margin_scale: 600`, and mean round scoring. The earlier
+  Elo outcome formula is historical; backend semantics and the A/B metric need requalification
+  (see TODO). Result scores remain winning glory, with loser/draw scores zero. Read
+  [docs/mechanics.md §1](docs/mechanics.md) and never infer a win from anything but the result.
 - **A BASIC compile error fails the whole episode** (no results, no data from that
   eval slot); it shows up as failed hosted episodes, which is the signal to read. Using a host
   function name as a variable is a compile error too: `rnd` became one in 0.3.89. A file the host
@@ -138,6 +136,6 @@ compile loop. See [the command reference](docs/tools/pw_strategy.md). Never edit
 finalized BASIC builds. Source and compiler inputs must be committed first.
 
 `pw.py strategy audit ROOT... --build ID --json` audits existing recordings against a
-verified build. Read the [audit contract](docs/tools/pw_strategy.md#five-level-audit-m2-local):
+verified build. Read the [audit contract](docs/tools/pw_strategy.md#five-level-audit-m2):
 exit 0 means analysis completed, not that checks passed. Unmeasurable checks and missing
-level declarations never pass. Local M2 is implemented; hosted confirmation remains gated.
+level declarations never pass. M2 is qualified locally and in a hosted episode on 0.3.115; see WORKING_CONTEXT.

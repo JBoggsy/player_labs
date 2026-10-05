@@ -189,7 +189,7 @@ def select_checks(evidence, check=None, level=None):
 
 def report_markdown(result):
     lines = [f"# Strategy audit: {result['build_id']}", '',
-             'Local evidence audit; hosted confirmation is a separate milestone requirement.', '',
+             'Recorded evidence audit; source identities and replay verification are recorded in audit.json.', '',
              '| Check | Level | Status | Measurable / opportunities | Unknown seats | Violations |',
              '| --- | --- | --- | --- | --- | --- |']
     for row in result['checks']:

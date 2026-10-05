@@ -3,8 +3,8 @@
 > **Status:** M0 implemented and qualified with real Claude and Codex builds
 > (`compiled/f4ffb408-1` and `compiled/ee55887d-1`, both G1–G5 passed). M1 source and motor
 > skill are qualified in `compiled/b41ef1fc-1`: all G1–G5 pass, with identical play against
-> `base.bas` across 28 seeds on both sides. M2-local implements the five-level audit;
-> hosted confirmation remains open. M3 remains deferred.
+> `base.bas` across 28 seeds on both sides. M2 implements the five-level audit, qualified locally
+> and with hosted telemetry on 0.3.115. M3 remains deferred.
 > Accepted 2026-09-30 (James). Build order: §11. Rendered,
 > commentable copy: [2026-09-30-strategy-compilation.html](2026-09-30-strategy-compilation.html)
 > (may lag this file; this Markdown file is authoritative).
@@ -341,7 +341,7 @@ files and a Python driver; each agent needs only a thin wrapper.
 | --- | --- | --- |
 | M0 Tooling | `pw.py strategy lint`, `prepare`, `assemble`, `verify`, `compile`, `trace`; the runtime library with telemetry v2 emission (PWD, PWP, PWE, PWB, PWC) and the v2 parser; `AGENT.md`, the Claude and Codex wrappers; a seeded `LESSONS.md` | Tests for the deterministic parts, including the runtime's selection and adaptation arithmetic checked against the Python reference in the engine; a trivial two-component strategy builds end to end with each agent |
 | M1 `base.bas` description | `STRATEGY.md` describes `base.bas` faithfully; full build | G1-G5 pass; G4 against `base.bas` has 0.5 in its interval |
-| M2 Telemetry audit | `pw.py strategy audit` (the five-level checks), locally implemented | local recordings audited; **hosted confirmation still required and not authorized** |
+| M2 Telemetry audit | `pw.py strategy audit` (the five-level checks), complete | Local recordings audited and hosted telemetry confirmed on 0.3.115; explicit evidence gaps remain unknown |
 | M3 Comms v1 | codec runtime unit; `COM.` components from `strategy/comms.md` | Decode rate between our own seats near 100% in local recordings; hosted A/B against the M1 build |
 
 ### M2 local audit implementation
@@ -360,14 +360,14 @@ all five levels, absent declarations, per-check coverage, exact evidence and raw
 Full conditional Results require belief truth and full execution evidence, including
 skills; missing upstream declarations are not proof. Baseline private motor state therefore
 blocks conditional Results without discarding observed pickups, survival or shot outcomes.
-The [tool reference](../tools/pw_strategy.md#five-level-audit-m2-local) defines statuses,
+The [tool reference](../tools/pw_strategy.md#five-level-audit-m2) defines statuses,
 selectors, identity checks, phase alignment, evaluator scope and evidence requirements.
 
 Local validation uses the two M1 G5 recordings plus four full-length recordings (seeds
 1–2, both sides) of the immutable baseline against `reference/base.bas`. These validate
-instruments and lifecycle coverage; they are not hosted performance evidence. Before full
-M2 acceptance, resolve the current league release, qualify the hosted telemetry path,
-then obtain explicit upload/hosted-evaluation authorization. M3 must wait for M2 acceptance.
+instruments and lifecycle coverage; they are not hosted performance evidence. Full M2
+acceptance also requires the hosted telemetry path. That confirmation is complete
+on the qualified 0.3.115 release (below); M3 remains a separate milestone.
 
 ### M2 live-release requalification
 
@@ -376,7 +376,8 @@ Fresh lookup moved the target to `0.3.115` / `244dc62b38a8a89721cbb1625f05a99ca6
 Its delta from 0.3.114 adds training telemetry and neural observations; rules remain 49.
 The strategy, motor skill and frozen reference are unchanged. This tests compiler fidelity
 under new mechanics, not competitive suitability: the reference retains 3-HP assumptions
-and long-range targeting. Hosted work and publishing remain separately gated.
+and long-range targeting. James subsequently authorized all uploads and hosted tests needed
+to finish M2; git publishing remains outside that testing objective.
 
 Trace schema 2 / table version 3 add self-destruct commands and equipment state, distinguish
 self-destruct damage/blasts, and constrain inferred gun targets by actual reach. The aim
@@ -394,7 +395,7 @@ Local qualification completed in build `567feb38-1`: G1–G5 pass; all units reu
 recordings give 75,420 living decision ticks, 17 pass / nine unmeasurable / zero fail.
 The original rules48 audit is unchanged; terminal-death, wrong-offset communication,
 self-destruct replay and cache invalidation checks pass. Full suite: 364 tests. Hosted
-acceptance remains pending. `PW_DOCS_SHA` stays at the historical citation anchor because
+acceptance also passed (below). `PW_DOCS_SHA` stays at the historical citation anchor because
 neural/oracle documentation is outside the raw-BASIC requalification.
 
 Implementation and evidence sequence:
@@ -421,10 +422,32 @@ Implementation and evidence sequence:
    the living designs/tool references/context. Obtain peer review and run the documentation
    audit before local commits. Publishing remains gated.
 6. After local qualification, prepare a concrete one-episode hosted request with current
-   roster, immutable candidate identity and credit cost, recheck the live release, then obtain explicit upload and
-   evaluation authorization. No hosted self-play. Preserve upload receipt, actual played
+   roster, immutable candidate identity and credit estimate, and recheck the live release.
+   James authorized these uploads and tests on 2026-10-05; no further permission checkpoint
+   applies. No hosted self-play. Preserve upload receipt, actual played
    release, replay/results and candidate logs; audit all available telemetry with coverage
-   limitations explicit. Full M2 and M3 remain gated on hosted acceptance.
+   limitations explicit. M2 is complete when this evidence qualifies; M3 is a separate task.
+
+### M2 hosted acceptance
+
+Completed private request `xreq_b602c137-06ad-4696-b334-3e99a02d0de2` pins the qualified
+0.3.115 coworld and `1v1` variant. Build `567feb38-1` was uploaded as `jb-pw-strategy-m2:v1`
+(version UUID `e7cf2caf-3d02-4368-9dcd-2b75b429d15f`); its append-only upload receipt binds
+that identity to the policy SHA256. The CLI computes and completes with that content hash;
+the platform version-detail response returned null hash/size, so independent artifact
+readback is not claimed. Ordinary access supplied all eight candidate logs and replay.
+
+The one episode against `aaron-paintbot-pw:v60` ended at 3,850 ticks. Its replay hash-verifies
+on rules49; G5 validates 5,800 lines across all five telemetry families, complete declared
+fields and initial priority snapshots, zero failures, peak 150 bytes/tick. Candidate seat
+identity comes from exact participant UUIDs. The five-level audit has 19,829 living decision
+ticks, 17 pass / nine known unmeasurable / zero fail, with zero input failures. Status-shout
+alignment is 56/56 at t+1 and zero at neighboring offsets. The hosted report is
+`analysis/strategy_audit/567feb38-1-hosted/report.md`; reproducible evidence pointers are in
+WORKING_CONTEXT. Eight copies serve this telemetry test, not a performance-roster decision.
+The request estimated 0.5 credits. No baseline behavior changed and no league submission
+was made. These results complete M2's local-plus-hosted acceptance; they do not establish
+competitive improvement or fill the nine known source/evidence gaps. M3 has not started.
 
 ### M1 baseline decomposition
 

@@ -1,13 +1,14 @@
 # Deferred Paintbot PW work
 
-- M2 hosted acceptance: local migration and full audit qualification on 0.3.115 (`244dc62b`,
-  rules 49) are complete with build `567feb38-1`; see WORKING_CONTEXT. Recheck the live
-  release/roster and obtain explicit upload/evaluation authorization before one hosted
-  confirmation episode. Retain immutable upload identity and played-release evidence.
-  No M3 or publishing authorization is implied by local pin migration.
+- Before performance A/B or M3 hosted comparisons, requalify the ranking metric: the current
+  league reports `algorithm: openskill`, `margin_scale: 600`, `round_scoring_rule: mean`
+  (authenticated 2026-10-05 league lookup; `tmp/collab/strategy/m2/hosted-league.json`).
+  Verify current backend semantics and update the Elo-based adapter and guidance. M2
+  telemetry checks do not use ranking scores.
+
 - Reverify the wider neural ZIP/oracle references before using those surfaces on 0.3.115;
   `PW_DOCS_SHA` intentionally remains 118e1619. Raw BASIC/rules49 changes are documented.
-- Source/evidence decisions after M2-local: private motor/self-motion/pickup memory values
+- Source/evidence decisions after M2: private motor/self-motion/pickup memory values
   are unlogged; cover “near” is undefined; Situation True checks are absent; Result checks
   have no thresholds. Resolve with James before changing source or telemetry. Do not infer
   correct execution from a raw outcome or G5 coverage.

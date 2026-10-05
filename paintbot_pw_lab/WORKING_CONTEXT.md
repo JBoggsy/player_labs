@@ -46,25 +46,19 @@ The immutable compiler report retains five open guesses (four low, one medium). 
 no behavior substitution: the positive-period guard does not affect the default 72; take/cover
 run only with a valid target; legacy host fields match the baseline; Communication runs after
 the motor, so the grenade callout is on the same tick. These M1 gates are not a five-level semantic
-audit or proof of all game configurations. M2 hosted confirmation and M3 remain open in [TODO.md](TODO.md).
+audit or proof of all game configurations. M2 is now qualified on rules49; M3 remains in [TODO.md](TODO.md).
 
-**Current milestone: M2-local audit implemented; hosted M2 acceptance pending.**
-`pw.py strategy audit ROOT... --build b41ef1fc-1 --json` connects scheduled beliefs,
+**M2 is complete: local five-level audit and hosted telemetry confirmed.**
+`pw.py strategy audit ROOT... --build 567feb38-1 --json` connects scheduled beliefs,
 change-complete decisions, runtime events and hash-verified replay outcomes. It reports
 all 26 baseline checks, missing declarations and explicit unmeasurable reasons. The
-[tool reference](docs/tools/pw_strategy.md#five-level-audit-m2-local) is the current contract.
+[tool reference](docs/tools/pw_strategy.md#five-level-audit-m2) is the current contract.
 
-Local validation uses the original two G5 tapes and four full-length recordings (seeds 1–2,
-both sides) of the unchanged baseline against `reference/base.bas`. Raw evidence and
-reports live under `tmp/strategy-evidence/b41ef1fc-1/` and `analysis/strategy_audit/`.
-The six-recording audit covers 65,574 living decision ticks: 17 checks pass, nine are
-unmeasurable, none fail. All measurable checks have opportunities in the full recordings.
-The full suite passes 353 tests. Shout alignment is measured: 170/170 match at t+1,
-0/170 at either neighboring offset.
-James authorized active-pin migration and full audit requalification on 2026-10-05.
-No policy upload, league submission, hosted evaluation, new dependency or M3 work is authorized. New work may be committed locally; publishing needs
-fresh authorization. The reviewer session is `pw-m2-review` (Claude Opus 5.5); its bounded
-handoffs are under `tmp/collab/strategy/m2/`.
+James authorized active-pin migration, then all uploads and hosted testing needed to
+finish M2 on 2026-10-05. Do not add permission checkpoints for those tests. League submission,
+M3 implementation and git publishing are outside this testing objective. Work is committed
+locally. The reviewer session is `pw-m2-review` (Claude Opus 5.5); its bounded handoffs and
+verification scripts are under `tmp/collab/strategy/m2/`.
 
 **Known evidence limits:** baseline Results cannot be conditional on full correct execution
 because private motor state is not logged. Self-motion and pickup remembered values also
@@ -106,11 +100,49 @@ semantics and evidence gaps are unchanged. Aim inference is uncalibrated for rul
 radar-then-other-item takers can be unassigned. The same-owner lob/self-destruct collision
 is source-reviewed but not a separate integration test. See the evidence-pipeline reference.
 
-`PW_DOCS_SHA` stays `118e1619`: BASIC/rules49 changes are source-verified in the relevant docs,
-but wider neural/oracle references remain explicitly scoped to 0.3.89. Installed
-`softmax-cli` 0.26.38 is current at preflight; `coworld` 0.1.55 trails 0.1.56. Neither package
-changed. Live doctor passed on the new pin after a rate-limited (429) attempt.
-Hosted telemetry confirmation, uploads and publishing remain separately gated. M3 is untouched.
+**Hosted acceptance (2026-10-05):** `jb-pw-strategy-m2:v1`, immutable version
+`e7cf2caf-3d02-4368-9dcd-2b75b429d15f`, is linked to build `567feb38-1` and its SHA256 in
+[`strategy/compiled/uploads.jsonl`](strategy/compiled/uploads.jsonl). Upload used coworld
+0.1.56 through a `uv run --with` overlay; the shared lockfile is unchanged. The platform's
+version-detail response does not expose the file hash/size, so receipt provenance is the
+successful hash-based CLI upload, immutable returned version and unchanged local bytes;
+there is no independent downloaded-policy hash claim. The exact command was:
+
+```bash
+uv run --with 'coworld[auth]==0.1.56' coworld upload-policy \
+  --file paintbot_pw_lab/strategy/compiled/567feb38-1/policy.bas --name jb-pw-strategy-m2
+```
+
+The local SHA256 checked immediately after upload was
+`812a2f20a8e84bea87a7a4d0566a2773113d69212177322d62f3d70288e7ebae`, matching the build.
+Telemetry alone cannot distinguish this build from M1 because their runtime units are identical.
+
+Private request `xreq_b602c137-06ad-4696-b334-3e99a02d0de2` completed its single episode,
+`ereq_20200b19-34c2-439c-94da-7d0166b7383e`, on the pinned 0.3.115 coworld, `1v1`, seed
+1701. Candidate even seats faced `aaron-paintbot-pw:v60` on odd seats. Eight candidate copies
+provide telemetry coverage for this task, not a broader performance-roster preference.
+Creation estimated 0.5 credits; this is not a measured charge. The ordinary player session
+could not read the account credit endpoint (403); no elevated access was used.
+
+All eight logs arrived: 5,800 telemetry lines, all five families and declared G5 fields,
+zero parse/order/runtime-disable failures, peak 150 bytes per tick, largest log 36,809 bytes.
+The rules49 replay hash-verifies through 3,850 ticks. The hosted audit covers 19,829 living
+decision ticks: 17 pass, the same nine known unmeasurable checks, zero fail or input failures.
+All 56 status sends align at t+1; neighboring offsets each mismatch all 56. All 24 audit input
+hashes verify. The candidate won this one game (510–0); no performance conclusion follows. This hosted check covers only the even side; both sides
+are covered locally. Claude Opus 5.5 reviewed the artifacts and found no acceptance blocker.
+
+Artifacts: `episode_data/m2-567feb38-1/`; report:
+`analysis/strategy_audit/567feb38-1-hosted/report.md`. The existing G5 reader checked unchanged
+log bytes through scratch symlinks with candidate side derived from verified hosted identity.
+The full suite passes 364 tests; after correcting the report's erroneous local-only label,
+the focused audit tests pass. The leaders tool now defaults to the current Competition division
+`div_63c08219-c269-4bc5-84ae-5ccfc55b0a90`. No telemetry/parser or baseline changes were needed.
+
+`PW_DOCS_SHA` stays `118e1619`: BASIC/rules49 changes are source-verified in relevant docs,
+but wider neural/oracle references remain explicitly scoped to 0.3.89. Live doctor passed
+on 0.3.115 after a 429 retry. softmax-cli 0.26.38 matched the latest release; coworld 0.1.56
+was used for hosted operations. M3 is the next separate milestone; it has not started.
 
 Inputs the policy (`STRATEGY.md`) should build on:
 
@@ -148,7 +180,7 @@ James fills this in; until then an agent proposes a charter and stops.
   by `entrants_from_league_id` chaining, auto-entered into Heartland and Heartland Big; see
   [field.md § Our account](docs/field.md#our-account)). Confirm `uv run coworld player list`
   marks the intended player (●) as active before any upload; `softmax status` shows only the user.
-- Player session refreshed 2026-09-30 00:11 UTC; it expires 2026-10-01 00:11 UTC (`pw.py doctor` → `result.player`). Refresh with `uv run coworld player use ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce` before uploads.
+- James Botts was verified active for the M2 upload on 2026-10-05. Recheck `coworld player list` before later uploads; sessions expire.
 - Credits: 20,000 balance at the cap, refilling ~1,429/day (2026-09-28). A league-like
   episode costs ~0.3 credits.
 
@@ -215,9 +247,9 @@ Tooling facts:
 
 ## Open constraints
 
-- The docs are verified at, and the tools pinned to, `118e1619` (coworld-v0.3.89, the league's
-  build on 2026-09-30; `tools/release.env` moved from 0.3.80 the same day). From 0.3.80 no teams
-  rule changed (same hashes, same BASIC peaks), but 0.3.89 added `rnd(n)` (now a reserved host
+- Tools are pinned to `244dc62b` (coworld-v0.3.115, rules49), locally and hosted-qualified
+  above. The broader historical source-citation anchor is `118e1619` (0.3.89). From 0.3.80
+  to 0.3.89 no teams rule changed (same hashes, same BASIC peaks), but 0.3.89 added `rnd(n)` (now a reserved host
   name: `pw.py local compile` accepts `x = rnd(10)` and rejects `rnd = 3`), moved BASIC perception
   into `seat_view.nim`, and retired every earlier neural contract. `pw_trace.nim` and `pw_map.nim`
   now define the wading test locally (0.3.89 removed `neural_contract.inWater`), and

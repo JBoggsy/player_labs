@@ -8,8 +8,10 @@ The [source format](../designs/2026-09-30-strategy-file-format.md) and
 The checked-in `strategy/STRATEGY.md` describes `reference/base.bas` at `coworld-v0.3.89`.
 Its [M1 build report](../../strategy/compiled/b41ef1fc-1/report.md) records passing G1–G5;
 the side-balanced 28-seed screen reports identical play, and all 16 candidate-seat recordings
-pass telemetry parsing and coverage. This is local qualification at the pinned release.
-The five-level audit is locally implemented (M2-local). Hosted telemetry confirmation remains open; the comms v1 codec is M3.
+pass telemetry parsing and coverage on the original 0.3.89 release.
+[Build `567feb38-1`](../../strategy/compiled/567feb38-1/report.md) requalifies the same
+baseline on the active 0.3.115 pin.
+The five-level audit (M2) is qualified locally and with hosted telemetry on 0.3.115. The comms v1 codec is M3.
 
 ## Commands
 
@@ -107,7 +109,7 @@ The Claude wrapper and lab compile skill point to the same
 [`compiler/AGENT.md`](../../strategy/compiler/AGENT.md). Codex uses the same driver
 and instruction file; neither wrapper owns separate compilation rules.
 
-## Five-level audit (M2-local)
+## Five-level audit (M2)
 
 ```bash
 uv run python paintbot_pw_lab/tools/pw.py strategy audit EPISODE_DIR --build b41ef1fc-1 --json
@@ -147,7 +149,14 @@ The audit accepts exact engine contracts: `coworld-v0.3.89` / `118e1619` / rules
 `coworld-v0.3.115` / `244dc62b` / rules 49, teams with 16 seats. Other engine/rules
 combinations fail identity validation. Rules49 qualification is recorded in build `567feb38-1` and
 [WORKING_CONTEXT.md](../../WORKING_CONTEXT.md): G1–G5 and six local audit recordings pass
-with the nine declared evidence limits remaining unmeasurable. The runtime reconstruction is bound to the qualified M1
+with the nine declared evidence limits remaining unmeasurable. Hosted request
+`xreq_b602c137-06ad-4696-b334-3e99a02d0de2` confirms the same audit on 19,829 living
+decision ticks, 17 passing checks and nine unchanged unknowns, with zero failures. All eight
+candidate logs pass existing G5 coverage (5,800 lines); 56/56 status sends align at t+1.
+Upload provenance is recorded in `uploads.jsonl`: the CLI completes with the local content
+hash, but the platform version-detail endpoint did not expose a hash for independent readback.
+
+The runtime reconstruction is bound to the qualified M1
 runtime unit hashes. A changed runtime reports `runtime_model_mismatch`, never a pass
 from the old model. Baseline prose evaluators are bound to the M1 component semantics
 and check text/level/Reads hashes. Changed or unknown prose reports no evaluator. New
