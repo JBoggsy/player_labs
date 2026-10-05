@@ -1,10 +1,10 @@
 # Comms v1: team messages over `shout`
 
-> **Status:** draft policy specification, 2026-09-30. Not implemented. This file is part of the
-> policy, not of the strategy file format: we expect to change it often. When `STRATEGY.md` exists,
-> its Communication section links here, and each message type below becomes one `COM.`
-> component. Engine facts are verified at paintbot-pw `coworld-v0.3.89` (`118e1619`), the league
-> build on 2026-09-30.
+> **Status:** M3 implementation in progress, 2026-10-05. The codec and compact telemetry
+> reader have engine-backed tests; the nine strategy components and full acceptance are
+> still pending. This is a policy specification, not a change to the strategy format.
+> Engine behavior is verified at `coworld-v0.3.115`
+> (`244dc62b38a8a89721cbb1625f05a99ca60d0c13`, rules49).
 
 ## 1. Scope
 
@@ -12,21 +12,23 @@ Comms v1 carries tactical facts that teammates cannot see for themselves: enemie
 grenades, glory hearts, pickups, and disguises. It does not carry squad coordination or the
 sender's own position; those come later.
 
-Security goal for v1: **scrambling**. A bot that hears our shouts in a match cannot read them or
-forge them. We do not defend against offline analysis of public replays (every shout is in the
-replay with its tick, true sender seat, and text).
+Security goal for v1: **lightweight scrambling**, as chosen by James. The 97-value check
+is not authentication: forged or stale messages can pass, and a failed check is uncertain
+disguise evidence. Neither successful decoding nor failure proves a speaker's identity.
+Public replays expose the text, tick and true sender, so offline analysis can recover the
+protocol. Do not use these constants to protect real secrets.
 
-## 2. Transport facts (engine, `coworld-v0.3.89`)
+## 2. Transport facts (engine, `coworld-v0.3.115`)
 
 | Fact | Value | Source |
 | --- | --- | --- |
-| Send | `shout(handle)` queues the text. At most 4 per cog per tick; the 5th returns 0. | `examples/paintbot/bots.nim:56-58` |
-| Length | Text over 256 bytes is cut to 256 bytes. | `bots.nim:58` |
-| Cost | Flat per call, not per character: `shout` 68 WU. | `bots.nim:58` |
-| Delivery | Next tick, to every living cog within `Width div 5` = 1,280 units (12.8 m) of the sender at decision time, **both teams**, no line of sight needed. Dead cogs neither send nor hear. | `examples/paintbot/seat_view.nim:324-333`, `game.nim:601` |
-| What a listener gets | `heardText(i)` (text), `heardX/heardY(i)` (sender's **true** exact position), `heardSlot(i)` (sender's **observed** seat: a disguised sender shows its disguise). Messages last one decision only. | `seat_view.nim:312-322` |
-| Replay | Every shout is recorded with tick, true seat, and text (first 20,000 per episode). | `game.nim:585-589` |
-| Strings | Pool resets every tick: 1,024 handles, 64 KiB, 1,024 bytes per string. `strFromInt` 8 WU, `strCatInt` 68, `strByte` 3, `strLen` 2, `heardText` 4 (allocates a handle), `strChr` 6 (bytes 0-255). | `src/polyworld/basic.nim:3005-3070`, `2747-2748` |
+| Send | `shout(handle)` queues the text. At most 4 per cog per tick; the 5th returns 0. | `examples/paintbot/bots.nim`, shout host |
+| Length | Text over 256 bytes is cut to 256 bytes. | `bots.nim`, shout host |
+| Cost | Flat per call, not per character: `shout` 68 WU. | `bots.nim`, shout host |
+| Delivery | Next tick, to every living cog within `Width div 5` = 1,280 units (12.8 m) of the sender at decision time, **both teams**, no line of sight needed. Dead cogs neither send nor hear. | `examples/paintbot/seat_view.nim`, `deliverSpeech`; `game.nim`, advance |
+| What a listener gets | `heardText(i)` (text), `heardX/heardY(i)` (sender's **true** exact position), `heardSlot(i)` (sender's **observed** seat: a disguised sender shows its disguise). Messages last one decision only. | `seat_view.nim`, heard accessors |
+| Replay | Every shout is recorded with tick, true seat, and text (first 20,000 per episode). | `game.nim`, recorded communications |
+| Strings | Pool resets every tick: 1,024 handles, 64 KiB, 1,024 bytes per string. `strFromInt` 8 WU, `strCatInt` 68, `strByte` 3, `strLen` 2, `heardText` 4 (allocates a handle), `strChr` 6 (bytes 0-255). | `src/polyworld/basic.nim`, string hosts |
 | Arithmetic | Signed int32, wraps on overflow. `AND`/`OR`/`XOR` are logical (0/1), not bitwise. | `docs/policy-surface.md` §2 |
 | Disguise | A disguised cog appears to others as seat `slot xor 1` and as the other team. The disguise ends on a gun order, spray burst, grenade release, or death. Hearts use the true team. | `docs/mechanics.md` "Disguise" |
 
@@ -38,8 +40,9 @@ replay with its tick, true sender seat, and text).
    message about "here" carries no coordinates.
 3. **A shout reveals the sender.** Every enemy within 12.8 m gets our exact position, whatever the
    text says. Do not send non-urgent messages while sneaking.
-4. **All 8 seats on our team run this policy.** A message from a speaker labeled as a teammate
-   that fails our check comes from a disguised enemy.
+4. **All 8 seats on our team run this policy.** A failed check from a teammate label is
+   uncertain evidence only. A malformed, incompatible or forged message is not proof of an
+   enemy, and a failed check alone must not trigger friendly fire.
 5. **Received facts are beliefs.** Each received fact goes into Knowledge with source `heard` and
    an age. A seen fact replaces a heard fact about the same thing.
 
@@ -79,21 +82,23 @@ gx = (x - mapMinX()) * 256 / (mapMaxX() - mapMinX() + 1)          gy the same wi
 ```
 
 `senderSeat` is the sender's true seat (`selfId`, 0-15). A receiver decodes a cell to the center
-of that grid square. On Heartwick (16,000 x 9,600 playable) a square is 62.5 x 37.5 units.
+of that grid square. Cell size follows the map bounds; receivers reconstruct the center of the cell.
 
 | Code | fieldsA | fieldsB | cell |
 | --- | --- | --- | --- |
-| E | `enemySeat + 16 * (hp + 4 * heading)`; `heading` 0-7 octant, 8 unknown | age of the sighting in ticks, max 255 | enemy position |
+| E | `enemySeat + 16 * (hp + 16 * heading)`; `heading` 0-7 octant, 8 unknown | age of the sighting in ticks, max 255 | enemy position |
 | F | `targetSeat + 16 * hp` | 0 | target position |
 | G | ticks until release, 0-24 | 0 | grenade target |
-| U | `myHp + 4 * gunDir`; `gunDir` 0-7 from `soundDirection`, 8 unknown | gunfire distance class 0-2 from `soundDistance`, 3 unknown | 0 (use `heardX/Y`) |
+| U | `myHp + 16 * gunDir`; `gunDir` 0-7 from `soundDirection`, 8 unknown | gunfire distance class 0-2 from `soundDistance`, 3 unknown | 0 (use `heardX/Y`) |
 | H | ticks left, 0-720 | 0 | glory heart position |
 | K | pickup id, 0-255 | ticks until ready, 0-720 | pickup position |
 | R | `pickupId + 256 * kind` | 0 | pickup position |
 | X | fake label seat | age of the evidence in ticks, max 255 | position of the fake body |
 | D | apparent label seat (`selfId xor 1`, computed as `selfId + 1 - 2 * (selfId MOD 2)`) | 0 | 0 (use `heardX/Y`) |
 
-Enemy seats are observed seats (what `visible`/`playerX` answer to).
+Enemy seats are observed seats (what `visible`/`playerX` answer to). HP uses base16
+because the active engine starts cogs at 10 HP. HP is 0–15, pickup kind 0–15; encoders reject
+values outside the catalogue. The largest fieldsA is 4095 (R), so pA is at most 104857599.
 
 ### 5.2 Check
 
@@ -102,8 +107,8 @@ core  = type + 16 * (senderSeat + 16 * fieldsA)
 check = ((core MOD 97) + 7 * (pB MOD 97) + ((sendTick MOD 9973) * k5) MOD 97 + k6) MOD 97
 ```
 
-`k5` and `k6` are secret constants below 97. The check ties a message to its send tick, so a
-copied message fails on any later tick.
+`k5` and `k6` are constants below 97. The check depends on the send tick, but collisions
+are possible; this is not a replay-prevention or authenticity guarantee.
 
 ### 5.3 Scrambling
 
@@ -117,21 +122,29 @@ s    = (p + mask) MOD 1,000,000,000                     send
 p    = (s - mask + 1,000,000,000) MOD 1,000,000,000     receive
 ```
 
-`k1`-`k4` are secret constants below 30011. Every product stays below 2^31. The keys live only in
-our source, which is not public. This is scrambling, not cryptography.
+`k1`–`k4` are constants below 30011. Every product stays below 2^31. The initial constants
+are 7919, 17431, 23117, 1907, 31, 73, in that order; they are protocol parameters, not credentials.
+The compiler records them in the immutable build map. The independent reference is
+`tools/strategy_comms.py`; the authored BASIC implementation is
+`strategy/compiler/runtime/comms.bas`.
 
 ## 6. Receive procedure (each tick, before Knowledge updates)
 
 1. `sendTick = worldTick - 1` (delivery is always the next tick).
-2. For `i` from 0 to `min(heardCount(), max_decode) - 1`:
-   1. `h = heardText(i)`. Skip it if `strLen(h) <> 20`.
-   2. Read the 20 bytes with `strByte`. Skip it if byte 1 or byte 11 is not `"1"` (49) or any byte
-      is not a digit. (Confirm whether `strByte` indexes from 0 or 1 at build time.)
-   3. Build `sA` and `sB` from the digits after each leading `1`. Unscramble both. Split `pA`.
-   4. Recompute the check. If it fails: when `heardSlot(i)` is a teammate label, record
-      "fake teammate label at `heardX/Y`" as disguise evidence (§8). Skip the message.
-   5. Apply the receiver effect from §4.
-3. A seen fact replaces a heard fact about the same object. Heard facts carry their age.
+2. Scan the heard list in engine order. Read each text once. Skip texts whose length is not 20
+   or whose bytes 0 and 10 are not 49. `strByte` is zero-based; check length first.
+3. Attempt full decode on at most `max_decode` matching candidates. Validate every remaining
+   digit, unscramble, check the catalogue bounds and recompute the check.
+4. Accept only a decoded sender on our own team, excluding our own seat (speech is not
+   delivered to its sender). Keep accepted payloads and call that type's receiver immediately,
+   in heard order. Save the true-sender claim and heard position with a tick.
+5. A failed check from a teammate label may update uncertain disguise evidence. A message
+   skipped because the decode capacity was exhausted is not a failed check.
+6. A seen fact replaces a heard fact about the same object. Heard facts carry their age.
+
+Shape filtering prevents ordinary enemy chatter from consuming full-decode capacity.
+The audit reports capacity exclusions separately from accepted and rejected packets; near 100%
+decode acceptance is measured over eligible deliveries, not all audible texts.
 
 ## 7. Send rules
 
@@ -181,7 +194,9 @@ true:
 2. A body with label `k` is visible at `p`, and a valid message from our real seat `k` in the last
    `x_window` ticks came from a position more than `x_distance` units from `p`.
 
-On evidence, the cog treats that body as an enemy and sends X (label `k`, position `p`, age).
+The original proposal treated any such evidence as enough to target the body and send X.
+That targeting threshold is pending revision under James's uncertain-evidence decision.
+The following receiver effect is proposed, not yet authorized as an exact rule:
 Receivers treat the body with label `k` within `x_radius` of `p` as an enemy for `disguise_ttl`
 ticks. A D record for the same label and position overrides X.
 
@@ -191,7 +206,7 @@ All become `' @tune` constants where a range is given.
 
 | Name | Default | Range | Units |
 | --- | --- | --- | --- |
-| `max_decode` | 8 | 4-16 | messages per tick |
+| `max_decode` | 8 | 4-8 | full-decode attempts per tick |
 | `min_gap` | 6 | 2-24 | ticks |
 | `e_refresh` | 12 | 6-48 | ticks |
 | `e_move` | 300 | 100-800 | units |
@@ -208,7 +223,7 @@ All become `' @tune` constants where a range is given.
 | `x_distance` | 600 | 300-1500 | units |
 | `x_radius` | 300 | 100-600 | units |
 | `disguise_ttl` | 72 | 24-240 | ticks |
-| `k1`-`k6` | secret | — | — |
+| `k1`-`k6` | see §5.3 | fixed per build | scrambling constants |
 
 Defaults are first guesses, not measured values.
 
@@ -222,25 +237,52 @@ Defaults are first guesses, not measured values.
 
 String pool use: 2-3 handles per send, 1 per received message. Far below the 1,024-handle limit.
 
-## 11. Verify before build
+## 11. Verified engine details and remaining choices
 
-1. **Duplicate labels.** When a disguised body and the real cog answer to the same seat, which
-   one do `visible(k)`, `playerX(k)`, and `nearAgent*` return? X and D depend on the answer.
-2. **`heardSlot` for our own disguised cog** as heard by a teammate: its disguise or its true
-   seat? The message carries the true `senderSeat`, so decoding works either way, but X
-   evidence rule 1 must not fire on our own disguised cogs.
-3. **`strByte` index base** (0 or 1).
-4. ~~The 0.3.89 documentation audit~~ Done 2026-09-30: speech, string costs, disguise, and
-   budgets are unchanged at 0.3.89. New reserved name `rnd` (a host builtin): do not use it as a
-   variable, array, or SUB name.
+- Duplicate apparent labels resolve to the nearest visible body, except querying the
+  observer's own label always returns self. The near-agent surface uses the same deduplication.
+- Heard positions are the true speaker's coordinates; heard labels use observed disguise.
+  The usual disguise is `slot xor1`, but when that equals the observer's own label the engine
+  uses `(alias+2) MOD16`. D/X receivers must account for this remapping.
+- `strByte` is zero-based. Runtime string handles are not printable text: BASIC PRINT
+  prints their integer handle. Numeric fixed-width batch records avoid that problem.
+- There is no teammate aim surface for the optional D aim trigger; omit that trigger.
+- Pickup-taking notices need an observable attribution rule; disappearance alone does not
+  prove that we took a pickup.
+- The X targeting threshold is awaiting James's choice. Failed checks alone do not authorize
+  friendly fire. Do not implement a stronger targeting effect while that choice is pending.
 
 ## 12. Measure
 
-Telemetry v2 `PWC` lines log every send and every decode (type, fields, sender seat). Checks to
-build: sent when it should be; decoded by teammates in range; E/H/K/R facts true against the
-replay; F raises kills of the called target; D lowers friendly-fire damage on disguised
-teammates; X lowers damage from disguised enemies. The field has no A/B evidence on comms yet
-(Stencil was never tested with comms off).
+Compact batches retain every accepted decoded payload and actual outgoing payload while
+keeping the 512-byte and 64-event telemetry limits. The physical line is:
+
+```text
+PWC v=3 t=<decision tick> b=<concatenated 20-digit records>
+```
+
+Each receive record is `(1000000000+pA)(1000000000+pB)`; the optional final send record is
+`(2000000000+pA)(1000000000+pB)`. Each parenthesized integer has exactly 10 digits. Catalogue
+bounds keep the send marker inside signed int32. A batch has at most 8 receives and 1 send;
+an empty batch emits no line. The receive check uses decision tick minus 1; the send check
+uses decision tick. The build map binds wire types to COM codes and records the six constants.
+
+Flush once after the tick's priority snapshots. Reserve its print budget when adding records,
+before optional snapshots consume spare capacity. The reader expands each batch into ordinary
+PWC events with `d=[pA,pB]`; the audit places those receives before Knowledge and the send after
+the capability. It rejects duplicate batches or later same-tick telemetry. Ordinary v2 events
+retain their existing order validation. G5 charges physical bytes once while covering all
+expanded events. Old immutable builds retain their v2 reader.
+
+This is lossless for accepted packets and the actual send. Rejected messages, capacity skips
+and heard-list indices are reconstructed from replay delivery and the deterministic scan;
+they are not invented from an absent log entry.
+
+Acceptance requires eligible teammate decode rate near 100% in local recordings and a hosted
+A/B against the qualified unchanged baseline `567feb38-1` on the same release. Checks include
+send eligibility and arbitration; E/H/K/R truth; receiver effects; and F/D/X outcomes, with
+unmeasurable causal claims left explicit. A/B uses the live ranking's verified score margin
+scale (600 at the current lookup), with no claim of improvement from an inconclusive result.
 
 ## 13. Sources and prior art
 

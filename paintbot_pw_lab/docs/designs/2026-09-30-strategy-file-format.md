@@ -460,6 +460,14 @@ single spaces. A list value is comma-joined.
 | `PWB` | `t k d` | Knowledge code; `d` = the logged outputs in `Log` order, arrays flattened. Printed when `worldTick mod every = offset`; the compiler picks offsets so logs do not coincide. |
 | `PWC` | `t m s w d` | Message code; `s` 1 send, 2 receive; `w` speaker seat (own seat on send); `d` = the logged outputs, or `0` when nothing is logged. |
 
+M3 adds an opt-in compact physical representation for communication, specified in
+[`strategy/comms.md`](../../strategy/comms.md) §12. `PWC v=3 t=... b=...` carries at most
+eight accepted receives and one actual send as fixed-width decoded payload pairs. It is
+flushed after snapshots; the reader expands it into individual logical PWC events at the
+receive/send phases below. Build maps bind wire types, codec constants and COM codes.
+Duplicate batches and wrong physical ordering fail parsing. Existing v2 remains unchanged.
+This extension is being implemented; it does not mark M3 acceptance complete.
+
 Order within one tick: PWE died, PWC receive, PWP, PWE preempted, PWE start, PWE done/abort,
 PWC send, PWD, PWB, PWP snapshot.
 

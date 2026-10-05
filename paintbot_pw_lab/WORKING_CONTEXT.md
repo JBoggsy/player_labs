@@ -56,9 +56,18 @@ all 26 baseline checks, missing declarations and explicit unmeasurable reasons. 
 
 James authorized active-pin migration, then all uploads and hosted testing needed to
 finish M2 on 2026-10-05. Do not add permission checkpoints for those tests. League submission,
-M3 implementation and git publishing are outside this testing objective. Work is committed
+Git publishing remains outside this testing objective. James subsequently authorized M3 implementation and the testing needed to get it working. Work is committed
 locally. The reviewer session is `pw-m2-review` (Claude Opus 5.5); its bounded handoffs and
 verification scripts are under `tmp/collab/strategy/m2/`.
+
+**M3 is in progress.** James chose lightweight scrambling (failed checks are uncertain disguise
+evidence) and lossless compact batch telemetry under the existing 512-byte/64-event cap.
+The exact X targeting threshold remains an open user choice. Codec/transport engine checks
+and batch parsing are implemented in the working tree; the nine COM components, compiled build,
+local acceptance and hosted A/B remain pending. The implementation plan and peer review are
+under `tmp/collab/strategy/m3/`; Claude Opus 5.5 in `pw-m2-review` owns compiler integration,
+while root owns codec, audit and strategy source. See `strategy/comms.md` for the current
+protocol and verified rules49 details. No new M3 build has been compiled or uploaded.
 
 **Known evidence limits:** baseline Results cannot be conditional on full correct execution
 because private motor state is not logged. Self-motion and pickup remembered values also

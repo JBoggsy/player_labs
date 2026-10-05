@@ -263,7 +263,7 @@ a real policy of ours emits the line.
 
 ## Strategy telemetry v2
 
-The strategy compiler uses `parse_v2_line(line, mapping)` and
+The strategy compiler uses `parse_telemetry_line(line, mapping)` and
 `validate_v2_logs(root, mapping)` from this module for G5. The build's `map.json`
 is mandatory: numeric component codes are local to that build.
 
@@ -275,6 +275,12 @@ It also checks measured printed bytes per tick against the 512-byte strategy lim
 The generator checks the static byte and print-event bounds.
 
 The existing `show` and `audit` commands still implement the v1 audit described above.
-G5 calls the v2 parser directly. `pw.py strategy audit ROOT --build ID --json` reuses it
+G5 reads v2 lines and the opt-in compact `PWC v=3` batch form. The latter requires a
+build-map `comms` declaration (codec version, six constants and wire-type/component mapping).
+It expands up to eight receives and one send into individual PWC events with
+`d=[pA,pB]`, while physical byte and line accounting charges the batch once.
+Malformed, out-of-order, oversized and unknown-type batches are rejected. The audit additionally
+checks that a batch is the final physical telemetry line of its tick and restores the receive
+and send events to their logical phases. `parse_v2_line` remains available for immutable builds. `pw.py strategy audit ROOT --build ID --json` reuses it
 for the five-level audit ([reference](pw_strategy.md#five-level-audit-m2)). A valid
-v2 line is not proof that its gameplay claim is true. Hosted telemetry confirmation remains open.
+v2 line is not proof that its gameplay claim is true. M2 hosted telemetry was confirmed on 0.3.115; M3 batch telemetry has not yet been hosted-qualified.

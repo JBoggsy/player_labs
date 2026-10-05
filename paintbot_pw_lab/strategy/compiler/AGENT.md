@@ -75,7 +75,21 @@ Do not edit anything else. Do not run Git. The driver rejects the build on any o
      - `<p>__send()` sets `<p>__sent = 1` when it shouted.
 
      Generated code sets `got` and `sent` to 0 before each call. Shout only what the `Spec`
-     says. The comms v1 codec is not part of M0.
+     says.
+     - For `Encoding: comms-v1 N`, the generated dispatcher owns `got`, `from`, `sent`
+       and the `packet[2]` output. Do not write them. Declare and log exactly `packet`.
+       The work order lists read-only `cm__` decoded fields and per-seat memories.
+       `__recv()` runs once per accepted message, before Knowledge; it does not run on
+       empty ticks. `__send()` may call `cm__send(type, fieldsA, fieldsB, cell, quiet)`.
+       Inspect `cm__sent` to advance a cooldown only on success. The runtime owns encoding,
+       shout, cooldown, one-send enforcement and compact telemetry.
+     - Codec send routines run in G,D,X,F,H,E,U,K,R order and stop after a successful send.
+       Do not depend on an uncalled send or receive routine for per-tick bookkeeping.
+       Knowledge may read a COM memory and the COM may read that Knowledge's current
+       output in send; keep the receive-before-Knowledge phase explicit.
+     - Use unit-owned arrays for bounded per-seat/per-station memory and scratch state
+       where many scalar temporaries would exceed the whole-policy 512-global budget.
+       The checksum is not authentication; never infer certainty from decoding.
    - Optional for every kind: `<p>__init()`, called once on the first tick, after constants are
      set.
 5. **Safety.** Every runtime error disables the seat for the rest of the match. Every compile

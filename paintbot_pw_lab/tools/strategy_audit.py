@@ -101,6 +101,19 @@ def candidate_seats(ep, version, uploads):
     return seats
 
 
+
+def telemetry_phase(event):
+    """Logical runtime phase; compact batches are checked separately at tick end."""
+    kind = event['kind']
+    if kind == 'PWE':
+        return {5: 0, 4: 3, 1: 4, 2: 5, 3: 5}[event['e']]
+    if kind == 'PWP':
+        return 9 if event['a'] == 0 else 2
+    if kind == 'PWC':
+        return 1 if event['s'] == 2 else 6
+    return 7 if kind == 'PWD' else 8
+
+
 def read_log(directory, seat, mapping):
     paths = [p for p in directory.rglob('*.log') if not pe.in_cache(p) and any(
         (match := pattern.search(p.name)) and int(match.group(1)) == seat for pattern in pe.POLICY_LOG_PATTERNS)]
@@ -114,22 +127,28 @@ def read_log(directory, seat, mapping):
         if line.split(' ', 1)[0] not in pw_intent.V2_KEYS:
             continue
         try:
-            event = pw_intent.parse_v2_line(line, mapping)
-            if event['t'] < last:
+            parsed = pw_intent.parse_telemetry_line(line, mapping)
+            tick = parsed[0]['t']
+            batch = line.startswith('PWC v=3 ')
+            phase = 10 if batch else telemetry_phase(parsed[0])
+            if tick < last:
                 raise pw_intent.IntentError('ticks went backwards')
-            kind = event['kind']
-            if kind == 'PWE':
-                phase = {5: 0, 4: 3, 1: 4, 2: 5, 3: 5}[event['e']]
-            elif kind == 'PWP':
-                phase = 9 if event['a'] == 0 else 2
-            elif kind == 'PWC':
-                phase = 1 if event['s'] == 2 else 6
-            else:
-                phase = 7 if kind == 'PWD' else 8
-            if event['t'] == last and phase < last_phase:
+            if tick == last and phase < last_phase:
                 raise pw_intent.IntentError('telemetry phase order went backwards')
-            last, last_phase = event['t'], phase
-            events.append({**event, 'line': number})
+            if tick == last and batch and last_phase == 10:
+                raise pw_intent.IntentError('duplicate compact batch')
+            last, last_phase = tick, phase
+            for event in parsed:
+                row = {**event, 'line': number}
+                if batch:
+                    # Move only batch records to their declared logical phase.
+                    # Ordinary telemetry is never sorted to conceal bad ordering.
+                    position = next((i for i, previous in enumerate(events)
+                                     if previous['t'] == tick and
+                                     telemetry_phase(previous) > telemetry_phase(event)), len(events))
+                    events.insert(position, row)
+                else:
+                    events.append(row)
         except (pw_intent.IntentError, ValueError, KeyError) as error:
             issues.append({'reason': 'malformed_telemetry', 't': last, 'line': number, 'detail': str(error)})
     return events, issues, paths
@@ -194,6 +213,22 @@ def report_markdown(result):
              '| --- | --- | --- | --- | --- | --- |']
     for row in result['checks']:
         lines.append(f"| {row['id']} | {row['level']} | {row['status']} | {row['measurable']}/{row['opportunities']} | {row['unmeasurable_seats']} | {row['violations']} |")
+    transport_rows = [(episode['id'], seat['seat'], seat['communication_transport'])
+                      for episode in result.get('episodes', []) for seat in episode['seats']
+                      if seat.get('communication_transport')]
+    if transport_rows:
+        lines.extend(['', '## Communication transport', '',
+                      'Transport checks compare accepted payloads and actual sends with replay delivery.',
+                      'They do not establish the truth of message claims or successful receiver behavior.', '',
+                      '| Episode | Seat | Status | Eligible teammate deliveries | Decode rate | Capacity excluded |',
+                      '| --- | --- | --- | --- | --- | --- |'])
+        for episode, seat, row in transport_rows:
+            counts = row['counts']
+            rate = row['eligible_decode_rate']
+            shown = 'not exercised' if rate is None else f'{rate:.2%}'
+            lines.append(f"| {episode} | {seat} | {row['status']} | "
+                         f"{counts.get('eligible_teammate_deliveries', 0)} | {shown} | "
+                         f"{counts.get('teammate_capacity_excluded', 0)} |")
     lines.extend(['', '## Limitations', '',
                   'A successful command means the audit ran, not that checks passed. Missing declarations are not proof.',
                   'Conditional Results require full belief and execution evidence. Raw outcomes do not satisfy that requirement.',
@@ -258,10 +293,22 @@ def run(args, report):
                         issues.append({'reason': 'seat_disabled', 't': None})
                 # A malformed stream cannot establish unchanged fields between its lines.
                 raw.extend(audit_seat(ep, seat, states, events, runtime, issues, strategy, mapping, reference, evidence))
+                transport = None
+                if mapping.get('comms'):
+                    from strategy_comms import audit_transport
+                    transport = audit_transport(
+                        ep['shouts'].to_dict('records'), events, seat,
+                        {t for (t, who), state in states.items() if who == seat and state['hp'] > 0
+                         and t < ep.summary['ticks']},
+                        tuple(mapping['comms']['keys']))
+                    if issues:
+                        transport['status'] = 'unmeasurable'
+                        transport['reason'] = 'incomplete_or_unqualified_execution_evidence'
                 runtime_counts = Counter(row['status'] for row in runtime['ticks'])
                 summaries.append({'runtime_status': 'unmeasurable' if issues else ('fail' if runtime_counts['fail'] else 'pass'),
                                   'runtime_counts': dict(runtime_counts), 'seat': seat, 'lines': len(events), 'issues': issues,
-                                  'decision_ticks': len(runtime['ticks']), 'activations': len(runtime['windows'])})
+                                  'decision_ticks': len(runtime['ticks']), 'activations': len(runtime['windows']),
+                                  'communication_transport': transport})
             inputs.extend({'path': str(p), 'sha256': builds.digest(p)} for p in sorted(set(paths)))
             episodes.append({'id': ep.episode_id, 'engine': ep.meta['engine_release'], 'rules': ep.meta['rules'],
                              'verified': True, 'ticks': ep.summary['ticks'], 'seats': summaries,

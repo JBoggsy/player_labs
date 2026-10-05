@@ -347,9 +347,11 @@ def test_skill_sub_calls_allowed_from_dependents(tmp_path):
 def test_worst_case_counts(tmp_path):
     strategy = sf.parse_strategy(write_strategy(tmp_path, RICH))
     worst = sb.telemetry_worst_case(strategy)
-    assert worst["lines"]["PWD"] == {"count": 1, "events": 19, "bytes": 130}
+    # Runtime-controlled values use exact digit bounds (rule, capability, held, flag word, adaptation
+    # and rule codes, priorities clamped to 0..1000); the tick, inputs and the priority version keep 11.
+    assert worst["lines"]["PWD"] == {"count": 1, "events": 19, "bytes": 90}
     assert worst["lines"]["PWE"]["events"] == 19
-    assert worst["lines"]["PWP"] == {"count": 2, "events": 26, "bytes": 184}
+    assert worst["lines"]["PWP"] == {"count": 2, "events": 26, "bytes": 116}
     assert worst["lines"]["PWB"]["events"] == 0
     assert worst["events"] == 19 + 19 + 26 == 64
     trivial = sb.telemetry_worst_case(sf.parse_strategy(write_strategy(tmp_path / "t", TRIVIAL)))

@@ -893,6 +893,8 @@ def lint_strategy(strategy: Strategy) -> list[Diagnostic]:
 
     if not any(d.level == "error" for d in diags):
         import strategy_basic  # lazy: strategy_basic imports this module
+        _, comms_errors = strategy_basic.comms_plan(strategy)
+        diags.extend(comms_errors)
         budget = strategy_basic.telemetry_worst_case(strategy)
         if budget["bytes"] > budget["limit_bytes"] or budget["events"] > budget["limit_events"]:
             error("telemetry-budget", f"worst-case telemetry per tick is {budget['bytes']} bytes / {budget['events']} "

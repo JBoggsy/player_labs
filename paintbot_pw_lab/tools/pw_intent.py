@@ -207,6 +207,38 @@ def parse_v2_line(line: str, mapping: dict) -> dict:
     return {"kind": kind, **values}
 
 
+
+def parse_telemetry_line(line: str, mapping: dict) -> list[dict]:
+    """Expand a compact batch into ordinary PWC events; preserve the v2 contract."""
+    if not line.startswith("PWC v=3 "):
+        return [parse_v2_line(line, mapping)]
+    import re
+    import strategy_comms as comms
+    match = re.fullmatch(r"PWC v=3 t=([0-9]+) b=([0-9]+)", line.strip())
+    if match is None:
+        raise IntentError("PWC: malformed compact batch")
+    tick = int(match[1])
+    if tick >= 2**31:
+        raise IntentError("PWC: tick overflow")
+    config = mapping.get("comms")
+    if not config or config.get("version") != 1:
+        raise IntentError("PWC: build does not declare comms-v1")
+    try:
+        keys = tuple(config["keys"])
+        decoded = comms.decode_batch(match[2], tick, keys)
+        events = []
+        for direction, message in decoded:
+            component = config["messages"][str(message.kind)]
+            code = mapping["codes"]["message"][component]
+            a, b = comms.payloads(message, tick - (direction == 2), keys)
+            event = parse_v2_line(
+                f"PWC v=2 t={tick} m={code} s={direction} w={message.sender} d={a},{b}", mapping)
+            events.append(event)
+        return events
+    except (ValueError, KeyError, IndexError, TypeError) as error:
+        raise IntentError(f"PWC: invalid compact batch: {error}") from error
+
+
 def validate_v2_logs(root: Path, mapping: dict) -> dict:
     """G5: every candidate seat needs readable telemetry and declared check fields.
 
@@ -235,26 +267,33 @@ def validate_v2_logs(root: Path, mapping: dict) -> dict:
                 failures.append({"file": str(path), "message": "unmeasurable: missing seat log"})
                 continue
             last_tick = -1
+            batch_tick = -1
             for number, line in enumerate(path.read_text().splitlines(), 1):
                 if "BASIC error:" in line or "BASIC VM disabled" in line:
                     failures.append({"file": str(path), "line": number, "message": line})
                 if line.split(" ", 1)[0] not in V2_KEYS:
                     continue
                 try:
-                    event = parse_v2_line(line, mapping)
-                    if event["t"] < last_tick:
+                    events = parse_telemetry_line(line, mapping)
+                    tick = events[0]["t"]
+                    if tick < last_tick:
                         raise IntentError("telemetry ticks went backwards")
-                    last_tick = event["t"]
-                    kinds[event["kind"]] += 1
-                    if event["kind"] == "PWP" and event["a"] == 0 and event["p"] == 0:
-                        snapshots.add(event["r"])
-                    seen.update(event["kind"] + "." + key for key in V2_KEYS[event["kind"]])
-                    if event["kind"] in ("PWB", "PWC"):
-                        table, code_key = ("knowledge", "k") if event["kind"] == "PWB" else ("message", "m")
-                        component = next(key for key, value in mapping["codes"][table].items() if value == event[code_key])
-                        seen.update(component + "." + field["name"] for field in mapping["components"][component].get("log_fields", []))
-                    by_tick[event["t"]] += len(line.encode()) + 1
+                    if tick == batch_tick:
+                        raise IntentError("telemetry follows compact batch in the same tick")
+                    if line.startswith("PWC v=3 "):
+                        batch_tick = tick
+                    last_tick = tick
+                    by_tick[tick] += len(line.encode()) + 1
                     count += 1
+                    for event in events:
+                        kinds[event["kind"]] += 1
+                        if event["kind"] == "PWP" and event["a"] == 0 and event["p"] == 0:
+                            snapshots.add(event["r"])
+                        seen.update(event["kind"] + "." + key for key in V2_KEYS[event["kind"]])
+                        if event["kind"] in ("PWB", "PWC"):
+                            table, code_key = ("knowledge", "k") if event["kind"] == "PWB" else ("message", "m")
+                            component = next(key for key, value in mapping["codes"][table].items() if value == event[code_key])
+                            seen.update(component + "." + field["name"] for field in mapping["components"][component].get("log_fields", []))
                 except (IntentError, KeyError, ValueError) as error:
                     failures.append({"file": str(path), "line": number, "message": str(error)})
             missing = sorted(required - seen)

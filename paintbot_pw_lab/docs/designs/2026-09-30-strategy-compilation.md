@@ -4,7 +4,7 @@
 > (`compiled/f4ffb408-1` and `compiled/ee55887d-1`, both G1–G5 passed). M1 source and motor
 > skill are qualified in `compiled/b41ef1fc-1`: all G1–G5 pass, with identical play against
 > `base.bas` across 28 seeds on both sides. M2 implements the five-level audit, qualified locally
-> and with hosted telemetry on 0.3.115. M3 remains deferred.
+> and with hosted telemetry on 0.3.115. M3 is in progress; acceptance is pending.
 > Accepted 2026-09-30 (James). Build order: §11. Rendered,
 > commentable copy: [2026-09-30-strategy-compilation.html](2026-09-30-strategy-compilation.html)
 > (may lag this file; this Markdown file is authoritative).
@@ -447,7 +447,7 @@ alignment is 56/56 at t+1 and zero at neighboring offsets. The hosted report is
 WORKING_CONTEXT. Eight copies serve this telemetry test, not a performance-roster decision.
 The request estimated 0.5 credits. No baseline behavior changed and no league submission
 was made. These results complete M2's local-plus-hosted acceptance; they do not establish
-competitive improvement or fill the nine known source/evidence gaps. M3 has not started.
+competitive improvement or fill the nine known source/evidence gaps. M3 is in progress; its local and hosted acceptance are pending.
 
 ### M1 baseline decomposition
 
@@ -521,3 +521,24 @@ are required before later hosted work, outside M1's local scope.
 - Priorities are per rule in v1 (James, 2026-09-30).
 - The local screen never vetoes a behavior change. It blocks only builds that are not meant to
   change behavior, the M1 milestone, and any build with a bad seat.
+
+
+### M3 compact communication evidence (implementation in progress)
+
+James chose lightweight scrambling, with failed checks treated as uncertain disguise evidence,
+and lossless compact batches within the existing 512-byte/64-event telemetry half-cap.
+The authored codec implements the exact arithmetic from `strategy/comms.md`; COM units
+still own send eligibility and receiver effects. The compact PWC v3 transport expands to the
+same individual logical events used by the audit. It preserves accepted decoded payloads
+and actual sends; replay delivery supplies evidence for rejects and capacity exclusions.
+This does not upgrade the checksum to authentication or prove an unmeasurable gameplay claim.
+
+Compiler work folds constant decision fields and uses bounds only for values controlled by
+the runtime or generated code. Arbitrary component outputs retain signed-int32 bounds.
+Static budget checks must reject any build exceeding either cap. The runtime must reserve
+batch output before discretionary priority snapshots. Changes to runtime printing require
+unchanged-gameplay qualification before the new communication strategy is evaluated.
+
+M3 compares against the rules49-qualified M1 behavior, build `567feb38-1`, rather than
+mixing engine releases. The hosted comparison records the current ranking margin scale.
+An inconclusive or regressed comparison is evidence, not a claim that communication helped.

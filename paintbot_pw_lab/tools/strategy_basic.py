@@ -27,6 +27,7 @@ import re
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
+import strategy_comms as sc
 import strategy_format as sf
 
 # ---------------------------------------------------------------- engine facts (coworld-v0.3.89)
@@ -44,6 +45,27 @@ INT_BYTES = 11  # "-2147483648"
 RUNTIME_EXPORTS = {"rt__rule", "rt__cap", "rt__since", "rt__pver"}
 KILL_SWITCH = "telemetryoff"
 RUNTIME_FILES = {"runtime.lib": "lib.bas", "runtime.main": "main.bas"}
+COMMS_RUNTIME = ("runtime.comms", "comms.bas")  # added only to builds whose COM components use comms-v1
+# A COM component opts into the comms-v1 codec with an Encoding that starts `comms-v1 N`, N = the wire
+# type 0..8 (strategy/comms.md §4). Wire types are 0-based; telemetry message codes stay 1-based.
+CODEC_ENCODING = re.compile(r"comms-v1\s+(\d+)(?![\w.])")
+CODEC_WIRE_TYPES = range(9)
+# Comms batch line (one per tick, printed by the comms runtime): `PWC v=3 t=<tick> b=<records>`, each
+# record two fixed-width 10-digit values (block A: 1e9 + pA for a receive, 2e9 + pA for the send;
+# block B: 1e9 + pB), no separators, at most BATCH_RECEIVES receives then at most one send.
+BATCH_HEADER, BATCH_SEPARATOR = "PWC v=3 t=", " b="
+BATCH_RECEIVES, BATCH_SENDS, BATCH_VALUE_BYTES = sc.MAX_DECODE, 1, 10
+# runtime.comms interface (tmp/collab/strategy/m3/CODEC-INTERFACE.md). Codec COM units may read the
+# decoded packet fields and the per-seat heard/suspect memories, and call cm__send; they never write
+# runtime names. Each codec COM declares `packet[2]` and logs it; generated code fills it.
+CODEC_READS = {"cm__type", "cm__speaker", "cm__fa", "cm__fb", "cm__cell", "cm__pa", "cm__pb", "cm__rx_index",
+               "cm__rx_slot", "cm__rx_x", "cm__rx_y", "cm__sent"}
+CODEC_ARRAYS = {"cm__heard_t", "cm__heard_x", "cm__heard_y", "cm__suspect_t", "cm__suspect_x", "cm__suspect_y",
+                "cm__rx_valid"}
+SKILL_CODEC_ARRAYS = {"cm__rx_valid"}  # the motor's non-team speech cue
+CODEC_CALLS = {"cm__send"}
+CODEC_PACKET = "packet"
+CODEC_DEFAULTS = {"cm__max_decode": sc.MAX_DECODE, "cm__min_gap": 6}  # comms.md §9 defaults
 ABI = {  # kind -> required zero-argument SUBs (local names)
     "K": ("update",), "S": ("eval",), "C": ("start", "tick"), "A": ("eval",), "COM": ("recv", "send"),
     "SK": (),
@@ -268,6 +290,17 @@ def unit_contract(strategy: sf.Strategy, component_id: str) -> dict:
                    f"tick; {p}__send sets {p}__sent = 1 when it shouted (both start at 0 each tick). Define only "
                    f"the SUBs of the declared Directions",
             "K": f"{p}__update refreshes the declared outputs every tick"}
+    plan, _ = comms_plan(strategy)
+    if plan is not None and comp.id in plan.values():
+        wire = next(w for w, c in plan.items() if c == comp.id)
+        must["COM"] = (f"comms-v1 wire type {wire}. {p}__recv runs once per decoded message of this type, after "
+                       f"generated code sets {p}__packet(0..1), {p}__got (messages this tick) and {p}__from (true "
+                       f"sender); read cm__type, cm__speaker, cm__fa, cm__fb, cm__cell, cm__rx_slot, cm__rx_x, "
+                       f"cm__rx_y and the cm__heard_*/cm__suspect_* arrays. {p}__send proposes at most one message "
+                       f"with cm__send(type, fieldsA, fieldsB, cell, quiet); generated code calls the send SUBs in "
+                       f"priority order only while nothing was sent this tick and sets {p}__sent from cm__sent. "
+                       f"Never write cm__* names or {p}__packet. Define only the SUBs of the declared Directions")
+        scalars, arrays, subs = scalars | CODEC_READS, arrays | CODEC_ARRAYS, {**subs, "cm__send": 5}
     return {
         "id": comp.id, "kind": comp.kind, "prefix": p, "header": unit_header(comp),
         "required_subs": [f"{p}__{name}()" for name in required_subs(comp)],
@@ -299,7 +332,15 @@ def check_unit(strategy: sf.Strategy, component_id: str, text: str) -> list[sf.D
     for line in scan.prints:
         err("unit-print", "units must not PRINT (telemetry is generated)", line)
     dep_scalars, dep_arrays, dep_subs = _dependency_names(strategy, comp)
+    plan, _ = comms_plan(strategy)
+    codec = plan is not None and comp.id in plan.values()
+    if codec:
+        dep_scalars, dep_arrays, dep_subs = dep_scalars | CODEC_READS, dep_arrays | CODEC_ARRAYS, dep_subs
+    elif plan is not None and comp.kind == "SK":
+        dep_arrays = dep_arrays | SKILL_CODEC_ARRAYS
     generated = _generated_names(comp)
+    if codec:
+        generated |= {own + name for name in ("got", "from", "sent")}
     output_arrays = {f"{own}{o.name}" for o in comp.outputs if o.cells > 1}
     own_arrays = set(scan.arrays) | output_arrays
     for name in scan.subs:
@@ -318,6 +359,8 @@ def check_unit(strategy: sf.Strategy, component_id: str, text: str) -> list[sf.D
     for name, line in scan.array_writes:
         if name not in own_arrays:
             err("unit-namespace", f"writes array {name}; a unit writes only its own arrays", line)
+        elif codec and name == own + CODEC_PACKET:
+            err("unit-namespace", f"writes {name}; generated code fills the packet", line)
     for name, line, _ in scan.scalar_reads:
         if name.startswith(own) or name in HOST_DATA or name in dep_scalars or name in RUNTIME_EXPORTS:
             continue
@@ -344,6 +387,8 @@ def check_unit(strategy: sf.Strategy, component_id: str, text: str) -> list[sf.D
             continue
         if name in dep_subs and name.rsplit("__", 1)[1] not in PHASE_SUBS:
             continue
+        if codec and name in CODEC_CALLS:
+            continue
         if local is not None:
             err("unit-call", f"calls {name}, which this unit does not define", line)
         else:
@@ -359,7 +404,7 @@ def check_unit(strategy: sf.Strategy, component_id: str, text: str) -> list[sf.D
         err("unit-abi", f"SUB {own}init must take no arguments")
     written = {name for name, _, _ in scan.scalar_writes}
     must = list(MUST_ASSIGN.get(comp.kind, ()))
-    for direction in comp.directions:
+    for direction in comp.directions if not codec else ():  # codec: generated code sets got and sent
         must += COM_MUST_ASSIGN[direction]
     for local in must:
         if own + local not in written:
@@ -384,7 +429,136 @@ def normalize_unit(comp: sf.Component, text: str) -> str:
     return unit_header(comp) + "\n" + body + "\n"
 
 
+# ---------------------------------------------------------------- comms-v1 opt-in
+
+def comms_plan(strategy: sf.Strategy) -> tuple[dict | None, list[sf.Diagnostic]]:
+    """({wire type: COM id} or None for a legacy build, diagnostics). A build is either all
+    legacy COM components or all comms-v1 ones; wire types are unique and in 0..8."""
+    coms = strategy.of_kind("COM")
+    wires, legacy, diags = {}, [], []
+    for comp in coms:
+        match = CODEC_ENCODING.match(comp.fields.get("Encoding", "").strip())
+        if not match:
+            legacy.append(comp.id)
+            continue
+        wire = int(match.group(1))
+        if wire not in CODEC_WIRE_TYPES:
+            diags.append(sf.Diagnostic("error", "comms-wire-type", f"comms-v1 wire type {wire} is not in 0..8",
+                                       comp.id, comp.line))
+        elif wire in wires:
+            diags.append(sf.Diagnostic("error", "comms-duplicate",
+                                       f"comms-v1 wire type {wire} is also used by {wires[wire]}", comp.id, comp.line))
+        else:
+            wires[wire] = comp.id
+        packet = comp.output(CODEC_PACKET)
+        if packet is None or packet.cells != 2 or comp.log is None or tuple(comp.log.fields) != (CODEC_PACKET,):
+            diags.append(sf.Diagnostic("error", "comms-packet", f"a comms-v1 component declares the output "
+                                       f"`{CODEC_PACKET}[2]` and logs exactly `{CODEC_PACKET}`", comp.id, comp.line))
+    if wires and legacy:
+        diags += [sf.Diagnostic("error", "comms-mixed", "a build cannot mix comms-v1 and legacy COM components; "
+                                "give this component a `comms-v1 N` Encoding or remove it", c, strategy.components[c].line)
+                  for c in legacy]
+    if not wires and not any(d.code != "comms-mixed" for d in diags):
+        return None, diags
+    return {w: wires[w] for w in sorted(wires)}, diags
+
+
+def comms_map(plan: dict) -> dict:
+    return {"version": 1, "keys": list(sc.DEFAULT_KEYS),
+            "messages": {str(wire): comp_id for wire, comp_id in plan.items()},
+            "batch": {"kind": "PWC", "version": 3, "header": BATCH_HEADER, "separator": BATCH_SEPARATOR,
+                      "receives": BATCH_RECEIVES, "sends": BATCH_SENDS, "value_digits": BATCH_VALUE_BYTES,
+                      "send_marker": 2, "receive_marker": 1}}
+
+
 # ---------------------------------------------------------------- telemetry budget
+#
+# A print line is a list of items: ("lit", text) costs one event and len(text) bytes; ("val", expr,
+# bytes) costs one event and at most `bytes` bytes; the newline costs one event and one byte.
+# Value bounds are tight only where the runtime or generated code controls the value (rule,
+# capability, held, event and condition codes, flag words, priorities clamped to 0..1000).
+# Unit-written values and the tick keep INT_BYTES.
+
+def _digits(high: int, low: int = 0) -> int:
+    return max(len(str(high)), len(str(low)))
+
+
+def line_cost(items: list[tuple]) -> tuple[int, int]:
+    """(events, bytes) of one PRINT line including its newline."""
+    nbytes = sum(len(item[1]) if item[0] == "lit" else item[2] for item in items)
+    return len(items) + 1, nbytes + 1
+
+
+def _merge(items: list[tuple]) -> list[tuple]:
+    """Join adjacent literals: one PRINT item, the same printed text."""
+    out = []
+    for item in items:
+        if item[0] == "lit" and out and out[-1][0] == "lit":
+            out[-1] = ("lit", out[-1][1] + item[1])
+        else:
+            out.append(item)
+    return out
+
+
+def _print_statement(items: list[tuple]) -> str:
+    return "PRINT " + "; ".join(f'"{item[1]}"' if item[0] == "lit" else item[1] for item in items)
+
+
+def pwd_items(strategy: sf.Strategy) -> list[tuple]:
+    """The PWD print items. Inputs fold to the literal 0,0,0 when no rule capability has inputs
+    (st__bind then zeroes rt__in0..2 every tick) and the priority version folds to 0 when there
+    are no Adaptations (only rt__recompute changes it): the printed text is unchanged."""
+    caps = len(strategy.of_kind("C"))
+    folded_inputs = not any(strategy.components[r.capability].inputs for r in strategy.rules)
+    items = [("lit", "PWD v=2 t="), ("val", "worldTick", INT_BYTES),
+             ("lit", " r="), ("val", "rt__rule", _digits(len(strategy.rules))),
+             ("lit", " c="), ("val", "rt__cap", _digits(caps))]
+    if folded_inputs:
+        items.append(("lit", " i=0,0,0"))
+    else:
+        items += [("lit", " i="), ("val", "rt__in0", INT_BYTES), ("lit", ","), ("val", "rt__in1", INT_BYTES),
+                  ("lit", ","), ("val", "rt__in2", INT_BYTES)]
+    items += [("lit", " h="), ("val", "rt__held", 1)]
+    if strategy.of_kind("A"):
+        items += [("lit", " p="), ("val", "rt__pver", INT_BYTES)]
+    else:
+        items.append(("lit", " p=0"))
+    items.append(("lit", " f="))
+    sits = len(strategy.of_kind("S"))
+    for word in range(flag_words(strategy)):
+        bits = min(31, max(0, sits - 31 * word))
+        if word:
+            items.append(("lit", ","))
+        items.append(("val", f"rt__fw({word})", _digits(2 ** bits - 1)))
+    return _merge(items)
+
+
+def pwe_costs(strategy: sf.Strategy) -> tuple[tuple[int, int], tuple[int, int]]:
+    """(event line without a condition code, done/abort line) as runtime.lib prints them; k is a
+    condition code or -1 for an invalid status."""
+    cap = ("val", "c", _digits(len(strategy.of_kind("C"))))
+    conditions = max((len(c.conditions) for c in strategy.of_kind("C")), default=0)
+    plain = line_cost([("lit", "PWE v=2 t="), ("val", "t", INT_BYTES), ("lit", " c="), cap, ("lit", " e=1 k=0")])
+    end = line_cost([("lit", "PWE v=2 t="), ("val", "t", INT_BYTES), ("lit", " c="), cap, ("lit", " e=2 k="),
+                     ("val", "k", _digits(conditions, -1))])
+    return plain, end
+
+
+def pwp_cost(strategy: sf.Strategy) -> tuple[int, int]:
+    """One Adaptation PWP line (rt__recompute): old and new priority are clamped to 0..1000."""
+    return line_cost([("lit", "PWP v=2 t="), ("val", "t", INT_BYTES),
+                      ("lit", " a="), ("val", "a", _digits(len(strategy.of_kind("A")))),
+                      ("lit", " r="), ("val", "r", _digits(len(strategy.rules))),
+                      ("lit", " o="), ("val", "o", 4), ("lit", " n="), ("val", "n", 4),
+                      ("lit", " p="), ("val", "p", INT_BYTES)])
+
+
+def batch_cost() -> tuple[int, int]:
+    """The comms batch line at capacity: BATCH_RECEIVES receives plus one send, two values each."""
+    values = 2 * (BATCH_RECEIVES + BATCH_SENDS)
+    return line_cost([("lit", BATCH_HEADER), ("val", "t", INT_BYTES), ("lit", BATCH_SEPARATOR)]
+                     + [("val", "block", BATCH_VALUE_BYTES)] * values)
+
 
 def _pwb_cost(values: int, code: int) -> tuple[int, int]:
     literal = len(f" k={code} d=")
@@ -437,22 +611,29 @@ def log_offsets(strategy: sf.Strategy) -> tuple[dict[str, int], tuple[int, int]]
 def telemetry_worst_case(strategy: sf.Strategy) -> dict:
     """Static worst-case telemetry per tick (events, bytes), against half the engine's limits.
     The initial PWP snapshot is excluded: the runtime prints it only into leftover room."""
-    words = flag_words(strategy)
+    pwd = line_cost(pwd_items(strategy))
+    plain, end = pwe_costs(strategy)  # worst tick: died or preempted, start, then done/abort
+    adapt = len(strategy.of_kind("A"))
+    pwp = pwp_cost(strategy)
     lines = {
-        "PWD": {"count": 1, "events": 17 + 2 * words, "bytes": 118 + 12 * words},
-        "PWE": {"count": 3, "events": 6 + 6 + 7, "bytes": 3 * 64},
-        "PWP": {"count": len(strategy.of_kind("A")), "events": 13 * len(strategy.of_kind("A")),
-                "bytes": 92 * len(strategy.of_kind("A"))},
+        "PWD": {"count": 1, "events": pwd[0], "bytes": pwd[1]},
+        "PWE": {"count": 3, "events": 2 * plain[0] + end[0], "bytes": 2 * plain[1] + end[1]},
+        "PWP": {"count": adapt, "events": pwp[0] * adapt, "bytes": pwp[1] * adapt},
     }
-    com_events = com_bytes = 0
-    for comp in strategy.of_kind("COM"):
-        values = log_values(strategy, comp)
-        for direction in [2 if d == "recv" else 1 for d in comp.directions]:
-            ev, by = _pwc_cost(values, comp.code, direction)
-            com_events += ev
-            com_bytes += by
-    lines["PWC"] = {"count": sum(len(c.directions) for c in strategy.of_kind("COM")), "events": com_events,
-                    "bytes": com_bytes}
+    plan, _ = comms_plan(strategy)
+    if plan is not None:
+        events, nbytes = batch_cost()
+        lines["PWC"] = {"count": 1, "events": events, "bytes": nbytes, "batch": True}
+    else:
+        com_events = com_bytes = 0
+        for comp in strategy.of_kind("COM"):
+            values = log_values(strategy, comp)
+            for direction in [2 if d == "recv" else 1 for d in comp.directions]:
+                ev, by = _pwc_cost(values, comp.code, direction)
+                com_events += ev
+                com_bytes += by
+        lines["PWC"] = {"count": sum(len(c.directions) for c in strategy.of_kind("COM")), "events": com_events,
+                        "bytes": com_bytes}
     offsets, (pwb_events, pwb_bytes) = log_offsets(strategy)
     lines["PWB"] = {"count": len(offsets), "events": pwb_events, "bytes": pwb_bytes}
     return {"events": sum(v["events"] for v in lines.values()), "bytes": sum(v["bytes"] for v in lines.values()),
@@ -582,13 +763,42 @@ def generate_tables(strategy: sf.Strategy, unit_subs: dict[str, dict[str, int]])
     init += [f"rt__min_hold = {commit_prefix}__min_hold", f"rt__margin = {commit_prefix}__preempt_margin",
              f"rt__interrupt = {commit_prefix}__interrupt_at",
              f"rt__n_sits = {len(strategy.of_kind('S'))}", f"rt__n_words = {flag_words(strategy)}"]
+    plan, _ = comms_plan(strategy)
+    if plan is not None:
+        init += [f"cm__keys({i}) = {key}" for i, key in enumerate(sc.DEFAULT_KEYS)]
+        init += [f"{name} = {value}" for name, value in CODEC_DEFAULTS.items()]
     for comp in ordered:
         if f"{comp.prefix}__init" in unit_subs.get(comp.id, {}):
             init.append(f"{comp.prefix}__init()")
     out += _sub("st__init", init)
 
     receive, send = [], []
-    for comp in strategy.of_kind("COM"):
+    # comms-v1 builds: the comms runtime owns receive, arbitration, sending and the batch line. Its
+    # Codec receives dispatch once per accepted message; send priority is shared with
+    # the wire model, and the compact batch flushes after the other telemetry.
+    decoded, flush = [], []
+    if plan is not None:
+        receive += [f"{comps[c].prefix}__got = 0" for c in plan.values()]
+        receive.append("cm__receive()")
+        for wire, comp_id in plan.items():
+            comp = comps[comp_id]
+            p = comp.prefix
+            body = [f"{p}__{CODEC_PACKET}(0) = cm__pa", f"{p}__{CODEC_PACKET}(1) = cm__pb",
+                    f"{p}__got = {p}__got + 1", f"{p}__from = cm__speaker"]
+            if "recv" in comp.directions:
+                body.append(f"{p}__recv()")
+            decoded += _if(f"cm__type = {wire}", body)
+        send.append("cm__sent = 0")
+        send += [f"{comps[c].prefix}__sent = 0" for c in plan.values()]
+        for wire in sc.PRIORITY:  # comms.md §7 priority; the runtime allows one successful shout
+            comp = comps.get(plan.get(wire, ""))
+            if comp is None or "send" not in comp.directions:
+                continue
+            p = comp.prefix
+            send += _if("cm__sent = 0", [f"{p}__send()", f"{p}__sent = cm__sent"] + _if(
+                f"{p}__sent <> 0", [f"{p}__{CODEC_PACKET}(0) = cm__pa", f"{p}__{CODEC_PACKET}(1) = cm__pb"]))
+        flush.append("cm__flush()")
+    for comp in (strategy.of_kind("COM") if plan is None else ()):
         p = comp.prefix
         values = []
         for name in (comp.log.fields if comp.log else ()):
@@ -605,6 +815,7 @@ def generate_tables(strategy: sf.Strategy, unit_subs: dict[str, dict[str, int]])
                 f'PRINT "PWC v=2 t="; worldTick; " m={comp.code} s={direction} w="; {seat}; {tail}',
                 f"rt__pe = rt__pe + {ev}", f"rt__pb = rt__pb + {by}"])
     out += _sub("st__receive", receive)
+    out += _sub("st__decoded", decoded)
     out += _sub("st__knowledge", [f"{c.prefix}__update()" for c in strategy.of_kind("K")])
     sits = []
     for comp in strategy.of_kind("S"):
@@ -669,6 +880,10 @@ def generate_tables(strategy: sf.Strategy, unit_subs: dict[str, dict[str, int]])
             f'PRINT "PWB v=2 t="; worldTick; " k={comp.code} d="; {_print_values(values)}',
             f"rt__pe = rt__pe + {ev}", f"rt__pb = rt__pb + {by}"])
     out += _sub("st__beliefs", beliefs)
+    items = pwd_items(strategy)
+    ev, by = line_cost(items)
+    out += _sub("st__pwd_print", [_print_statement(items), f"rt__pe = rt__pe + {ev}", f"rt__pb = rt__pb + {by}"])
+    out += _sub("st__flush", flush)  # after rt__snapshot: the comms batch line (empty for legacy builds)
     return "\n".join(out).rstrip() + "\n"
 
 
@@ -696,6 +911,8 @@ def assemble(strategy: sf.Strategy, units: dict[str, str], runtime_dir: Path, bu
              source_commit: str) -> dict:
     """Check every unit, generate the tables and join policy.bas (API.md §2). Raises BuildError."""
     diags = [d for d in sf.lint_strategy(strategy) if d.level == "error"]
+    plan, comms_diags = comms_plan(strategy)
+    diags += comms_diags
     if diags:
         raise BuildError(diags)
     llm_ids = [c.id for c in strategy.llm_components()]
@@ -711,13 +928,18 @@ def assemble(strategy: sf.Strategy, units: dict[str, str], runtime_dir: Path, bu
         texts[comp.id] = read_verbatim(strategy.root / comp.code_path)
     for comp_id, text in texts.items():
         diags += check_unit(strategy, comp_id, text)
-    runtime = {name: read_verbatim(Path(runtime_dir) / filename) for name, filename in RUNTIME_FILES.items()}
+    files = dict(RUNTIME_FILES, **({COMMS_RUNTIME[0]: COMMS_RUNTIME[1]} if plan is not None else {}))
+    runtime = {name: read_verbatim(Path(runtime_dir) / filename) for name, filename in files.items()}
     if diags:
         raise BuildError(diags)
     unit_subs = {comp_id: scan_basic(text).subs for comp_id, text in texts.items()}
+    if plan is not None:
+        unit_subs[COMMS_RUNTIME[0]] = scan_basic(runtime[COMMS_RUNTIME[0]]).subs
     tables = generate_tables(strategy, unit_subs)
     order = [c.id for kind in KIND_ORDER for c in strategy.of_kind(kind)]
-    blocks = [("runtime.lib", runtime["runtime.lib"]), ("generated.tables", tables)]
+    blocks = [("runtime.lib", runtime["runtime.lib"])]
+    blocks += [(COMMS_RUNTIME[0], runtime[COMMS_RUNTIME[0]])] if plan is not None else []
+    blocks += [("generated.tables", tables)]
     blocks += [(comp_id, texts[comp_id]) for comp_id in order]
     blocks.append(("runtime.main", runtime["runtime.main"]))
     header = [f"' policy.bas | build {build_id} | source {source_commit} | strategy {strategy.name}",
@@ -773,6 +995,7 @@ def build_map(strategy: sf.Strategy, units: dict[str, str], build_id: str, sourc
         "telemetry": {"version": 2, "lines": {k: list(v) for k, v in sf.TELEMETRY_KEYS.items()},
                       "list_keys": {"PWD": ["i", "f"], "PWB": ["d"], "PWC": ["d"]},
                       "worst_case": budget["telemetry"]},
-        "runtime": {"files": {name: _sha(units[name]) for name in RUNTIME_FILES}},
+        "runtime": {"files": {name: _sha(units[name]) for name in (*RUNTIME_FILES, COMMS_RUNTIME[0]) if name in units}},
         "skills": {c.id: {"path": c.code_path, "sha256": _sha(units[c.id])} for c in strategy.of_kind("SK")},
+        **({"comms": comms_map(plan)} if (plan := comms_plan(strategy)[0]) is not None else {}),
     }

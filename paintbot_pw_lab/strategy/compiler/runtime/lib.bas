@@ -14,6 +14,7 @@
 '   rt__in0, rt__in1, rt__in2                            bound inputs (st__bind)
 '   rt__pe, rt__pb                                       this tick's print events / bytes
 '                                                        (static worst per line)
+'   st__pwd_print()                                      prints the PWD line and adds its cost
 ' Read-only exports for units: rt__rule, rt__cap, rt__since, rt__pver.
 ' Public kill switch: telemetryOff = 1 silences every telemetry line.
 '
@@ -203,8 +204,9 @@ SUB rt__run()
   END IF
 END SUB
 
-' Decision line: on any change of r c i h p f, and at least every 24 ticks.
-' 17 + 2 * words events, 118 + 12 * words bytes.
+' Decision line: on any change of r c i h p f, and at least every 24 ticks. The PRINT is
+' generated (st__pwd_print): it folds inputs and the priority version to literals when the
+' source makes them constant, prints the same text, and adds its exact static cost.
 SUB rt__pwd()
   rt__changed = 0
   rt__w = 0
@@ -240,18 +242,7 @@ SUB rt__pwd()
     rt__changed = 1
   END IF
   IF rt__changed <> 0 AND telemetryOff = 0 THEN
-    PRINT "PWD v=2 t="; worldTick; " r="; rt__rule; " c="; rt__cap; " i="; rt__in0; ","; rt__in1; ","; rt__in2; " h="; rt__held; " p="; rt__pver; " f=";
-    rt__w = 0
-    WHILE rt__w < rt__n_words
-      IF rt__w > 0 THEN
-        PRINT ",";
-      END IF
-      PRINT rt__fw(rt__w);
-      rt__w = rt__w + 1
-    WEND
-    PRINT
-    rt__pe = rt__pe + 17 + 2 * rt__n_words
-    rt__pb = rt__pb + 118 + 12 * rt__n_words
+    st__pwd_print()
     rt__p_rule = rt__rule
     rt__p_cap = rt__cap
     rt__p_held = rt__held

@@ -11,7 +11,12 @@ the side-balanced 28-seed screen reports identical play, and all 16 candidate-se
 pass telemetry parsing and coverage on the original 0.3.89 release.
 [Build `567feb38-1`](../../strategy/compiled/567feb38-1/report.md) requalifies the same
 baseline on the active 0.3.115 pin.
-The five-level audit (M2) is qualified locally and with hosted telemetry on 0.3.115. The comms v1 codec is M3.
+The five-level audit (M2) is qualified locally and with hosted telemetry on 0.3.115. M3 is in progress. Codec components opt in with
+`Encoding: comms-v1 N` (wire type 0–8), declare `packet[2]`, and use `Log: packet`.
+Generated code owns this packet and the send/receive status fields. Mixing codec and legacy
+COM components or duplicate wire types is rejected. The compiler includes the authored codec
+only for opted-in builds; the map records wire types, constants and compact batch format.
+See [comms](../../strategy/comms.md) for the current implementation and acceptance status.
 
 ## Commands
 
