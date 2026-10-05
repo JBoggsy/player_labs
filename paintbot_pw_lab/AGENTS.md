@@ -97,8 +97,9 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
   relying on it; record mismatches in `docs/mechanics.md` §8 / `docs/community.md` and move on.
 - **Resolve the current ranking rule before performance comparisons.** On 2026-10-05 the
   current league reports OpenSkill, `margin_scale: 600`, and mean round scoring. The earlier
-  Elo outcome formula is historical; backend semantics and the A/B metric need requalification
-  (see TODO). Result scores remain winning glory, with loser/draw scores zero. Read
+  Elo outcome formula is historical; backend semantics were verified at metta `dcdfc19a`. Use the additive
+  `score_outcome` metric with explicit `--margin-scale 600` after rechecking the live value;
+  `elo_outcome` remains the historical default. Result scores remain winning glory, with loser/draw scores zero. Read
   [docs/mechanics.md §1](docs/mechanics.md) and never infer a win from anything but the result.
 - **A BASIC compile error fails the whole episode** (no results, no data from that
   eval slot); it shows up as failed hosted episodes, which is the signal to read. Using a host
