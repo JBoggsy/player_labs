@@ -15,6 +15,13 @@ Remove a task when it is complete.
 - Support large trace-field projection in warehouse ingestion to bound memory use.
 - Check CTF comparison statistics use one team outcome per episode.
 
+## Player-ADE
+
+- Unify terminology across the repo: "policy" for the artifact uploaded to the
+  Observatory, "player" for the agent system (decided in the `player_ade` design; the
+  rest of the repo still calls the artifact a "player"). Do it as one deliberate pass
+  over root docs, skills, and lab docs, not piecemeal.
+
 ## Gods of the Arena
 
 - Diagnose v13's rare BASIC instruction-limit failure: confirmation baseline episode
