@@ -163,3 +163,7 @@ attribution remains inferred. Ordinary and sniper reach constrain inferred aim t
 but the aim corridor is calibrated only for rules 48. See [tables](tables.md) and the
 [evidence contract](../evidence-pipeline.md#rules-49-trace-contract). Cache receipts include
 the binary hash and table version, so old expansions are rebuilt.
+
+The same owner self-destructing while its earlier lob lands on that tick is verified
+against the engine phase order but is not a separate integration fixture. Tests exercise
+initial suicides and post-shield blasts that kill enemies and later would-be bombers.

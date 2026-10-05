@@ -73,22 +73,44 @@ True checks are absent from source. These are source/evidence findings, not perm
 change baseline behavior or increase telemetry. Unknown checks never pass, and raw
 outcomes remain available separately. The five immutable compiler guesses remain open.
 
-**Migration in progress (2026-10-05):** authenticated league/coworld reads now resolve teams
+**Active-pin migration locally qualified (2026-10-05):** teams release `0.3.115`, commit
+`244dc62b38a8a89721cbb1625f05a99ca60d0c13`, rules 49. Authenticated lookup resolved teams
 league `league_ae677105-0ab8-4561-81ec-c9cf6735821c` to
-`cow_7109be6e-ad0c-4088-991d-060057a33c4e`, release `0.3.115`, commit
-`244dc62b38a8a89721cbb1625f05a99ca60d0c13`. The active pin moved using `deployed-ref --write`.
-Rules remain 49; the changes since 0.3.114 are training telemetry and neural observations.
-The scratch clone `tmp/collab/strategy/m2/migration-engine` supplies builds through `PW_CLONE`;
-the original engine checkout is untouched. New tools/native library build successfully.
-Trace schema 2 / table version 3 expose self-destruct and new equipment; exact engine/rules
-pairs gate the audit. Source-bound baseline semantics and nine evidence gaps are unchanged.
-The full suite passes 363 tests; the added rules49 pickup-feature check also passes. New immutable compilation, G1–G5, full recording audits
-and final review are still pending at this checkpoint; do not claim completed requalification.
+`cow_7109be6e-ad0c-4088-991d-060057a33c4e`. Both `deployed_ref` and public-league lookup
+now use that league. The scratch clone `tmp/collab/strategy/m2/migration-engine` supplies
+builds through `PW_CLONE`; the original engine checkout remains untouched.
+
+[Build `567feb38-1`](strategy/compiled/567feb38-1/report.md) passed G1–G5 first round.
+All 23 component entries are reused, every BASIC unit is byte-identical to M1, and the
+assembled policy differs only in its provenance header. The 28-seed, both-side screen
+reports identical play, no bad seats, interval [0.5, 0.5]. Sampled peaks are 10,519
+instructions / 17,776 work units; memory remains 275 globals / 983 cells. G5 parsed
+3,098 lines across 16 candidate-seat logs without failures. The five inherited guesses
+remain open with the same reviewed dispositions; no strategy improvement is implied.
+The frozen baseline still assumes 3 HP and targets out to 52.5 m against a 21 m gun.
+
+The six-recording rules49 audit (two G5 tapes plus seeds 1–2, both sides, full length)
+covers 75,420 living decision ticks: 17 pass, nine unmeasurable, zero fail. All measurable
+checks are exercised. Four full matches ended at 3,833, 3,833, 1,951 and 1,951 ticks.
+The report is `analysis/strategy_audit/567feb38-1-dee5881ab1c5/report.md`; the source
+recordings are `tmp/strategy-evidence/567feb38-1/`. Independent evidence checks confirm
+182/182 status sends at t+1 (182 violations at either neighboring offset), 22 terminal-death
+windows without a later PWE death line, all three new pickup kinds exercised, and all 83
+report input hashes matching. The original six rules48 recordings still yield 17 pass,
+nine unmeasurable, zero fail with the rebuilt old exporter. A rules48 tape also hash-verifies
+under the new exporter. Full suite: 364 passed.
+
+Trace schema 2 / table version 3 expose self-destruct and new equipment. Exact engine/rules
+pairs gate the audit. Self-destruct is separate from grenade metrics; source-bound baseline
+semantics and evidence gaps are unchanged. Aim inference is uncalibrated for rules49;
+radar-then-other-item takers can be unassigned. The same-owner lob/self-destruct collision
+is source-reviewed but not a separate integration test. See the evidence-pipeline reference.
 
 `PW_DOCS_SHA` stays `118e1619`: BASIC/rules49 changes are source-verified in the relevant docs,
 but wider neural/oracle references remain explicitly scoped to 0.3.89. Installed
-`softmax-cli` 0.26.38 is current; `coworld` 0.1.55 trails 0.1.56. Neither package changed.
-Live doctor passes on the new pin after a rate-limited (429) attempt. Hosted telemetry confirmation and publishing remain separately gated.
+`softmax-cli` 0.26.38 is current at preflight; `coworld` 0.1.55 trails 0.1.56. Neither package
+changed. Live doctor passed on the new pin after a rate-limited (429) attempt.
+Hosted telemetry confirmation, uploads and publishing remain separately gated. M3 is untouched.
 
 Inputs the policy (`STRATEGY.md`) should build on:
 

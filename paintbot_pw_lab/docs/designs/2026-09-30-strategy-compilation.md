@@ -389,6 +389,14 @@ James chose the broader migration, which also qualifies the full audit for the n
 The qualification results are tracked in WORKING_CONTEXT; implementation admission alone
 is not evidence that qualification passed.
 
+Local qualification completed in build `567feb38-1`: G1–G5 pass; all units reused;
+56 matches against the frozen reference have identical play and no bad seats. Six local
+recordings give 75,420 living decision ticks, 17 pass / nine unmeasurable / zero fail.
+The original rules48 audit is unchanged; terminal-death, wrong-offset communication,
+self-destruct replay and cache invalidation checks pass. Full suite: 364 tests. Hosted
+acceptance remains pending. `PW_DOCS_SHA` stays at the historical citation anchor because
+neural/oracle documentation is outside the raw-BASIC requalification.
+
 Implementation and evidence sequence:
 
 

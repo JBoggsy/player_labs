@@ -145,8 +145,9 @@ release alone does not prove which engine played a hosted episode.
 
 The audit accepts exact engine contracts: `coworld-v0.3.89` / `118e1619` / rules 48 and
 `coworld-v0.3.115` / `244dc62b` / rules 49, teams with 16 seats. Other engine/rules
-combinations fail identity validation. The rules-49 migration qualification is tracked in
-[WORKING_CONTEXT.md](../../WORKING_CONTEXT.md); admission alone is not qualification evidence. The runtime reconstruction is bound to the qualified M1
+combinations fail identity validation. Rules49 qualification is recorded in build `567feb38-1` and
+[WORKING_CONTEXT.md](../../WORKING_CONTEXT.md): G1–G5 and six local audit recordings pass
+with the nine declared evidence limits remaining unmeasurable. The runtime reconstruction is bound to the qualified M1
 runtime unit hashes. A changed runtime reports `runtime_model_mismatch`, never a pass
 from the old model. Baseline prose evaluators are bound to the M1 component semantics
 and check text/level/Reads hashes. Changed or unknown prose reports no evaluator. New

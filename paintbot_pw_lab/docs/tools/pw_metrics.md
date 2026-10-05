@@ -111,3 +111,7 @@ accounting, summed ratios and mirror policies, a sample episode end to end).
 - Win-probability credit ([pw_winprob.md](pw_winprob.md)) and engagement segmentation ([pw_fights.md](pw_fights.md)).
 - Spray and grenade effectiveness count bursts/blasts with at least one enemy victim; they
   do not attribute a miss to a target.
+
+Rules49 damage breakdowns include `self_destruct`; pickup counters include `mister`,
+`sniper`, and `radar`. Grenade throw-efficiency metrics exclude self-destruct. Aim-line
+distance bands remain uncalibrated under the new gun spread; use them descriptively.

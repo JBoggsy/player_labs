@@ -157,9 +157,9 @@ plus `oracle.nim:247-340`, `basic.nim:3003-3093`, `neural_host.nim:744-870`.
 | --- | --- |
 | `selfId` | seat 0-15 (0 .. seats−1 in a match of another size) |
 | `selfTeam` | `selfId mod 2` (FFA-kin: the seat) |
-| `selfX`, `selfY`, `selfHp` | position; base HP (0-3, FFA-kin 0-10) |
+| `selfX`, `selfY`, `selfHp` | position; HP 0-10 in rules 49 (teams before rules 49: 0-3) |
 | `armorHp` | armor 0-3 |
-| `livesLeft` | lives including the current one (4 at start) |
+| `livesLeft` | lives including the current one (1 at start in rules 49; previously 4) |
 | `hasGrenade`, `hasSpray`, `grenadeCharge` | 0/1, 0/1, 0-24 |
 | `trenchId` | trench index you stand in, -1 outside |
 | `worldTick` | current tick |

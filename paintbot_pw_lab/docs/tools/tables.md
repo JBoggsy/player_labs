@@ -165,7 +165,7 @@ of seats. Exact attribution of those needs an engine hook (`mechanics.nim:712-71
 ### `damage` (1 row per damage event past the shield and life checks)
 
 `t`, `seat` (attacker; null = the map), `team`, `victim`, `victim_team`, `weapon`
-(gun/grenade/spray), `hp_removed`, `armor_absorbed` (armor-only hits have hp_removed 0),
+(gun/grenade/spray/self_destruct/none), `hp_removed`, `armor_absorbed` (armor-only hits have hp_removed 0),
 `killed`, `friendly`, `self`, `distance`, `attacker_x/z`, `victim_x/z`.
 
 ### `kills` (1 row per death by damage)
@@ -183,7 +183,7 @@ spawn).
 ### `pickups`
 
 `t`, `seat` (null when no taker could be identified), `team`, `pickup` (index), `pickup_kind`
-(grenade/spray/medkit/armor/uniform), `x`, `z`, `ambiguous` (more than one plausible taker; the
+(grenade/spray/medkit/armor/uniform/mister/sniper/radar), `x`, `z`, `ambiguous` (more than one plausible taker; the
 first in the tick's seat order was chosen). The pickup itself is exact (its `readyAt` jumped).
 
 ### `captures`

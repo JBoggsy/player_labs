@@ -10,6 +10,7 @@ TOOLS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(TOOLS))
 import pw_episodes as pe
 import pw_terrain
+import pw_metrics
 
 TAG = 'coworld-v0.3.115'
 BIN = TOOLS / 'bin' / TAG
@@ -50,3 +51,9 @@ def test_self_destruct_is_not_a_grenade_and_commands_survive(tmp_path, explode_t
     col = meta['state_columns'].index('cmd_self_destruct')
     assert all(s[col] is None for s in states[0]['seats'])
     assert all(s[col] == 1 for s in states[-1]['seats'])
+    ep = pe.load_episode(replay, tag=TAG)
+    metrics = pw_metrics.seat_metrics(ep)
+    damage = ep['damage']
+    enemy = damage[(damage.weapon == 'self_destruct') & ~damage.friendly & ~damage['self']]
+    assert metrics.dealt_hp_enemy_self_destruct.sum() == enemy.hp_removed.sum()
+    assert metrics.dealt_hp_enemy_grenade.sum() == 0
