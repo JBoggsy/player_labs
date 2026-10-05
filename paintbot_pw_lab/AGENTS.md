@@ -31,6 +31,7 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
   `map-raw`) and the shared `mine`/`test` passthroughs do not print the JSON envelope.
 - **Opponent refs:** `pw.py leaders --json` lists today's champions as exact `name:vN` refs
   (it handles champions whose leaderboard label is null).
+- **Deferred game-specific work:** [TODO.md](TODO.md).
 - **Release pin:** `tools/release.env` is the single source of the engine tag every tool uses;
   `pw.py deployed-ref --write --json` moves it when the league moves.
 - **Skills** (in [.claude/skills/](.claude/skills/); read the SKILL.md directly when working from
@@ -73,7 +74,7 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 | `docs/evidence-pipeline.md` | Artifact inventory, replay format, re-simulation constraints, local runs. |
 | `docs/reports/` | Dated evidence reports (not maintained as current truth): [2026-09-29-league-field-analysis.md](docs/reports/2026-09-29-league-field-analysis.md) (80 league episodes: endings, sides, seeds, champion styles, shout protocols, friendly fire). The readable game overview is the repo-level [onboarding report](../docs/reports/paintbot-pw-onboarding-2026-09-28.html). |
 | `docs/tools/` | One reference per tool (agent contract, commands, outputs, limits); `README.md` is the generated index, `tables.md` the Parquet table contract. |
-| `strategy/` | The policy source (layout: strategy-file-format design §4.1). **Load-bearing: `STRATEGY.md` is the source of truth; compiled BASIC is never edited by hand.** [`compiler/`](strategy/compiler/) contains the M0 runtime and agent instructions; [`pw.py strategy`](docs/tools/pw_strategy.md) compiles committed sources. `STRATEGY.md` and motor skills arrive in M1. [`comms.md`](strategy/comms.md) remains the draft comms v1 design. |
+| `strategy/` | The policy source (layout: strategy-file-format design §4.1). **Load-bearing: `STRATEGY.md` is the source of truth; compiled BASIC is never edited by hand.** [`compiler/`](strategy/compiler/) contains the M0 runtime and agent instructions; [`pw.py strategy`](docs/tools/pw_strategy.md) compiles committed sources. `STRATEGY.md` and `skills/motor/skill.bas` describe the baseline for M1; gate qualification is pending. [`comms.md`](strategy/comms.md) remains the draft comms v1 design. |
 | `docs/designs/` | Design documents. [`2026-09-29-tooling-plan.html`](docs/designs/2026-09-29-tooling-plan.html) is the tools-and-skills plan, now implemented (brief: `.tooling-plan-brief.md`). [`2026-09-30-strategy-file-format.md`](docs/designs/2026-09-30-strategy-file-format.md) (rendered: `.html`) is the **accepted** format for the load-bearing strategy file (2026-09-30). [`2026-09-30-strategy-compilation.md`](docs/designs/2026-09-30-strategy-compilation.md) (rendered: `.html`) is the **accepted** compile process: deterministic Python around one LLM step, unit files, versioning, report, gates. |
 | `tools/` | The instruments: `pw.py` (dispatcher, catalog, doctor), `pw_cli.py` (shared CLI contract), `release.env` / `pw_release.py` (engine pin), Nim `pw_trace` / `pw_map`, Python readers, metrics, visuals, A/B, local harness, scouting, miner, win probability, tuning; `tests/`. Build products go to gitignored `tools/bin/` and `tools/.cache/`. |
 | `.claude/skills/` | The seven lab skills listed above. |

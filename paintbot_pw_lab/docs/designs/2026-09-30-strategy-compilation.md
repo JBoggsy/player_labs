@@ -1,7 +1,8 @@
 # Design: compiling the strategy file to BASIC
 
 > **Status:** M0 implemented and qualified with real Claude and Codex builds
-> (`compiled/f4ffb408-1` and `compiled/ee55887d-1`, both G1–G5 passed). M1 has not started.
+> (`compiled/f4ffb408-1` and `compiled/ee55887d-1`, both G1–G5 passed). M1 source and motor
+> skill are drafted; the first M1 compilation and gate qualification are pending.
 > Accepted 2026-09-30 (James). Build order: §11. Rendered,
 > commentable copy: [2026-09-30-strategy-compilation.html](2026-09-30-strategy-compilation.html)
 > (may lag this file; this Markdown file is authoritative).
@@ -339,6 +340,39 @@ files and a Python driver; each agent needs only a thin wrapper.
 | M1 `base.bas` description | `STRATEGY.md` describes `base.bas` faithfully; full build | G1-G5 pass; G4 against `base.bas` has 0.5 in its interval |
 | M2 Telemetry audit | `pw.py strategy audit` (the five-level checks) | the audit runs on local recordings; one hosted episode confirms the lines arrive |
 | M3 Comms v1 | codec runtime unit; `COM.` components from `strategy/comms.md` | Decode rate between our own seats near 100% in local recordings; hosted A/B against the M1 build |
+
+### M1 baseline decomposition
+
+M1 preserves `reference/base.bas` at `coworld-v0.3.89`, including its original constants,
+strict comparisons, tie order, integer arithmetic and memory across deaths. Its chosen source
+layout is:
+
+- Knowledge: self motion, visible contacts and previous motion, remembered supplies, and the
+  derived squad assignment with local avoidance and idle-capture history. These update every
+  tick, including ticks when supply or retreat overrides the movement goal.
+- Situations and rules: retreat outranks resupply, which outranks taking or covering a heart;
+  the legacy default goal is the fallback. Static roles split ring and cover seats. Commitment
+  has no hold or priority margin.
+- Capabilities: choose the corresponding goal and holding flag, call the common motor skill,
+  then apply the original quiet-approach condition. They keep no activation-local tactical
+  state, so switching rules does not reset baseline memory.
+- One authored motor skill: baseline math, facing, footwork, dry routing, gun aiming and
+  grenade timing. Objective selection, supply selection, retreat selection and sneak decisions
+  remain LLM-compiled source components.
+- Communication: routine literal status first, then the grenade announcement. Both are
+  send-only; the comms v1 codec remains M3.
+
+The layering rules forbid K→K and SK→SK calls. The pickup component therefore independently
+checks for a visible carrier, and the motor helpers live in one skill. This introduces no new
+behavior or format exception. Contact velocities are computed from old observations before
+Knowledge advances its history; the motor reads those computed velocities. The pinned engine
+reads frozen observations and keeps shouts separate from action commands, so sending the same
+ordered shouts in the Communication phase preserves their gameplay effect.
+
+The resumed preflight uses documented `doctor --offline`: the stored live teams league ID
+returns 404, and its replacement runs 0.3.113. All local checks pass at the explicitly requested
+0.3.89 pin. This is not a passed live-league check. Moving the pin and repairing live discovery
+are required before later hosted work, outside M1's local scope.
 
 ## 12. Alternatives considered
 

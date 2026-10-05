@@ -26,19 +26,26 @@ accepted on 2026-09-30 (James):
   friend/foe, sightings, grenades, glory hearts, pickups). Three engine questions to verify first
   (its §11).
 
-**Paused at completed M0 (user requested an offline pause).** Both real compiler builds
+**M0 is complete; M1 source is drafted.** Both real compiler builds
 passed G1–G5: [Claude `f4ffb408-1`](strategy/compiled/f4ffb408-1/report.md) and
 [Codex `ee55887d-1`](strategy/compiled/ee55887d-1/report.md). Deterministic tests include
 engine-backed selection/adaptation checks. Changed units now receive their previous BASIC
 as read-only compiler input in `context/previous/`, with requested outputs initially
 absent; regression tests cover both handoff and stale-output rejection.
 
-**Resume with M1 planning, before code.** Read both authoritative design Markdown files,
-`reference/base.bas`, and [compiler commands](docs/tools/pw_strategy.md). Write the M1 plan
-and review it with Claude Opus 5.5 using agent-collab, then implement a faithful baseline
-`STRATEGY.md` and motor skills. Do not improve baseline behavior or hand-port tactical logic
-into skills. Commit source before compiling with `--milestone m1`; G1–G5 must pass and G4's
-95% interval against `reference/base.bas` must contain 0.5. M1 has not started.
+**Current step: validate and commit the M1 source, then compile.** Claude Opus 5.5 approved
+the decomposition and wrote `strategy/STRATEGY.md`, `strategy/skills/motor/skill.bas`, and
+five source-contract tests. Its handoff is `tmp/collab/strategy/M1-SOURCE-REPORT.md`.
+Source review corrected checks that incorrectly assumed squad targets always agree and
+shots only occur at the start of a movement leg; baseline behavior is unchanged.
+Re-run lint and tests, audit documentation, then commit source before compiling with
+`--milestone m1`. G1–G5 must pass and G4's 95% interval against `reference/base.bas` must
+contain 0.5. No M1 compiled build exists yet.
+
+**Access restored (2026-10-05):** the normal uv toolchain and Claude tmux session are
+accessible again. The offline doctor passes all local checks at the required engine pin.
+Source lint passes with no diagnostics; the full suite passes 320 tests. The next step is
+the source checkpoint and first M1 compile.
 
 Telemetry v2 emission and G5 parsing are part of M0–M1; the five-level audit remains M2.
 Priorities are per rule in v1. Oversized belief logs currently fail lint rather than being
@@ -47,9 +54,17 @@ no uploads or hosted evaluations. Tools remain pinned to `coworld-v0.3.89` (`118
 
 The user authorized committing and pushing the completed work. Local checkpoints are
 committed on `paintbot-pw-lab`; push to origin after M1 is finished and verified. Nothing has
-been pushed during this task. The optional live peer session is `pw-strategy-review` in tmux;
-its handoff and reviews are in gitignored `tmp/collab/strategy/`. Durable implementation and
+been pushed during this task. The original peer session `pw-strategy-review` is stopped;
+the fresh M1 review session is `pw-m1-review`. Handoffs and reviews are in gitignored `tmp/collab/strategy/`. Durable implementation and
 reports contain the information needed to resume without that session.
+
+**Resumed preflight:** the checkout is based on the fetched `origin/main`; the full suite
+passes 315 tests. `doctor --json` fails its live league lookup because the stored teams league
+ID now returns 404. The public directory resolves a replacement teams league at 0.3.113.
+This task remains explicitly pinned to 0.3.89; `doctor --offline --json` passes all local
+checks, and `reference/base.bas` matches the pinned tag byte for byte. No engine pin or
+package changes were made. The peer approved the offline preflight disposition and the
+baseline decomposition within the current component model.
 
 Inputs the policy (`STRATEGY.md`) should build on:
 
