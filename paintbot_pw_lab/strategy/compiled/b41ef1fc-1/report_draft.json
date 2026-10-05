@@ -1,0 +1,74 @@
+{
+  "guesses": [
+    {
+      "id": "G-K.squad_target-1",
+      "component": "K.squad_target",
+      "spec_quote": "When `worldTick MOD progress_period = 0`",
+      "decision": "Wrapped the whole stall-memory step in `IF progress_period > 0`, so a tuned value of 0 skips Step 1 instead of dividing by zero.",
+      "why": "AGENTS.md rule 5 requires guarding every MOD; progress_period is a tunable param, not a literal.",
+      "severity": "low",
+      "state": "open"
+    },
+    {
+      "id": "G-C.take_heart-1",
+      "component": "C.take_heart",
+      "spec_quote": "`goal_x = controlX(objective)`",
+      "decision": "Read controlX/controlY(objective) without checking objective >= 0. If the activation runs with objective = -1, the host returns -1 (invalid index), so there is no runtime error. The goal is then (-1, -1), which the engine clamps.",
+      "why": "The spec has no objective >= 0 guard here, unlike the default_goal/resupply/fall_back steps. The selector presumably runs this only when S.has_target_heart is on, and controlX(-1) is safe.",
+      "severity": "low",
+      "state": "open"
+    },
+    {
+      "id": "G-C.cover_heart-1",
+      "component": "C.cover_heart",
+      "spec_quote": "`hx = controlX(objective)`",
+      "decision": "Same as C.take_heart: no objective >= 0 guard, relying on controlX(-1) = -1 being safe.",
+      "why": "Literal reading of the spec. The host returns -1 for invalid indices instead of raising an error.",
+      "severity": "low",
+      "state": "open"
+    },
+    {
+      "id": "G-C.default_goal-1",
+      "component": "C.default_goal",
+      "spec_quote": "else `(heartX, heartY)`",
+      "decision": "Used the legacy host fields carrying, ownHeartStolen, heartX and heartY exactly as written. Under rules 47 carrying and ownHeartStolen are always 0 and heartX/heartY read the enemy home, so in practice the goal is the thief (never set, see gaps) or the enemy home.",
+      "why": "The spec names these fields explicitly and matches base.bas; I did not substitute control* fields.",
+      "severity": "medium",
+      "state": "open"
+    },
+    {
+      "id": "G-COM.grenade_out-1",
+      "component": "COM.grenade_out",
+      "spec_quote": "when threw of `SK.motor` is 1",
+      "decision": "Read sk_motor__threw as left by the most recent SK.motor run before __send. If send runs before motor on a tick, the callout comes one tick late.",
+      "why": "Call order is generated and not visible to the unit.",
+      "severity": "low",
+      "state": "open"
+    }
+  ],
+  "gaps": [
+    {
+      "component": "K.contacts",
+      "need": "playerCarrying(i) to find a visible enemy heart carrier (thief)",
+      "substitute": "Called playerCarrying as specified. Under rules 47 it always returns 0, so thief stays -1 and carrier_bonus never applies."
+    },
+    {
+      "component": "K.pickups",
+      "need": "carrying and playerCarrying to block supply detours while a heart is carried",
+      "substitute": "Used the legacy fields as specified. Both are always 0 under rules 47, so the block never triggers."
+    },
+    {
+      "component": "S.losing_fight",
+      "need": "carrying (we carry a heart)",
+      "substitute": "Used the legacy host field as specified. It is always 0 under rules 47, so NOT carrying is always true."
+    },
+    {
+      "component": "C.default_goal",
+      "need": "carrying, ownHeartStolen, heartX/heartY (capture-the-flag state)",
+      "substitute": "Used the legacy fields as specified. Under rules 47 they read 0, 0 and the enemy home."
+    }
+  ],
+  "lessons": [
+    "Legacy capture-the-flag fields (carrying, playerCarrying, ownHeartStolen, heartX/heartY) are constant under rules 47; specs that branch on them compile but those branches are dead."
+  ]
+}

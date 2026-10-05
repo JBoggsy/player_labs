@@ -2,7 +2,8 @@
 
 > **Status:** M0 implemented and qualified with real Claude and Codex builds
 > (`compiled/f4ffb408-1` and `compiled/ee55887d-1`, both G1–G5 passed). M1 source and motor
-> skill are drafted; the first M1 compilation and gate qualification are pending.
+> skill are qualified in `compiled/b41ef1fc-1`: all G1–G5 pass, with identical play against
+> `base.bas` across 28 seeds on both sides. M2 and M3 remain deferred.
 > Accepted 2026-09-30 (James). Build order: §11. Rendered,
 > commentable copy: [2026-09-30-strategy-compilation.html](2026-09-30-strategy-compilation.html)
 > (may lag this file; this Markdown file is authoritative).

@@ -5,6 +5,12 @@ an immutable BASIC build. It runs locally and never uploads or submits a policy.
 The [source format](../designs/2026-09-30-strategy-file-format.md) and
 [compilation design](../designs/2026-09-30-strategy-compilation.md) define the contract.
 
+The checked-in `strategy/STRATEGY.md` describes `reference/base.bas` at `coworld-v0.3.89`.
+Its [M1 build report](../../strategy/compiled/b41ef1fc-1/report.md) records passing G1–G5;
+the side-balanced 28-seed screen reports identical play, and all 16 candidate-seat recordings
+pass telemetry parsing and coverage. This is local qualification at the pinned release.
+The five-level semantic audit and comms v1 codec remain later milestones.
+
 ## Commands
 
 From the repository root:
