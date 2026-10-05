@@ -161,11 +161,16 @@ candidate logs pass existing G5 coverage (5,800 lines); 56/56 status sends align
 Upload provenance is recorded in `uploads.jsonl`: the CLI completes with the local content
 hash, but the platform version-detail endpoint did not expose a hash for independent readback.
 
-The runtime reconstruction is bound to the qualified M1
-runtime unit hashes. A changed runtime reports `runtime_model_mismatch`, never a pass
-from the old model. Baseline prose evaluators are bound to the M1 component semantics
-and check text/level/Reads hashes. Changed or unknown prose reports no evaluator. New
-strategies still receive generic runtime consistency counts, separately from prose checks.
+Runtime reconstruction accepts exact reviewed hashes: the M1 skeleton, the compact-print
+foundation skeleton in `3d0f8a4f-1`, and that skeleton with the engine-tested comms codec.
+Other runtime hashes report `runtime_model_mismatch`. Baseline prose predicates bind to
+the component and its transitive compiled references, exact authored skill bytes, the
+global Adaptation set, and the check's text/level/Reads. Changed dependencies stay
+unmeasurable; unrelated changes do not invalidate independent replay-relative predicates.
+New strategies still receive generic runtime consistency counts separately from prose checks.
+Transport reconstruction uses the engine's byte-based inbox filter. A replay text whose
+byte count cannot be reconstructed leaves that receive tick unknown; send evidence and
+other ticks are retained, and no complete decode ratio is claimed.
 
 Replay state at `t` describes the decision; commands and shouts execute at `t+1`.
 On the four full local M1 recordings, all 170 telemetry sends match replay shouts at

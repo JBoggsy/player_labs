@@ -4,6 +4,7 @@ import math
 
 from pw_intent import observed_view
 from strategy_audit import binding
+from strategy_format import REF_RE, condition_refs
 from pw_scout import wilson
 
 SHOUT_STEP_OFFSET = 1  # decision t -> recorded shout at t+1; also tested with wrong offsets
@@ -102,6 +103,37 @@ def conditional_result(outcome, *, belief_correct, execution_correct, complete):
     return 'measured', None  # The baseline declares statistics, not acceptance thresholds.
 
 
+
+def semantics_match(component, strategy, mapping, reference):
+    """Bind a reviewed predicate to its source dependency closure, not unrelated behavior."""
+    current, old = mapping['components'], reference['components']
+    adaptations = {key: item['text_hash'] for key, item in current.items() if item['kind'] == 'A'}
+    prior_adaptations = {key: item['text_hash'] for key, item in old.items() if item['kind'] == 'A'}
+    if adaptations != prior_adaptations:
+        return False  # Adaptations can alter priorities without appearing in Uses.
+    pending, visited = [component], set()
+    while pending:
+        key = pending.pop()
+        if key in visited:
+            continue
+        visited.add(key)
+        if key not in current or key not in old or current[key]['text_hash'] != old[key]['text_hash']:
+            return False
+        comp = strategy.components[key]
+        if comp.kind == 'SK' and current[key]['unit_sha256'] != old[key]['unit_sha256']:
+            return False
+        refs = set(comp.uses) | set(REF_RE.findall(comp.compiled_text))
+        if comp.kind == 'ST' or any(ref.startswith('R.') for ref in refs):
+            # ST components do not declare Uses for their selection dependencies.
+            refs.update(name for name in current if name.startswith('ST.'))
+            for rule in strategy.rules:
+                refs.add(rule.capability)
+                refs.update(condition_refs(rule.condition))
+                refs.update(arg.ref for arg in rule.args.values() if arg.ref)
+        pending.extend(ref for ref in refs if not ref.startswith('R.'))
+    return True
+
+
 def audit_seat(ep, seat, states, events, runtime, issues, strategy, mapping, reference, evidence):
     eid = ep.episode_id
     tick_rows = {r['t']: r for r in runtime['ticks']}
@@ -113,15 +145,12 @@ def audit_seat(ep, seat, states, events, runtime, issues, strategy, mapping, ref
     visibility = {(int(r.t), int(r.seat)): set(int(b) for b in r.sees) for r in ep['visibility'].itertuples()}
     targets = None
     raw = []
-    # The whole baseline semantics are frozen for these evaluators, including dependencies.
-    semantics_match = all(mapping['components'].get(key, {}).get('text_hash') == value['text_hash']
-                          for key, value in reference['components'].items())
     for key, check in evidence.checks.items():
         component = check['component']
         comp = strategy.components[component]
         if mapping.get('comms') and comp.kind == 'COM':
             continue  # Codec checks have their own source-bound evaluator.
-        supported = semantics_match and any(binding(component, c) == check['binding']
+        supported = semantics_match(component, strategy, mapping, reference) and any(binding(component, c) == check['binding']
                                              for c in reference['components'].get(component, {}).get('checks', []))
         def add(t, status, reason=None, **detail):
             evidence.add(key, eid, seat, t, status, reason, **detail)

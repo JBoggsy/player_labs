@@ -174,3 +174,33 @@ def test_telemetry_kill_switch_preserves_communication(tmp_path):
         assert "PWC" not in log and "BASIC error" not in log and "disabled" not in log
     episode = pe.load_episode(pe.discover([tmp_path / "record"])[0])
     assert episode.summary["verified"] and len(episode["shouts"]) == 16
+
+
+def test_transport_counts_bytes_not_characters_and_preserves_unknown_sends():
+    msg = cm.Message(8, 2, 3, 0, 0)
+    text = cm.encode(msg, 5)
+    payload = list(cm.payloads(msg, 5))
+    recv = {'kind': 'PWC', 't': 6, 's': 2, 'w': 2, 'd': payload}
+    # Twenty characters, but 29 bytes: these must not consume the eight attempts.
+    noise = {'t': 6, 'seat': 1, 'text': '1' + 'é' * 9 + '1' + 'x' * 9,
+             'bytes': 29, 'heard_by': [4]}
+    shout = {'t': 6, 'seat': 2, 'text': text, 'bytes': 20, 'heard_by': [4]}
+    result = cm.audit_transport([noise] * 8 + [shout], [recv], 4, {6})
+    assert result['status'] == 'pass'
+    assert result['eligible_decode_rate'] == 1
+    # A nondecimal ASCII shape does consume capacity.
+    crowd = {**noise, 'text': '1' + 'x' * 9 + '1' + 'y' * 9, 'bytes': 20}
+    result = cm.audit_transport([crowd] * 8 + [shout], [], 4, {6})
+    assert result['status'] == 'pass'
+    assert result['counts']['teammate_capacity_excluded'] == 1
+    # A lossy export makes this receive tick unknown, not a false delivery failure.
+    unknown = {**noise, 'text': 'bad', 'bytes': 20}
+    result = cm.audit_transport([unknown, shout], [recv], 4, {6})
+    assert result['status'] == 'unmeasurable'
+    assert result['eligible_decode_rate'] is None
+    assert result['issues'][0]['reason'] == 'unknown_message_shape'
+    own = cm.Message(8, 4, 5, 0, 0)
+    own_send = {'kind': 'PWC', 't': 6, 's': 1, 'w': 4, 'd': list(cm.payloads(own, 6))}
+    result = cm.audit_transport([unknown, shout], [recv, own_send], 4, {6})
+    assert result['status'] == 'fail'
+    assert any(row['reason'] == 'send_mismatch' for row in result['failures'])

@@ -67,7 +67,7 @@ def test_previous_unit_cannot_satisfy_missing_generated_output(tmp_path):
     (root / 'units').mkdir(parents=True)
     (stage / 'units/C.idle.bas').write_text('previous changed unit')
     (stage / 'units/K.position.bas').write_text('unchanged unit')
-    sb.copy_unit_inputs(stage, root, ['C.idle'])
+    sb.copy_unit_inputs(stage, root, ['C.idle'], {})
     assert not (root / 'units/C.idle.bas').exists()
     assert (root / 'context/previous/C.idle.bas').read_text() == 'previous changed unit'
     assert (root / 'units/K.position.bas').read_text() == 'unchanged unit'
@@ -226,3 +226,19 @@ def test_kept_guess_remains_open_and_accepts_matches_whole_id(tmp_path, monkeypa
     assert result[0]['state'] == 'open'
     order['components']['C.idle']['fields']['Accepts'] = 'G-C.idle-1, G-C.idle-12'
     assert sb.carry_guesses(order, {'guesses': []})[0]['state'] == 'closed'
+
+
+def test_agent_context_uses_current_authored_skills(tmp_path):
+    stage, root = tmp_path / 'stage', tmp_path / 'agent'
+    (stage / 'units').mkdir(parents=True)
+    (root / 'units').mkdir(parents=True)
+    for name in ('SK.motor', 'runtime.lib', 'generated.tables'):
+        (stage / 'units' / f'{name}.bas').write_text('stale bytes')
+    motor, added = tmp_path / 'motor.bas', tmp_path / 'added.bas'
+    motor.write_text('current motor bytes')
+    added.write_text('new authored skill')
+    sb.copy_unit_inputs(stage, root, [], {'SK.motor': motor, 'SK.added': added})
+    assert (root / 'units/SK.motor.bas').read_bytes() == motor.read_bytes()
+    assert (root / 'units/SK.added.bas').read_bytes() == added.read_bytes()
+    assert not (root / 'units/runtime.lib.bas').exists()
+    assert not (root / 'units/generated.tables.bas').exists()

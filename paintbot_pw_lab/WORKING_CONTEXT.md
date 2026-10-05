@@ -66,8 +66,12 @@ X targeting requires our own
 conflicting-position evidence or matching reports from two distinct teammates; a failed check
 alone does not trigger friendly fire. G5 reports rare message types as not exercised while
 requiring valid per-seat unconditional logs and exercised send/receive paths. Codec/transport engine checks and batch parsing are implemented. The current source contains
-all nine COM components and motor receiver effects. The M3 behavior build, local acceptance
-and hosted A/B remain pending. The implementation plan and peer review are
+all nine COM components and motor receiver effects. Build `c03010be-1` passed G1–G5 after one compiler budget repair. It uses 354 globals,
+2,324 array cells and 127,897/131,072 source bytes; sampled peaks are 21,185 instructions
+and 31,811 work units. Its 16-seat G5 sample has 8,532 lines, no failures, and D/X not exercised.
+The semantic sample has 1,420/1,420 eligible deliveries decoded, 16 passing checks, 35
+unmeasurable, six not exercised and one failing check: two early grenade releases landed
+530/929 cm from the warned target. Final local acceptance and hosted A/B remain pending. The implementation plan and peer review are
 under `tmp/collab/strategy/m3/`; Claude Opus 5.5 in `pw-m2-review` reviews the implementation and owns the bounded COM audit evaluator; root owns integration and qualification. See `strategy/comms.md` for the current
 protocol and verified rules49 details. Foundation build `3d0f8a4f-1` passed G1–G5 with all 23 component units reused and
 56 identical-play matches (no bad seats, interval [0.5, 0.5]). It qualifies generated PWD

@@ -259,13 +259,17 @@ def agent_command(agent: str, model: str, directory: Path) -> list[str]:
             '--model', model, '-C', str(directory), '-']
 
 
-def copy_unit_inputs(stage: Path, root: Path, generated: list[str]) -> None:
+def copy_unit_inputs(stage: Path, root: Path, generated: list[str], authored: dict[str, Path]) -> None:
     """Keep previous generated units as references; each requested output must be written anew."""
     previous = root / 'context/previous'
     previous.mkdir(parents=True)
     for path in (stage / 'units').glob('*.bas'):
+        if path.stem in authored or path.stem.startswith('runtime.') or path.stem == 'generated.tables':
+            continue
         target = previous if path.stem in generated else root / 'units'
         shutil.copyfile(path, target / path.name)
+    for name, path in authored.items():
+        shutil.copyfile(path, root / 'units' / f'{name}.bas')
 
 
 def generate(order: dict, *, errors=None, timeout=900) -> None:
@@ -282,7 +286,10 @@ def generate(order: dict, *, errors=None, timeout=900) -> None:
         root = Path(temporary)
         (root / 'units').mkdir()
         (root / 'context').mkdir()
-        copy_unit_inputs(stage, root, generated)
+        from strategy_format import parse_strategy
+        strategy = parse_strategy(REPO / order['source_path'])
+        authored = {comp.id: strategy.root / comp.code_path for comp in strategy.of_kind('SK')}
+        copy_unit_inputs(stage, root, generated, authored)
         shutil.copyfile(COMPILER / 'AGENT.md', root / 'AGENTS.md')
         shutil.copyfile(COMPILER / 'LESSONS.md', root / 'context/LESSONS.md')
         shutil.copyfile(LAB / 'docs/policy-surface.md', root / 'context/policy-surface.md')
@@ -290,8 +297,6 @@ def generate(order: dict, *, errors=None, timeout=900) -> None:
         prior = build_path(order['previous_build']) if order['previous_build'] else None
         previous_guesses = read(prior / 'report.json').get('guesses', []) if prior else []
         from strategy_basic import unit_contract
-        from strategy_format import parse_strategy
-        strategy = parse_strategy(REPO / order['source_path'])
         components = {key: {k: v for k, v in value.items() if k != 'fields'}
                       for key, value in order['components'].items() if key in generated}
         for key, value in components.items():

@@ -364,3 +364,45 @@ def test_exact_release_rules_contract(tag, commit, rules, accepted):
     else:
         with pytest.raises(ValueError, match='unqualified'):
             audit.check_engine_contract(engine, rules)
+
+
+def test_scoped_binding_preserves_independent_predicates(build):
+    _, _, original, strategy = build
+    changed = copy.deepcopy(original)
+    changed['components']['K.contacts']['text_hash'] = 'changed'
+    assert baseline.semantics_match('K.squad_target', strategy, changed, original)
+    assert baseline.semantics_match('S.has_target_heart', strategy, changed, original)
+    assert not baseline.semantics_match('S.losing_fight', strategy, changed, original)
+    assert not baseline.semantics_match('ST.rules', strategy, changed, original)
+    # Authored code changes invalidate dependents even if prose did not change.
+    changed = copy.deepcopy(original)
+    changed['components']['SK.motor']['unit_sha256'] = 'changed'
+    assert not baseline.semantics_match('C.take_heart', strategy, changed, original)
+    # Any new adaptation can change priorities outside explicit Uses.
+    changed = copy.deepcopy(original)
+    changed['components']['A.new'] = {'kind': 'A', 'text_hash': 'new'}
+    assert not baseline.semantics_match('K.squad_target', strategy, changed, original)
+
+
+def test_scoped_binding_checks_every_node_in_cycles():
+    components = {
+        'K.contact': SimpleNamespace(kind='K', uses=['COM.alert'], compiled_text=''),
+        'COM.alert': SimpleNamespace(kind='COM', uses=['K.contact'], compiled_text='')}
+    strategy = SimpleNamespace(components=components, rules=[])
+    original = {'components': {key: {'kind': comp.kind, 'text_hash': key}
+                               for key, comp in components.items()}}
+    changed = copy.deepcopy(original)
+    assert baseline.semantics_match('K.contact', strategy, changed, original)
+    changed['components']['COM.alert']['text_hash'] = 'changed'
+    assert not baseline.semantics_match('K.contact', strategy, changed, original)
+
+
+def test_scoped_binding_includes_compiled_references_without_uses():
+    strategy = SimpleNamespace(components={
+        'K.one': SimpleNamespace(kind='K', uses=[], compiled_text='Read `P.position`.'),
+        'P.position': SimpleNamespace(kind='P', uses=[], compiled_text='')}, rules=[])
+    original = {'components': {key: {'kind': comp.kind, 'text_hash': key}
+                               for key, comp in strategy.components.items()}}
+    changed = copy.deepcopy(original)
+    changed['components']['P.position']['text_hash'] = 'changed'
+    assert not baseline.semantics_match('K.one', strategy, changed, original)

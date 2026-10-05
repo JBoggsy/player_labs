@@ -247,9 +247,9 @@ def test_packet_claims_require_the_physical_shout():
 
 
 def test_capacity_filter_matches_runtime_bytes():
-    assert ac.shape({"text": "1" + "x" * 9 + "1" + "y" * 9, "bytes": 20}) is True   # digits not required
-    assert ac.shape({"text": "1" + "\u00e9" * 9 + "1" + "y" * 9, "bytes": 29}) is False  # 29 bytes, not 20
-    assert ac.shape({"text": "abc", "bytes": 5}) is None                              # byte count disagrees
+    assert cm.replay_shape({"text": "1" + "x" * 9 + "1" + "y" * 9, "bytes": 20}) is True   # digits not required
+    assert cm.replay_shape({"text": "1" + "\u00e9" * 9 + "1" + "y" * 9, "bytes": 29}) is False  # 29 bytes, not 20
+    assert cm.replay_shape({"text": "abc", "bytes": 5}) is None                              # byte count disagrees
     msg = cm.Message(8, 2, 3, 0, 0)
     unsure = [{"t": 6, "seat": 1, "text": "1" + "x" * 9 + "1" + "y" * 9, "heard_by": [4], "bytes": 20}] * 7
     unsure.append({"t": 6, "seat": 1, "text": "odd", "heard_by": [4], "bytes": 9})

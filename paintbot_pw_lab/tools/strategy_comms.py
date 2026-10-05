@@ -112,6 +112,16 @@ def decode_batch(text: str, tick: int, keys=DEFAULT_KEYS) -> list[tuple[int, Mes
     return events
 
 
+
+def replay_shape(row: dict) -> bool | None:
+    """The engine's byte-based attempt filter, or unknown after a lossy text export."""
+    raw = str(row["text"]).encode("utf-8", "surrogateescape")
+    length = int(row["bytes"]) if row.get("bytes") is not None else len(raw)
+    if len(raw) != length:
+        return None
+    return length == 20 and raw[0] == 49 and raw[10] == 49
+
+
 def audit_transport(shouts: list[dict], events: list[dict], seat: int,
                     living_ticks: set[int], keys=DEFAULT_KEYS, max_decode=MAX_DECODE) -> dict:
     """Reconstruct the bounded inbox and compare logs with hash-verified replay speech.
@@ -130,16 +140,23 @@ def audit_transport(shouts: list[dict], events: list[dict], seat: int,
         if event["kind"] == "PWC":
             recorded[event["t"]].append(event)
     counts = Counter()
-    failures = []
+    failures, issues = [], []
     ticks = sorted(set(delivered) | set(sent) | set(recorded))
     for tick in ticks:
         expected_receives = []
         attempts = 0
+        # A lossy message can consume an attempt even when it cannot decode. Preserve
+        # sends and other ticks, without inventing this tick's receive denominator.
+        inbox = sorted(delivered[tick], key=lambda row: row["seat"])
+        receive_known = all(replay_shape(row) is not None for row in inbox)
+        if not receive_known:
+            issues.append({"t": tick, "reason": "unknown_message_shape"})
+            counts["unknown_shape_ticks"] += 1
         # Engine delivery visits speaker seats in order, preserving each speaker's queue.
-        for row in sorted(delivered[tick], key=lambda row: row["seat"]):
+        for row in inbox if receive_known else []:
             text = row["text"]
             own = row["seat"] % 2 == seat % 2
-            shape = len(text) == 20 and text[0] == text[10] == "1"
+            shape = replay_shape(row)
             if shape and attempts >= max_decode:
                 counts["capacity_excluded"] += 1
                 counts["teammate_capacity_excluded"] += own
@@ -172,7 +189,7 @@ def audit_transport(shouts: list[dict], events: list[dict], seat: int,
                 sends.append(encode(message, tick, keys))
                 if message.sender != seat:
                     failures.append({"t": tick, "reason": "wrong_logged_sender"})
-        if receives != expected_receives:
+        if receive_known and receives != expected_receives:
             failures.append({"t": tick, "reason": "receive_mismatch",
                              "expected": expected_receives, "actual": receives})
         if Counter(sends) != Counter(sent[tick]):
@@ -181,6 +198,7 @@ def audit_transport(shouts: list[dict], events: list[dict], seat: int,
         if len(sent[tick]) > 1:
             failures.append({"t": tick, "reason": "multiple_sends"})
     eligible = counts["eligible_teammate_deliveries"]
-    return {"status": "fail" if failures else "pass", "counts": dict(counts),
-            "eligible_decode_rate": counts["decoded_teammate_deliveries"] / eligible if eligible else None,
+    return {"status": "fail" if failures else ("unmeasurable" if issues else "pass"), "counts": dict(counts),
+            "eligible_decode_rate": counts["decoded_teammate_deliveries"] / eligible if eligible and not issues else None,
+            "issues": issues,
             "failures": failures}

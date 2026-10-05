@@ -85,16 +85,6 @@ def tdiv(a: int, b: int) -> int:
     return q if (a < 0) == (b < 0) else -q
 
 
-def shape(row: dict) -> bool | None:
-    """cm__receive's attempt filter: strLen = 20 and bytes 0 and 10 are "1" (49). Digits are not
-    required to count as an attempt. None when the stored text does not round-trip its byte count."""
-    raw = str(row["text"]).encode("utf-8", "surrogateescape")
-    length = int(row["bytes"]) if row.get("bytes") is not None else len(raw)
-    if len(raw) != length:
-        return None
-    return length == 20 and raw[0] == 49 and raw[10] == 49
-
-
 def physical_shout(ctx: dict, msg, t: int, seat: int, keys) -> dict | None:
     """The hash-verified replay shout carrying exactly this packet (recorded at t + 1)."""
     text = cm.encode(msg, t, keys)
@@ -305,7 +295,7 @@ def decoded(msg, t, seat, ctx, states, seat_logs, keys, capacity, end_tick):
         for other in (r for r in rows if receiver in r["heard_by"]):
             if other is row:
                 break
-            counted = shape(other)
+            counted = cm.replay_shape(other)
             uncertain += counted is None
             attempts += bool(counted)
         if attempts < capacity <= attempts + uncertain:  # the unknown texts decide capacity

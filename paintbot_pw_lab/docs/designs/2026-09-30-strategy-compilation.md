@@ -542,3 +542,23 @@ unchanged-gameplay qualification before the new communication strategy is evalua
 M3 compares against the rules49-qualified M1 behavior, build `567feb38-1`, rather than
 mixing engine releases. The hosted comparison records the current ranking margin scale.
 An inconclusive or regressed comparison is evidence, not a claim that communication helped.
+
+
+### M3 qualification refinements
+
+Compiler reference inputs use current authored skill bytes, including newly added skills.
+Old runtime and generated table units are omitted from agent context; declared runtime
+interfaces remain in the unit contracts. Assembly still copies current authored/runtime
+bytes directly. This prevents a stale reference implementation contradicting its interface.
+
+Reviewed baseline predicates bind to the component's transitive compiled references and
+authored skill hashes, with the full Adaptation set bound globally. Exact check text and
+runtime qualification remain required. Unrelated communication changes therefore do not
+invalidate the unchanged squad-target predicate. Unknown dependencies never inherit a pass.
+
+Build `c03010be-1` passed G1–G5 after temporary values were moved into per-unit arrays.
+The first 16-seat telemetry sample decoded all 1,420 eligible teammate deliveries. G5
+reported D/X as not exercised. The semantic audit found two failed grenade landing claims:
+charging stopped early, so the emitted intended target differed from the actual throw.
+Those failures remain visible; transport success does not establish message truth.
+Hosted acceptance and the final exact-build evidence remain pending.
