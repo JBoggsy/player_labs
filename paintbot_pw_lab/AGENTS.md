@@ -136,3 +136,8 @@ Use `pw.py strategy compile --agent codex|claude --json`. Both agents read
 [`strategy/compiler/AGENT.md`](strategy/compiler/AGENT.md); the driver owns the
 compile loop. See [the command reference](docs/tools/pw_strategy.md). Never edit
 finalized BASIC builds. Source and compiler inputs must be committed first.
+
+`pw.py strategy audit ROOT... --build ID --json` audits existing recordings against a
+verified build. Read the [audit contract](docs/tools/pw_strategy.md#five-level-audit-m2-local):
+exit 0 means analysis completed, not that checks passed. Unmeasurable checks and missing
+level declarations never pass. Local M2 is implemented; hosted confirmation remains gated.

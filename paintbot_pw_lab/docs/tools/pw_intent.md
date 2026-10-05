@@ -275,5 +275,6 @@ It also checks measured printed bytes per tick against the 512-byte strategy lim
 The generator checks the static byte and print-event bounds.
 
 The existing `show` and `audit` commands still implement the v1 audit described above.
-G5 calls the v2 parser directly. A five-level strategy audit is deferred to M2;
-a valid v2 line is not proof that its gameplay claim is true.
+G5 calls the v2 parser directly. `pw.py strategy audit ROOT --build ID --json` reuses it
+for the five-level audit ([reference](pw_strategy.md#five-level-audit-m2-local)). A valid
+v2 line is not proof that its gameplay claim is true. Hosted telemetry confirmation remains open.

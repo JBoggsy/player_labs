@@ -33,6 +33,13 @@ def parser():
     for action in ('assemble', 'verify', 'trace'):
         child = commands.add_parser(action)
         child.add_argument('build', help='staged build ID (assemble/verify), finalized ID (trace)')
+    audit = commands.add_parser('audit', help='join strategy beliefs and decisions to verified replay evidence')
+    audit.add_argument('roots', nargs='+')
+    audit.add_argument('--build', required=True)
+    audit.add_argument('--check', help='component ID or COMPONENT.N (one-based check index)')
+    audit.add_argument('--level', choices=['True', 'Believed', 'Acted', 'Acted properly', 'Result'])
+    audit.add_argument('--out', type=Path)
+    audit.add_argument('--refresh', action='store_true')
     return root
 
 
@@ -40,6 +47,9 @@ def run(args, report):
     from strategy_format import parse_strategy, lint_strategy
     from strategy_gates import verify
     from strategy_basic import BuildError
+    if args.action == 'audit':
+        from strategy_audit import run as audit
+        return audit(args, report)
     if args.action == 'lint':
         if not args.source.is_file():
             raise pw_cli.UsageError(f'strategy does not exist: {args.source}')

@@ -9,7 +9,7 @@ The checked-in `strategy/STRATEGY.md` describes `reference/base.bas` at `coworld
 Its [M1 build report](../../strategy/compiled/b41ef1fc-1/report.md) records passing G1–G5;
 the side-balanced 28-seed screen reports identical play, and all 16 candidate-seat recordings
 pass telemetry parsing and coverage. This is local qualification at the pinned release.
-The five-level semantic audit and comms v1 codec remain later milestones.
+The five-level audit is locally implemented (M2-local). Hosted telemetry confirmation remains open; the comms v1 codec is M3.
 
 ## Commands
 
@@ -106,3 +106,104 @@ progress and child output go to stderr or gate log files. Exit 0 means success,
 The Claude wrapper and lab compile skill point to the same
 [`compiler/AGENT.md`](../../strategy/compiler/AGENT.md). Codex uses the same driver
 and instruction file; neither wrapper owns separate compilation rules.
+
+## Five-level audit (M2-local)
+
+```bash
+uv run python paintbot_pw_lab/tools/pw.py strategy audit EPISODE_DIR --build b41ef1fc-1 --json
+uv run python paintbot_pw_lab/tools/pw.py strategy audit EPISODE_DIR --build b41ef1fc-1 --check K.contacts --level True --json
+```
+
+`audit` accepts one or more roots, requires an explicit finalized `--build`, and supports
+`--check COMPONENT` or `--check COMPONENT.N` (one-based source order within that component),
+`--level 'Acted properly'` (or any of the five levels), `--out DIR`, and `--refresh`.
+Unknown or empty selectors exit 2 and list valid checks. The command only reads existing
+episodes; it does not create hosted requests. It does not modify a build or the strategy.
+
+Outputs are `audit.json`, `report.md`, and full `evidence.jsonl`, by default under
+`analysis/strategy_audit/<build>-<roots-and-options-hash>/`. Re-running overwrites those outputs.
+The JSON includes every selected check, a five-level matrix (`not_declared` where source has
+no check), per-episode checks, seat coverage, raw outcomes, input failures, and input hashes.
+Evidence rows identify the check, episode, seat, decision tick, result and reason. Summary
+rows retain five examples; the JSONL contains all observations. Output paths inside
+`strategy/compiled/` are refused.
+
+### Identity and evidence
+
+The auditor verifies build artifact hashes and loads `STRATEGY.md` from its committed git
+blob, verifying its source hash. It cross-checks the source rules, roles, commitment, codes
+and checks against the map. It reuses `pw_intent.parse_v2_line`, `pw_episodes` dense
+hash-verified replay loading, and `strategy_basic.reference_select`.
+
+Local candidate seats come from `a_side` and the policy SHA256 in recording metadata;
+file basenames are not identities. If both sides have the build hash, both are audited.
+Hosted identities require a matching upload receipt in `strategy/compiled/uploads.jsonl`
+with `build_id`, `policy_version_id`, and `policy_sha256`. These additional receipt fields
+are required for auditing; the earlier display-only `policy_ref` and date remain useful.
+The hosted episode's `coworld_version` must match the build release. The trace tool's
+release alone does not prove which engine played a hosted episode.
+
+The audit's engine contract is currently qualified only for `coworld-v0.3.89`, teams,
+16 seats, replay header rules 48. Other engine/rules combinations fail identity validation
+until the audit is requalified. The runtime reconstruction is bound to the qualified M1
+runtime unit hashes. A changed runtime reports `runtime_model_mismatch`, never a pass
+from the old model. Baseline prose evaluators are bound to the M1 component semantics
+and check text/level/Reads hashes. Changed or unknown prose reports no evaluator. New
+strategies still receive generic runtime consistency counts, separately from prose checks.
+
+Replay state at `t` describes the decision; commands and shouts execute at `t+1`.
+On the four full local M1 recordings, all 170 telemetry sends match replay shouts at
+that offset; offsets 0 and 2 each miss all 170.
+PWD is a change log with a 24-tick heartbeat, so unchanged fields can be carried inside
+verified coverage. PWB is sampled: only scheduled living ticks are audited, and a missing
+scheduled sample is unmeasurable. No belief is filled between samples. Priority defaults
+come from source before the initial PWP snapshot finishes arriving. PWP transitions check
+arithmetic and versions; an adaptation's private trigger is not thereby verified.
+
+Activation windows distinguish same-tick start/done, preemption, death and truncation.
+The runtime emits its death event at respawn; the audit closes the window at the actual
+replay death tick. A still-open activation at recording end is truncated, not successful.
+Malformed, missing, duplicate or out-of-order logs, missing heartbeat/snapshot evidence,
+and a changed runtime conservatively make dependent seat checks unmeasurable.
+Heartbeat checks cannot detect every deleted interior line; reconstruction relies on
+the qualified emitter's change-complete contract as well as observed coverage.
+
+### Reading results
+
+| Status | Meaning |
+| --- | --- |
+| `pass` | At least one measurable opportunity, no violations and no missing applicable evidence. |
+| `fail` | A deterministic predicate was violated on measured evidence. |
+| `measured` | A statistic with no acceptance threshold; it is not a pass. |
+| `not_exercised` | No applicable opportunities. |
+| `unmeasurable` | Required data, a defined criterion, or a reviewed evaluator is missing. |
+
+A check with partial coverage never passes. Seat-wide unknowns are counted separately as
+`unmeasurable_seats`; coverage is null when they prevent a comparable denominator. Other
+opportunities are decision ticks, scheduled belief samples, or activation windows, according
+to the check. They are observations, not independent experimental replicates.
+
+**Exit 0 means the audit ran, not that the strategy passed.** Gameplay findings, missing
+logs and unmeasurable checks exit 0. Unreadable files, failed replay verification or episode
+identity failures exit 1 with partial results and input failures. Invalid build/source/hash
+or selectors exit 2. Missing replay tools exit 3 with the build command.
+
+Conditional `Result` requires measured belief correctness and full correct execution,
+including called skills. Missing declarations do not establish those prerequisites.
+The baseline motor's private gun wait and firing guards are not logged, so baseline
+Results remain unmeasurable. `raw_outcomes` separately reports survival, pickups, captures
+of sampled targets, and shot hit rates. Target samples do not establish an exact target
+throughout an activation. Shot range bins use the trace's inferred target distance, not
+an asserted intended target. Wilson intervals are descriptive shot-level intervals;
+shots within an episode are correlated, so these are not competitive-performance tests.
+
+The baseline also cannot verify unlogged self-motion or remembered pickup kind/position,
+the undefined cover distance “near”, or the private full-charge flag behind the grenade
+callout. A pickup's fixed map slot does not prove that the compiled memory held that
+slot's values. “Was at” is not silently reinterpreted as “ready now”. Situation truth
+checks are not declared in M1; logged flags alone do not prove their truth.
+
+Implementations: `strategy_audit.py` (identity, CLI/report), `strategy_audit_runtime.py`
+(change-log reconstruction), `strategy_audit_baseline.py` (reviewed predicates).
+Add an evaluator and negative tests when adding a check; never let unknown prose fall
+through to a pass. The immutable M1 report and its five compiler guesses remain unchanged.

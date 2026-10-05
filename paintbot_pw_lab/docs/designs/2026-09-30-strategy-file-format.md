@@ -3,8 +3,9 @@
 > **Status:** accepted 2026-09-30 (James). M0 implemented and qualified: the parser and linter
 > (`tools/strategy_format.py`), the unit checks, table generation and assembly
 > (`tools/strategy_basic.py`), the runtime library with telemetry v2 emission
-> (`strategy/compiler/runtime/`), and the `pw.py strategy` driver exist; `strategy/STRATEGY.md`
-> does not yet (it is milestone M1). The exact grammar the parser implements is §4.9. The plan is in
+> (`strategy/compiler/runtime/`), and the `pw.py strategy` driver exist. M1 `STRATEGY.md` is qualified in
+> `compiled/b41ef1fc-1`. The M2 audit is implemented locally; hosted confirmation remains open.
+> The exact grammar the parser implements is §4.9. The plan is in
 > [the compilation design](2026-09-30-strategy-compilation.md) §11. Rendered, commentable copy:
 > [2026-09-30-strategy-file-format.html](2026-09-30-strategy-file-format.html) (may lag this file;
 > this Markdown file is authoritative).
@@ -416,7 +417,16 @@ Levels by section:
 
 Each check has one or more of: a semantic description, a script to run, a replay statistic. At
 least one is required. A check that the logs cannot compute reports **unmeasurable**; it never
-passes by default.
+passes by default. The local audit additionally distinguishes `measured` (no acceptance
+threshold), `not_exercised` (no opportunities), and `not_declared` (a level absent from
+source). Partial coverage cannot pass. Raw outcomes remain separate from conditional
+Results: missing execution or belief-truth evidence, including a called Skill's correctness,
+blocks Result eligibility. Sampled PWB agreement does not prove full-window truth.
+
+The M1 audit binds reviewed evaluators to component semantics and a separate hash of
+check prose/level/Reads, because compiler component hashes exclude check prose. New or
+changed checks without a reviewed evaluator are explicitly unmeasurable. This does not
+change the source grammar or permit an LLM to decide whether a gameplay claim is true.
 
 Belief building (Knowledge) is imperfect by nature: data is fogged. Belief-accuracy checks let us
 optimize belief building from replays like any other component.
@@ -540,7 +550,7 @@ is written. Field list and details: compilation design §6.
 - **Hosted telemetry is not yet seen end to end** (section 6): retrieval works, but no hosted
   episode has carried our telemetry lines yet.
 
-## 10. Tooling (not yet built)
+## 10. Tooling
 
 The compilation design adds `prepare`, `assemble`, `verify`, and `compile` (its §4). This
 document needs three more:
@@ -552,7 +562,9 @@ document needs three more:
 - `pw.py strategy trace <build>`: compare `version.json` with the current source and list the
   components changed since that build.
 - `pw.py strategy audit <episodes> --json`: join telemetry v2 to the hash-checked replay and
-  compute every check at all five levels (milestone M2; the v2 parser itself is M0-M1).
+  report every declared check across all five levels (M2-local; hosted confirmation is pending).
+  An explicit `--build ID` selects the verified source/map. Checks without data or a reviewed
+  evaluator are unmeasurable, never implicitly passed. See the [audit contract](../tools/pw_strategy.md#five-level-audit-m2-local).
 
 No new dependency.
 

@@ -3,7 +3,8 @@
 > **Status:** M0 implemented and qualified with real Claude and Codex builds
 > (`compiled/f4ffb408-1` and `compiled/ee55887d-1`, both G1–G5 passed). M1 source and motor
 > skill are qualified in `compiled/b41ef1fc-1`: all G1–G5 pass, with identical play against
-> `base.bas` across 28 seeds on both sides. M2 and M3 remain deferred.
+> `base.bas` across 28 seeds on both sides. M2-local implements the five-level audit;
+> hosted confirmation remains open. M3 remains deferred.
 > Accepted 2026-09-30 (James). Build order: §11. Rendered,
 > commentable copy: [2026-09-30-strategy-compilation.html](2026-09-30-strategy-compilation.html)
 > (may lag this file; this Markdown file is authoritative).
@@ -199,7 +200,8 @@ paintbot_pw_lab/strategy/
 | `gates` | pass/fail per gate (§8) |
 | `created` | date and time |
 
-- **Uploads** append to `compiled/uploads.jsonl` (`build_id`, policy ref `name:vN`, date), so a
+- **Uploads** append to `compiled/uploads.jsonl` (`build_id`, policy ref `name:vN`, date; audits additionally require the
+  immutable `policy_version_id` and `policy_sha256`), so a
   build directory never changes after it is written. The link from a league policy version back
   to its source is: policy ref → build ID → `version.json` → source commit.
 
@@ -339,8 +341,33 @@ files and a Python driver; each agent needs only a thin wrapper.
 | --- | --- | --- |
 | M0 Tooling | `pw.py strategy lint`, `prepare`, `assemble`, `verify`, `compile`, `trace`; the runtime library with telemetry v2 emission (PWD, PWP, PWE, PWB, PWC) and the v2 parser; `AGENT.md`, the Claude and Codex wrappers; a seeded `LESSONS.md` | Tests for the deterministic parts, including the runtime's selection and adaptation arithmetic checked against the Python reference in the engine; a trivial two-component strategy builds end to end with each agent |
 | M1 `base.bas` description | `STRATEGY.md` describes `base.bas` faithfully; full build | G1-G5 pass; G4 against `base.bas` has 0.5 in its interval |
-| M2 Telemetry audit | `pw.py strategy audit` (the five-level checks) | the audit runs on local recordings; one hosted episode confirms the lines arrive |
+| M2 Telemetry audit | `pw.py strategy audit` (the five-level checks), locally implemented | local recordings audited; **hosted confirmation still required and not authorized** |
 | M3 Comms v1 | codec runtime unit; `COM.` components from `strategy/comms.md` | Decode rate between our own seats near 100% in local recordings; hosted A/B against the M1 build |
+
+### M2 local audit implementation
+
+`strategy_audit.py` exposes `pw.py strategy audit ROOT... --build ID --json`. The
+implementation plan was reviewed with Claude Opus 5.5 before coding. It reuses the
+existing telemetry parser, dense hash-verified replay loader, format parser and Python
+selection reference. It reads the committed source and cross-checks the immutable map.
+No policy, compiled BASIC, runtime telemetry, dependency or engine pin changes are needed.
+
+Source-defined checks have identifiers `COMPONENT.N` in source order, with a separate
+binding hash for their level, prose and Reads. Evaluators are reviewed Python, not LLM
+judgments. Unknown predicates remain unmeasurable. Runtime and baseline semantic bindings
+prevent a new source or runtime from silently inheriting an old model. The report keeps
+all five levels, absent declarations, per-check coverage, exact evidence and raw outcomes.
+Full conditional Results require belief truth and full execution evidence, including
+skills; missing upstream declarations are not proof. Baseline private motor state therefore
+blocks conditional Results without discarding observed pickups, survival or shot outcomes.
+The [tool reference](../tools/pw_strategy.md#five-level-audit-m2-local) defines statuses,
+selectors, identity checks, phase alignment, evaluator scope and evidence requirements.
+
+Local validation uses the two M1 G5 recordings plus four full-length recordings (seeds
+1–2, both sides) of the immutable baseline against `reference/base.bas`. These validate
+instruments and lifecycle coverage; they are not hosted performance evidence. Before full
+M2 acceptance, resolve the current league release, plan the engine update and requalify,
+then obtain explicit upload/hosted-evaluation authorization. M3 must wait for M2 acceptance.
 
 ### M1 baseline decomposition
 

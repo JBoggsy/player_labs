@@ -23,3 +23,15 @@ For M1 use `--milestone m1`; its reference is `reference/base.bas`.
 
 This skill performs local compilation only. Uploads, league entry, hosted evaluations,
 and strategy improvements are separate work.
+
+To audit existing recordings after compilation:
+
+```bash
+uv run python paintbot_pw_lab/tools/pw.py strategy audit EPISODE_DIR --build BUILD_ID --json
+```
+
+Read `checks`, `levels`, `episodes`, `input_failures`, and the report's reasons. Exit 0
+means analysis completed; `fail` is a finding, `unmeasurable` and `not_declared` never
+pass. Inspect `evidence.jsonl` for exact ticks. Fix missing evidence or a check's source
+criterion before treating raw outcomes as conditional Results. No gameplay or telemetry
+source changes are implied by an audit finding. Hosted confirmation remains separately gated.

@@ -18,6 +18,7 @@ uv run python paintbot_pw_lab/tools/pw.py <subcommand> --help    # every flag, w
 | Does the strategy source lint? | `strategy` | `paintbot-pw-compile` |
 | Compile a strategy with Claude or Codex? | `strategy` | `paintbot-pw-compile` |
 | What changed since a build? | `strategy` | `paintbot-pw-compile` |
+| Did recorded beliefs and decisions match the strategy and replay? | `strategy` | `paintbot-pw-compile` |
 | Is the lab ready to run? What do I fix first? | `doctor` |  |
 | Is the loop charter filled in? | `doctor` |  |
 | Which player identity is active? | `doctor` |  |
@@ -64,13 +65,13 @@ uv run python paintbot_pw_lab/tools/pw.py <subcommand> --help    # every flag, w
 
 ### strategy
 
-Lint, incrementally compile, and locally verify committed strategy Markdown into immutable BASIC builds.
+Compile immutable BASIC builds and audit strategy telemetry against verified replays.
 
 - **Command:** `uv run python paintbot_pw_lab/tools/pw.py strategy` (runs `paintbot_pw_lab/tools/pw_strategy.py`)
-- **When:** After editing and committing strategy source; never uploads or submits.
-- **Inputs:** lint [STRATEGY.md] | prepare/compile [--source FILE --agent claude|codex --model MODEL --full --milestone m0|m1 --from ID] | assemble/verify/trace ID; --json
-- **Outputs:** strategy/compiled/<build-id>/ policy, units, map, version, reports and local gate evidence; staging under tmp/strategy/
-- **Exit codes:** 0 success; 1 lint/build/gate failure; 2 invalid source or arguments; 3 required tool missing
+- **When:** Compile committed source, or audit recorded beliefs and decisions; never uploads or submits.
+- **Inputs:** lint [STRATEGY.md] | prepare/compile [--source FILE --agent claude|codex --model MODEL --full --milestone m0|m1 --from ID] | assemble/verify/trace ID | audit ROOT... --build ID [--check COMPONENT.N --level LEVEL --out DIR --refresh]; --json
+- **Outputs:** strategy/compiled/<build-id>/ policy, units, map, version, reports and local gate evidence; staging under tmp/strategy/; audit JSON, Markdown and evidence JSONL under analysis/strategy_audit/
+- **Exit codes:** 0 completed (audit findings may fail); 1 lint/build/gate or episode loading failure; 2 invalid source or arguments; 3 required tool missing
 - **Reference:** [pw_strategy.md](pw_strategy.md); skill [`paintbot-pw-compile`](../../.claude/skills/paintbot-pw-compile/SKILL.md)
 
 ### doctor

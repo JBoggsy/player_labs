@@ -45,28 +45,41 @@ units. Telemetry bounds are 482 bytes and 59 print events per tick. The full sui
 The immutable compiler report retains five open guesses (four low, one medium). Review found
 no behavior substitution: the positive-period guard does not affect the default 72; take/cover
 run only with a valid target; legacy host fields match the baseline; Communication runs after
-the motor, so the grenade callout is on the same tick. These are not a five-level semantic
-audit or proof of all game configurations. M2 and M3 remain deferred in [TODO.md](TODO.md).
+the motor, so the grenade callout is on the same tick. These M1 gates are not a five-level semantic
+audit or proof of all game configurations. M2 hosted confirmation and M3 remain open in [TODO.md](TODO.md).
 
-**Next milestone:** M2 needs its own plan and review before implementation. M0–M1 are
-finished. No policy upload, league submission or hosted evaluation is in scope.
+**Current milestone: M2-local audit implemented; hosted M2 acceptance pending.**
+`pw.py strategy audit ROOT... --build b41ef1fc-1 --json` connects scheduled beliefs,
+change-complete decisions, runtime events and hash-verified replay outcomes. It reports
+all 26 baseline checks, missing declarations and explicit unmeasurable reasons. The
+[tool reference](docs/tools/pw_strategy.md#five-level-audit-m2-local) is the current contract.
 
-Telemetry v2 emission and G5 parsing are part of M0–M1; the five-level audit remains M2.
-Priorities are per rule in v1. Oversized belief logs currently fail lint rather than being
-split across ticks; this limit is documented in the format design. This task is local only:
-no uploads or hosted evaluations. Tools remain pinned to `coworld-v0.3.89` (`118e1619`).
+Local validation uses the original two G5 tapes and four full-length recordings (seeds 1–2,
+both sides) of the unchanged baseline against `reference/base.bas`. Raw evidence and
+reports live under `tmp/strategy-evidence/b41ef1fc-1/` and `analysis/strategy_audit/`.
+The six-recording audit covers 65,574 living decision ticks: 17 checks pass, nine are
+unmeasurable, none fail. All measurable checks have opportunities in the full recordings.
+The full suite passes 353 tests. Shout alignment is measured: 170/170 match at t+1,
+0/170 at either neighboring offset.
+No policy upload, league submission, hosted evaluation, engine-pin change, dependency
+change or M3 work is authorized. New work may be committed locally; publishing needs
+fresh authorization. The reviewer session is `pw-m2-review` (Claude Opus 5.5); its bounded
+handoffs are under `tmp/collab/strategy/m2/`.
 
-The user authorized committing and pushing the completed work on `paintbot-pw-lab`. The original peer session `pw-strategy-review` is stopped;
-the fresh M1 review session is `pw-m1-review`. Handoffs and reviews are in gitignored `tmp/collab/strategy/`. Durable implementation and
-reports contain the information needed to resume without that session.
+**Known evidence limits:** baseline Results cannot be conditional on full correct execution
+because private motor state is not logged. Self-motion and pickup remembered values also
+lack logs; cover “near” has no threshold; full grenade charge uses a private flag. Situation
+True checks are absent from source. These are source/evidence findings, not permission to
+change baseline behavior or increase telemetry. Unknown checks never pass, and raw
+outcomes remain available separately. The five immutable compiler guesses remain open.
 
-**Resumed preflight:** the checkout is based on the fetched `origin/main`; the full suite
-passes 315 tests. `doctor --json` fails its live league lookup because the stored teams league
-ID now returns 404. The public directory resolves a replacement teams league at 0.3.113.
-This task remains explicitly pinned to 0.3.89; `doctor --offline --json` passes all local
-checks, and `reference/base.bas` matches the pinned tag byte for byte. No engine pin or
-package changes were made. The peer approved the offline preflight disposition and the
-baseline decomposition within the current component model.
+**Preflight:** clean fetched `paintbot-pw-lab` started at `838140fa`; initial tests passed
+320/320. Live doctor still fails on the stored league's 404. The public directory confirms
+replacement `league_ae677105-0ab8-4561-81ec-c9cf6735821c`, but its current release is not
+verified (the unauthenticated detail endpoint returns 401). The old 0.3.113 observation
+must not be treated as current. Offline doctor passes at `coworld-v0.3.89` / `118e1619`.
+Tools and engine checkout remain pinned/read-only. Before hosted confirmation, resolve the
+live release, agree the engine-update/requalification plan and obtain explicit authorization.
 
 Inputs the policy (`STRATEGY.md`) should build on:
 
