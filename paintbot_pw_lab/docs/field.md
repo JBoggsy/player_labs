@@ -1,5 +1,12 @@
 # paintbot-pw: league, field and evaluation budget
 
+> Current teams league (authenticated lookup, 2026-10-05):
+> `league_ae677105-0ab8-4561-81ec-c9cf6735821c`, release 0.3.115 / `244dc62b`.
+> The retired `league_b9458ff8-0854-4e21-82b8-3c99942902e0` returns 404.
+> Dated standings, episodes and configuration observations below remain historical;
+> resolve the live roster and release again before a hosted request.
+
+
 The reference for where paintbot-pw is played, how an episode is configured and ranked, who
 is in the field, and what an experience request (XP) can do and cost. Verified **2026-09-29,
 about 23:00 UTC**; the game identity, engine facts and the failed-episode finding re-checked

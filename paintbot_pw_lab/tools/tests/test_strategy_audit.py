@@ -336,3 +336,31 @@ def test_squad_avoid_memory_survives_death(build):
     assert targets[100] == 2
     del states[50, 0]
     assert 72 not in baseline.squad_targets(ep, 0, states, params)
+
+
+def test_terminal_death_without_respawn_or_pwe_died(build):
+    m, s, events, states = tape(build, n=8)
+    for t in range(3, 9):
+        states[t, 0]['hp'] = 0
+    result = reconstruct(s, m, events, states, 0, 8)
+    assert not result['issues']
+    assert len(result['ticks']) == 3
+    assert all(row['status'] == 'pass' for row in result['ticks'])
+    assert result['windows'] == [{'start': 0, 'end': 3, 'capability': 3, 'end_reason': 'died'}]
+
+
+@pytest.mark.parametrize('tag,commit,rules,accepted', [
+    ('coworld-v0.3.89', '118e1619', 48, True),
+    ('coworld-v0.3.115', '244dc62b', 49, True),
+    ('coworld-v0.3.114', '4d670eca', 49, False),
+    ('coworld-v0.3.115', '244dc62b', 48, False),
+    ('coworld-v0.3.89', '118e1619', 49, False),
+    ('coworld-v0.3.115', '118e1619', 49, False),
+])
+def test_exact_release_rules_contract(tag, commit, rules, accepted):
+    engine = {'tag': tag, 'commit': commit}
+    if accepted:
+        audit.check_engine_contract(engine, rules)
+    else:
+        with pytest.raises(ValueError, match='unqualified'):
+            audit.check_engine_contract(engine, rules)

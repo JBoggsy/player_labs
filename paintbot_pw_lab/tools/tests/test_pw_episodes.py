@@ -224,3 +224,17 @@ def test_bad_trace_options_and_bad_sql_are_usage_errors(tmp_path, capsys):
     envelope = json.loads(capsys.readouterr().out)
     assert envelope["failures"][0]["code"] == "usage_error"
     assert "kills" in envelope["result"]["valid"]
+
+
+def test_table_version_and_trace_binary_are_cache_inputs(tmp_path, monkeypatch):
+    replay = tmp_path / 'm.replay'
+    replay.write_bytes(fake_tape())
+    binary = tmp_path / 'pw_trace'
+    binary.write_bytes(b'first')
+    source = pe.Source('local', replay, None, None, None, tmp_path / 'cache', tmp_path)
+    first = pe.signature(source, binary, pe.TraceOptions())
+    monkeypatch.setattr(pe, 'TABLES_VERSION', pe.TABLES_VERSION + 1)
+    assert pe.signature(source, binary, pe.TraceOptions()) != first
+    monkeypatch.setattr(pe, 'TABLES_VERSION', first['tables_version'])
+    binary.write_bytes(b'second')
+    assert pe.signature(source, binary, pe.TraceOptions()) != first

@@ -38,9 +38,9 @@ SPRAY_BURST_TICKS = 5            # SprayTicks: a burst deals damage on its first
 STUCK_MAX_DISPLACEMENT = 10      # units per 6-tick sample: 92% of steps under 10 are exactly 0; slow movers start ~12
 STUCK_MIN_GOAL_DISTANCE = 200    # ...while the (unchanged) goal is this far: the density minimum (see pw_flags)
 VM_DISABLED_MIN_IDLE_TICKS = 240  # 10 s of empty commands while alive, to the end; league has 0 idle ticks, uncalibrated
-PICKUP_KINDS = ("grenade", "spray", "medkit", "armor", "uniform")
+PICKUP_KINDS = ("grenade", "spray", "medkit", "armor", "uniform", "mister", "sniper", "radar")
 GLORY_KINDS = ("quiet_supplies", "friendly_fire", "glory_heart", "behind_lives", "behind_cogs")
-WEAPONS = ("gun", "grenade", "spray")
+WEAPONS = ("gun", "grenade", "spray", "self_destruct")
 
 
 def _band_name(band: tuple[int, int]) -> str:

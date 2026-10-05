@@ -61,8 +61,8 @@ The six-recording audit covers 65,574 living decision ticks: 17 checks pass, nin
 unmeasurable, none fail. All measurable checks have opportunities in the full recordings.
 The full suite passes 353 tests. Shout alignment is measured: 170/170 match at t+1,
 0/170 at either neighboring offset.
-No policy upload, league submission, hosted evaluation, engine-pin change, dependency
-change or M3 work is authorized. New work may be committed locally; publishing needs
+James authorized active-pin migration and full audit requalification on 2026-10-05.
+No policy upload, league submission, hosted evaluation, new dependency or M3 work is authorized. New work may be committed locally; publishing needs
 fresh authorization. The reviewer session is `pw-m2-review` (Claude Opus 5.5); its bounded
 handoffs are under `tmp/collab/strategy/m2/`.
 
@@ -73,18 +73,22 @@ True checks are absent from source. These are source/evidence findings, not perm
 change baseline behavior or increase telemetry. Unknown checks never pass, and raw
 outcomes remain available separately. The five immutable compiler guesses remain open.
 
-**Preflight (2026-10-05):** local M2 is committed at `75914509`, not pushed. Live doctor
-still uses a retired league ID (404). Fresh authenticated reads resolve teams league
-`league_ae677105-0ab8-4561-81ec-c9cf6735821c` to coworld
-`cow_9bc561d1-0cca-4f78-8c9f-df27747826bf`, release `0.3.114`; its remote tag peels to
-`4d670eca2b5f74d722f7630e94eed7f9449d979a`. This introduces rules 49: one life, 10 HP,
-shorter guns and new equipment. The audit currently accepts only 0.3.89/rules 48.
-Offline doctor passes at `coworld-v0.3.89` / `118e1619`; this is not a live check.
-The original engine checkout is untouched; live source was inspected in a scratch bare clone.
-Installed `softmax-cli` 0.26.38 matches PyPI; `coworld` 0.1.55 trails 0.1.56. Neither changed.
-The next decision is isolated current-release telemetry qualification (recommended) versus
-active-pin migration and full audit requalification; see the [proposed sequence](docs/designs/2026-09-30-strategy-compilation.md#m2-live-release-requalification-proposal).
-Upload and hosted evaluation need a later, separate authorization after local qualification.
+**Migration in progress (2026-10-05):** authenticated league/coworld reads now resolve teams
+league `league_ae677105-0ab8-4561-81ec-c9cf6735821c` to
+`cow_7109be6e-ad0c-4088-991d-060057a33c4e`, release `0.3.115`, commit
+`244dc62b38a8a89721cbb1625f05a99ca60d0c13`. The active pin moved using `deployed-ref --write`.
+Rules remain 49; the changes since 0.3.114 are training telemetry and neural observations.
+The scratch clone `tmp/collab/strategy/m2/migration-engine` supplies builds through `PW_CLONE`;
+the original engine checkout is untouched. New tools/native library build successfully.
+Trace schema 2 / table version 3 expose self-destruct and new equipment; exact engine/rules
+pairs gate the audit. Source-bound baseline semantics and nine evidence gaps are unchanged.
+The full suite passes 363 tests; the added rules49 pickup-feature check also passes. New immutable compilation, G1–G5, full recording audits
+and final review are still pending at this checkpoint; do not claim completed requalification.
+
+`PW_DOCS_SHA` stays `118e1619`: BASIC/rules49 changes are source-verified in the relevant docs,
+but wider neural/oracle references remain explicitly scoped to 0.3.89. Installed
+`softmax-cli` 0.26.38 is current; `coworld` 0.1.55 trails 0.1.56. Neither package changed.
+Live doctor passes on the new pin after a rate-limited (429) attempt. Hosted telemetry confirmation and publishing remain separately gated.
 
 Inputs the policy (`STRATEGY.md`) should build on:
 

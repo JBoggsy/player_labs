@@ -1,13 +1,13 @@
 # Deferred Paintbot PW work
 
-- M2 hosted acceptance: local audit is implemented. On 2026-10-05 authenticated reads
-  resolved teams league `league_ae677105-0ab8-4561-81ec-c9cf6735821c` to 0.3.114/rules 49
-  (`4d670eca2b5f74d722f7630e94eed7f9449d979a`). Obtain James's agreement to the
-  [local migration proposal](docs/designs/2026-09-30-strategy-compilation.md#m2-live-release-requalification-proposal)
-  before moving the 0.3.89 pin. The smaller alternative keeps that pin and qualifies unchanged
-  policy telemetry using isolated 0.3.114 tools. The literal M2 hosted criterion is line arrival,
-  not a five-level audit on rules 49. Obtain separate explicit upload/evaluation authorization
-  after local qualification; retain immutable upload identity and played-release evidence.
+- Finish authorized active-pin migration/full audit qualification on 0.3.115 (`244dc62b`,
+  rules 49). Tools and initial tests pass; new immutable build, G1–G5, full recordings,
+  five-level audits and final peer review remain. See WORKING_CONTEXT and the compilation design.
+- M2 hosted acceptance: after local qualification, recheck release and obtain explicit
+  upload/evaluation authorization. Retain immutable upload identity and played-release evidence.
+  No M3 or publishing authorization is implied by local pin migration.
+- Reverify the wider neural ZIP/oracle references before using those surfaces on 0.3.115;
+  `PW_DOCS_SHA` intentionally remains 118e1619. Raw BASIC/rules49 changes are documented.
 - Source/evidence decisions after M2-local: private motor/self-motion/pickup memory values
   are unlogged; cover “near” is undefined; Situation True checks are absent; Result checks
   have no thresholds. Resolve with James before changing source or telemetry. Do not infer

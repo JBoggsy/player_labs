@@ -199,7 +199,7 @@ def adapter(row: dict) -> Episode | None:
         "trench_share": _ratio(m.get("trench_ticks"), alive),
         "stuck_share": _ratio(m.get("stuck_ticks"), alive),
         "idle_share": m.get("idle_share"),
-        "pickups_per_min": _ratio(sum(m.get(f"pickups_{k}") or 0 for k in ("grenade", "spray", "medkit", "armor", "uniform")), minutes),
+        "pickups_per_min": _ratio(sum(m.get(f"pickups_{k}") or 0 for k in ("grenade", "spray", "medkit", "armor", "uniform", "mister", "sniper", "radar")), minutes),
         "grenade_effective_share": _ratio(m.get("grenade_blasts_effective"), m.get("grenade_throws")),
         "shouts_per_min": _ratio(m.get("shouts"), minutes),
         "capture_reset_share": _ratio(team.get("capture_resets"), team.get("capture_starts")),

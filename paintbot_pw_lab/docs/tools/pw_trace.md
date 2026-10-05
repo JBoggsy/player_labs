@@ -154,3 +154,12 @@ tape). The notes below are from build `coworld-v0.3.78`:
   RiverWaterHeight`, the test `mechanics.nim:628-629` uses to slow a wading cog. It was imported
   from `neural_contract` until 0.3.89 removed it (#185); if a future release changes the wading
   rule in `mechanics.nim`, change both copies.
+
+## Rules 49
+
+Schema 2 includes self-destruct commands and sniper/radar/mister state. Self-destruct
+damage and events are distinct from grenades. New pickup kinds are supported; taker
+attribution remains inferred. Ordinary and sniper reach constrain inferred aim targets,
+but the aim corridor is calibrated only for rules 48. See [tables](tables.md) and the
+[evidence contract](../evidence-pipeline.md#rules-49-trace-contract). Cache receipts include
+the binary hash and table version, so old expansions are rebuilt.

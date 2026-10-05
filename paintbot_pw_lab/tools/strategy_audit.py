@@ -21,6 +21,17 @@ RESULT_REQUIRES_FULL_EXECUTION = True
 BASELINE = 'b41ef1fc-1'
 
 
+# Exact contracts; a new release needs replay and semantic requalification, not a range.
+ENGINE_CONTRACTS = {'coworld-v0.3.89': ('118e1619', 48),
+                    'coworld-v0.3.115': ('244dc62b', 49)}
+
+
+def check_engine_contract(engine, rules):
+    expected = ENGINE_CONTRACTS.get(engine['tag'])
+    if expected is None or not engine['commit'].startswith(expected[0]) or rules != expected[1]:
+        raise ValueError('unqualified audit engine/rules contract')
+
+
 def binding(component, check):
     value = [component, check['level'], check['text'], check.get('reads', [])]
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
@@ -224,10 +235,7 @@ def run(args, report):
             ep = pe.load_episode(source, binary, tag=version['engine']['tag'],
                                  options=pe.TraceOptions(state_every=1, vis_every=1), refresh=args.refresh)
             seats = candidate_seats(ep, version, uploads)
-            # At this pin both local teams tapes and accepted G5 tapes use header rules 48.
-            # Derive the accepted rules from the build's own G5 recording, not a newer league.
-            if version['engine']['tag'] != 'coworld-v0.3.89' or ep.meta['rules'] != 48:
-                raise ValueError('audit rules contract is qualified only for coworld-v0.3.89 teams tapes (48)')
+            check_engine_contract(version['engine'], ep.meta['rules'])
             if not ep.summary['verified']:
                 raise ValueError('replay hash verification failed')
             states = {(int(r['t']), int(r['seat'])): r for r in ep['states'].to_dict('records')}

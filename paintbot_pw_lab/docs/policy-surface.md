@@ -1,25 +1,32 @@
 # Paintbot PW policy surface: what a script can know and do
 
-> **Currency.** Verified 2026-09-30 against Metta-AI/paintbot-pw commit `118e1619` (tag
-> `coworld-v0.3.89`), coworld `paintbot-pw` 0.3.89, the build the league runs that day
-> (`pw.py deployed-ref`). Recordings are stamped rules 48, whose only change is FFA-kin fog, so
-> the teams game plays rules 47. Every `file:line` citation is at `118e1619`, not `main`.
-> Since 0.3.79 (`d0728ab1`): 0.3.89 (commit `06c3c28`, #185) moved every perception builtin
-> into `seat_view.nim` (`SeatView`) with unchanged answers and costs (a 16-seat `base.bas` match
-> and a `jev.bas` match give the same final hash and the same per-seat instruction and work peaks
-> as under 0.3.80; all 80 hosted 0.3.79 tapes re-simulate), added `rnd(n)` (§5.6), and rebuilt
-> the neural lane on `SeatView` (§5.10: new contracts, the old ones refused). `basic.nim`,
-> `oracle.nim`, `runtime/oracle.py` and `runtime/host.py` are unchanged since 0.3.79. Re-verify
-> when the coworld version changes: diff `examples/paintbot/bots.nim` and `seat_view.nim` (host
-> API and limits), `src/polyworld/basic.nim` (dialect), `examples/paintbot/oracle.nim`,
-> `examples/paintbot/neural_host.nim` and `neural_contract.nim`,
-> `coworld/paintbot/runtime/host.py` and `neural_package.py` (upload staging).
+> **Currency.** Raw BASIC execution, limits and host-call changes rechecked at
+> `coworld-v0.3.115` / `244dc62b` on 2026-10-05. Existing `file:line` citations remain anchored
+> at `118e1619`; the BASIC parser/VM changes are additive snapshot routines, and instruction,
+> work, memory and print limits are unchanged. The new host calls are listed below.
+> Neural ZIP and oracle details in §5.9–5.10 remain a **0.3.89 reference**, not a verified
+> current upload contract; neither is used by this raw-BASIC strategy qualification.
+> `PW_DOCS_SHA` remains `118e1619` until those wider surfaces are reverified.
 
 Paths are relative to the repo root; `bots.nim`, `seat_view.nim`, `oracle.nim`, `neural_host.nim`,
 `neural_contract.nim` and the neural `.md` references are under `examples/paintbot/`, `basic.nim` and `coworld.nim` under `src/polyworld/`, `host.py` and
 `neural_package.py` under `coworld/paintbot/runtime/`. Rules and numbers of the game itself are in
-[mechanics.md](mechanics.md). Starter policies are in `../reference/` (Heartland's in
+[mechanics.md](mechanics.md). Frozen 0.3.89 starter policies are in `../reference/` (Heartland's in
 `../reference/heartland/`).
+
+### Rules-49 BASIC additions
+
+At `244dc62b`, `bots.nim:69-99` registers these names (all cost 4 work units):
+`selfDestruct()`, `gunRange()`, `hasSniper()`, `mistingTicks()`, `radarTicks()`,
+`radarBoost()`, `playerMisting(id)` and `playerRadar(id)`. They are reserved host names.
+`gunRange` returns the current seat's actual range; player item readers are fog-gated.
+Mister/radar timers report remaining ticks. `radarBoost` indicates doubled outgoing damage.
+Self-destruct is a command for this tick only. See [mechanics](mechanics.md#5-combat).
+
+Rules 49 give a cog one life: after death its BASIC program never runs again, so it cannot
+print a later death event. The audit closes activations using the replay death instead.
+The unchanged baseline compiles without host-name collisions but retains old strategic
+assumptions; qualification measures compiler fidelity, not competitive suitability.
 
 ## 1. Upload formats
 
@@ -29,7 +36,7 @@ seat's file before the engine starts (`host.py:99-124`):
 | Format | Detected by | Limits | Staging |
 | --- | --- | --- | --- |
 | Raw BASIC | anything not a ZIP | UTF-8, at most 128 KiB, not WASM (`host.py:43-53`) | written as the seat's source |
-| Neural BASIC ZIP | starts with `PK\x03\x04` | exactly `manifest.json` (8 KiB), `policy.bas` (128 KiB), `model.bin` (16 MiB); no encryption (`neural_package.py:11-13`, `693-712`) | manifest schema `paintbot-neural-basic/1` or `/2`, SHA-256 of both payloads must match, contract hashes known and paired (a retired contract is refused by name, §5.10), decoder options and user inputs validated, a PWNET002 model's structure and operation budget checked for the match's seat count, and a teams.view.1 actor's input count checked (`neural_package.py:713-793`; the host passes the seat count, `host.py:105`). Writes `policy.bas` plus `.model.bin` / `.neural.json` sidecars (`neural_package.py:796-800`) |
+| Neural BASIC ZIP (0.3.89 reference; reverify before use) | starts with `PK\x03\x04` | exactly `manifest.json` (8 KiB), `policy.bas` (128 KiB), `model.bin` (16 MiB); no encryption (`neural_package.py:11-13`, `693-712`) | manifest schema `paintbot-neural-basic/1` or `/2`, SHA-256 of both payloads must match, contract hashes known and paired (a retired contract is refused by name, §5.10), decoder options and user inputs validated, a PWNET002 model's structure and operation budget checked for the match's seat count, and a teams.view.1 actor's input count checked (`neural_package.py:713-793`; the host passes the seat count, `host.py:105`). Writes `policy.bas` plus `.model.bin` / `.neural.json` sidecars (`neural_package.py:796-800`) |
 
 WASM is no longer accepted (`host.py:45-46`). There is no other format. Any staging failure,
 including a rejected neural package, puts an idle stub in that seat, but the platform then records
@@ -284,7 +291,7 @@ all were public with no line of sight. **Rules 48 (FFA-kin fog of war):** `kin`,
 `seatScore` and `seatAlive` read -1 for any seat other than yourself that you cannot see this
 tick (`seat_view.nim:394-417`, `sim.nim:240-245`); `seatCount`, hearts and great hearts stay public.
 
-### 5.9 Advisor oracle (`oracle.nim`, `runtime/oracle.py`)
+### 5.9 Advisor oracle (0.3.89 reference) (`oracle.nim`, `runtime/oracle.py`)
 
 A seat can have the host ask an LLM on its behalf. Asking never blocks; answers arrive on a later
 tick.
@@ -314,7 +321,7 @@ tick.
 - Every ask and answer is journaled to the asking seat's private log (`bots.nim:160-163`,
   `oracle.nim:303-314`).
 
-### 5.10 Neural BASIC (ZIP uploads)
+### 5.10 Neural BASIC (0.3.89 reference) (ZIP uploads)
 
 A secondary lane for this lab (we upload plain BASIC), documented so it can be used or read
 correctly. Upstream references: `neural_basic.md` (package, selection options, BASIC I/O),

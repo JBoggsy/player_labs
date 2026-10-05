@@ -37,7 +37,7 @@ import pw_release  # noqa: E402
 
 # label -> (league id, whether the lab's release pins track this league's build)
 LEAGUES = {
-    "paintbot-pw (teams)": ("league_b9458ff8-0854-4e21-82b8-3c99942902e0", True),
+    "paintbot-pw (teams)": ("league_ae677105-0ab8-4561-81ec-c9cf6735821c", True),
     "Heartland (ffa_kin)": ("league_40996eb3-4a80-457d-86d5-866f72882995", False),
 }
 TAG_PREFIX = {"paintbot-pw": "coworld-v", "heartland": "heartland-v"}  # coworld name -> tag prefix

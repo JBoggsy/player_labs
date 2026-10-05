@@ -369,34 +369,28 @@ instruments and lifecycle coverage; they are not hosted performance evidence. Be
 M2 acceptance, resolve the current league release, qualify the hosted telemetry path,
 then obtain explicit upload/hosted-evaluation authorization. M3 must wait for M2 acceptance.
 
-### M2 live-release requalification proposal
+### M2 live-release requalification
 
-**Pending James's decision; no migration or hosted action is authorized.** Authenticated
-league/coworld reads on 2026-10-05 identify teams release `0.3.114`, tag commit
-`4d670eca2b5f74d722f7630e94eed7f9449d979a`. Source comparison against `118e1619`
-shows rules 49 changes to lives, HP, gun reach/accuracy and equipment. Merely accepting
-that release in the audit's version guard would not establish correctness.
+**Authorized by James on 2026-10-05: migrate the active pin and requalify the full audit.**
+Fresh lookup moved the target to `0.3.115` / `244dc62b38a8a89721cbb1625f05a99ca60d0c13`.
+Its delta from 0.3.114 adds training telemetry and neural observations; rules remain 49.
+The strategy, motor skill and frozen reference are unchanged. This tests compiler fidelity
+under new mechanics, not competitive suitability: the reference retains 3-HP assumptions
+and long-range targeting. Hosted work and publishing remain separately gated.
 
-The accepted M2 criterion is: “the audit runs on local recordings; one hosted episode
-confirms the lines arrive.” A five-level audit of that hosted episode is additional scope.
-Claude Opus 5.5 reviewed this distinction and the migration plan. Two paths are available:
+Trace schema 2 / table version 3 add self-destruct commands and equipment state, distinguish
+self-destruct damage/blasts, and constrain inferred gun targets by actual reach. The aim
+corridor remains uncalibrated for rules 49. Exact release/commit/rules contracts gate audits;
+there is no wildcard accepting future releases. Terminal death closes a replay activation
+without requiring a PWE died line from a seat that can no longer execute.
 
-- **Recommended, bounded M2 path:** keep the active 0.3.89 pin and M1 build unchanged.
-  Build isolated 0.3.114 tools using `build_tools.sh TAG` and `pw_intent record --tag TAG`
-  with a scratch engine checkout. Verify unchanged-policy compilation, execution and v2
-  telemetry parsing/coverage on that release. Then request authorization for one hosted
-  telemetry-confirmation episode. Its evidence establishes line arrival and coverage;
-  the five-level audit remains qualified only for rules 48. Verify the actual hosted
-  release and stop if it differs from the qualified release.
-- **Broader migration:** move the active engine pin and qualify the five-level audit for
-  rules 49 using the sequence below. This needs James's agreement. It preserves compiler
-  fidelity to the old baseline, not competitiveness under the new rules; the frozen
-  reference is no longer the current upstream starter.
+The accepted M2 criterion remains local five-level audit plus hosted telemetry arrival.
+James chose the broader migration, which also qualifies the full audit for the new release.
+The qualification results are tracked in WORKING_CONTEXT; implementation admission alone
+is not evidence that qualification passed.
 
-The isolated path still needs its concrete validation plan before coding, and explicit
-hosted authorization after local qualification. Neither path changes baseline gameplay.
+Implementation and evidence sequence:
 
-Proposed broader migration after approval:
 
 1. Recheck the live release. Update the retired teams ID in `tools/deployed_ref.py`, use
    its existing pin-update interface with a separate writable scratch engine checkout,

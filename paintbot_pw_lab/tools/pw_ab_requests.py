@@ -138,7 +138,7 @@ def build_parser() -> pw_cli.ArgumentParser:
     parser.add_argument("--seeds", help="e.g. 1-30 or 3,5,9 (one request per seed and side)")
     parser.add_argument("--episodes", type=int, default=1,
                         help="episodes per request (per seed when --seeds is given; default %(default)s)")
-    parser.add_argument("--league-id", help="target league id, e.g. league_b9458ff8-...")
+    parser.add_argument("--league-id", help="target league id, e.g. league_ae677105-...")
     parser.add_argument("--division-id", help="target division id")
     parser.add_argument("--coworld-id", help="target coworld id (with --variant-id)")
     parser.add_argument("--variant-id", help="target variant id")

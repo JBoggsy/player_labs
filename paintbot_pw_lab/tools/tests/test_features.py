@@ -73,3 +73,9 @@ def test_every_feature_the_adapter_can_emit_has_meta():
     emitted = features.adapter(full).features
     assert set(emitted) <= set(features.METAS)
     assert {"engagement_win_share", "death_alone_per_min", "intent_share_fight"} <= set(emitted)
+
+
+def test_rules49_pickups_count_in_all_supplies():
+    data = row()
+    data['metrics'].update(pickups_mister=1, pickups_sniper=2, pickups_radar=3)
+    assert features.adapter(data).features['pickups_per_min'] == 3.0

@@ -143,9 +143,10 @@ are required for auditing; the earlier display-only `policy_ref` and date remain
 The hosted episode's `coworld_version` must match the build release. The trace tool's
 release alone does not prove which engine played a hosted episode.
 
-The audit's engine contract is currently qualified only for `coworld-v0.3.89`, teams,
-16 seats, replay header rules 48. Other engine/rules combinations fail identity validation
-until the audit is requalified. The runtime reconstruction is bound to the qualified M1
+The audit accepts exact engine contracts: `coworld-v0.3.89` / `118e1619` / rules 48 and
+`coworld-v0.3.115` / `244dc62b` / rules 49, teams with 16 seats. Other engine/rules
+combinations fail identity validation. The rules-49 migration qualification is tracked in
+[WORKING_CONTEXT.md](../../WORKING_CONTEXT.md); admission alone is not qualification evidence. The runtime reconstruction is bound to the qualified M1
 runtime unit hashes. A changed runtime reports `runtime_model_mismatch`, never a pass
 from the old model. Baseline prose evaluators are bound to the M1 component semantics
 and check text/level/Reads hashes. Changed or unknown prose reports no evaluator. New
