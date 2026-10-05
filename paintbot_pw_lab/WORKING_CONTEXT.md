@@ -73,13 +73,18 @@ True checks are absent from source. These are source/evidence findings, not perm
 change baseline behavior or increase telemetry. Unknown checks never pass, and raw
 outcomes remain available separately. The five immutable compiler guesses remain open.
 
-**Preflight:** clean fetched `paintbot-pw-lab` started at `838140fa`; initial tests passed
-320/320. Live doctor still fails on the stored league's 404. The public directory confirms
-replacement `league_ae677105-0ab8-4561-81ec-c9cf6735821c`, but its current release is not
-verified (the unauthenticated detail endpoint returns 401). The old 0.3.113 observation
-must not be treated as current. Offline doctor passes at `coworld-v0.3.89` / `118e1619`.
-Tools and engine checkout remain pinned/read-only. Before hosted confirmation, resolve the
-live release, agree the engine-update/requalification plan and obtain explicit authorization.
+**Preflight (2026-10-05):** local M2 is committed at `75914509`, not pushed. Live doctor
+still uses a retired league ID (404). Fresh authenticated reads resolve teams league
+`league_ae677105-0ab8-4561-81ec-c9cf6735821c` to coworld
+`cow_9bc561d1-0cca-4f78-8c9f-df27747826bf`, release `0.3.114`; its remote tag peels to
+`4d670eca2b5f74d722f7630e94eed7f9449d979a`. This introduces rules 49: one life, 10 HP,
+shorter guns and new equipment. The audit currently accepts only 0.3.89/rules 48.
+Offline doctor passes at `coworld-v0.3.89` / `118e1619`; this is not a live check.
+The original engine checkout is untouched; live source was inspected in a scratch bare clone.
+Installed `softmax-cli` 0.26.38 matches PyPI; `coworld` 0.1.55 trails 0.1.56. Neither changed.
+The next decision is isolated current-release telemetry qualification (recommended) versus
+active-pin migration and full audit requalification; see the [proposed sequence](docs/designs/2026-09-30-strategy-compilation.md#m2-live-release-requalification-proposal).
+Upload and hosted evaluation need a later, separate authorization after local qualification.
 
 Inputs the policy (`STRATEGY.md`) should build on:
 

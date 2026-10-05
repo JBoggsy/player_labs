@@ -366,8 +366,63 @@ selectors, identity checks, phase alignment, evaluator scope and evidence requir
 Local validation uses the two M1 G5 recordings plus four full-length recordings (seeds
 1–2, both sides) of the immutable baseline against `reference/base.bas`. These validate
 instruments and lifecycle coverage; they are not hosted performance evidence. Before full
-M2 acceptance, resolve the current league release, plan the engine update and requalify,
+M2 acceptance, resolve the current league release, qualify the hosted telemetry path,
 then obtain explicit upload/hosted-evaluation authorization. M3 must wait for M2 acceptance.
+
+### M2 live-release requalification proposal
+
+**Pending James's decision; no migration or hosted action is authorized.** Authenticated
+league/coworld reads on 2026-10-05 identify teams release `0.3.114`, tag commit
+`4d670eca2b5f74d722f7630e94eed7f9449d979a`. Source comparison against `118e1619`
+shows rules 49 changes to lives, HP, gun reach/accuracy and equipment. Merely accepting
+that release in the audit's version guard would not establish correctness.
+
+The accepted M2 criterion is: “the audit runs on local recordings; one hosted episode
+confirms the lines arrive.” A five-level audit of that hosted episode is additional scope.
+Claude Opus 5.5 reviewed this distinction and the migration plan. Two paths are available:
+
+- **Recommended, bounded M2 path:** keep the active 0.3.89 pin and M1 build unchanged.
+  Build isolated 0.3.114 tools using `build_tools.sh TAG` and `pw_intent record --tag TAG`
+  with a scratch engine checkout. Verify unchanged-policy compilation, execution and v2
+  telemetry parsing/coverage on that release. Then request authorization for one hosted
+  telemetry-confirmation episode. Its evidence establishes line arrival and coverage;
+  the five-level audit remains qualified only for rules 48. Verify the actual hosted
+  release and stop if it differs from the qualified release.
+- **Broader migration:** move the active engine pin and qualify the five-level audit for
+  rules 49 using the sequence below. This needs James's agreement. It preserves compiler
+  fidelity to the old baseline, not competitiveness under the new rules; the frozen
+  reference is no longer the current upstream starter.
+
+The isolated path still needs its concrete validation plan before coding, and explicit
+hosted authorization after local qualification. Neither path changes baseline gameplay.
+
+Proposed broader migration after approval:
+
+1. Recheck the live release. Update the retired teams ID in `tools/deployed_ref.py`, use
+   its existing pin-update interface with a separate writable scratch engine checkout,
+   and review `tools/release.env`. Preserve the original read-only engine checkout.
+   Review updating the existing coworld package (installed 0.1.55, PyPI 0.1.56) separately;
+   no new dependency is proposed. Move `PW_DOCS_SHA` only after source verification.
+2. Rebuild local instruments. Verify BASIC limits/host calls, replay49 command decoding,
+   equipment fields, death and action/shout timing, and terrain-cache identity. Change
+   trace/export, `pw_episodes`, `pw_intent` and audit modules only for demonstrated contract
+   changes. Test qualified release/rules pairs and rejection of unknown combinations.
+3. Preserve `reference/base.bas`, authored strategy/skills and immutable M1 builds.
+   Commit compiler inputs/tooling before a new compilation. Reuse G1–G5; compare the new
+   compiled candidate against the frozen reference on the same new engine across 28 seeds
+   on both sides. A compatibility break requiring strategy changes returns to James.
+4. Audit bounded recordings using the shared terrain cache after a disk check; verify
+   artifact/source identity, telemetry completeness, action alignment and final-death
+   windows. Run the full project tests. Existing unmeasurable checks remain explicit;
+   migration does not authorize changing their evidence declarations or gameplay.
+5. Reverify affected mechanics, policy-surface and evidence-pipeline documentation; update
+   the living designs/tool references/context. Obtain peer review and run the documentation
+   audit before local commits. Publishing remains gated.
+6. After local qualification, prepare a concrete one-episode hosted request with current
+   roster, immutable candidate identity and credit cost, recheck the live release, then obtain explicit upload and
+   evaluation authorization. No hosted self-play. Preserve upload receipt, actual played
+   release, replay/results and candidate logs; audit all available telemetry with coverage
+   limitations explicit. Full M2 and M3 remain gated on hosted acceptance.
 
 ### M1 baseline decomposition
 
