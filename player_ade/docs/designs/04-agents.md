@@ -2,12 +2,12 @@
 
 ## What an agent is
 
-An agent is really just a particular **instruction file** (`AGENTS.md` /
-`CLAUDE.md`) plus a set of **tools, skills, and knowledge**. Whether it runs
-autonomously or interactively, and how it was started, dictate *some* of its
-instructions but not most. For example, an agent started autonomously might have
-the same instructions as the same agent started interactively, plus additional
-instructions for operating with minimal human interaction.
+An agent is really just a particular **instruction file** (an `AGENTS.md` or
+`CLAUDE.md`) plus a set of **tools, skills, and knowledge**. Whether it runs autonomously or interactively, and how
+it was started, dictate *some* of its instructions but not most. For example, an
+agent started autonomously might have the same instructions as the same agent
+started interactively, plus additional instructions for operating with minimal
+human interaction.
 
 ## Terms
 
@@ -35,17 +35,22 @@ instructions for operating with minimal human interaction.
 
 Most agents will be all of these to some extent.
 
-## Initial roster (examples, not a complete list)
+## Phase 1: one general-purpose agent
+
+Phase 1 has a single invoked, interactive, general-purpose agent and none of the
+roster below. Its instructions and briefing are described in
+[08-phasing.md](08-phasing.md).
+
+## Initial roster for later phases (examples, not a complete list)
 
 | Agent | Mode | Responsibility |
 | --- | --- | --- |
 | **Librarian** | Mostly autonomous, scheduled; also triggered by user wiki edits | Ensure all knowledge about the coworld is accurate and up to date. Manage the wiki: keep it clean and well organized, respond to user changes. |
-| **Scientist** | Autonomous, triggered by new/updated topics and hypotheses | Generate hypotheses, run experiments, and analyze results for ideas in the experiment pipeline. |
-| **Strategist** | (not yet specified) | Generate strategy ideas for policies; interpret other players' strategies from their policies' actions. |
-| **Manager** | (not yet specified) | Manage, improve, and even "hire" other agents. Set responsibilities, goals, and expectations for other agents; evaluate their performance; work with the user to improve them. |
+| **Scientist** | Autonomous, triggered by new or updated topics and hypotheses | Generate hypotheses, run experiments, and analyze results for ideas in the experiment pipeline. One Scientist handles all three. |
+| **Strategist** | Not yet specified | Generate strategy ideas for policies; interpret other entrants' strategies from their policies' actions. Everything it writes (mechanics findings, opposition research) is **lab-internal by default** and carries the `do-not-publish` tag ([09-tags-and-policy-versions.md](09-tags-and-policy-versions.md)), under the standing rules that gameplay-mechanics discoveries are proprietary until the user releases them and that competitor intelligence comes only from ordinary, non-elevated access. |
+| **Manager** | Not yet specified | The meta-agent. Monitors, measures, analyzes, and improves the other agents, the overall player system and its harness, and itself. Manages and even "hires" agents: sets responsibilities, goals, and expectations; evaluates performance; works with the user to improve them; creates new agents and modifies the harness. |
 
 The user expects this list is incomplete and that some of these roles may prove
-too big and be split into smaller ones. In the user's triggered-agent example, the
-Scientist's job is described as two agents: a **hypothesizer** (one per topic) and
-an **experimenter** (one per hypothesis). Whether that split is intended or just
-illustrative is [Q16](05-open-questions.md).
+too big and be split into smaller ones. The Scientist is the first candidate: if
+it proves too big it is split, for example into a hypothesizer per topic and an
+experimenter per hypothesis.
