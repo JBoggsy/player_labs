@@ -285,9 +285,11 @@ GRENADE_TRUE = {"COM.grenade_warning": [{"level": "True", "text": "a grenade fro
 
 
 def grenade_case(charges, throw_at=None, to=(1900, 1000), dead_at=None, ticks=40, extra_sends=(), gap_at=None,
-                 held=None):
+                 held=None, blast=True, extra_blasts=()):
     """Sender 0 warns at t = 6 (release in 3) for (1900, 1000); `charges` maps tick -> state charge.
-    `held` maps tick -> (cmd_charge, grenade, radar_until) for ticks before the charge starts."""
+    `held` maps tick -> (cmd_charge, grenade, radar_until) for ticks before the charge starts.
+    A throw lands 10 ticks later; `blast` records the observed grenade_blast there (the trace contract),
+    and `extra_blasts` adds (tick, pos) blasts by the same owner."""
     states = {(t, b): state() for t in range(ticks + 1) for b in range(16)}
     for tick, charge in charges.items():
         states[tick, 0] = state(charge=charge)
@@ -301,6 +303,12 @@ def grenade_case(charges, throw_at=None, to=(1900, 1000), dead_at=None, ticks=40
     if throw_at is not None:
         events.append({"t": throw_at, "kind": "grenade_throw", "seat": 0,
                        "data": json.dumps({"from": [1000, 1000], "to": list(to), "lands_at": throw_at + 10})})
+        if blast:
+            events.append({"t": throw_at + 10, "kind": "grenade_blast", "seat": 0,
+                           "data": json.dumps({"pos": list(to), "trench": -1, "victims": []})})
+    for tick, pos in extra_blasts:
+        events.append({"t": tick, "kind": "grenade_blast", "seat": 0,
+                       "data": json.dumps({"pos": list(pos), "trench": -1, "victims": []})})
     msg = cm.Message(2, 0, 3, 0, ac.cell_of(1900, 1000, BOUNDS))
     sends = [send(msg, 6)] + [send(cm.Message(2, 0, 2, 0, ac.cell_of(2400, 1000, BOUNDS)), t) for t in extra_sends]
     rows = run(Ep(ticks=ticks, events=events), 0, states, sends, m=mapping(GRENADE_TRUE))
@@ -330,8 +338,11 @@ def test_grenade_cancellations_fail_with_specific_reasons():
 def test_grenade_unknowns_end_gap_and_superseded():
     still = grenade_case({k: min(24, k - 5) for k in range(7, 21)}, ticks=20)  # charging at the last state
     assert [(r["status"], r["reason"]) for r in still] == [("unmeasurable", "after_episode_end")]
-    last = grenade_case({**{k: k - 5 for k in range(7, 20)}, 20: 0}, throw_at=20, ticks=20)  # final-step throw
-    assert [(r["status"], r["reason"]) for r in last] == [("pass", None)]
+    # A throw on the final step is associated, but its landing (tick 30) is after the last state (20):
+    # the match may end before airborne grenades explode, so the projection is not graded.
+    last = grenade_case({**{k: k - 5 for k in range(7, 20)}, 20: 0}, throw_at=20, ticks=20, blast=False)
+    assert [(r["status"], r["reason"]) for r in last] == [("unmeasurable", "landing_after_episode_end")]
+    assert last[0]["throw_tick"] == 20 and last[0]["lands_at"] == 30
     gap = grenade_case({7: 1, 8: 2, 9: 3, 10: 0}, throw_at=10, gap_at=8)
     assert [(r["status"], r["reason"]) for r in gap] == [("unmeasurable", "replay_state_gap")]
     rows = grenade_case({**{k: k - 5 for k in range(7, 12)}, 12: 0}, throw_at=12, extra_sends=(9,))
@@ -370,6 +381,26 @@ def test_grenade_rewarning_mid_charge_released_next_step_passes():
     assert [(r["status"], r["reason"]) for r in rows] == [("pass", None)]
     rows = grenade_case({6: 5}, held={7: (1, 0, 30)})  # same shape without any throw: an honest drop
     assert [(r["status"], r["reason"]) for r in rows] == [("fail", "charge_dropped_without_throw")]
+
+
+def test_grenade_landing_must_be_observed():
+    charges = {**{k: k - 5 for k in range(7, 15)}, 15: 0}
+    on_end = grenade_case(charges, throw_at=15, ticks=25)  # blast exactly on the last state tick 25
+    assert [(r["status"], r["reason"]) for r in on_end] == [("pass", None)]
+    unseen = grenade_case(charges, throw_at=15, blast=False)
+    assert [(r["status"], r["reason"]) for r in unseen] == [("unmeasurable", "landing_not_observed")]
+    far = grenade_case(charges, throw_at=15, to=(2400, 1000))  # observed blast 500 cm from the cell
+    assert [(r["status"], r["reason"]) for r in far] == [("fail", "landed_elsewhere")]
+
+
+def test_grenade_same_owner_blasts_at_landing_tick():
+    charges = {**{k: k - 5 for k in range(7, 15)}, 15: 0}
+    other = grenade_case(charges, throw_at=15, extra_blasts=[(25, (3000, 2000))])  # one blast matches `to`
+    assert [(r["status"], r["reason"]) for r in other] == [("pass", None)]
+    twin = grenade_case(charges, throw_at=15, extra_blasts=[(25, (1900, 1000))])  # two identical matches
+    assert [(r["status"], r["reason"]) for r in twin] == [("unmeasurable", "ambiguous_landing")]
+    away = grenade_case(charges, throw_at=15, blast=False, extra_blasts=[(25, (1910, 1000))])  # not at `to`
+    assert [(r["status"], r["reason"]) for r in away] == [("unmeasurable", "ambiguous_landing")]
 
 
 def test_grenade_regression_shapes_from_local_audit():

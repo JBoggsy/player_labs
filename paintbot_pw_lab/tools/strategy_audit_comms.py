@@ -120,7 +120,8 @@ def _context(ep) -> dict:
         _CACHE["context"] = {"bounds": list(bounds) if bounds and len(bounds) == 4 else None,
                        "visibility": visibility, "shouts": shouts,
                        "pickups": ep["pickups"].to_dict("records"),
-                       "throws": [r for r in events if r["kind"] == "grenade_throw"]}
+                       "throws": [r for r in events if r["kind"] == "grenade_throw"],
+                       "blasts": [r for r in events if r["kind"] == "grenade_blast"]}  # self_destruct is separate
     return _CACHE["context"]
 
 
@@ -308,14 +309,33 @@ def grenade_true(msg, t, seat, ctx, states, sends, end_tick):
     if throw is None:
         dead = int(states[end, seat]["hp"]) <= 0
         return "fail", "cancelled_by_death" if dead else "charge_dropped_without_throw", {"end_tick": end}
-    data = json.loads(throw["data"]) if isinstance(throw["data"], str) else throw["data"]
-    to = data.get("to")
-    cx, cy = cell_center(msg.cell, ctx["bounds"])
-    distance2 = (int(to[0]) - cx) ** 2 + (int(to[1]) - cy) ** 2
+    data = _data(throw)
+    to, lands_at = data.get("to"), data.get("lands_at")
     # The release decision is the tick before the throw's post-step tick; fieldsA predicted t + fieldsA.
-    detail = {"throw_tick": int(throw["t"]), "distance_cm": round(distance2 ** 0.5),
+    detail = {"throw_tick": int(throw["t"]), "lands_at": lands_at,
               "release_estimate_error": (int(throw["t"]) - 1) - (t + msg.fields_a)}
+    if to is None or lands_at is None:
+        return "unmeasurable", "landing_not_traced", detail
+    # Only an observed landing counts: once the match is decided, stepEquipment returns before airborne
+    # grenades explode (mechanics.nim), so a projected landing after the last state may never happen.
+    if int(lands_at) > end_tick:
+        return "unmeasurable", "landing_after_episode_end", detail
+    candidates = [b for b in ctx["blasts"] if b["seat"] is not None and int(b["seat"]) == seat
+                  and int(b["t"]) == int(lands_at)]
+    matches = [b for b in candidates if list(_data(b).get("pos") or []) == list(to)]
+    if not candidates:
+        return "unmeasurable", "landing_not_observed", detail
+    if len(matches) != 1:  # never guess between same-owner blasts, or accept a blast away from the target
+        return "unmeasurable", "ambiguous_landing", {**detail, "blasts": len(candidates)}
+    px, py = _data(matches[0])["pos"]
+    cx, cy = cell_center(msg.cell, ctx["bounds"])
+    distance2 = (int(px) - cx) ** 2 + (int(py) - cy) ** 2
+    detail["distance_cm"] = round(distance2 ** 0.5)
     return ("pass", None, detail) if distance2 <= GRENADE_HIT_CM ** 2 else ("fail", "landed_elsewhere", detail)
+
+
+def _data(event: dict) -> dict:
+    return json.loads(event["data"]) if isinstance(event["data"], str) else (event["data"] or {})
 
 
 def decoded(msg, t, seat, ctx, states, seat_logs, keys, capacity, end_tick):

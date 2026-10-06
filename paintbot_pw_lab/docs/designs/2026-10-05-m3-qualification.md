@@ -1,6 +1,7 @@
 # M3 communications qualification
 
-Status: implementation and local gates pass; hosted artifacts and final audit are being qualified.
+Status: **M3 implementation and milestone acceptance complete, 2026-10-05.**
+The hosted performance comparison is inconclusive; two strategy truth checks fail.
 This is the acceptance record for [comms v1](../../strategy/comms.md), under the
 [strategy compilation design](2026-09-30-strategy-compilation.md).
 
@@ -41,7 +42,7 @@ No check was weakened and no baseline firing mechanic was changed to hide this f
 
 The tooling refinements preserve current authored skills in compiler context, use byte-based
 inbox reconstruction, and bind baseline predicates to their source dependency closure.
-The full suite passes 441 tests after the lifecycle corrections. The M2 hosted recording still audits to 17 pass, nine
+The full suite passes 443 tests after the lifecycle corrections. The M2 hosted recording still audits to 17 pass, nine
 unmeasurable and zero failures.
 
 Final local build `18e0aa1f-1` reuses every component and runtime unit byte-for-byte.
@@ -52,15 +53,18 @@ recordings (seeds 1–2, both sides) plus two G5 tapes cover 48 candidate-seat r
 All 16,326 eligible teammate messages decoded; there were no capacity exclusions or
 transport failures. All nine types were exercised somewhere in this set. The audit reports
 18 pass, 38 unmeasurable and two failing checks. Enemy reports include 62/5,793 reports
-of disguised teammates. Grenade claims fail in 62/84 measurable cases: 32 charges never started and 30 landed
-elsewhere; 54 superseded warnings and five unfinished lifecycles remain unmeasurable.
+of disguised teammates. Grenade claims fail in 61/82 measurable cases: 32 charges never started and 29 landed
+elsewhere; 54 superseded warnings, five unfinished lifecycles and two landings beyond
+episode end remain unmeasurable.
 This is mechanism evidence, not field performance.
 
 Qualification exposed an evaluator error: its deadline of release estimate plus three ticks
 was not in the accepted landing check. The evaluator now follows the actual charge, including
 continuous commands held while radar or mister effects prevent charging. Tests cover delayed
 start/release, mid-charge warnings, cancellations, missing states, superseded warnings and the
-final episode step. The 150 cm landing criterion is unchanged. Actual warnings while disarmed
+final episode step. Landing claims require the matching recorded grenade blast, rather than
+the projected target of a grenade still airborne at episode end. The 150 cm criterion is
+unchanged. Actual warnings while disarmed
 and early releases remain policy findings; the uploaded policy was not changed during testing.
 
 
@@ -111,7 +115,103 @@ uv run python paintbot_pw_lab/tools/pw.py compare compare ROOT/episodes \
   --requests ROOT/requests/manifest.json --out ROOT/ab.json --json
 ```
 
-## Final acceptance
+## Hosted results
 
-Pending: final immutable build identity, full local evidence, upload receipt, request IDs,
-hosted operational/semantic evidence, fixed-sample comparison and qualitative findings.
+All 64 requests completed on release 0.3.115 with the exact intended versions, sides and
+seeds. All 64 replays hash-verify, and all 32 pairs have matching engine seeds. There are
+no excluded games, unmatched pairs, load failures or policy-attributed operational failures.
+Creation previews total 32 XP credits; actual credit charges were not available. The live
+pre-upload doctor passed. Hosted CLI: coworld 0.1.56; softmax-cli 0.26.38. No engine or
+policy changes were made during the fixed sample.
+
+The [machine-readable evidence](2026-10-05-m3-qualification-data.json) retains all 64 request
+and episode IDs, policy identities, seeds, result scores, replay final hashes, metadata/result
+hashes, comparison statistics, audit summaries and the final evaluator hash. Full artifacts
+are in `episode_data/m3-18e0aa1f-ab/`; the comparison is `ab.json` there.
+
+| Metric | Baseline | M3 | Verdict |
+| --- | ---: | ---: | --- |
+| Score outcome, margin 600 | 0.797552 | 0.781094 | Inconclusive |
+| Wins | 26/32 | 25/32 | Inconclusive |
+| Operational failures | 0/32 | 0/32 | None observed |
+
+The paired score difference is −0.016458 (unadjusted 95% paired t interval
+[−0.229000, +0.196083]). Raw paired-t p = 0.875535; Wilcoxon p = 0.903146; BY-adjusted
+p = 1.0. The fixed sample provides no evidence of improvement or regression, and does not
+establish equivalence. Six pairs were candidate-only wins and seven baseline-only wins.
+Side/opponent subgroups have 16 pairs each and remain descriptive. The computed SPRT was
+ignored as preregistered; the sample was not extended.
+
+All 256 candidate-seat logs pass G5: 416,062 lines, zero failures, peak 270 bytes per tick.
+All nine message types appear somewhere in the hosted set. API 429 responses caused partial
+downloads; paced retries recovered the original episodes without creating additional games.
+The dashboard reads downloaded evidence to avoid competing for API requests.
+
+The dense audit uses seed 1801 against both opponents on both sides: four verified episodes,
+32 candidate seats, 84,762 living decision ticks. All runtime reconstructions pass, and
+13,126/13,126 eligible teammate deliveries decode, with no capacity exclusions. All 61 audit
+input hashes verify. It reports 17 passing checks, 36 unmeasurable, three not exercised and
+two failing checks:
+
+- Enemy truth: 87/5,661 reports describe a disguised teammate.
+- Grenade truth: 80/94 measurable claims fail: 37 charges never start and 43 land elsewhere.
+  Fifty superseded warnings remain unmeasurable.
+- The three X checks are not exercised in this four-game subset, despite X appearing in the
+  broader G5 logs. Receiver-state and causal checks remain unproven where their data is absent.
+
+E heard tracks only steer looking when no fire target is present; a false E report does not
+itself create a shooting target. G reports do steer receiver evasion, so an incorrect reported
+location can direct movement around the wrong area.
+
+The report is `analysis/strategy_audit/18e0aa1f-1-hosted-final/report.md`; local evidence is
+`analysis/strategy_audit/18e0aa1f-1-local-final/`. The M2 hosted regression remains 17 pass,
+nine unmeasurable and zero fail. The compiled policy is immutable at source commit
+`18e0aa1f6501af95e2c98d5d62cdc1fff6fde9f8`; subsequent changes affect audit evaluation and
+qualification/status documentation, not its BASIC or strategy behavior.
+
+## Qualitative replay review
+
+Reviewed three episodes per arm: a loss at the primary score floor, the median primary
+outcome, and one largest absolute paired swing. Saturated score ties use deterministic
+selection; these games illustrate mechanisms and do not replace the full comparison.
+
+| Arm / selection | Episode request | Opponent, side, seed | Observation |
+| --- | --- | --- | --- |
+| Baseline / loss | `ereq_3995891b-b572-4712-9da3-bc1888f9b7af` | xolod, blue, 1802 | Eliminated at tick 3,135 despite owning all ten hearts at the end; one friendly grenade kill. |
+| Baseline / median | `ereq_06445935-38a0-42fd-96b1-9699101b6938` | zhar, blue, 1806 | Heart-meter win at tick 3,103; seven enemy spray kills, two grenade self-kills and one friendly grenade kill. |
+| Baseline / paired swing | `ereq_8995ffed-112e-4a7f-9066-958f78820b9d` | xolod, red, 1801 | Eliminated at tick 1,968 despite eight completed captures. |
+| M3 / loss | `ereq_7a7a4ff7-61e7-46c5-89f5-d58e3c9c5856` | xolod, red, 1805 | Eliminated at tick 3,099; one grenade killed its thrower and two teammates at tick 3,009. |
+| M3 / median | `ereq_1076ca69-c6d2-4405-8ff9-b94fe261772e` | zhar, red, 1803 | Heart-meter win at tick 3,550 with one life remaining and all ten hearts owned. |
+| M3 / paired swing | `ereq_0e068d7e-c1ae-41af-8adb-12cd933b8f7f` | xolod, red, 1801 | Heart-meter win at tick 3,136 with one life remaining; two grenade self-kills still occurred. |
+
+The loss gives a direct message-to-outcome example. Seat 12 warned at decision 2,996;
+seats 6, 8 and 10 decoded it at 2,997. It predicted 18 ticks until release. The actual throw
+occurred at 2,999, and its recorded blast at 3,009 was 740 cm from the reported cell center.
+The blast killed seats 8, 10 and 12. Thus delivery worked, including to both teammate victims,
+but the warning described the wrong landing location. This does not prove whether a correct
+warning would have saved them. The focused evidence is
+`analysis/strategy_audit/18e0aa1f-1-loss-grenade/`.
+
+The favorable paired example changes an elimination loss into a heart-meter win, but the
+bundle changes several receiver behaviors and message traffic together (45 baseline shouts
+versus 1,877 candidate shouts in that pair). In-range enemies also receive the sender's exact
+position, so additional traffic changes information exposure. No individual message type
+gets causal credit.
+Friendly fire and self-kills also occur in the baseline. The sensible next edit-loop topic is
+truthful grenade warnings, with the baseline retained as the competitive reference.
+
+## Final acceptance and limits
+
+M3's defined criteria are met: the codec and receiver components exist, G1–G5 pass, eligible
+local decode coverage is 100%, and the fixed hosted A/B against unchanged M1 behavior is
+complete. This is not a claim that all strategy checks pass or that communications improve
+competitive performance. Failed claims, unmeasurable receiver effects, lack of authentication,
+and the two-opponent/small-sample scope remain explicit.
+
+The final suite passes 443 tests. Claude Opus 5.5 reviewed the plan, generated implementation
+and audit corrections, and accepted the final evidence against the defined M3 criteria.
+Source/print-event headroom is small (127,897/131,072 bytes and
+63/64 events). Some generated cooldown memory shares per-unit scratch arrays; peer review
+found no clobbering, but future regeneration must preserve those persistent cells.
+
+M4 has not started. No league submission or Git publication was performed.

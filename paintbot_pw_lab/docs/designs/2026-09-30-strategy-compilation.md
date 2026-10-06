@@ -4,7 +4,7 @@
 > (`compiled/f4ffb408-1` and `compiled/ee55887d-1`, both G1–G5 passed). M1 source and motor
 > skill are qualified in `compiled/b41ef1fc-1`: all G1–G5 pass, with identical play against
 > `base.bas` across 28 seeds on both sides. M2 implements the five-level audit, qualified locally
-> and with hosted telemetry on 0.3.115. M3 is in progress; acceptance is pending.
+> and with hosted telemetry on 0.3.115. M3 acceptance is complete; the A/B is inconclusive and semantic findings remain explicit.
 > Accepted 2026-09-30 (James). Build order: §11. Rendered,
 > commentable copy: [2026-09-30-strategy-compilation.html](2026-09-30-strategy-compilation.html)
 > (may lag this file; this Markdown file is authoritative).
@@ -342,7 +342,7 @@ files and a Python driver; each agent needs only a thin wrapper.
 | M0 Tooling | `pw.py strategy lint`, `prepare`, `assemble`, `verify`, `compile`, `trace`; the runtime library with telemetry v2 emission (PWD, PWP, PWE, PWB, PWC) and the v2 parser; `AGENT.md`, the Claude and Codex wrappers; a seeded `LESSONS.md` | Tests for the deterministic parts, including the runtime's selection and adaptation arithmetic checked against the Python reference in the engine; a trivial two-component strategy builds end to end with each agent |
 | M1 `base.bas` description | `STRATEGY.md` describes `base.bas` faithfully; full build | G1-G5 pass; G4 against `base.bas` has 0.5 in its interval |
 | M2 Telemetry audit | `pw.py strategy audit` (the five-level checks), complete | Local recordings audited and hosted telemetry confirmed on 0.3.115; explicit evidence gaps remain unknown |
-| M3 Comms v1 | codec runtime unit; `COM.` components from `strategy/comms.md` | Decode rate between our own seats near 100% in local recordings; hosted A/B against the M1 build |
+| M3 Comms v1 | codec runtime unit; nine `COM.` components and receiver effects, complete | 100% eligible local decode; fixed 64-episode hosted A/B against qualified M1 behavior, inconclusive; failed truth checks remain explicit |
 
 ### M2 local audit implementation
 
@@ -447,7 +447,7 @@ alignment is 56/56 at t+1 and zero at neighboring offsets. The hosted report is
 WORKING_CONTEXT. Eight copies serve this telemetry test, not a performance-roster decision.
 The request estimated 0.5 credits. No baseline behavior changed and no league submission
 was made. These results complete M2's local-plus-hosted acceptance; they do not establish
-competitive improvement or fill the nine known source/evidence gaps. M3 is in progress; its local and hosted acceptance are pending.
+competitive improvement or fill the nine known source/evidence gaps. M3 is also qualified; see the evidence below.
 
 ### M1 baseline decomposition
 
@@ -523,7 +523,7 @@ are required before later hosted work, outside M1's local scope.
   change behavior, the M1 milestone, and any build with a bad seat.
 
 
-### M3 compact communication evidence (implementation in progress)
+### M3 compact communication evidence (implemented)
 
 James chose lightweight scrambling, with failed checks treated as uncertain disguise evidence,
 and lossless compact batches within the existing 512-byte/64-event telemetry half-cap.
@@ -566,5 +566,9 @@ Its six local recordings decode 16,326/16,326 eligible teammate deliveries. Two 
 fail: disguised teammates reported as enemies, and grenade warnings without the predicted
 landing. Grenade association follows the actual charge lifecycle, including held commands
 while disarmed; it has no deadline inferred from the packet estimate. The 150 cm landing
-criterion is unchanged. Full suite: 441 tests. Hosted acceptance is pending in the
-[M3 qualification record](2026-10-05-m3-qualification.md).
+criterion is unchanged. Landings require a matching recorded grenade blast; projections beyond episode end are
+unmeasurable. Full suite: 443 tests. Hosted acceptance is complete: all 256 candidate-seat
+logs pass G5, and the dense four-game audit decodes 13,126/13,126 eligible messages. The
+fixed 32-pair A/B is inconclusive (score outcome 0.797552 → 0.781094), with no operational
+failures or exclusions. See the [M3 qualification record](2026-10-05-m3-qualification.md)
+for identities, evidence and failed/unmeasurable semantic checks. M4 has not started.

@@ -466,7 +466,7 @@ eight accepted receives and one actual send as fixed-width decoded payload pairs
 flushed after snapshots; the reader expands it into individual logical PWC events at the
 receive/send phases below. Build maps bind wire types, codec constants and COM codes.
 Duplicate batches and wrong physical ordering fail parsing. Existing v2 remains unchanged.
-This extension is being implemented; it does not mark M3 acceptance complete.
+This extension is implemented and M3 acceptance is complete; the [qualification record](2026-10-05-m3-qualification.md) separates transport success, an inconclusive A/B and failed/unmeasurable semantic checks.
 
 Order within one tick: PWE died, PWC receive, PWP, PWE preempted, PWE start, PWE done/abort,
 PWC send, PWD, PWB, PWP snapshot.

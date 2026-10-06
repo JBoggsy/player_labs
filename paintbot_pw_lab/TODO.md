@@ -8,11 +8,11 @@
   correct execution from a raw outcome or G5 coverage.
 - `pw_intent record --out RELATIVE_PATH` raises from `Path.as_uri`; an absolute `--out` works.
   Normalize the output path in the recorder with a focused regression test when fixing it.
-- M3 hosted qualification in progress: final build `18e0aa1f-1` and local audit are complete;
-  finish the fixed 64-episode A/B and hosted telemetry audit. Track the current evidence in
-  `docs/designs/2026-10-05-m3-qualification.md`. Keep the two failed truth checks separate
-  from passing transport. Use `compare --target score_outcome --margin-scale 600` for this
-  preregistered comparison; historical `elo_outcome` stays the default.
+- Next human-led edit-loop decision after M3: address false grenade warnings (charging while
+  disarmed; early release/changed aim) and disguised teammates reported as enemies. M3's
+  A/B is inconclusive, so retain the baseline as the competitive reference. See
+  `docs/designs/2026-10-05-m3-qualification.md`. Do not silently retune the baseline or
+  infer receiver effectiveness from successful decoding.
 - Audit partial-load accounting: a late seat I/O failure retains valid earlier-seat evidence
   with `input_failures` and exit 1, but the episode summary can be absent. Preserve those
   verified rows while exposing an explicit partial episode summary in a future refinement.

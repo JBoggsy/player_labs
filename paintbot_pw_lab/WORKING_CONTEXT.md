@@ -46,7 +46,7 @@ The immutable compiler report retains five open guesses (four low, one medium). 
 no behavior substitution: the positive-period guard does not affect the default 72; take/cover
 run only with a valid target; legacy host fields match the baseline; Communication runs after
 the motor, so the grenade callout is on the same tick. These M1 gates are not a five-level semantic
-audit or proof of all game configurations. M2 is now qualified on rules49; M3 remains in [TODO.md](TODO.md).
+audit or proof of all game configurations. M2 and M3 are qualified on rules49; current limitations and the next edit-loop decision are below.
 
 **M2 is complete: local five-level audit and hosted telemetry confirmed.**
 `pw.py strategy audit ROOT... --build 567feb38-1 --json` connects scheduled beliefs,
@@ -60,7 +60,7 @@ Git publishing remains outside this testing objective. James subsequently author
 locally. The reviewer session is `pw-m2-review` (Claude Opus 5.5); its bounded handoffs and
 verification scripts are under `tmp/collab/strategy/m2/`.
 
-**M3 is in progress.** James chose lightweight scrambling (failed checks are uncertain disguise
+**M3 implementation and acceptance are complete.** James chose lightweight scrambling (failed checks are uncertain disguise
 evidence) and lossless compact batch telemetry under the existing 512-byte/64-event cap.
 X targeting requires our own
 conflicting-position evidence or matching reports from two distinct teammates; a failed check
@@ -75,17 +75,29 @@ from 16 seats, no failures and D/U not exercised. All 43 artifact hashes match.
 Six local recordings cover 48 candidate-seat recordings and all nine message types.
 The final local semantic audit has 16,326/16,326 eligible teammate deliveries decoded,
 18 passing checks, 38 unmeasurable and two failing checks. Enemy reports include 62/5,793
-reports of disguised teammates. Grenade claims fail in 62/84 measurable cases: 32 charges
-never start (the motor can request charging while disarmed) and 30 land elsewhere. Another
-54 warnings are superseded and five lifecycles unfinished. The evaluator follows the actual
+reports of disguised teammates. Grenade claims fail in 61/82 measurable cases: 32 charges
+never start (the motor can request charging while disarmed) and 29 land elsewhere. Another
+54 warnings are superseded, five lifecycles unfinished and two landings beyond episode end. The evaluator follows the actual
 charge command/lifecycle, including delayed start and release, instead of imposing an
 unsupported deadline. These policy findings remain visible; gameplay was not retuned.
-Full suite: 441 passed. M2 hosted regression: 17 pass, nine unmeasurable, zero failures.
+Full suite: 443 passed. M2 hosted regression: 17 pass, nine unmeasurable, zero failures.
 
 Uploaded `jb-pw-strategy-m3:v1` is version `7361ffff-f0d4-4c59-925b-6706331b59d4`, linked to
-`18e0aa1f-1` in `strategy/compiled/uploads.jsonl`. Its fixed 64-episode hosted comparison is
-running against the qualified baseline and two pinned opponents. Artifact collection and
-final hosted acceptance remain pending; see the [qualification record](docs/designs/2026-10-05-m3-qualification.md).
+`18e0aa1f-1` in `strategy/compiled/uploads.jsonl`. The fixed 64-episode hosted comparison is
+complete on 0.3.115: 32 matched pairs, no exclusions or operational failures. Score outcome
+(margin 600) is 0.797552 baseline versus 0.781094 M3; difference −0.016458, unadjusted 95%
+paired interval [−0.229000, +0.196083], BY-adjusted p = 1.0. Wins are 26/32 versus 25/32.
+The verdict is inconclusive; retain the baseline as the competitive reference.
+
+All 256 candidate-seat logs pass G5 (416,062 lines, peak 270 bytes/tick, all nine types
+exercised). The four-game dense audit covers both opponents and sides: all 32 runtime
+reconstructions pass, and 13,126/13,126 eligible messages decode. Its checks are 17 pass,
+36 unmeasurable, three X checks not exercised and two fail: 87/5,661 enemy claims describe
+teammates; 80/94 measurable grenade claims fail (37 unstarted charges, 43 different landings).
+A reviewed loss links a successfully decoded warning to a blast 740 cm away that killed
+the thrower and two receiving teammates. Delivery is not message truth or proven benefit.
+See the [qualification record](docs/designs/2026-10-05-m3-qualification.md) and its linked
+machine-readable request/episode identities, statistics and evidence. M4 has not started.
 Requests and downloads are in `episode_data/m3-18e0aa1f-ab/`. The implementation plan and
 peer reviews are under `tmp/collab/strategy/m3/`; Claude Opus 5.5 in `pw-m2-review` reviews
 implementation and owns bounded audit edits; root owns integration and qualification.
@@ -179,7 +191,8 @@ the focused audit tests pass. The leaders tool now defaults to the current Compe
 `PW_DOCS_SHA` stays `118e1619`: BASIC/rules49 changes are source-verified in relevant docs,
 but wider neural/oracle references remain explicitly scoped to 0.3.89. Live doctor passed
 on 0.3.115 after a 429 retry. softmax-cli 0.26.38 matched the latest release; coworld 0.1.56
-was used for hosted operations. M3 is active, as described above; its hosted qualification is pending.
+was used for hosted operations. M3 acceptance is complete as described above; the next
+edit-loop direction is for James.
 
 Inputs the policy (`STRATEGY.md`) should build on:
 

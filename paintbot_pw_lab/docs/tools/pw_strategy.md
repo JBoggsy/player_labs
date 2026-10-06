@@ -11,7 +11,8 @@ the side-balanced 28-seed screen reports identical play, and all 16 candidate-se
 pass telemetry parsing and coverage on the original 0.3.89 release.
 [Build `567feb38-1`](../../strategy/compiled/567feb38-1/report.md) requalifies the same
 baseline on the active 0.3.115 pin.
-The five-level audit (M2) is qualified locally and with hosted telemetry on 0.3.115. M3 is in progress. Codec components opt in with
+The five-level audit (M2) is qualified locally and with hosted telemetry on 0.3.115. M3 is qualified locally and hosted, with an inconclusive performance comparison and explicit
+failed/unmeasurable truth checks ([evidence](../designs/2026-10-05-m3-qualification.md)). Codec components opt in with
 `Encoding: comms-v1 N` (wire type 0–8), declare `packet[2]`, and use `Log: packet`.
 Generated code owns this packet and the send/receive status fields. Mixing codec and legacy
 COM components or duplicate wire types is rejected. The compiler includes the authored codec
@@ -234,7 +235,10 @@ For grenade landing claims, the evaluator follows the warned charge through its 
 including a continuously held command before charging can start. It does not impose a deadline
 from the packet's release estimate. A stopped command that never charged, death, or a reset
 without a throw fails the landing claim; an unfinished lifecycle or missing trace is unmeasurable.
-A newer warning supersedes the old one. Associated throws still must land within 150 cm of
-the reported cell center. The release estimate error is diagnostic, not a hidden pass criterion.
+A newer warning supersedes the old one. An associated throw needs a matching recorded
+`grenade_blast`; its observed position must be within 150 cm of the reported cell center.
+Projected landings after episode end, missing blasts and ambiguous matches are unmeasurable.
+Self-destruct blasts do not satisfy this check. The release estimate error is diagnostic,
+not a hidden pass criterion.
 Add an evaluator and negative tests when adding a check; never let unknown prose fall
 through to a pass. The immutable M1 report and its five compiler guesses remain unchanged.

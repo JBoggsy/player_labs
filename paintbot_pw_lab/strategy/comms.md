@@ -1,8 +1,8 @@
 # Comms v1: team messages over `shout`
 
-> **Status:** M3 implementation in progress, 2026-10-05. The codec and compact telemetry
+> **Status:** M3 implementation and acceptance complete, 2026-10-05. The codec and compact telemetry
 > reader have engine-backed tests; all nine strategy components passed G1–G5 in build
-> `18e0aa1f-1`. Local transport is qualified; hosted acceptance is pending.
+> `18e0aa1f-1`. Local and hosted transport are qualified; the hosted A/B is inconclusive.
 > The [qualification record](../docs/designs/2026-10-05-m3-qualification.md) retains failed truth checks. This is a policy specification, not a change to the strategy format.
 > Engine behavior is verified at `coworld-v0.3.115`
 > (`244dc62b38a8a89721cbb1625f05a99ca60d0c13`, rules49).
@@ -51,13 +51,13 @@ protocol. Do not use these constants to protect real secrets.
 
 | Code | Type | Message | Sent when | Receiver effect |
 | --- | --- | --- | --- | --- |
-| E | 0 | **Enemy sighting** | sender sees an enemy (refresh rules in §7) | Add or refresh the track in `K.enemy_contacts` with source `heard`. |
+| E | 0 | **Enemy sighting** | sender sees an enemy (refresh rules in §7) | Add or refresh the heard track consumed by `K.contacts`; it steers looking, not a fire target. |
 | F | 1 | **Focus call: shoot this target** | sender selects a fight target that is wounded or that two or more teammates can engage | Each receiver that sees the target prefers it as its fight target for `focus_ttl` ticks. Focus concentrates fire. It does not spread fire. |
 | G | 2 | **Grenade out** | sender starts to charge a grenade at a target | Keep out of `grenade_clear_radius` of the target until the release tick plus 24 ticks. |
 | U | 3 | **Under fire, no shooter visible** | sender loses HP and sees no enemy | Mark a danger area at the sender's position (`heardX/Y`) toward the gunfire direction for `danger_ttl` ticks. |
 | H | 4 | **Glory heart seen** | sender sees a glory heart | Add it to `K.glory_hearts` with its expiry. |
-| K | 5 | **Pickup taken** | sender takes a pickup | Mark the station empty until the ready tick in `K.pickup_memory`. |
-| R | 6 | **Pickup ready** | sender sees a ready station that is not marked ready in its memory | Mark the station ready in `K.pickup_memory`. |
+| K | 5 | **Pickup taken** | sender takes a pickup | Mark the station empty until the ready tick in `K.pickups`. |
+| R | 6 | **Pickup ready** | sender sees a ready station that is not marked ready in its memory | Mark the station ready in `K.pickups`. |
 | X | 7 | **Disguise alert: this label is fake** | sender identifies a disguised enemy (§8) | Treat the body with that label near that position as an enemy for `disguise_ttl` ticks. |
 | D | 8 | **I am in disguise, and I am on your team** | sender is disguised and a teammate can shoot it (§8) | Do not shoot the body with the sender's apparent label within `friend_radius` of the sender's position, for `friend_ttl` ticks. Do not raise X for that body. |
 
