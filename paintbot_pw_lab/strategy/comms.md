@@ -2,7 +2,8 @@
 
 > **Status:** M3 implementation in progress, 2026-10-05. The codec and compact telemetry
 > reader have engine-backed tests; all nine strategy components passed G1–G5 in build
-> `c03010be-1`. Full local and hosted acceptance remain pending. This is a policy specification, not a change to the strategy format.
+> `18e0aa1f-1`. Local transport is qualified; hosted acceptance is pending.
+> The [qualification record](../docs/designs/2026-10-05-m3-qualification.md) retains failed truth checks. This is a policy specification, not a change to the strategy format.
 > Engine behavior is verified at `coworld-v0.3.115`
 > (`244dc62b38a8a89721cbb1625f05a99ca60d0c13`, rules49).
 

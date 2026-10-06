@@ -1,0 +1,1839 @@
+{
+  "adaptations": [],
+  "build_id": "18e0aa1f-1",
+  "codes": {
+    "adaptation": {},
+    "capability": {
+      "C.cover_heart": 2,
+      "C.default_goal": 3,
+      "C.fall_back": 5,
+      "C.resupply": 4,
+      "C.take_heart": 1
+    },
+    "condition": {
+      "C.cover_heart": {},
+      "C.default_goal": {},
+      "C.fall_back": {},
+      "C.resupply": {},
+      "C.take_heart": {}
+    },
+    "direction": {
+      "receive": 2,
+      "send": 1
+    },
+    "event": {
+      "abort": 3,
+      "died": 5,
+      "done": 2,
+      "preempted": 4,
+      "start": 1
+    },
+    "held": {
+      "kept": 1,
+      "new_or_idle": 0
+    },
+    "knowledge": {
+      "K.comms_danger": 5,
+      "K.contacts": 3,
+      "K.glory_hearts": 6,
+      "K.pickups": 4,
+      "K.self_motion": 1,
+      "K.squad_target": 2
+    },
+    "message": {
+      "COM.disguise_alert": 2,
+      "COM.disguise_friend": 1,
+      "COM.enemy_sighting": 5,
+      "COM.focus_call": 3,
+      "COM.glory_seen": 4,
+      "COM.grenade_warning": 6,
+      "COM.pickup_ready": 9,
+      "COM.pickup_taken": 8,
+      "COM.under_fire": 7
+    },
+    "role": {
+      "squad": {
+        "cover": 2,
+        "ring": 1
+      }
+    },
+    "rule": {
+      "R.cover_heart": 4,
+      "R.default_goal": 5,
+      "R.fall_back": 1,
+      "R.resupply": 2,
+      "R.take_heart": 3
+    },
+    "situation": {
+      "S.has_target_heart": 3,
+      "S.losing_fight": 1,
+      "S.supply_worth": 2
+    }
+  },
+  "commitment": {
+    "interrupt_at": 0,
+    "min_hold": 0,
+    "preempt_margin": 0
+  },
+  "comms": {
+    "batch": {
+      "header": "PWC v=3 t=",
+      "kind": "PWC",
+      "receive_marker": 1,
+      "receives": 8,
+      "send_marker": 2,
+      "sends": 1,
+      "separator": " b=",
+      "value_digits": 10,
+      "version": 3
+    },
+    "keys": [
+      7919,
+      17431,
+      23117,
+      1907,
+      31,
+      73
+    ],
+    "messages": {
+      "0": "COM.enemy_sighting",
+      "1": "COM.focus_call",
+      "2": "COM.grenade_warning",
+      "3": "COM.under_fire",
+      "4": "COM.glory_seen",
+      "5": "COM.pickup_taken",
+      "6": "COM.pickup_ready",
+      "7": "COM.disguise_alert",
+      "8": "COM.disguise_friend"
+    },
+    "version": 1
+  },
+  "components": {
+    "C.cover_heart": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWD.c"
+          ],
+          "text": "the rule selects this capability when the squad has a target."
+        },
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`K.squad_target`.idle_capture",
+            "replay"
+          ],
+          "text": "a cover cog stays near its post while a teammate captures."
+        }
+      ],
+      "code": 2,
+      "generated": false,
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "step_in_sq",
+          "idle_limit",
+          "post_x",
+          "post_y",
+          "post_shift",
+          "post_radius",
+          "hold_sq",
+          "quiet_sq"
+        ]
+      },
+      "kind": "C",
+      "llm": true,
+      "prefix": "c_cover_heart",
+      "text_hash": "sha256:6b97e602537eb6cb71487e0c9f9be9d7bb2e6fffe5eb82f86b5dcc027fd48509",
+      "unit": "C.cover_heart",
+      "unit_sha256": "996732e53163a80ea20b6bae599494c762fae29b9453c67a82f4ddb00d6e0bf6",
+      "uses": [
+        "K.squad_target",
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "C.default_goal": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWD.c"
+          ],
+          "text": "the rule selects this capability when no other rule holds."
+        }
+      ],
+      "code": 3,
+      "generated": false,
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "kind": "C",
+      "llm": true,
+      "prefix": "c_default_goal",
+      "text_hash": "sha256:ddffaf0bea84c53624c78255164499994b4b6d23197b3e08a77c3309ff96bc84",
+      "unit": "C.default_goal",
+      "unit_sha256": "f6c926576fd15d9d7329aa0f910edbb51957005d166510f47c7aa0c589461105",
+      "uses": [
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.fall_back": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWD.c"
+          ],
+          "text": "the rule selects this capability when we are losing the fight."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "PWE.e",
+            "replay"
+          ],
+          "text": "we survive the activation."
+        }
+      ],
+      "code": 5,
+      "generated": false,
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "kind": "C",
+      "llm": true,
+      "prefix": "c_fall_back",
+      "text_hash": "sha256:85f363cc3d538757e9273419a01d80e166b4aa98814a7a3c552f80d6b92eb208",
+      "unit": "C.fall_back",
+      "unit_sha256": "bbdb819ed7e4951029bf49f65a0398d3f1980697d637eeff4eaa5d785700cef0",
+      "uses": [
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.resupply": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWD.c"
+          ],
+          "text": "the rule selects this capability when a supply is worth it."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "PWE.e",
+            "replay"
+          ],
+          "text": "we take a supply during the activation."
+        }
+      ],
+      "code": 4,
+      "generated": false,
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "kind": "C",
+      "llm": true,
+      "prefix": "c_resupply",
+      "text_hash": "sha256:9ef584118d9cd4b76ed605e9aa2af6d4b5dbc239c7161a408a95da1bda8bb117",
+      "unit": "C.resupply",
+      "unit_sha256": "d6906b9b37a79449c0023edbd84b3f0dcda8ba46fe429fec842bd15a7517e55a",
+      "uses": [
+        "K.pickups",
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.take_heart": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWD.c"
+          ],
+          "text": "the rule selects this capability when the squad has a target."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "PWE.e",
+            "replay"
+          ],
+          "text": "our team captures the target heart during the activation."
+        }
+      ],
+      "code": 1,
+      "generated": false,
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "hold_sq",
+          "quiet_sq"
+        ]
+      },
+      "kind": "C",
+      "llm": true,
+      "prefix": "c_take_heart",
+      "text_hash": "sha256:7551b976d16fc3e69a716f65cb13b303e01ec2ddcaf42ee2f89133677ce83273",
+      "unit": "C.take_heart",
+      "unit_sha256": "e9672dcd1989acacefe18acef42fe98afd646f0fc3a72db19a6c74804e5e0f31",
+      "uses": [
+        "K.squad_target",
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "COM.disguise_alert": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`COM.disguise_alert`.packet",
+            "PWC.s",
+            "replay"
+          ],
+          "text": "each sent packet decodes and its fields match the sender's replay state at the send tick."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.disguise_alert`.packet",
+            "PWC.s",
+            "PWC.w",
+            "replay"
+          ],
+          "text": "teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`COM.disguise_alert`.packet",
+            "replay"
+          ],
+          "text": "the reported body was a disguised enemy in the replay."
+        }
+      ],
+      "code": 2,
+      "generated": false,
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "packet": 2,
+          "xa_amb": 16,
+          "xa_s1": 16,
+          "xa_s2": 16,
+          "xa_t1": 16,
+          "xa_t2": 16,
+          "xa_x1": 16,
+          "xa_x2": 16,
+          "xa_y1": 16,
+          "xa_y2": 16
+        },
+        "params": [
+          "x_window",
+          "x_distance",
+          "x_radius",
+          "disguise_ttl",
+          "x_refresh"
+        ]
+      },
+      "kind": "COM",
+      "llm": true,
+      "log_every": null,
+      "log_fields": [
+        {
+          "cells": 2,
+          "name": "packet"
+        }
+      ],
+      "log_offset": null,
+      "prefix": "com_disguise_alert",
+      "text_hash": "sha256:4a819094b97327ff43f33b50cce0ab9e133d3a990d4b9105f3d65e862039d617",
+      "unit": "COM.disguise_alert",
+      "unit_sha256": "4a060127341780c08c63b1b57104150a99ed35a36f2d1c8b5a78d39eb30e56bc",
+      "uses": [
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "COM.disguise_friend": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`COM.disguise_friend`.packet",
+            "PWC.s",
+            "replay"
+          ],
+          "text": "each sent packet decodes and its fields match the sender's replay state at the send tick."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.disguise_friend`.packet",
+            "PWC.s",
+            "PWC.w",
+            "replay"
+          ],
+          "text": "teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.disguise_friend`.packet",
+            "replay"
+          ],
+          "text": "a friend record never protects a body that is an enemy in the replay."
+        }
+      ],
+      "code": 1,
+      "generated": false,
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "df_until": 16,
+          "df_x": 16,
+          "df_y": 16,
+          "packet": 2
+        },
+        "params": [
+          "d_refresh",
+          "friend_radius",
+          "friend_ttl",
+          "d_range_sq"
+        ]
+      },
+      "kind": "COM",
+      "llm": true,
+      "log_every": null,
+      "log_fields": [
+        {
+          "cells": 2,
+          "name": "packet"
+        }
+      ],
+      "log_offset": null,
+      "prefix": "com_disguise_friend",
+      "text_hash": "sha256:621bcc7eb48bdb466cd72022b56f05fd7703ef536bd0095caf1268a692185399",
+      "unit": "COM.disguise_friend",
+      "unit_sha256": "0af895c96d6a55b02d1606258df6391bf0bdde0a1af5b1b103dfe09b96b2e13d",
+      "uses": [
+        "K.self_motion",
+        "SK.motor"
+      ]
+    },
+    "COM.enemy_sighting": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`COM.enemy_sighting`.packet",
+            "PWC.s",
+            "replay"
+          ],
+          "text": "each sent packet decodes and its fields match the sender's replay state at the send tick."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.enemy_sighting`.packet",
+            "PWC.s",
+            "PWC.w",
+            "replay"
+          ],
+          "text": "teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`COM.enemy_sighting`.packet",
+            "replay"
+          ],
+          "text": "the reported label was a visible body at the reported cell and an enemy in the replay. A corroborated misclassification fails this by design."
+        }
+      ],
+      "code": 5,
+      "generated": false,
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "ht_t": 16,
+          "ht_until": 16,
+          "ht_x": 16,
+          "ht_y": 16,
+          "packet": 2
+        },
+        "params": [
+          "e_refresh",
+          "e_move",
+          "heard_ttl"
+        ]
+      },
+      "kind": "COM",
+      "llm": true,
+      "log_every": null,
+      "log_fields": [
+        {
+          "cells": 2,
+          "name": "packet"
+        }
+      ],
+      "log_offset": null,
+      "prefix": "com_enemy_sighting",
+      "text_hash": "sha256:4329fbd900ebaef2085dac732bf4d8992177cd6da171a694e7b06ee6e3202af6",
+      "unit": "COM.enemy_sighting",
+      "unit_sha256": "cb22348a18ffbd043460157e97275cbbecec9e8349767fe8f7b900af257b4fb4",
+      "uses": [
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "COM.focus_call": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`COM.focus_call`.packet",
+            "PWC.s",
+            "replay"
+          ],
+          "text": "each sent packet decodes and its fields match the sender's replay state at the send tick."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.focus_call`.packet",
+            "PWC.s",
+            "PWC.w",
+            "replay"
+          ],
+          "text": "teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.focus_call`.packet",
+            "replay"
+          ],
+          "text": "called targets die sooner than uncalled targets."
+        }
+      ],
+      "code": 3,
+      "generated": false,
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "fc_label": 1,
+          "fc_until": 1,
+          "fc_x": 1,
+          "fc_y": 1,
+          "packet": 2
+        },
+        "params": [
+          "focus_refresh",
+          "focus_ttl",
+          "focus_radius",
+          "full_hp"
+        ]
+      },
+      "kind": "COM",
+      "llm": true,
+      "log_every": null,
+      "log_fields": [
+        {
+          "cells": 2,
+          "name": "packet"
+        }
+      ],
+      "log_offset": null,
+      "prefix": "com_focus_call",
+      "text_hash": "sha256:529883ffcc80e960109b683a91937354c691918bfd270b48d72a7e36786ab40b",
+      "unit": "COM.focus_call",
+      "unit_sha256": "ea7655d8dc6b397a880ac69daeba5556bd8396888aa81fa5acfe4c7239cae209",
+      "uses": [
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "COM.glory_seen": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`COM.glory_seen`.packet",
+            "PWC.s",
+            "replay"
+          ],
+          "text": "each sent packet decodes and its fields match the sender's replay state at the send tick."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.glory_seen`.packet",
+            "PWC.s",
+            "PWC.w",
+            "replay"
+          ],
+          "text": "teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity."
+        }
+      ],
+      "code": 4,
+      "generated": false,
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "gl_t": 8,
+          "gl_until": 8,
+          "gl_x": 8,
+          "gl_y": 8,
+          "packet": 2
+        },
+        "params": [
+          "h_refresh",
+          "h_match"
+        ]
+      },
+      "kind": "COM",
+      "llm": true,
+      "log_every": null,
+      "log_fields": [
+        {
+          "cells": 2,
+          "name": "packet"
+        }
+      ],
+      "log_offset": null,
+      "prefix": "com_glory_seen",
+      "text_hash": "sha256:b50a10ce1b5d715719f51433366239be4c600091f1ca83125b92592903c038e5",
+      "unit": "COM.glory_seen",
+      "unit_sha256": "45ec12d7ae00854ad63338c010d3b4f16145f553132ea8c3354bc6abc384e25e",
+      "uses": [
+        "SK.motor"
+      ]
+    },
+    "COM.grenade_warning": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`COM.grenade_warning`.packet",
+            "PWC.s",
+            "replay"
+          ],
+          "text": "each sent packet decodes and its fields match the sender's replay state at the send tick."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.grenade_warning`.packet",
+            "PWC.s",
+            "PWC.w",
+            "replay"
+          ],
+          "text": "teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`COM.grenade_warning`.packet",
+            "replay"
+          ],
+          "text": "a grenade from the sender lands within 150 cm of the reported cell."
+        }
+      ],
+      "code": 6,
+      "generated": false,
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "gz_until": 4,
+          "gz_x": 4,
+          "gz_y": 4,
+          "packet": 2
+        },
+        "params": [
+          "g_move"
+        ]
+      },
+      "kind": "COM",
+      "llm": true,
+      "log_every": null,
+      "log_fields": [
+        {
+          "cells": 2,
+          "name": "packet"
+        }
+      ],
+      "log_offset": null,
+      "prefix": "com_grenade_warning",
+      "text_hash": "sha256:2ac13417e4f4d9e23b9c98e7b45d9237071e9504d64275774060847acdc10e96",
+      "unit": "COM.grenade_warning",
+      "unit_sha256": "c968493ddf7a75c4265353c770fbd3cd5b6817e4df39cf8a897ccdcadf993347",
+      "uses": [
+        "SK.motor"
+      ]
+    },
+    "COM.pickup_ready": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`COM.pickup_ready`.packet",
+            "PWC.s",
+            "replay"
+          ],
+          "text": "each sent packet decodes and its fields match the sender's replay state at the send tick."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.pickup_ready`.packet",
+            "PWC.s",
+            "PWC.w",
+            "replay"
+          ],
+          "text": "teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`COM.pickup_ready`.packet",
+            "replay"
+          ],
+          "text": "the reported station was ready at the send tick in the replay."
+        }
+      ],
+      "code": 9,
+      "generated": false,
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "packet": 2,
+          "rr_kind": 64,
+          "rr_t": 64,
+          "rr_x": 64,
+          "rr_y": 64
+        },
+        "params": [
+          "event_window"
+        ]
+      },
+      "kind": "COM",
+      "llm": true,
+      "log_every": null,
+      "log_fields": [
+        {
+          "cells": 2,
+          "name": "packet"
+        }
+      ],
+      "log_offset": null,
+      "prefix": "com_pickup_ready",
+      "text_hash": "sha256:e3f7157eb590f40fe1191aa7b38837ae92ea2de93a5f21d0e328d33d1f1bf7aa",
+      "unit": "COM.pickup_ready",
+      "unit_sha256": "f018980d030ab16c0acf894ed6c4afe2cf3a09367e6c7bbe9c7c92c6510dac49",
+      "uses": [
+        "K.pickups",
+        "SK.motor"
+      ]
+    },
+    "COM.pickup_taken": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`COM.pickup_taken`.packet",
+            "PWC.s",
+            "replay"
+          ],
+          "text": "each sent packet decodes and its fields match the sender's replay state at the send tick."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.pickup_taken`.packet",
+            "PWC.s",
+            "PWC.w",
+            "replay"
+          ],
+          "text": "teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`COM.pickup_taken`.packet",
+            "replay"
+          ],
+          "text": "the reported station was taken by the sender within event_window ticks before the send in the replay."
+        }
+      ],
+      "code": 8,
+      "generated": false,
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "packet": 2,
+          "rk_t": 64,
+          "rk_until": 64
+        },
+        "params": [
+          "event_window"
+        ]
+      },
+      "kind": "COM",
+      "llm": true,
+      "log_every": null,
+      "log_fields": [
+        {
+          "cells": 2,
+          "name": "packet"
+        }
+      ],
+      "log_offset": null,
+      "prefix": "com_pickup_taken",
+      "text_hash": "sha256:a17bf6ff53ee210a97d2d377451bb5f6464a1fdb7c54cf157a6fb72518f067b8",
+      "unit": "COM.pickup_taken",
+      "unit_sha256": "fc61fb0ad47f36db874962bcef923f57cd6b3d8b4687152e45f0167d76646cfd",
+      "uses": [
+        "K.pickups",
+        "SK.motor"
+      ]
+    },
+    "COM.under_fire": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`COM.under_fire`.packet",
+            "PWC.s",
+            "replay"
+          ],
+          "text": "each sent packet decodes and its fields match the sender's replay state at the send tick."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.under_fire`.packet",
+            "PWC.s",
+            "PWC.w",
+            "replay"
+          ],
+          "text": "teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity."
+        }
+      ],
+      "code": 7,
+      "generated": false,
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "du_dir": 1,
+          "du_until": 1,
+          "du_x": 1,
+          "du_y": 1,
+          "packet": 2
+        },
+        "params": [
+          "danger_ttl"
+        ]
+      },
+      "kind": "COM",
+      "llm": true,
+      "log_every": null,
+      "log_fields": [
+        {
+          "cells": 2,
+          "name": "packet"
+        }
+      ],
+      "log_offset": null,
+      "prefix": "com_under_fire",
+      "text_hash": "sha256:8dd3e9fc032475fe2b27b87f983657ad46da95ac91808977b82acba5b66edb81",
+      "unit": "COM.under_fire",
+      "unit_sha256": "9fc9be6a4e4e3025d7b1260881c06075c1a59fb6a123cd4df2f2ada42b9953de",
+      "uses": [
+        "K.self_motion",
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "K.comms_danger": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "`K.comms_danger`.zone_count",
+            "`K.comms_danger`.danger_until"
+          ],
+          "text": "live zones and the danger expiry are logged."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`COM.grenade_warning`.packet",
+            "replay"
+          ],
+          "text": "a live zone covers the replay landing point of the reported grenade."
+        }
+      ],
+      "code": 5,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "danger_dir": 1,
+          "danger_until": 1,
+          "danger_x": 1,
+          "danger_y": 1,
+          "grenade_until": 4,
+          "grenade_x": 4,
+          "grenade_y": 4,
+          "zone_count": 1
+        },
+        "params": [
+          "clear_radius"
+        ]
+      },
+      "kind": "K",
+      "llm": true,
+      "log_every": 24,
+      "log_fields": [
+        {
+          "cells": 1,
+          "name": "zone_count"
+        },
+        {
+          "cells": 1,
+          "name": "danger_until"
+        }
+      ],
+      "log_offset": 3,
+      "prefix": "k_comms_danger",
+      "text_hash": "sha256:c775c0ad3680892749969efb905bc02bf5abc1186ffdb8459d2be55a1f6b87b6",
+      "unit": "K.comms_danger",
+      "unit_sha256": "2c174fca54873baf7b20dd2b9a92af502327457b240dfdd2dc5e22c9d7ca55f0",
+      "uses": [
+        "COM.grenade_warning",
+        "COM.under_fire"
+      ]
+    },
+    "K.contacts": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "`K.contacts`.best",
+            "`K.contacts`.foes_near",
+            "`K.contacts`.friends_near",
+            "`K.contacts`.focus_used"
+          ],
+          "text": "best, the near counts and focus_used are logged."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`K.contacts`.best",
+            "replay"
+          ],
+          "text": "the logged best is a visible hostile body in the replay within range."
+        },
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`K.contacts`.best",
+            "`COM.disguise_friend`.packet",
+            "`COM.disguise_alert`.packet",
+            "`COM.focus_call`.packet",
+            "replay"
+          ],
+          "text": "with no friendly disguise, alert or focus message in effect, best equals the baseline choice from observed parity."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "`COM.disguise_alert`.packet",
+            "replay"
+          ],
+          "text": "a body marked hostile because of corroboration is an enemy in the replay."
+        }
+      ],
+      "code": 3,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "best": 1,
+          "best_cost": 1,
+          "best_engagers": 1,
+          "best_vx": 1,
+          "best_vy": 1,
+          "focus_used": 1,
+          "foe_cx": 1,
+          "foe_cy": 1,
+          "foes_near": 1,
+          "foes_seen": 1,
+          "friend": 16,
+          "friends_near": 1,
+          "heard_target": 1,
+          "heard_x": 1,
+          "heard_y": 1,
+          "hostile": 16,
+          "thief": 1,
+          "xe_label": 1,
+          "xe_x": 1,
+          "xe_y": 1
+        },
+        "params": [
+          "hp_weight",
+          "carrier_bonus",
+          "range_sq",
+          "near_foe_sq",
+          "near_friend_sq",
+          "engage_range_sq"
+        ]
+      },
+      "kind": "K",
+      "llm": true,
+      "log_every": 24,
+      "log_fields": [
+        {
+          "cells": 1,
+          "name": "best"
+        },
+        {
+          "cells": 1,
+          "name": "foes_near"
+        },
+        {
+          "cells": 1,
+          "name": "friends_near"
+        },
+        {
+          "cells": 1,
+          "name": "focus_used"
+        }
+      ],
+      "log_offset": 1,
+      "prefix": "k_contacts",
+      "text_hash": "sha256:dd0503229b475bdddad47f0c59c3efd21b7f5b45424c92afc027ac1abe60ee13",
+      "unit": "K.contacts",
+      "unit_sha256": "2b478fb27c11718cc73061e4cdb5cafe533b1692e477c6763a76c28f5ac14f6a",
+      "uses": [
+        "COM.enemy_sighting",
+        "COM.focus_call",
+        "COM.disguise_alert",
+        "COM.disguise_friend"
+      ]
+    },
+    "K.glory_hearts": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "`K.glory_hearts`.count"
+          ],
+          "text": "the known count is logged."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`K.glory_hearts`.count",
+            "replay"
+          ],
+          "text": "each known heart exists in the replay at that point and tick."
+        }
+      ],
+      "code": 6,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "count": 1,
+          "nearest_left": 1,
+          "nearest_x": 1,
+          "nearest_y": 1
+        },
+        "params": []
+      },
+      "kind": "K",
+      "llm": true,
+      "log_every": 24,
+      "log_fields": [
+        {
+          "cells": 1,
+          "name": "count"
+        },
+        {
+          "cells": 1,
+          "name": "nearest_left"
+        }
+      ],
+      "log_offset": 4,
+      "prefix": "k_glory_hearts",
+      "text_hash": "sha256:08ee4c2787a2b567bb0a747761cdc19f50d907b206de92f0bfbe81bf1d8f66e2",
+      "unit": "K.glory_hearts",
+      "unit_sha256": "f916ccd0e91257cbaa308afad2bd63280165a27d7c5caa9d57e4b90caf9c4e67",
+      "uses": [
+        "COM.glory_seen"
+      ]
+    },
+    "K.pickups": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "`K.pickups`.nearest",
+            "`K.pickups`.taken_id"
+          ],
+          "text": "the chosen supply and our last take are logged."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`K.pickups`.nearest",
+            "replay"
+          ],
+          "text": "a supply of the remembered kind was at the remembered point in the replay."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`K.pickups`.taken_id",
+            "replay"
+          ],
+          "text": "each logged take matches a replay pickup event by this seat at that station."
+        }
+      ],
+      "code": 4,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "nearest": 1,
+          "nearest_x": 1,
+          "nearest_y": 1,
+          "ready_id": 1,
+          "ready_kind": 1,
+          "ready_tick": 1,
+          "ready_x": 1,
+          "ready_y": 1,
+          "taken_id": 1,
+          "taken_kind": 1,
+          "taken_ready_in": 1,
+          "taken_tick": 1,
+          "taken_x": 1,
+          "taken_y": 1
+        },
+        "params": [
+          "memory_ticks",
+          "reach_sq",
+          "arrive_sq",
+          "take_radius_sq",
+          "grenade_delay",
+          "supply_delay"
+        ]
+      },
+      "kind": "K",
+      "llm": true,
+      "log_every": 24,
+      "log_fields": [
+        {
+          "cells": 1,
+          "name": "nearest"
+        },
+        {
+          "cells": 1,
+          "name": "taken_id"
+        }
+      ],
+      "log_offset": 2,
+      "prefix": "k_pickups",
+      "text_hash": "sha256:078751acc541fdc6962b03cf3f128fe1087e86c9f6f8fea949bb1d83c7219521",
+      "unit": "K.pickups",
+      "unit_sha256": "87015fdec7f6ca4cd332d5b5e4232fe5357ca08ac726c8382d9bdfb4afffcb88",
+      "uses": [
+        "COM.pickup_taken",
+        "COM.pickup_ready"
+      ]
+    },
+    "K.self_motion": {
+      "checks": [
+        {
+          "level": "True",
+          "reads": [
+            "replay"
+          ],
+          "text": "vx and vy equal the replay position change, except both are zero on initialization or when either axis exceeds teleport_step."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "replay"
+          ],
+          "text": "hp_drop is 1 exactly on living ticks where the replay hit points fell."
+        }
+      ],
+      "code": 1,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "hp_drop": 1,
+          "teleported": 1,
+          "uniform_since": 1,
+          "vx": 1,
+          "vy": 1
+        },
+        "params": [
+          "teleport_step"
+        ]
+      },
+      "kind": "K",
+      "llm": true,
+      "prefix": "k_self_motion",
+      "text_hash": "sha256:d728b0e7a4b728c002b2f3aa5c914b09f3700b55ec2fdcf68dc431ba2ae10102",
+      "unit": "K.self_motion",
+      "unit_sha256": "bcf548200692f205aa50ee5fe96655dce6e84c535b6c603b1a939d926644d28f",
+      "uses": []
+    },
+    "K.squad_target": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "`K.squad_target`.objective"
+          ],
+          "text": "objective is logged as a heart index or -1."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`K.squad_target`.objective",
+            "replay"
+          ],
+          "text": "the logged objective equals the replay re-computation using public heart state and this cog's reconstructed avoid memory."
+        }
+      ],
+      "code": 2,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "heart_count": 1,
+          "idle_capture": 1,
+          "objective": 1,
+          "seat": 1,
+          "squad": 1
+        },
+        "params": [
+          "progress_period",
+          "stall_sq",
+          "far_sq",
+          "avoid_ticks",
+          "ref_offset",
+          "mirror_y",
+          "neutral_bonus",
+          "avoid_penalty"
+        ]
+      },
+      "kind": "K",
+      "llm": true,
+      "log_every": 24,
+      "log_fields": [
+        {
+          "cells": 1,
+          "name": "objective"
+        },
+        {
+          "cells": 1,
+          "name": "idle_capture"
+        }
+      ],
+      "log_offset": 0,
+      "prefix": "k_squad_target",
+      "text_hash": "sha256:26554aca4446eb9ea610ec3ca9ca1ade3ba7d11028b4e5b3abef7707c0fccd75",
+      "unit": "K.squad_target",
+      "unit_sha256": "ae85f223576d7e84cb36be68d85dd6cdf81c0438c8f14749c48ac5a02935093e",
+      "uses": []
+    },
+    "P.chargeGrenade": {
+      "checks": [],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "P",
+      "llm": false,
+      "prefix": "p_chargegrenade",
+      "text_hash": "sha256:4cf32f39b9e8d02fca7a984c19d94d51b9f974b38df473e935cd9fe00b96d737",
+      "unit": null,
+      "unit_sha256": null,
+      "uses": []
+    },
+    "P.lookAt": {
+      "checks": [],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "P",
+      "llm": false,
+      "prefix": "p_lookat",
+      "text_hash": "sha256:170a72d13fded7aca0a0048425c85092c83318df0a9fbe9efc6033f19e875e88",
+      "unit": null,
+      "unit_sha256": null,
+      "uses": []
+    },
+    "P.shootAt": {
+      "checks": [],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "P",
+      "llm": false,
+      "prefix": "p_shootat",
+      "text_hash": "sha256:8506eab3254d3208ee361dcb0f89b3d2c228f3e80ebed26370d24dde6f65d905",
+      "unit": null,
+      "unit_sha256": null,
+      "uses": []
+    },
+    "P.shout": {
+      "checks": [],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "P",
+      "llm": false,
+      "prefix": "p_shout",
+      "text_hash": "sha256:b1058719718b735507e9ebf0cf4c8043e1929bf769e047015a02e3f6aeae502e",
+      "unit": null,
+      "unit_sha256": null,
+      "uses": []
+    },
+    "P.walkTo": {
+      "checks": [],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "P",
+      "llm": false,
+      "prefix": "p_walkto",
+      "text_hash": "sha256:d09ec33972962737ffc7ac9f3d603b9b5eeb3a72933837ac0a97642274a21915",
+      "unit": null,
+      "unit_sha256": null,
+      "uses": []
+    },
+    "S.has_target_heart": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "PWD.f"
+          ],
+          "text": "the flag is logged with the decision."
+        }
+      ],
+      "code": 3,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": []
+      },
+      "kind": "S",
+      "llm": true,
+      "prefix": "s_has_target_heart",
+      "text_hash": "sha256:6b60c6ab97e4664fa799fdb79198871401925214fa58d94ce890e32c8b29a453",
+      "unit": "S.has_target_heart",
+      "unit_sha256": "af457029da613f7463a73f2b6b1412f6183dddae7ea943542d168cae638f99d0",
+      "uses": [
+        "K.squad_target"
+      ]
+    },
+    "S.losing_fight": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "PWD.f"
+          ],
+          "text": "the flag is logged with the decision."
+        }
+      ],
+      "code": 1,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": []
+      },
+      "kind": "S",
+      "llm": true,
+      "prefix": "s_losing_fight",
+      "text_hash": "sha256:26fa46be62e5cbe4549707e0ad8de2284b1b020f3fbbf5a06e33c15e6f295024",
+      "unit": "S.losing_fight",
+      "unit_sha256": "b3b01fb98e8d781216bff70b7443c4158a25348645d5fa4536c2f733778ad7a8",
+      "uses": [
+        "K.contacts",
+        "K.squad_target"
+      ]
+    },
+    "S.supply_worth": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "PWD.f"
+          ],
+          "text": "the flag is logged with the decision."
+        }
+      ],
+      "code": 2,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": [
+          "fight_clear_sq"
+        ]
+      },
+      "kind": "S",
+      "llm": true,
+      "prefix": "s_supply_worth",
+      "text_hash": "sha256:562c4fb00dccbe7c5d7f9de4ad3a11e02cae113f436963f0381c63bf9cce40da",
+      "unit": "S.supply_worth",
+      "unit_sha256": "8276e1c5f3a5c0a94793d2096b1a15cce8fa88b297c573efcc110a91bbdc9d5a",
+      "uses": [
+        "K.pickups",
+        "K.contacts"
+      ]
+    },
+    "SK.motor": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "replay"
+          ],
+          "text": "a shot is ordered only when the gun wait is zero, the friend line is clear, and the spray range condition holds."
+        },
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`K.comms_danger`.zone_count",
+            "replay"
+          ],
+          "text": "while inside a live reported zone, the walk target is outside the zone."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "replay"
+          ],
+          "text": "hit rate per shot at range."
+        }
+      ],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "charge_started": 1,
+          "charge_x": 1,
+          "charge_y": 1,
+          "charging": 1,
+          "quiet": 1,
+          "release_in": 1,
+          "root": 1,
+          "threw": 1
+        },
+        "params": [
+          "wet_cost",
+          "lead_ticks",
+          "drift_ticks",
+          "gun_wait_light",
+          "gun_wait_heavy",
+          "spray_range_sq"
+        ],
+        "subs": {
+          "sk_motor__act": 3,
+          "sk_motor__avoid_grenades": 0,
+          "sk_motor__dry_route": 0,
+          "sk_motor__footwork": 0,
+          "sk_motor__grenade": 0,
+          "sk_motor__gun": 0,
+          "sk_motor__init": 0,
+          "sk_motor__isqrt": 1,
+          "sk_motor__leg_time": 4,
+          "sk_motor__look_around": 0,
+          "sk_motor__next_random": 0,
+          "sk_motor__plan_leg": 2,
+          "sk_motor__sneak": 1,
+          "sk_motor__wet_line": 4
+        }
+      },
+      "kind": "SK",
+      "llm": false,
+      "prefix": "sk_motor",
+      "text_hash": "sha256:bef87a27ba9c9ff61962f32828e19033019182c5c5cf703dfe4c6eedea53412a",
+      "unit": "SK.motor",
+      "unit_sha256": "0dea990b7e612224bdeb11fcc26794e6edbf0781b5f32621a155f22514c86f18",
+      "uses": [
+        "P.walkTo",
+        "P.lookAt",
+        "P.shootAt",
+        "P.chargeGrenade",
+        "K.contacts",
+        "K.self_motion",
+        "K.comms_danger"
+      ]
+    },
+    "ST.commitment": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "PWD.h",
+            "PWD.r"
+          ],
+          "text": "the selected rule is always the best rule."
+        }
+      ],
+      "code": null,
+      "generated": true,
+      "interface": {
+        "outputs": {},
+        "params": [
+          "min_hold",
+          "preempt_margin",
+          "interrupt_at"
+        ]
+      },
+      "kind": "ST",
+      "llm": false,
+      "prefix": "st_commitment",
+      "text_hash": "sha256:a62939f54dc93d853ec2c9ac7c926abc8f1103602ad6f4f668012b2d4884ebac",
+      "unit": "generated.tables",
+      "unit_sha256": "c79a043284ac6eda3ce260e6f9b878804fe9218d8daf79b69eb2c0d9ce579de2",
+      "uses": []
+    },
+    "ST.roles": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r"
+          ],
+          "text": "ring seats select only ring or shared rules."
+        }
+      ],
+      "code": null,
+      "generated": true,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "ST",
+      "llm": false,
+      "prefix": "st_roles",
+      "text_hash": "sha256:fd0d977e0586776dc72c4de77960d4a50429b94c97a7bd486f7b5c4dc6c073eb",
+      "unit": "generated.tables",
+      "unit_sha256": "c79a043284ac6eda3ce260e6f9b878804fe9218d8daf79b69eb2c0d9ce579de2",
+      "uses": []
+    },
+    "ST.rules": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "PWD.r",
+            "PWD.f",
+            "PWP.n"
+          ],
+          "text": "re-running selection from the logged flags gives the logged rule."
+        }
+      ],
+      "code": null,
+      "generated": true,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "ST",
+      "llm": false,
+      "prefix": "st_rules",
+      "text_hash": "sha256:64cfd58c11c5280cedf903bd91cb38db0a077cf93da4022117edae4e5dd6836d",
+      "unit": "generated.tables",
+      "unit_sha256": "c79a043284ac6eda3ce260e6f9b878804fe9218d8daf79b69eb2c0d9ce579de2",
+      "uses": []
+    }
+  },
+  "flag_words": 1,
+  "priorities": {
+    "R.cover_heart": 200,
+    "R.default_goal": 100,
+    "R.fall_back": 400,
+    "R.resupply": 300,
+    "R.take_heart": 200
+  },
+  "roles": {
+    "squad": {
+      "cover": [
+        4,
+        5,
+        6,
+        7,
+        12,
+        13,
+        14,
+        15
+      ],
+      "ring": [
+        0,
+        1,
+        2,
+        3,
+        8,
+        9,
+        10,
+        11
+      ]
+    }
+  },
+  "rules": [
+    {
+      "args": {},
+      "capability": "C.fall_back",
+      "code": 1,
+      "condition": "S.losing_fight",
+      "id": "R.fall_back",
+      "inputs": [],
+      "priority": 400,
+      "role_set": null,
+      "roles": null
+    },
+    {
+      "args": {},
+      "capability": "C.resupply",
+      "code": 2,
+      "condition": "S.supply_worth",
+      "id": "R.resupply",
+      "inputs": [],
+      "priority": 300,
+      "role_set": null,
+      "roles": null
+    },
+    {
+      "args": {},
+      "capability": "C.take_heart",
+      "code": 3,
+      "condition": "S.has_target_heart",
+      "id": "R.take_heart",
+      "inputs": [],
+      "priority": 200,
+      "role_set": "squad",
+      "roles": [
+        "ring"
+      ]
+    },
+    {
+      "args": {},
+      "capability": "C.cover_heart",
+      "code": 4,
+      "condition": "S.has_target_heart",
+      "id": "R.cover_heart",
+      "inputs": [],
+      "priority": 200,
+      "role_set": "squad",
+      "roles": [
+        "cover"
+      ]
+    },
+    {
+      "args": {},
+      "capability": "C.default_goal",
+      "code": 5,
+      "condition": "ALWAYS",
+      "id": "R.default_goal",
+      "inputs": [],
+      "priority": 100,
+      "role_set": null,
+      "roles": null
+    }
+  ],
+  "runtime": {
+    "files": {
+      "runtime.comms": "05639c3995e9d527f0e4b124a3d37b57d76636266102a8da7d21f5c4603d1e4e",
+      "runtime.lib": "ef0a6b940d95f537ac9623f53d25b6aa26b9e474d311ccb6bc64d89bfa47dee7",
+      "runtime.main": "735c59e4033a60229b3d8ae3d3128a26d8aac9563873999e0f5db71111a30527"
+    }
+  },
+  "schema": "pw-strategy-map/1",
+  "skills": {
+    "SK.motor": {
+      "path": "skills/motor/skill.bas",
+      "sha256": "0dea990b7e612224bdeb11fcc26794e6edbf0781b5f32621a155f22514c86f18"
+    }
+  },
+  "source_commit": "18e0aa1f6501af95e2c98d5d62cdc1fff6fde9f8",
+  "telemetry": {
+    "lines": {
+      "PWB": [
+        "t",
+        "k",
+        "d"
+      ],
+      "PWC": [
+        "t",
+        "m",
+        "s",
+        "w",
+        "d"
+      ],
+      "PWD": [
+        "t",
+        "r",
+        "c",
+        "i",
+        "h",
+        "p",
+        "f"
+      ],
+      "PWE": [
+        "t",
+        "c",
+        "e",
+        "k"
+      ],
+      "PWP": [
+        "t",
+        "a",
+        "r",
+        "o",
+        "n",
+        "p"
+      ]
+    },
+    "list_keys": {
+      "PWB": [
+        "d"
+      ],
+      "PWC": [
+        "d"
+      ],
+      "PWD": [
+        "i",
+        "f"
+      ]
+    },
+    "version": 2,
+    "worst_case": {
+      "bytes": 434,
+      "events": 63,
+      "limit_bytes": 512,
+      "limit_events": 64,
+      "lines": {
+        "PWB": {
+          "bytes": 76,
+          "count": 5,
+          "events": 11
+        },
+        "PWC": {
+          "batch": true,
+          "bytes": 205,
+          "count": 1,
+          "events": 22
+        },
+        "PWD": {
+          "bytes": 50,
+          "count": 1,
+          "events": 11
+        },
+        "PWE": {
+          "bytes": 103,
+          "count": 3,
+          "events": 19
+        },
+        "PWP": {
+          "bytes": 0,
+          "count": 0,
+          "events": 0
+        }
+      },
+      "log_offsets": {
+        "K.comms_danger": 3,
+        "K.contacts": 1,
+        "K.glory_hearts": 4,
+        "K.pickups": 2,
+        "K.squad_target": 0
+      }
+    }
+  }
+}

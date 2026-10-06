@@ -42,7 +42,6 @@ UNMEASURABLE = {  # why a check cannot be computed from the logs and the trace
 }
 MOTOR_SHA256 = '0dea990b7e612224bdeb11fcc26794e6edbf0781b5f32621a155f22514c86f18'
 GRENADE_HIT_CM = 150     # the source check's landing tolerance
-THROW_GRACE_TICKS = 3    # release follows the last charge tick; the throw event can trail it
 _CACHE: dict = {}
 
 
@@ -251,21 +250,71 @@ def alert_true(msg, t, seat, ctx, states, rules):
     return "pass", None, detail
 
 
-def grenade_true(msg, t, seat, ctx, sends, end_tick):
+def _value(v):
+    """A traced number, or None when missing (None or NaN)."""
+    return None if v is None or v != v else int(v)
+
+
+def grenade_true(msg, t, seat, ctx, states, sends, end_tick):
+    """Follow the warned charge to its end, with no tick deadline (mechanics.nim at 0.3.115).
+
+    A charge grows only on steps with the charge order. The first step without it throws at the current
+    charge (state charge 0 and the grenade_throw event share that post-step tick). A mister or radar pickup,
+    or death, zeroes it without a throw. The motor can hold longer than fieldsA predicts, because need is
+    recomputed from the moving target, so the throw is associated by lifecycle, not by deadline. Before the
+    first positive charge the order itself is followed: a disarmed cog holds it without charging, and the
+    lifecycle fails only when the order stops (or on death or a lost grenade) before any charge."""
     if ctx["bounds"] is None:
         return "unmeasurable", "map_bounds_missing", {}
-    deadline = t + msg.fields_a + THROW_GRACE_TICKS
-    throws = sorted((r for r in ctx["throws"] if r["seat"] is not None and int(r["seat"]) == seat
-                     and t < int(r["t"]) <= deadline), key=lambda r: int(r["t"]))
-    if not throws:
-        return ("unmeasurable", "after_episode_end", {}) if deadline >= end_tick else ("fail", "no_throw", {})
-    throw = throws[0]
-    if any(t < other < int(throw["t"]) for other in sends):
+    first = states.get((t, seat))
+    if first is None:
+        return "unmeasurable", "replay_state_gap", {"tick": t}
+    # A re-warning mid-charge starts already charged: its lifecycle can end (with a throw) on the next step.
+    end, started, outcome = None, int(first["charge"]) > 0, None
+    for k in range(t + 1, end_tick + 1):  # the trace keeps the final state; a throw on the last step counts
+        row = states.get((k, seat))
+        if row is None:
+            return "unmeasurable", "replay_state_gap", {"tick": k}
+        if int(row["hp"]) <= 0:
+            end = k
+            break
+        if not started:
+            # Before the first positive charge: a disarmed cog (mister or radar) holds the order without
+            # charging (mechanics.nim: `if cmd.chargeGrenade and not w.disarmed(i)`).
+            if int(row["charge"]) > 0:
+                started = True
+                continue
+            grenade, command = _value(row.get("grenade")), _value(row.get("cmd_charge"))
+            if grenade == 0:
+                end, outcome = k, ("fail", "grenade_lost_before_start", {"end_tick": k})
+                break
+            if command is None:
+                return "unmeasurable", "command_not_traced", {"tick": k}
+            if command == 0:
+                end, outcome = k, ("fail", "charge_never_started", {"end_tick": k})
+                break
+            continue
+        if int(row["charge"]) == 0:
+            end = k
+            break
+    if end is None:
+        return "unmeasurable", "after_episode_end", {}
+    if any(t < other < end for other in sends):
         return "unmeasurable", "superseded_by_newer_warning", {}
-    to = json.loads(throw["data"]).get("to") if isinstance(throw["data"], str) else throw["data"].get("to")
+    if outcome is not None:
+        return outcome
+    throw = next((r for r in ctx["throws"] if r["seat"] is not None and int(r["seat"]) == seat
+                  and t < int(r["t"]) <= end), None)
+    if throw is None:
+        dead = int(states[end, seat]["hp"]) <= 0
+        return "fail", "cancelled_by_death" if dead else "charge_dropped_without_throw", {"end_tick": end}
+    data = json.loads(throw["data"]) if isinstance(throw["data"], str) else throw["data"]
+    to = data.get("to")
     cx, cy = cell_center(msg.cell, ctx["bounds"])
     distance2 = (int(to[0]) - cx) ** 2 + (int(to[1]) - cy) ** 2
-    detail = {"throw_tick": int(throw["t"]), "distance_cm": round(distance2 ** 0.5)}
+    # The release decision is the tick before the throw's post-step tick; fieldsA predicted t + fieldsA.
+    detail = {"throw_tick": int(throw["t"]), "distance_cm": round(distance2 ** 0.5),
+              "release_estimate_error": (int(throw["t"]) - 1) - (t + msg.fields_a)}
     return ("pass", None, detail) if distance2 <= GRENADE_HIT_CM ** 2 else ("fail", "landed_elsewhere", detail)
 
 
@@ -379,7 +428,7 @@ def audit_seat(ep, seat, states, events, issues, strategy, mapping, evidence, se
                 status, reason, detail = alert_true(message, t, seat, ctx, states, rules)
             elif kind == "grenade_true":
                 times = [s for s, _, _ in sends]
-                status, reason, detail = grenade_true(message, t, seat, ctx, times, end_tick)
+                status, reason, detail = grenade_true(message, t, seat, ctx, states, times, end_tick)
             elif kind == "taken":
                 status, reason, detail = _taken(message, t, seat, ctx, comp)
             else:

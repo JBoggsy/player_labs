@@ -66,19 +66,36 @@ X targeting requires our own
 conflicting-position evidence or matching reports from two distinct teammates; a failed check
 alone does not trigger friendly fire. G5 reports rare message types as not exercised while
 requiring valid per-seat unconditional logs and exercised send/receive paths. Codec/transport engine checks and batch parsing are implemented. The current source contains
-all nine COM components and motor receiver effects. Build `c03010be-1` passed G1–G5 after one compiler budget repair. It uses 354 globals,
+all nine COM components and motor receiver effects. Final build `18e0aa1f-1` passed G1–G5 with all
+units reused from the peer-reviewed first M3 build `c03010be-1`. It uses 354 globals,
 2,324 array cells and 127,897/131,072 source bytes; sampled peaks are 21,185 instructions
-and 31,811 work units. Its 16-seat G5 sample has 8,532 lines, no failures, and D/X not exercised.
-The semantic sample has 1,420/1,420 eligible deliveries decoded, 16 passing checks, 35
-unmeasurable, six not exercised and one failing check: two early grenade releases landed
-530/929 cm from the warned target. Final local acceptance and hosted A/B remain pending. The implementation plan and peer review are
-under `tmp/collab/strategy/m3/`; Claude Opus 5.5 in `pw-m2-review` reviews the implementation and owns the bounded COM audit evaluator; root owns integration and qualification. See `strategy/comms.md` for the current
-protocol and verified rules49 details. Foundation build `3d0f8a4f-1` passed G1–G5 with all 23 component units reused and
-56 identical-play matches (no bad seats, interval [0.5, 0.5]). It qualifies generated PWD
-printing while retaining the literal baseline shouts; it is not the M3 communication policy.
+and 31,833 work units. Static telemetry is 434 bytes/63 events. Its G5 sample has 7,550 lines
+from 16 seats, no failures and D/U not exercised. All 43 artifact hashes match.
+
+Six local recordings cover 48 candidate-seat recordings and all nine message types.
+The final local semantic audit has 16,326/16,326 eligible teammate deliveries decoded,
+18 passing checks, 38 unmeasurable and two failing checks. Enemy reports include 62/5,793
+reports of disguised teammates. Grenade claims fail in 62/84 measurable cases: 32 charges
+never start (the motor can request charging while disarmed) and 30 land elsewhere. Another
+54 warnings are superseded and five lifecycles unfinished. The evaluator follows the actual
+charge command/lifecycle, including delayed start and release, instead of imposing an
+unsupported deadline. These policy findings remain visible; gameplay was not retuned.
+Full suite: 441 passed. M2 hosted regression: 17 pass, nine unmeasurable, zero failures.
+
+Uploaded `jb-pw-strategy-m3:v1` is version `7361ffff-f0d4-4c59-925b-6706331b59d4`, linked to
+`18e0aa1f-1` in `strategy/compiled/uploads.jsonl`. Its fixed 64-episode hosted comparison is
+running against the qualified baseline and two pinned opponents. Artifact collection and
+final hosted acceptance remain pending; see the [qualification record](docs/designs/2026-10-05-m3-qualification.md).
+Requests and downloads are in `episode_data/m3-18e0aa1f-ab/`. The implementation plan and
+peer reviews are under `tmp/collab/strategy/m3/`; Claude Opus 5.5 in `pw-m2-review` reviews
+implementation and owns bounded audit edits; root owns integration and qualification.
+See `strategy/comms.md` for the protocol and verified rules49 details. Foundation build
+`3d0f8a4f-1` passed G1–G5 with all 23 component units reused and 56 identical-play matches
+(no bad seats, interval [0.5, 0.5]). It qualifies generated PWD printing while retaining the
+literal baseline shouts; it is not the M3 communication policy.
 Its static telemetry bound is 313 bytes/51 events, and memory is 275 globals/983 array cells.
 Its two G5 tapes audit to 16 pass, nine known unknowns and one unexercised check, with all 16
-runtime reconstructions passing. No M3 behavior build has been uploaded.
+runtime reconstructions passing. The final M3 upload and hosted evidence are tracked above.
 
 **Known evidence limits:** baseline Results cannot be conditional on full correct execution
 because private motor state is not logged. Self-motion and pickup remembered values also
@@ -162,7 +179,7 @@ the focused audit tests pass. The leaders tool now defaults to the current Compe
 `PW_DOCS_SHA` stays `118e1619`: BASIC/rules49 changes are source-verified in relevant docs,
 but wider neural/oracle references remain explicitly scoped to 0.3.89. Live doctor passed
 on 0.3.115 after a 429 retry. softmax-cli 0.26.38 matched the latest release; coworld 0.1.56
-was used for hosted operations. M3 is active, as described above; its behavior build and hosted comparison are pending.
+was used for hosted operations. M3 is active, as described above; its hosted qualification is pending.
 
 Inputs the policy (`STRATEGY.md`) should build on:
 

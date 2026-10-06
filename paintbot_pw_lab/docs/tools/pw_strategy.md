@@ -230,5 +230,11 @@ Implementations: `strategy_audit.py` (identity, CLI/report), `strategy_audit_run
 with replay state and next-tick delivery to verified same-build teammates. Missing map bounds,
 untraced facts, unknown execution, and unsupported check text remain unmeasurable.
 Absent message types are not exercised. Receiver effects are not proven by transport success.
+For grenade landing claims, the evaluator follows the warned charge through its actual lifecycle,
+including a continuously held command before charging can start. It does not impose a deadline
+from the packet's release estimate. A stopped command that never charged, death, or a reset
+without a throw fails the landing claim; an unfinished lifecycle or missing trace is unmeasurable.
+A newer warning supersedes the old one. Associated throws still must land within 150 cm of
+the reported cell center. The release estimate error is diagnostic, not a hidden pass criterion.
 Add an evaluator and negative tests when adding a check; never let unknown prose fall
 through to a pass. The immutable M1 report and its five compiler guesses remain unchanged.

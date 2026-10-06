@@ -280,18 +280,105 @@ def test_unexercised_invalid_logs_unknown_text_and_binding():
     assert statuses(run(Ep(), 0, states, [bad]), "COM.enemy_sighting.1") == [("fail", "packet_does_not_decode")]
 
 
-def test_grenade_landing_claim():
-    states = {(t, b): state() for t in range(20) for b in range(16)}
-    cell = ac.cell_of(1900, 1000, BOUNDS)
-    msg = cm.Message(2, 0, 3, 0, cell)
-    throw = {"t": 9, "kind": "grenade_throw", "seat": 0, "data": json.dumps({"to": [1900, 1000], "lands_at": 30})}
-    key = "COM.grenade_warning.3"
-    extra = {"COM.grenade_warning": [{"level": "True", "text": "a grenade from the sender lands within 150 cm of the "
-                                                               "reported cell.", "reads": []}]}
-    assert statuses(run(Ep(events=[throw]), 0, states, [send(msg, 6)], m=mapping(extra)), key) == [("pass", None)]
-    far = {**throw, "data": json.dumps({"to": [2400, 1000]})}
-    assert statuses(run(Ep(events=[far]), 0, states, [send(msg, 6)], m=mapping(extra)), key) == [("fail", "landed_elsewhere")]
-    assert statuses(run(Ep(), 0, states, [send(msg, 6)], m=mapping(extra)), key) == [("fail", "no_throw")]
+GRENADE_TRUE = {"COM.grenade_warning": [{"level": "True", "text": "a grenade from the sender lands within 150 cm "
+                                                                  "of the reported cell.", "reads": []}]}
+
+
+def grenade_case(charges, throw_at=None, to=(1900, 1000), dead_at=None, ticks=40, extra_sends=(), gap_at=None,
+                 held=None):
+    """Sender 0 warns at t = 6 (release in 3) for (1900, 1000); `charges` maps tick -> state charge.
+    `held` maps tick -> (cmd_charge, grenade, radar_until) for ticks before the charge starts."""
+    states = {(t, b): state() for t in range(ticks + 1) for b in range(16)}
+    for tick, charge in charges.items():
+        states[tick, 0] = state(charge=charge)
+    for tick, (command, grenade, radar) in (held or {}).items():
+        states[tick, 0] = state(charge=0, cmd_charge=command, grenade=grenade, radar_until=radar)
+    if dead_at is not None:
+        states[dead_at, 0] = state(hp=0, charge=0)
+    if gap_at is not None:
+        del states[gap_at, 0]
+    events = []
+    if throw_at is not None:
+        events.append({"t": throw_at, "kind": "grenade_throw", "seat": 0,
+                       "data": json.dumps({"from": [1000, 1000], "to": list(to), "lands_at": throw_at + 10})})
+    msg = cm.Message(2, 0, 3, 0, ac.cell_of(1900, 1000, BOUNDS))
+    sends = [send(msg, 6)] + [send(cm.Message(2, 0, 2, 0, ac.cell_of(2400, 1000, BOUNDS)), t) for t in extra_sends]
+    rows = run(Ep(ticks=ticks, events=events), 0, states, sends, m=mapping(GRENADE_TRUE))
+    return rows["COM.grenade_warning.3"]
+
+
+def test_grenade_held_past_the_estimate_and_thrown_on_target_passes():
+    # Release estimated at 6 + 3, but the motor kept charging (need grew) and threw at post-step tick 15.
+    rows = grenade_case({**{k: k - 5 for k in range(7, 15)}, 15: 0}, throw_at=15)
+    assert [(r["status"], r["reason"]) for r in rows] == [("pass", None)]
+    assert rows[0]["throw_tick"] == 15 and rows[0]["release_estimate_error"] == 14 - 9
+
+
+def test_grenade_early_release_lands_short():
+    rows = grenade_case({7: 1, 8: 2, 9: 0}, throw_at=9, to=(1350, 1000))
+    assert [(r["status"], r["reason"]) for r in rows] == [("fail", "landed_elsewhere")]
+    assert rows[0]["distance_cm"] > 150
+
+
+def test_grenade_cancellations_fail_with_specific_reasons():
+    rows = grenade_case({7: 1, 8: 2}, dead_at=9)
+    assert [(r["status"], r["reason"]) for r in rows] == [("fail", "cancelled_by_death")]
+    rows = grenade_case({7: 1, 8: 2, 9: 0})  # charge zeroed while alive (mister or radar pickup), no throw
+    assert [(r["status"], r["reason"]) for r in rows] == [("fail", "charge_dropped_without_throw")]
+
+
+def test_grenade_unknowns_end_gap_and_superseded():
+    still = grenade_case({k: min(24, k - 5) for k in range(7, 21)}, ticks=20)  # charging at the last state
+    assert [(r["status"], r["reason"]) for r in still] == [("unmeasurable", "after_episode_end")]
+    last = grenade_case({**{k: k - 5 for k in range(7, 20)}, 20: 0}, throw_at=20, ticks=20)  # final-step throw
+    assert [(r["status"], r["reason"]) for r in last] == [("pass", None)]
+    gap = grenade_case({7: 1, 8: 2, 9: 3, 10: 0}, throw_at=10, gap_at=8)
+    assert [(r["status"], r["reason"]) for r in gap] == [("unmeasurable", "replay_state_gap")]
+    rows = grenade_case({**{k: k - 5 for k in range(7, 12)}, 12: 0}, throw_at=12, extra_sends=(9,))
+    by_tick = {r["t"]: (r["status"], r["reason"]) for r in rows}
+    assert by_tick[6] == ("unmeasurable", "superseded_by_newer_warning")
+    assert by_tick[9] == ("fail", "landed_elsewhere")  # the newer warning named (2400, 1000); it landed at 1900
+
+
+def test_grenade_disarmed_hold_then_real_charge_and_throw_passes():
+    # Radar until 12: the order is held from the warning with zero charge, the charge starts at 13 and
+    # the throw lands on target at 20. The first-zero rule would have called this charge_dropped.
+    held = {k: (1, 1, 12) for k in range(7, 13)}
+    rows = grenade_case({**{k: k - 12 for k in range(13, 20)}, 20: 0}, throw_at=20, held=held)
+    assert [(r["status"], r["reason"]) for r in rows] == [("pass", None)]
+    assert rows[0]["throw_tick"] == 20
+
+
+def test_grenade_never_started_and_pre_start_cancellations():
+    held = {7: (1, 1, 30), 8: (1, 1, 30), 9: (0, 1, 30)}  # the local s1_a0 seat 2 shape: radar, order dropped
+    rows = grenade_case({}, held=held)
+    assert [(r["status"], r["reason"]) for r in rows] == [("fail", "charge_never_started")]
+    rows = grenade_case({}, held={7: (1, 1, 30)}, dead_at=8)
+    assert [(r["status"], r["reason"]) for r in rows] == [("fail", "cancelled_by_death")]
+    rows = grenade_case({}, held={7: (1, 1, 0), 8: (1, 0, 0)})
+    assert [(r["status"], r["reason"]) for r in rows] == [("fail", "grenade_lost_before_start")]
+    rows = grenade_case({}, held={k: (1, 1, 99) for k in range(7, 21)}, ticks=20)  # held to the last state
+    assert [(r["status"], r["reason"]) for r in rows] == [("unmeasurable", "after_episode_end")]
+    rows = grenade_case({})  # pre-start state without a traced command
+    assert [(r["status"], r["reason"]) for r in rows] == [("unmeasurable", "command_not_traced")]
+
+
+def test_grenade_rewarning_mid_charge_released_next_step_passes():
+    # Already charged (5) at the warning tick 6; the next step releases (state 7: charge 0, grenade 0) with
+    # a real throw on target. Started must come from state(t), not from the first scanned tick.
+    rows = grenade_case({6: 5}, throw_at=7, held={7: (1, 0, 30)})
+    assert [(r["status"], r["reason"]) for r in rows] == [("pass", None)]
+    rows = grenade_case({6: 5}, held={7: (1, 0, 30)})  # same shape without any throw: an honest drop
+    assert [(r["status"], r["reason"]) for r in rows] == [("fail", "charge_dropped_without_throw")]
+
+
+def test_grenade_regression_shapes_from_local_audit():
+    # Seat 4 at warning 476 and seat 12 at warning 440: the charge stopped early and the throw shares the
+    # first zero-charge tick (grenade-failures.txt). Both stay landed_elsewhere.
+    rows = grenade_case({7: 1, 8: 2, 9: 0}, throw_at=9, to=(1200, 1139))
+    assert [(r["status"], r["reason"]) for r in rows] == [("fail", "landed_elsewhere")]
+    rows = grenade_case({**{k: k - 6 for k in range(7, 15)}, 15: 0}, throw_at=15, to=(1424, 1037))
+    assert [(r["status"], r["reason"]) for r in rows] == [("fail", "landed_elsewhere")]
 
 
 def test_transport_in_engine(tmp_path):

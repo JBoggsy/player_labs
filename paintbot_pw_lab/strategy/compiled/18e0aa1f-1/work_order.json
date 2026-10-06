@@ -1,0 +1,1137 @@
+{
+  "build_id": "18e0aa1f-1",
+  "compiler": {
+    "agent": "claude",
+    "agent_sha256": "9b5233786dc1bc47a357c6e266defc8f907ceaa27a2feeee69981209a6af67c0",
+    "cli_version": "2.1.290 (Claude Code)",
+    "lessons_sha256": "810dfc8380ccf3caedd598add08f282944202427ccedadfb3e19c3eb71e5f505",
+    "model": "claude-opus-5-5"
+  },
+  "components": {
+    "C.cover_heart": {
+      "compiled_text": "### C.cover_heart\n- Summary: Cover the squad target from outside the ring, and step in when nobody captures it\n  (squad seats 2 and 3).\n- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `hx = controlX(objective)`, `hy = controlY(objective)`, with objective of `K.squad_target`.\n  Set `goal_x = hx` and `goal_y = hy`. Step 2: set `dx = hx - selfX` and `dy = hy - selfY`. If\n  `dx * dx + dy * dy > step_in_sq OR idle_capture < idle_limit`, with idle_capture of\n  `K.squad_target`, compute the cover post. Set `side = 1`, or `side = -1` when seat of\n  `K.squad_target` is 3. Set `ax = post_x - hx` and `ay = post_y - hy`. If `selfTeam = 0`, add\n  `post_shift` to ax. Else subtract `post_shift` from ax. Call `sk_motor__isqrt(ax * ax + ay * ay)`\n  of `SK.motor`. If root of `SK.motor` is more than 0, set\n  `goal_x = hx + (ax * 3 - ay * 2 * side) * post_radius / root` and\n  `goal_y = hy + (ay * 3 + ax * 2 * side) * post_radius / root`. Step 3: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when\n  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 4: call\n  `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (quiet approach): call `sk_motor__sneak(1)` of\n  `SK.motor` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of\n  `K.squad_target`. Step 6: set status to 0.\n- Uses: `K.squad_target`, `K.contacts`, `SK.motor`\n- Params:\n  - step_in_sq = 640000 square cm -- base.bas value, 8 m\n  - idle_limit = 96 ticks -- base.bas value, four seconds without our team capturing\n  - post_x = 3200 cm -- base.bas value, x of the point the post faces away from\n  - post_y = 2000 cm -- base.bas value, y of the point the post faces away from\n  - post_shift = 1200 cm -- base.bas value, team offset of that point\n  - post_radius = 90 -- base.bas value, post distance scale\n  - hold_sq = 8100 square cm -- base.bas value, within 90 cm of the post\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective\n- Done when: never\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWD.c\n  - Acted properly: Reads: `K.squad_target`.idle_capture, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted: the rule selects this capability when the squad has a target. Reads: PWD.r, PWD.c\n  - Acted properly: a cover cog stays near its post while a teammate captures. Reads: `K.squad_target`.idle_capture, replay",
+        "Done when": "never",
+        "Params": "\n  - step_in_sq = 640000 square cm -- base.bas value, 8 m\n  - idle_limit = 96 ticks -- base.bas value, four seconds without our team capturing\n  - post_x = 3200 cm -- base.bas value, x of the point the post faces away from\n  - post_y = 2000 cm -- base.bas value, y of the point the post faces away from\n  - post_shift = 1200 cm -- base.bas value, team offset of that point\n  - post_radius = 90 -- base.bas value, post distance scale\n  - hold_sq = 8100 square cm -- base.bas value, within 90 cm of the post\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective",
+        "Spec": "`__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `hx = controlX(objective)`, `hy = controlY(objective)`, with objective of `K.squad_target`.\n  Set `goal_x = hx` and `goal_y = hy`. Step 2: set `dx = hx - selfX` and `dy = hy - selfY`. If\n  `dx * dx + dy * dy > step_in_sq OR idle_capture < idle_limit`, with idle_capture of\n  `K.squad_target`, compute the cover post. Set `side = 1`, or `side = -1` when seat of\n  `K.squad_target` is 3. Set `ax = post_x - hx` and `ay = post_y - hy`. If `selfTeam = 0`, add\n  `post_shift` to ax. Else subtract `post_shift` from ax. Call `sk_motor__isqrt(ax * ax + ay * ay)`\n  of `SK.motor`. If root of `SK.motor` is more than 0, set\n  `goal_x = hx + (ax * 3 - ay * 2 * side) * post_radius / root` and\n  `goal_y = hy + (ay * 3 + ax * 2 * side) * post_radius / root`. Step 3: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when\n  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 4: call\n  `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (quiet approach): call `sk_motor__sneak(1)` of\n  `SK.motor` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of\n  `K.squad_target`. Step 6: set status to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Cover the squad target from outside the ring, and step in when nobody captures it\n  (squad seats 2 and 3).",
+        "Uses": "`K.squad_target`, `K.contacts`, `SK.motor`"
+      },
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "step_in_sq",
+          "idle_limit",
+          "post_x",
+          "post_y",
+          "post_shift",
+          "post_radius",
+          "hold_sq",
+          "quiet_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "c_cover_heart",
+      "text_hash": "sha256:6b97e602537eb6cb71487e0c9f9be9d7bb2e6fffe5eb82f86b5dcc027fd48509",
+      "uses": [
+        "K.squad_target",
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "C.default_goal": {
+      "compiled_text": "### C.default_goal\n- Summary: With no squad target, go for the thief, home, or the heart.\n- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: with thief of\n  `K.contacts`: if `carrying`, then the goal is the position of thief when\n  `ownHeartStolen AND thief >= 0`, else `(homeX, homeY)`. If not carrying, the goal is the\n  position of thief when `thief >= 0`, else `(heartX, heartY)`. The position of a seat is\n  `(playerX(seat), playerY(seat))`. Step 2: call `sk_motor__act(goal_x, goal_y, 0)` of\n  `SK.motor`. Step 3 (quiet approach): call `sk_motor__sneak(1)` of `SK.motor` when all of these\n  hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is\n  0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 4: set status to 0.\n- Uses: `K.contacts`, `K.squad_target`, `SK.motor`\n- Params:\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective\n- Done when: never\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWD.c\n",
+      "fields": {
+        "Checks": "\n  - Acted: the rule selects this capability when no other rule holds. Reads: PWD.r, PWD.c",
+        "Done when": "never",
+        "Params": "\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective",
+        "Rationale": "The rule selects this capability only when objective is -1. Step 3 never fires then.\n  It stays for a literal match with base.bas.",
+        "Spec": "`__start` does nothing. `__tick` does these steps in order. Step 1: with thief of\n  `K.contacts`: if `carrying`, then the goal is the position of thief when\n  `ownHeartStolen AND thief >= 0`, else `(homeX, homeY)`. If not carrying, the goal is the\n  position of thief when `thief >= 0`, else `(heartX, heartY)`. The position of a seat is\n  `(playerX(seat), playerY(seat))`. Step 2: call `sk_motor__act(goal_x, goal_y, 0)` of\n  `SK.motor`. Step 3 (quiet approach): call `sk_motor__sneak(1)` of `SK.motor` when all of these\n  hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is\n  0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 4: set status to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "With no squad target, go for the thief, home, or the heart.",
+        "Uses": "`K.contacts`, `K.squad_target`, `SK.motor`"
+      },
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "c_default_goal",
+      "text_hash": "sha256:ddffaf0bea84c53624c78255164499994b4b6d23197b3e08a77c3309ff96bc84",
+      "uses": [
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.fall_back": {
+      "compiled_text": "### C.fall_back\n- Summary: Head for the heart that is far from the enemies and near us.\n- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `cx = foe_cx` and `cy = foe_cy` of `K.contacts`. Set `away = -1` and\n  `away_score = -2147483647`. For `j = 0` while `j < heartCount() AND j < 64`, set `ex = (controlX(j) - cx) / 16`,\n  `ey = (controlY(j) - cy) / 16`, `mx = (controlX(j) - selfX) / 16`,\n  `my = (controlY(j) - selfY) / 16`, and `score = ex * ex + ey * ey - (mx * mx + my * my) / 2`.\n  If `score > away_score`, set `away = j` and `away_score = score`. Step 2: if `away >= 0`, the\n  goal is `(controlX(away), controlY(away))`. Else the goal is our own position. Step 3: call\n  `sk_motor__act(goal_x, goal_y, 0)` of `SK.motor`. Step 4 (quiet approach): call `sk_motor__sneak(1)` of\n  `SK.motor` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`.\n  objective of `K.squad_target` is 0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 5:\n  set status to 0.\n- Uses: `K.contacts`, `K.squad_target`, `SK.motor`\n- Params:\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective\n- Done when: never\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWD.c\n  - Result: Reads: PWE.e, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted: the rule selects this capability when we are losing the fight. Reads: PWD.r, PWD.c\n  - Result: we survive the activation. Reads: PWE.e, replay",
+        "Done when": "never",
+        "Params": "\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective",
+        "Rationale": "`S.losing_fight` needs a heart, so away is never -1 here. A losing fight also means a\n  visible target, so Step 4 never fires. Both stay for a literal match with base.bas.",
+        "Spec": "`__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `cx = foe_cx` and `cy = foe_cy` of `K.contacts`. Set `away = -1` and\n  `away_score = -2147483647`. For `j = 0` while `j < heartCount() AND j < 64`, set `ex = (controlX(j) - cx) / 16`,\n  `ey = (controlY(j) - cy) / 16`, `mx = (controlX(j) - selfX) / 16`,\n  `my = (controlY(j) - selfY) / 16`, and `score = ex * ex + ey * ey - (mx * mx + my * my) / 2`.\n  If `score > away_score`, set `away = j` and `away_score = score`. Step 2: if `away >= 0`, the\n  goal is `(controlX(away), controlY(away))`. Else the goal is our own position. Step 3: call\n  `sk_motor__act(goal_x, goal_y, 0)` of `SK.motor`. Step 4 (quiet approach): call `sk_motor__sneak(1)` of\n  `SK.motor` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`.\n  objective of `K.squad_target` is 0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 5:\n  set status to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Head for the heart that is far from the enemies and near us.",
+        "Uses": "`K.contacts`, `K.squad_target`, `SK.motor`"
+      },
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "c_fall_back",
+      "text_hash": "sha256:85f363cc3d538757e9273419a01d80e166b4aa98814a7a3c552f80d6b92eb208",
+      "uses": [
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.resupply": {
+      "compiled_text": "### C.resupply\n- Summary: Walk to the remembered supply.\n- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: call\n  `sk_motor__act(nearest_x, nearest_y, 0)` of `SK.motor`, with nearest_x and nearest_y of\n  `K.pickups`. Step 2 (quiet approach): call `sk_motor__sneak(1)` of `SK.motor` when all of these\n  hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is\n  0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 3: set status to 0.\n- Uses: `K.pickups`, `K.contacts`, `K.squad_target`, `SK.motor`\n- Params:\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective\n- Done when: never\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWD.c\n  - Result: Reads: PWE.e, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted: the rule selects this capability when a supply is worth it. Reads: PWD.r, PWD.c\n  - Result: we take a supply during the activation. Reads: PWE.e, replay",
+        "Done when": "never",
+        "Params": "\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective",
+        "Spec": "`__start` does nothing. `__tick` does these steps in order. Step 1: call\n  `sk_motor__act(nearest_x, nearest_y, 0)` of `SK.motor`, with nearest_x and nearest_y of\n  `K.pickups`. Step 2 (quiet approach): call `sk_motor__sneak(1)` of `SK.motor` when all of these\n  hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is\n  0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 3: set status to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Walk to the remembered supply.",
+        "Uses": "`K.pickups`, `K.contacts`, `K.squad_target`, `SK.motor`"
+      },
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "c_resupply",
+      "text_hash": "sha256:9ef584118d9cd4b76ed605e9aa2af6d4b5dbc239c7161a408a95da1bda8bb117",
+      "uses": [
+        "K.pickups",
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.take_heart": {
+      "compiled_text": "### C.take_heart\n- Summary: Stand in the capture ring of the squad target (squad seats 0 and 1).\n- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `goal_x = controlX(objective)` and `goal_y = controlY(objective)`, with objective of\n  `K.squad_target`. Step 2: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when\n  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 3: call `sk_motor__act(goal_x, goal_y, hold)` of\n  `SK.motor`. Step 4 (quiet approach): call `sk_motor__sneak(1)` of `SK.motor` when all of these hold. best\n  of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of\n  `K.squad_target`. Step 5: set status to 0.\n- Uses: `K.squad_target`, `K.contacts`, `SK.motor`\n- Params:\n  - hold_sq = 8100 square cm -- base.bas value, within 90 cm of the post\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective\n- Done when: never\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWD.c\n  - Result: Reads: PWE.e, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted: the rule selects this capability when the squad has a target. Reads: PWD.r, PWD.c\n  - Result: our team captures the target heart during the activation. Reads: PWE.e, replay",
+        "Done when": "never",
+        "Params": "\n  - hold_sq = 8100 square cm -- base.bas value, within 90 cm of the post\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective",
+        "Spec": "`__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `goal_x = controlX(objective)` and `goal_y = controlY(objective)`, with objective of\n  `K.squad_target`. Step 2: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when\n  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 3: call `sk_motor__act(goal_x, goal_y, hold)` of\n  `SK.motor`. Step 4 (quiet approach): call `sk_motor__sneak(1)` of `SK.motor` when all of these hold. best\n  of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of\n  `K.squad_target`. Step 5: set status to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Stand in the capture ring of the squad target (squad seats 0 and 1).",
+        "Uses": "`K.squad_target`, `K.contacts`, `SK.motor`"
+      },
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "hold_sq",
+          "quiet_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "c_take_heart",
+      "text_hash": "sha256:7551b976d16fc3e69a716f65cb13b303e01ec2ddcaf42ee2f89133677ce83273",
+      "uses": [
+        "K.squad_target",
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "COM.disguise_alert": {
+      "compiled_text": "### COM.disguise_alert\n- Summary: Report uncertain disguise evidence and keep distinct witness reports.\n- Spec: In `__send`: choose the evidence. Strong evidence: `xe_label >= 0` of `K.contacts`, with `L =\n  xe_label`, the point `(xe_x, xe_y)` and `age = worldTick + 1 - cm__heard_t(L)`. Use weak evidence only without strong evidence. Choose the lowest label L with `cm__suspect_t(L) > 0`, `worldTick + 1 -\n  cm__suspect_t(L) <= x_window`, `L <> selfId` and `L <> (selfId + 2) MOD 16` (not our own alias). Use the\n  point `(cm__suspect_x(L), cm__suspect_y(L))` and `age = worldTick + 1 - cm__suspect_t(L)`. The runtime keeps\n  cm__suspect_t, cm__suspect_x and cm__suspect_y for each teammate label whose speech failed the message\n  check. cm__suspect_t holds the receipt tick plus 1, or 0. Send only when `xs_t(L) = 0 OR worldTick + 1 -\n  xs_t(L) >= x_refresh`. Clamp age to 0..255 and call `cm__send(7, L, age, cell, quiet)` with the cell of the\n  point and quiet of `SK.motor`. When `cm__sent = 1`, set `xs_t(L) = worldTick + 1`. xs_t is a private array\n  of 16 cells and starts at 0. In `__recv`: set `L = cm__fa`, `amb = 0` and `until = worldTick - 1 - cm__fb +\n  disguise_ttl` (the evidence expiry, from its age). Ignore the message when `until <= worldTick`. If `L =\n  selfId`, set `L = (L + 2) MOD 16` and `amb = 1`. Decode the cell to `(px, py)`. When amb is 1, set\n  `xa_amb(L) = 1`. If `xa_t1(L) <= worldTick`, or `xa_s1(L) = cm__speaker AND until > xa_t1(L)`, set `xa_s1(L)\n  = cm__speaker`, `xa_x1(L) = px`, `xa_y1(L) = py` and `xa_t1(L) = until`. Else, when `xa_s1(L) <>\n  cm__speaker`, `(px - xa_x1(L)) * (px - xa_x1(L)) + (py - xa_y1(L)) * (py - xa_y1(L)) <= x_radius *\n  x_radius`, and `xa_t2(L) <= worldTick OR (xa_s2(L) = cm__speaker AND until > xa_t2(L))`, set `xa_s2(L) =\n  cm__speaker`, `xa_x2(L) = px`, `xa_y2(L) = py` and `xa_t2(L) = until`. A report never refreshes a claim with\n  a later expiry, and one sender never fills both witnesses. Set `xa_amb(L) = 0` again when both witnesses\n  expire. `__recv` runs once for each decoded message of this wire type, after generated code fills `packet`.\n  It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender seat) and `cm__rx_x`, `cm__rx_y`\n  (the sender's exact position at send time). The message was sent on tick `worldTick - 1`. `__send` proposes\n  at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`. It runs only when no message of\n  higher priority was sent this tick. It changes its own memory only after `cm__sent = 1`. A cell packs a\n  point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() + 1`. Encode: `gx = (x -\n  mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255, and `cell = gx + 256 *\n  gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w / 2) / 256` and `y =\n  mapMinY() + (gy * h + h / 2) / 256`.\n- Uses: `K.contacts`, `SK.motor`\n- Content: the fake label, the evidence age, and the position of the fake body\n- Encoding: comms-v1 7 -- X, strategy/comms.md\n- Send when: our own position evidence shows a fake body, or, weaker, a teammate label failed the message check\n- On receipt: the receiver keeps up to two distinct witness reports per label, which `K.contacts` uses\n- Directions: both\n- Outputs:\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - xa_s1[16] -- claimed sender seat of the first witness of each label\n  - xa_x1[16] -- first witness x\n  - xa_y1[16] -- first witness y\n  - xa_t1[16] -- last tick plus 1 of the first witness, or 0\n  - xa_s2[16] -- claimed sender seat of the second distinct witness\n  - xa_x2[16] -- second witness x\n  - xa_y2[16] -- second witness y\n  - xa_t2[16] -- last tick plus 1 of the second witness, or 0\n  - xa_amb[16] -- 1 when the label was remapped because this receiver is the impersonated seat\n- Log: packet\n- Params:\n  - x_window = 24 ticks [12, 72, 12] -- hand-set, comms.md default\n  - x_distance = 1000 cm [700, 1500, 100] -- hand-set, new. Above 24 ticks of free walking (672 cm) plus margin. The comms.md 600 is below that walk.\n  - x_radius = 300 cm [100, 600, 50] -- hand-set, comms.md default\n  - disguise_ttl = 72 ticks [24, 240, 24] -- hand-set, comms.md default\n  - x_refresh = 24 ticks [12, 72, 12] -- hand-set, new\n- Checks (reads):\n  - Acted properly: Reads: `COM.disguise_alert`.packet, PWC.s, replay\n  - Result: Reads: `COM.disguise_alert`.packet, PWC.s, PWC.w, replay\n  - True: Reads: `COM.disguise_alert`.packet, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: each sent packet decodes and its fields match the sender's replay state at the send tick. Reads: `COM.disguise_alert`.packet, PWC.s, replay\n  - Result: teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity. Reads: `COM.disguise_alert`.packet, PWC.s, PWC.w, replay\n  - True: the reported body was a disguised enemy in the replay. Reads: `COM.disguise_alert`.packet, replay",
+        "Content": "the fake label, the evidence age, and the position of the fake body",
+        "Directions": "both",
+        "Encoding": "comms-v1 7 -- X, strategy/comms.md",
+        "Log": "packet",
+        "On receipt": "the receiver keeps up to two distinct witness reports per label, which `K.contacts` uses",
+        "Outputs": "\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - xa_s1[16] -- claimed sender seat of the first witness of each label\n  - xa_x1[16] -- first witness x\n  - xa_y1[16] -- first witness y\n  - xa_t1[16] -- last tick plus 1 of the first witness, or 0\n  - xa_s2[16] -- claimed sender seat of the second distinct witness\n  - xa_x2[16] -- second witness x\n  - xa_y2[16] -- second witness y\n  - xa_t2[16] -- last tick plus 1 of the second witness, or 0\n  - xa_amb[16] -- 1 when the label was remapped because this receiver is the impersonated seat",
+        "Params": "\n  - x_window = 24 ticks [12, 72, 12] -- hand-set, comms.md default\n  - x_distance = 1000 cm [700, 1500, 100] -- hand-set, new. Above 24 ticks of free walking (672 cm) plus margin. The comms.md 600 is below that walk.\n  - x_radius = 300 cm [100, 600, 50] -- hand-set, comms.md default\n  - disguise_ttl = 72 ticks [24, 240, 24] -- hand-set, comms.md default\n  - x_refresh = 24 ticks [12, 72, 12] -- hand-set, new",
+        "Rationale": "James chose corroboration (2026-10-05). A failed check can raise an alert but never fire. The message check is not authentication, so one report never makes a target. The receiver needs two distinct claimed senders, or its own evidence in `K.contacts`. A friend record always wins. An alias label is ambiguous, so it never makes a report-based target.",
+        "Send when": "our own position evidence shows a fake body, or, weaker, a teammate label failed the message check",
+        "Spec": "In `__send`: choose the evidence. Strong evidence: `xe_label >= 0` of `K.contacts`, with `L =\n  xe_label`, the point `(xe_x, xe_y)` and `age = worldTick + 1 - cm__heard_t(L)`. Use weak evidence only without strong evidence. Choose the lowest label L with `cm__suspect_t(L) > 0`, `worldTick + 1 -\n  cm__suspect_t(L) <= x_window`, `L <> selfId` and `L <> (selfId + 2) MOD 16` (not our own alias). Use the\n  point `(cm__suspect_x(L), cm__suspect_y(L))` and `age = worldTick + 1 - cm__suspect_t(L)`. The runtime keeps\n  cm__suspect_t, cm__suspect_x and cm__suspect_y for each teammate label whose speech failed the message\n  check. cm__suspect_t holds the receipt tick plus 1, or 0. Send only when `xs_t(L) = 0 OR worldTick + 1 -\n  xs_t(L) >= x_refresh`. Clamp age to 0..255 and call `cm__send(7, L, age, cell, quiet)` with the cell of the\n  point and quiet of `SK.motor`. When `cm__sent = 1`, set `xs_t(L) = worldTick + 1`. xs_t is a private array\n  of 16 cells and starts at 0. In `__recv`: set `L = cm__fa`, `amb = 0` and `until = worldTick - 1 - cm__fb +\n  disguise_ttl` (the evidence expiry, from its age). Ignore the message when `until <= worldTick`. If `L =\n  selfId`, set `L = (L + 2) MOD 16` and `amb = 1`. Decode the cell to `(px, py)`. When amb is 1, set\n  `xa_amb(L) = 1`. If `xa_t1(L) <= worldTick`, or `xa_s1(L) = cm__speaker AND until > xa_t1(L)`, set `xa_s1(L)\n  = cm__speaker`, `xa_x1(L) = px`, `xa_y1(L) = py` and `xa_t1(L) = until`. Else, when `xa_s1(L) <>\n  cm__speaker`, `(px - xa_x1(L)) * (px - xa_x1(L)) + (py - xa_y1(L)) * (py - xa_y1(L)) <= x_radius *\n  x_radius`, and `xa_t2(L) <= worldTick OR (xa_s2(L) = cm__speaker AND until > xa_t2(L))`, set `xa_s2(L) =\n  cm__speaker`, `xa_x2(L) = px`, `xa_y2(L) = py` and `xa_t2(L) = until`. A report never refreshes a claim with\n  a later expiry, and one sender never fills both witnesses. Set `xa_amb(L) = 0` again when both witnesses\n  expire. `__recv` runs once for each decoded message of this wire type, after generated code fills `packet`.\n  It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender seat) and `cm__rx_x`, `cm__rx_y`\n  (the sender's exact position at send time). The message was sent on tick `worldTick - 1`. `__send` proposes\n  at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`. It runs only when no message of\n  higher priority was sent this tick. It changes its own memory only after `cm__sent = 1`. A cell packs a\n  point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() + 1`. Encode: `gx = (x -\n  mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255, and `cell = gx + 256 *\n  gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w / 2) / 256` and `y =\n  mapMinY() + (gy * h + h / 2) / 256`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Report uncertain disguise evidence and keep distinct witness reports.",
+        "Uses": "`K.contacts`, `SK.motor`"
+      },
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "packet": 2,
+          "xa_amb": 16,
+          "xa_s1": 16,
+          "xa_s2": 16,
+          "xa_t1": 16,
+          "xa_t2": 16,
+          "xa_x1": 16,
+          "xa_x2": 16,
+          "xa_y1": 16,
+          "xa_y2": 16
+        },
+        "params": [
+          "x_window",
+          "x_distance",
+          "x_radius",
+          "disguise_ttl",
+          "x_refresh"
+        ]
+      },
+      "llm": true,
+      "prefix": "com_disguise_alert",
+      "text_hash": "sha256:4a819094b97327ff43f33b50cce0ab9e133d3a990d4b9105f3d65e862039d617",
+      "uses": [
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "COM.disguise_friend": {
+      "compiled_text": "### COM.disguise_friend\n- Summary: Tell teammates that our disguised body is a friend, and keep their friend records.\n- Spec: In `__send`: when `uniform_since > 0` of `K.self_motion`, a teammate-parity seat `i <> selfId` is\n  visible within `d_range_sq`, and either `ds_t < uniform_since` or `worldTick +\n  1 - ds_t >= d_refresh`, send D. Call `cm__send(8, label, 0, 0, quiet)` with `label = selfId + 1 - 2 * (selfId MOD\n  2)` and quiet of `SK.motor`. When `cm__sent = 1`, set `ds_t = worldTick + 1`. ds_t starts at 0. In `__recv`:\n  set `L = cm__fa`. If `L = selfId`, set `L = (L + 2) MOD 16` (the observer alias). Set `df_x(L) = cm__rx_x`,\n  `df_y(L) = cm__rx_y` and `df_until(L) = worldTick + friend_ttl`. `__recv` runs once for each decoded message\n  of this wire type, after generated code fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`,\n  `cm__speaker` (the claimed sender seat) and `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time).\n  The message was sent on tick `worldTick - 1`. `__send` proposes at most one message with `cm__send(type,\n  fieldsA, fieldsB, cell, quiet)`. It runs only when no message of higher priority was sent this tick. It\n  changes its own memory only after `cm__sent = 1`. A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1`\n  and `h = mapMaxY() - mapMinY() + 1`. Encode: `gx = (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) *\n  256 / h`, each clamped to 0..255, and `cell = gx + 256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell /\n  256`, `x = mapMinX() + (gx * w + w / 2) / 256` and `y = mapMinY() + (gy * h + h / 2) / 256`.\n- Uses: `K.self_motion`, `SK.motor`\n- Content: the apparent label of our disguised body\n- Encoding: comms-v1 8 -- D, strategy/comms.md\n- Send when: we wear a uniform and a teammate is in view within 12.8 m\n- On receipt: the receiver keeps a friend record for that label at the sender position\n- Directions: both\n- Outputs:\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - df_x[16] -- sender x of the friend record of each label\n  - df_y[16] -- sender y of the friend record of each label\n  - df_until[16] -- last tick plus 1 of the friend record of each label, or 0\n- Log: packet\n- Params:\n  - d_refresh = 24 ticks [12, 72, 12] -- hand-set, comms.md default\n  - friend_radius = 250 cm [100, 500, 50] -- hand-set, comms.md default\n  - friend_ttl = 48 ticks [24, 120, 12] -- hand-set, comms.md default\n  - d_range_sq = 1638400 square cm -- hand-set, engine hearing radius 1280 cm squared (seat_view.nim deliverSpeech)\n- Checks (reads):\n  - Acted properly: Reads: `COM.disguise_friend`.packet, PWC.s, replay\n  - Result: Reads: `COM.disguise_friend`.packet, PWC.s, PWC.w, replay\n  - Result: Reads: `COM.disguise_friend`.packet, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: each sent packet decodes and its fields match the sender's replay state at the send tick. Reads: `COM.disguise_friend`.packet, PWC.s, replay\n  - Result: teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity. Reads: `COM.disguise_friend`.packet, PWC.s, PWC.w, replay\n  - Result: a friend record never protects a body that is an enemy in the replay. Reads: `COM.disguise_friend`.packet, replay",
+        "Content": "the apparent label of our disguised body",
+        "Directions": "both",
+        "Encoding": "comms-v1 8 -- D, strategy/comms.md",
+        "Log": "packet",
+        "On receipt": "the receiver keeps a friend record for that label at the sender position",
+        "Outputs": "\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - df_x[16] -- sender x of the friend record of each label\n  - df_y[16] -- sender y of the friend record of each label\n  - df_until[16] -- last tick plus 1 of the friend record of each label, or 0",
+        "Params": "\n  - d_refresh = 24 ticks [12, 72, 12] -- hand-set, comms.md default\n  - friend_radius = 250 cm [100, 500, 50] -- hand-set, comms.md default\n  - friend_ttl = 48 ticks [24, 120, 12] -- hand-set, comms.md default\n  - d_range_sq = 1638400 square cm -- hand-set, engine hearing radius 1280 cm squared (seat_view.nim deliverSpeech)",
+        "Rationale": "The alias step is vacuous for teammate receivers, because the label has enemy parity. It keeps the rule the same as for alerts. The aim-at-us trigger of comms.md is not available, because there is no aim host call.",
+        "Send when": "we wear a uniform and a teammate is in view within 12.8 m",
+        "Spec": "In `__send`: when `uniform_since > 0` of `K.self_motion`, a teammate-parity seat `i <> selfId` is\n  visible within `d_range_sq`, and either `ds_t < uniform_since` or `worldTick +\n  1 - ds_t >= d_refresh`, send D. Call `cm__send(8, label, 0, 0, quiet)` with `label = selfId + 1 - 2 * (selfId MOD\n  2)` and quiet of `SK.motor`. When `cm__sent = 1`, set `ds_t = worldTick + 1`. ds_t starts at 0. In `__recv`:\n  set `L = cm__fa`. If `L = selfId`, set `L = (L + 2) MOD 16` (the observer alias). Set `df_x(L) = cm__rx_x`,\n  `df_y(L) = cm__rx_y` and `df_until(L) = worldTick + friend_ttl`. `__recv` runs once for each decoded message\n  of this wire type, after generated code fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`,\n  `cm__speaker` (the claimed sender seat) and `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time).\n  The message was sent on tick `worldTick - 1`. `__send` proposes at most one message with `cm__send(type,\n  fieldsA, fieldsB, cell, quiet)`. It runs only when no message of higher priority was sent this tick. It\n  changes its own memory only after `cm__sent = 1`. A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1`\n  and `h = mapMaxY() - mapMinY() + 1`. Encode: `gx = (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) *\n  256 / h`, each clamped to 0..255, and `cell = gx + 256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell /\n  256`, `x = mapMinX() + (gx * w + w / 2) / 256` and `y = mapMinY() + (gy * h + h / 2) / 256`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Tell teammates that our disguised body is a friend, and keep their friend records.",
+        "Uses": "`K.self_motion`, `SK.motor`"
+      },
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "df_until": 16,
+          "df_x": 16,
+          "df_y": 16,
+          "packet": 2
+        },
+        "params": [
+          "d_refresh",
+          "friend_radius",
+          "friend_ttl",
+          "d_range_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "com_disguise_friend",
+      "text_hash": "sha256:621bcc7eb48bdb466cd72022b56f05fd7703ef536bd0095caf1268a692185399",
+      "uses": [
+        "K.self_motion",
+        "SK.motor"
+      ]
+    },
+    "COM.enemy_sighting": {
+      "compiled_text": "### COM.enemy_sighting\n- Summary: Report a visible enemy to teammates, and keep heard enemy tracks.\n- Spec: In `__send`: consider each label `i <> selfId` with `visible(i)` and `hostile(i) = 1` of `K.contacts`,\n  where `es_t(i) = 0 OR worldTick + 1 - es_t(i) >= e_refresh` or the body moved more than e_move from\n  `(es_x(i), es_y(i))`. Choose the one nearest to any teammate seat s with `cm__heard_t(s) > 0` and `worldTick\n  + 1 - cm__heard_t(s) <= heard_ttl` (position `cm__heard_x(s)`, `cm__heard_y(s)`). If there is no such\n  teammate, choose the one nearest to us. Strict less-than keeps the lowest label. Call `cm__send(0, i + 16 *\n  (hp + 16 * 8), 0, cell, quiet)` with `hp = playerHp(i)` clamped to 0..15, heading 8 (unknown), the cell of\n  `(playerX(i), playerY(i))` and quiet of `SK.motor`. When `cm__sent = 1`, set `es_t(i) = worldTick + 1`,\n  `es_x(i) = playerX(i)` and `es_y(i) = playerY(i)`. In `__recv`: set `L = cm__fa MOD 16` and `seen =\n  worldTick - 1 - cm__fb` (the sighting tick, fieldsB is its age). When `ht_until(L) = 0 OR seen > ht_t(L)`,\n  decode the cell to `(ht_x(L), ht_y(L))`, set `ht_t(L) = seen` and `ht_until(L) = seen + heard_ttl`. An older\n  or equal sighting never refreshes a track. `__recv` runs once for each decoded message of this wire type,\n  after generated code fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender\n  seat) and `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message was sent on tick\n  `worldTick - 1`. `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`.\n  It runs only when no message of higher priority was sent this tick. It changes its own memory only after\n  `cm__sent = 1`. A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() +\n  1`. Encode: `gx = (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255,\n  and `cell = gx + 256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w /\n  2) / 256` and `y = mapMinY() + (gy * h + h / 2) / 256`.\n- Uses: `K.contacts`, `SK.motor`\n- Content: an enemy label, its hit points, and its position\n- Encoding: comms-v1 0 -- E, strategy/comms.md\n- Send when: we see an enemy that we did not report recently\n- On receipt: the receiver keeps a heard track for that label\n- Directions: both\n- Outputs:\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - ht_x[16] -- heard x of each enemy label\n  - ht_y[16] -- heard y of each enemy label\n  - ht_t[16] -- tick of the latest report of each label\n  - ht_until[16] -- last tick plus 1 of each track, or 0\n- Log: packet\n- Params:\n  - e_refresh = 12 ticks [6, 48, 6] -- hand-set, comms.md default\n  - e_move = 300 cm [100, 800, 50] -- hand-set, comms.md default\n  - heard_ttl = 48 ticks [24, 120, 12] -- hand-set, new\n- Checks (reads):\n  - Acted properly: Reads: `COM.enemy_sighting`.packet, PWC.s, replay\n  - Result: Reads: `COM.enemy_sighting`.packet, PWC.s, PWC.w, replay\n  - True: Reads: `COM.enemy_sighting`.packet, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: each sent packet decodes and its fields match the sender's replay state at the send tick. Reads: `COM.enemy_sighting`.packet, PWC.s, replay\n  - Result: teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity. Reads: `COM.enemy_sighting`.packet, PWC.s, PWC.w, replay\n  - True: the reported label was a visible body at the reported cell and an enemy in the replay. A corroborated misclassification fails this by design. Reads: `COM.enemy_sighting`.packet, replay",
+        "Content": "an enemy label, its hit points, and its position",
+        "Directions": "both",
+        "Encoding": "comms-v1 0 -- E, strategy/comms.md",
+        "Log": "packet",
+        "On receipt": "the receiver keeps a heard track for that label",
+        "Outputs": "\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - ht_x[16] -- heard x of each enemy label\n  - ht_y[16] -- heard y of each enemy label\n  - ht_t[16] -- tick of the latest report of each label\n  - ht_until[16] -- last tick plus 1 of each track, or 0",
+        "Params": "\n  - e_refresh = 12 ticks [6, 48, 6] -- hand-set, comms.md default\n  - e_move = 300 cm [100, 800, 50] -- hand-set, comms.md default\n  - heard_ttl = 48 ticks [24, 120, 12] -- hand-set, new",
+        "Rationale": "No receiver effect uses heading, so the sender sends 8 (unknown). Heard tracks never make a fire target.",
+        "Send when": "we see an enemy that we did not report recently",
+        "Spec": "In `__send`: consider each label `i <> selfId` with `visible(i)` and `hostile(i) = 1` of `K.contacts`,\n  where `es_t(i) = 0 OR worldTick + 1 - es_t(i) >= e_refresh` or the body moved more than e_move from\n  `(es_x(i), es_y(i))`. Choose the one nearest to any teammate seat s with `cm__heard_t(s) > 0` and `worldTick\n  + 1 - cm__heard_t(s) <= heard_ttl` (position `cm__heard_x(s)`, `cm__heard_y(s)`). If there is no such\n  teammate, choose the one nearest to us. Strict less-than keeps the lowest label. Call `cm__send(0, i + 16 *\n  (hp + 16 * 8), 0, cell, quiet)` with `hp = playerHp(i)` clamped to 0..15, heading 8 (unknown), the cell of\n  `(playerX(i), playerY(i))` and quiet of `SK.motor`. When `cm__sent = 1`, set `es_t(i) = worldTick + 1`,\n  `es_x(i) = playerX(i)` and `es_y(i) = playerY(i)`. In `__recv`: set `L = cm__fa MOD 16` and `seen =\n  worldTick - 1 - cm__fb` (the sighting tick, fieldsB is its age). When `ht_until(L) = 0 OR seen > ht_t(L)`,\n  decode the cell to `(ht_x(L), ht_y(L))`, set `ht_t(L) = seen` and `ht_until(L) = seen + heard_ttl`. An older\n  or equal sighting never refreshes a track. `__recv` runs once for each decoded message of this wire type,\n  after generated code fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender\n  seat) and `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message was sent on tick\n  `worldTick - 1`. `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`.\n  It runs only when no message of higher priority was sent this tick. It changes its own memory only after\n  `cm__sent = 1`. A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() +\n  1`. Encode: `gx = (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255,\n  and `cell = gx + 256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w /\n  2) / 256` and `y = mapMinY() + (gy * h + h / 2) / 256`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Report a visible enemy to teammates, and keep heard enemy tracks.",
+        "Uses": "`K.contacts`, `SK.motor`"
+      },
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "ht_t": 16,
+          "ht_until": 16,
+          "ht_x": 16,
+          "ht_y": 16,
+          "packet": 2
+        },
+        "params": [
+          "e_refresh",
+          "e_move",
+          "heard_ttl"
+        ]
+      },
+      "llm": true,
+      "prefix": "com_enemy_sighting",
+      "text_hash": "sha256:4329fbd900ebaef2085dac732bf4d8992177cd6da171a694e7b06ee6e3202af6",
+      "uses": [
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "COM.focus_call": {
+      "compiled_text": "### COM.focus_call\n- Summary: Call our fight target so that teammates who see it prefer it.\n- Spec: In `__send`: when `best >= 0` of `K.contacts`, `(playerHp(best) < full_hp OR best_engagers >= 2)`, and\n  `fs_label <> best OR worldTick - fs_t >= focus_refresh`, call `cm__send(1, best + 16 * hp, 0, cell, quiet)`\n  with `hp = playerHp(best)` clamped to 0..15, the cell of `(playerX(best), playerY(best))` and quiet of\n  `SK.motor`. When `cm__sent = 1`, set `fs_label = best` and `fs_t = worldTick`. In `__init`, set `fs_label =\n  -1` and `fc_label = -1`. In `__recv`: set `fc_label = cm__fa MOD 16`, decode the cell to `(fc_x, fc_y)`, and\n  set `fc_until = worldTick + focus_ttl`. The latest call wins. `__recv` runs once for each decoded message of\n  this wire type, after generated code fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker`\n  (the claimed sender seat) and `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message\n  was sent on tick `worldTick - 1`. `__send` proposes at most one message with `cm__send(type, fieldsA,\n  fieldsB, cell, quiet)`. It runs only when no message of higher priority was sent this tick. It changes its\n  own memory only after `cm__sent = 1`. A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h =\n  mapMaxY() - mapMinY() + 1`. Encode: `gx = (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`,\n  each clamped to 0..255, and `cell = gx + 256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x =\n  mapMinX() + (gx * w + w / 2) / 256` and `y = mapMinY() + (gy * h + h / 2) / 256`.\n- Uses: `K.contacts`, `SK.motor`\n- Content: the target label, its hit points, and its position\n- Encoding: comms-v1 1 -- F, strategy/comms.md\n- Send when: our target is wounded, or two teammates can engage it\n- On receipt: the receiver prefers that target when it sees it within range\n- Directions: both\n- Outputs:\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - fc_label -- label of the latest focus call, or -1\n  - fc_x -- its target x\n  - fc_y -- its target y\n  - fc_until -- its last tick plus 1, or 0\n- Log: packet\n- Params:\n  - focus_refresh = 24 ticks [12, 48, 12] -- hand-set, comms.md default\n  - focus_ttl = 36 ticks [12, 72, 12] -- hand-set, comms.md default\n  - focus_radius = 400 cm [100, 800, 50] -- hand-set, new\n  - full_hp = 10 -- hand-set, rules 49 base hit points (sim.nim maxHp). Wounded means below this.\n- Checks (reads):\n  - Acted properly: Reads: `COM.focus_call`.packet, PWC.s, replay\n  - Result: Reads: `COM.focus_call`.packet, PWC.s, PWC.w, replay\n  - Result: Reads: `COM.focus_call`.packet, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: each sent packet decodes and its fields match the sender's replay state at the send tick. Reads: `COM.focus_call`.packet, PWC.s, replay\n  - Result: teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity. Reads: `COM.focus_call`.packet, PWC.s, PWC.w, replay\n  - Result: called targets die sooner than uncalled targets. Reads: `COM.focus_call`.packet, replay",
+        "Content": "the target label, its hit points, and its position",
+        "Directions": "both",
+        "Encoding": "comms-v1 1 -- F, strategy/comms.md",
+        "Log": "packet",
+        "On receipt": "the receiver prefers that target when it sees it within range",
+        "Outputs": "\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - fc_label -- label of the latest focus call, or -1\n  - fc_x -- its target x\n  - fc_y -- its target y\n  - fc_until -- its last tick plus 1, or 0",
+        "Params": "\n  - focus_refresh = 24 ticks [12, 48, 12] -- hand-set, comms.md default\n  - focus_ttl = 36 ticks [12, 72, 12] -- hand-set, comms.md default\n  - focus_radius = 400 cm [100, 800, 50] -- hand-set, new\n  - full_hp = 10 -- hand-set, rules 49 base hit points (sim.nim maxHp). Wounded means below this.",
+        "Send when": "our target is wounded, or two teammates can engage it",
+        "Spec": "In `__send`: when `best >= 0` of `K.contacts`, `(playerHp(best) < full_hp OR best_engagers >= 2)`, and\n  `fs_label <> best OR worldTick - fs_t >= focus_refresh`, call `cm__send(1, best + 16 * hp, 0, cell, quiet)`\n  with `hp = playerHp(best)` clamped to 0..15, the cell of `(playerX(best), playerY(best))` and quiet of\n  `SK.motor`. When `cm__sent = 1`, set `fs_label = best` and `fs_t = worldTick`. In `__init`, set `fs_label =\n  -1` and `fc_label = -1`. In `__recv`: set `fc_label = cm__fa MOD 16`, decode the cell to `(fc_x, fc_y)`, and\n  set `fc_until = worldTick + focus_ttl`. The latest call wins. `__recv` runs once for each decoded message of\n  this wire type, after generated code fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker`\n  (the claimed sender seat) and `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message\n  was sent on tick `worldTick - 1`. `__send` proposes at most one message with `cm__send(type, fieldsA,\n  fieldsB, cell, quiet)`. It runs only when no message of higher priority was sent this tick. It changes its\n  own memory only after `cm__sent = 1`. A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h =\n  mapMaxY() - mapMinY() + 1`. Encode: `gx = (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`,\n  each clamped to 0..255, and `cell = gx + 256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x =\n  mapMinX() + (gx * w + w / 2) / 256` and `y = mapMinY() + (gy * h + h / 2) / 256`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Call our fight target so that teammates who see it prefer it.",
+        "Uses": "`K.contacts`, `SK.motor`"
+      },
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "fc_label": 1,
+          "fc_until": 1,
+          "fc_x": 1,
+          "fc_y": 1,
+          "packet": 2
+        },
+        "params": [
+          "focus_refresh",
+          "focus_ttl",
+          "focus_radius",
+          "full_hp"
+        ]
+      },
+      "llm": true,
+      "prefix": "com_focus_call",
+      "text_hash": "sha256:529883ffcc80e960109b683a91937354c691918bfd270b48d72a7e36786ab40b",
+      "uses": [
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "COM.glory_seen": {
+      "compiled_text": "### COM.glory_seen\n- Summary: Report glory hearts we see, and keep teammates' reports.\n- Spec: In `__send`, consider hearts i with `i < gloryHeartCount() AND i < 8` and `gloryHeartTicksLeft(i) >= 0`.\n  Skip a heart when any slot j has `gl_until(j) > worldTick` and `worldTick - gl_t(j) < h_refresh`, within h_match of `(gl_x(j), gl_y(j))`.\n  Also skip it when any own slot k has `hs_t(k) > 0` and `worldTick + 1 - hs_t(k) < h_refresh`, within h_match of `(hs_x(k), hs_y(k))`.\n  Choose the lowest remaining i. Call `cm__send(4, left, 0, cell, quiet)` with `left = gloryHeartTicksLeft(i)` clamped to 0..720.\n  Use the cell of `(gloryHeartX(i), gloryHeartY(i))` and quiet of `SK.motor`.\n  When `cm__sent = 1`, use the own slot k within h_match of the heart, else the slot with the smallest hs_t.\n  Set `hs_x(k)`, `hs_y(k)` to the heart and `hs_t(k) = worldTick + 1`. hs_x, hs_y and\n  hs_t are private arrays of 8 cells. Heart indices can renumber, so memory is matched by position. In\n  `__recv`: decode the cell to `(px, py)`. Use the slot j that is within h_match of `(px, py)`, else the slot\n  with the smallest gl_until. Set `gl_x(j) = px`, `gl_y(j) = py`, `gl_t(j) = worldTick` and `gl_until(j) =\n  worldTick - 1 + cm__fa`. `__recv` runs once for each decoded message of this wire type, after generated code\n  fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender seat) and\n  `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message was sent on tick `worldTick -\n  1`. `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`. It runs only\n  when no message of higher priority was sent this tick. It changes its own memory only after `cm__sent = 1`.\n  A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() + 1`. Encode: `gx =\n  (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255, and `cell = gx +\n  256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w / 2) / 256` and `y =\n  mapMinY() + (gy * h + h / 2) / 256`.\n- Uses: `SK.motor`\n- Content: a glory heart position and its ticks left\n- Encoding: comms-v1 4 -- H, strategy/comms.md\n- Send when: we see a glory heart that no teammate reported recently\n- On receipt: the receiver keeps the heart until it expires\n- Directions: both\n- Outputs:\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - gl_x[8] -- reported glory heart x\n  - gl_y[8] -- reported glory heart y\n  - gl_until[8] -- reported expiry tick, or 0\n  - gl_t[8] -- tick of the latest report of each slot\n- Log: packet\n- Params:\n  - h_refresh = 120 ticks [48, 240, 24] -- hand-set, comms.md default\n  - h_match = 200 cm -- hand-set, new. Two reports this close are one heart.\n- Checks (reads):\n  - Acted properly: Reads: `COM.glory_seen`.packet, PWC.s, replay\n  - Result: Reads: `COM.glory_seen`.packet, PWC.s, PWC.w, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: each sent packet decodes and its fields match the sender's replay state at the send tick. Reads: `COM.glory_seen`.packet, PWC.s, replay\n  - Result: teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity. Reads: `COM.glory_seen`.packet, PWC.s, PWC.w, replay",
+        "Content": "a glory heart position and its ticks left",
+        "Directions": "both",
+        "Encoding": "comms-v1 4 -- H, strategy/comms.md",
+        "Log": "packet",
+        "On receipt": "the receiver keeps the heart until it expires",
+        "Outputs": "\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - gl_x[8] -- reported glory heart x\n  - gl_y[8] -- reported glory heart y\n  - gl_until[8] -- reported expiry tick, or 0\n  - gl_t[8] -- tick of the latest report of each slot",
+        "Params": "\n  - h_refresh = 120 ticks [48, 240, 24] -- hand-set, comms.md default\n  - h_match = 200 cm -- hand-set, new. Two reports this close are one heart.",
+        "Send when": "we see a glory heart that no teammate reported recently",
+        "Spec": "In `__send`, consider hearts i with `i < gloryHeartCount() AND i < 8` and `gloryHeartTicksLeft(i) >= 0`.\n  Skip a heart when any slot j has `gl_until(j) > worldTick` and `worldTick - gl_t(j) < h_refresh`, within h_match of `(gl_x(j), gl_y(j))`.\n  Also skip it when any own slot k has `hs_t(k) > 0` and `worldTick + 1 - hs_t(k) < h_refresh`, within h_match of `(hs_x(k), hs_y(k))`.\n  Choose the lowest remaining i. Call `cm__send(4, left, 0, cell, quiet)` with `left = gloryHeartTicksLeft(i)` clamped to 0..720.\n  Use the cell of `(gloryHeartX(i), gloryHeartY(i))` and quiet of `SK.motor`.\n  When `cm__sent = 1`, use the own slot k within h_match of the heart, else the slot with the smallest hs_t.\n  Set `hs_x(k)`, `hs_y(k)` to the heart and `hs_t(k) = worldTick + 1`. hs_x, hs_y and\n  hs_t are private arrays of 8 cells. Heart indices can renumber, so memory is matched by position. In\n  `__recv`: decode the cell to `(px, py)`. Use the slot j that is within h_match of `(px, py)`, else the slot\n  with the smallest gl_until. Set `gl_x(j) = px`, `gl_y(j) = py`, `gl_t(j) = worldTick` and `gl_until(j) =\n  worldTick - 1 + cm__fa`. `__recv` runs once for each decoded message of this wire type, after generated code\n  fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender seat) and\n  `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message was sent on tick `worldTick -\n  1`. `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`. It runs only\n  when no message of higher priority was sent this tick. It changes its own memory only after `cm__sent = 1`.\n  A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() + 1`. Encode: `gx =\n  (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255, and `cell = gx +\n  256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w / 2) / 256` and `y =\n  mapMinY() + (gy * h + h / 2) / 256`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Report glory hearts we see, and keep teammates' reports.",
+        "Uses": "`SK.motor`"
+      },
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "gl_t": 8,
+          "gl_until": 8,
+          "gl_x": 8,
+          "gl_y": 8,
+          "packet": 2
+        },
+        "params": [
+          "h_refresh",
+          "h_match"
+        ]
+      },
+      "llm": true,
+      "prefix": "com_glory_seen",
+      "text_hash": "sha256:b50a10ce1b5d715719f51433366239be4c600091f1ca83125b92592903c038e5",
+      "uses": [
+        "SK.motor"
+      ]
+    },
+    "COM.grenade_warning": {
+      "compiled_text": "### COM.grenade_warning\n- Summary: Warn teammates where our grenade will land, and keep their warnings.\n- Spec: In `__send`: when `charging = 1` of `SK.motor` and either `charge_started = 1` of `SK.motor`,\n  `gs_until <= worldTick`, or `(charge_x - gs_x) * (charge_x - gs_x) + (charge_y - gs_y) * (charge_y - gs_y) >\n  g_move * g_move`, call `cm__send(2, release_in, 0, cell, quiet)` with release_in, charge_x and charge_y from `SK.motor`. Use the cell of `(charge_x, charge_y)` and quiet of `SK.motor`. When `cm__sent = 1`, set `gs_x =\n  charge_x`, `gs_y = charge_y` and `gs_until = worldTick + release_in + 24`. In `__recv`: decode the cell to\n  `(px, py)`. Use the slot j (0 to 3) with the smallest gz_until. Set `gz_x(j) = px`, `gz_y(j) = py` and\n  `gz_until(j) = worldTick - 1 + cm__fa + 24`. `__recv` runs once for each decoded message of this wire type,\n  after generated code fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender\n  seat) and `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message was sent on tick\n  `worldTick - 1`. `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`.\n  It runs only when no message of higher priority was sent this tick. It changes its own memory only after\n  `cm__sent = 1`. A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() +\n  1`. Encode: `gx = (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255,\n  and `cell = gx + 256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w /\n  2) / 256` and `y = mapMinY() + (gy * h + h / 2) / 256`.\n- Uses: `SK.motor`\n- Content: the grenade target and the ticks until release\n- Encoding: comms-v1 2 -- G, strategy/comms.md\n- Send when: we charge a grenade, and again if the target moved\n- On receipt: the receiver keeps a zone until 24 ticks after release\n- Directions: both\n- Outputs:\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - gz_x[4] -- zone x\n  - gz_y[4] -- zone y\n  - gz_until[4] -- last tick plus 1 of each zone, or 0\n- Log: packet\n- Params:\n  - g_move = 200 cm [100, 400, 50] -- hand-set, comms.md default\n- Checks (reads):\n  - Acted properly: Reads: `COM.grenade_warning`.packet, PWC.s, replay\n  - Result: Reads: `COM.grenade_warning`.packet, PWC.s, PWC.w, replay\n  - True: Reads: `COM.grenade_warning`.packet, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: each sent packet decodes and its fields match the sender's replay state at the send tick. Reads: `COM.grenade_warning`.packet, PWC.s, replay\n  - Result: teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity. Reads: `COM.grenade_warning`.packet, PWC.s, PWC.w, replay\n  - True: a grenade from the sender lands within 150 cm of the reported cell. Reads: `COM.grenade_warning`.packet, replay",
+        "Content": "the grenade target and the ticks until release",
+        "Directions": "both",
+        "Encoding": "comms-v1 2 -- G, strategy/comms.md",
+        "Log": "packet",
+        "On receipt": "the receiver keeps a zone until 24 ticks after release",
+        "Outputs": "\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - gz_x[4] -- zone x\n  - gz_y[4] -- zone y\n  - gz_until[4] -- last tick plus 1 of each zone, or 0",
+        "Params": "\n  - g_move = 200 cm [100, 400, 50] -- hand-set, comms.md default",
+        "Rationale": "This replaces the literal \"Grenade out!\" shout of the baseline (decided 2026-10-05).",
+        "Send when": "we charge a grenade, and again if the target moved",
+        "Spec": "In `__send`: when `charging = 1` of `SK.motor` and either `charge_started = 1` of `SK.motor`,\n  `gs_until <= worldTick`, or `(charge_x - gs_x) * (charge_x - gs_x) + (charge_y - gs_y) * (charge_y - gs_y) >\n  g_move * g_move`, call `cm__send(2, release_in, 0, cell, quiet)` with release_in, charge_x and charge_y from `SK.motor`. Use the cell of `(charge_x, charge_y)` and quiet of `SK.motor`. When `cm__sent = 1`, set `gs_x =\n  charge_x`, `gs_y = charge_y` and `gs_until = worldTick + release_in + 24`. In `__recv`: decode the cell to\n  `(px, py)`. Use the slot j (0 to 3) with the smallest gz_until. Set `gz_x(j) = px`, `gz_y(j) = py` and\n  `gz_until(j) = worldTick - 1 + cm__fa + 24`. `__recv` runs once for each decoded message of this wire type,\n  after generated code fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender\n  seat) and `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message was sent on tick\n  `worldTick - 1`. `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`.\n  It runs only when no message of higher priority was sent this tick. It changes its own memory only after\n  `cm__sent = 1`. A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() +\n  1`. Encode: `gx = (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255,\n  and `cell = gx + 256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w /\n  2) / 256` and `y = mapMinY() + (gy * h + h / 2) / 256`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Warn teammates where our grenade will land, and keep their warnings.",
+        "Uses": "`SK.motor`"
+      },
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "gz_until": 4,
+          "gz_x": 4,
+          "gz_y": 4,
+          "packet": 2
+        },
+        "params": [
+          "g_move"
+        ]
+      },
+      "llm": true,
+      "prefix": "com_grenade_warning",
+      "text_hash": "sha256:2ac13417e4f4d9e23b9c98e7b45d9237071e9504d64275774060847acdc10e96",
+      "uses": [
+        "SK.motor"
+      ]
+    },
+    "COM.pickup_ready": {
+      "compiled_text": "### COM.pickup_ready\n- Summary: Report a supply that became ready, and keep teammates' ready reports.\n- Spec: In `__send`: when `ready_id >= 0` of `K.pickups`, `ready_tick + 1 > rs_tick` and `worldTick -\n  ready_tick <= event_window`, and `pickupVisible(ready_id)` still holds, call `cm__send(6, ready_id + 256 * ready_kind, 0, cell, quiet)` with the cell\n  of `(ready_x, ready_y)` and quiet of `SK.motor`. When `cm__sent = 1`, set `rs_tick = ready_tick + 1`. In\n  `__recv`: set `j = cm__fa MOD 256`. When `j < 64`, set `rr_kind(j) = cm__fa / 256`, decode the cell to\n  `(rr_x(j), rr_y(j))`, and set `rr_t(j) = worldTick`. `__recv` runs once for each decoded message of this\n  wire type, after generated code fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the\n  claimed sender seat) and `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message was\n  sent on tick `worldTick - 1`. `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB,\n  cell, quiet)`. It runs only when no message of higher priority was sent this tick. It changes its own memory\n  only after `cm__sent = 1`. A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() -\n  mapMinY() + 1`. Encode: `gx = (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped\n  to 0..255, and `cell = gx + 256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx\n  * w + w / 2) / 256` and `y = mapMinY() + (gy * h + h / 2) / 256`.\n- Uses: `K.pickups`, `SK.motor`\n- Content: the station, its kind, and its position\n- Encoding: comms-v1 6 -- R, strategy/comms.md\n- Send when: we see a station ready that our memory did not hold as ready\n- On receipt: the receiver remembers the station as seen ready\n- Directions: both\n- Outputs:\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - rr_x[64] -- reported x of each station\n  - rr_y[64] -- reported y of each station\n  - rr_kind[64] -- reported kind of each station\n  - rr_t[64] -- tick of the latest ready report, or 0\n- Log: packet\n- Params:\n  - event_window = 24 ticks [6, 48, 6] -- hand-set, new. A transition waits this long for the one shout.\n- Checks (reads):\n  - Acted properly: Reads: `COM.pickup_ready`.packet, PWC.s, replay\n  - Result: Reads: `COM.pickup_ready`.packet, PWC.s, PWC.w, replay\n  - True: Reads: `COM.pickup_ready`.packet, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: each sent packet decodes and its fields match the sender's replay state at the send tick. Reads: `COM.pickup_ready`.packet, PWC.s, replay\n  - Result: teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity. Reads: `COM.pickup_ready`.packet, PWC.s, PWC.w, replay\n  - True: the reported station was ready at the send tick in the replay. Reads: `COM.pickup_ready`.packet, replay",
+        "Content": "the station, its kind, and its position",
+        "Directions": "both",
+        "Encoding": "comms-v1 6 -- R, strategy/comms.md",
+        "Log": "packet",
+        "On receipt": "the receiver remembers the station as seen ready",
+        "Outputs": "\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - rr_x[64] -- reported x of each station\n  - rr_y[64] -- reported y of each station\n  - rr_kind[64] -- reported kind of each station\n  - rr_t[64] -- tick of the latest ready report, or 0",
+        "Params": "\n  - event_window = 24 ticks [6, 48, 6] -- hand-set, new. A transition waits this long for the one shout.",
+        "Send when": "we see a station ready that our memory did not hold as ready",
+        "Spec": "In `__send`: when `ready_id >= 0` of `K.pickups`, `ready_tick + 1 > rs_tick` and `worldTick -\n  ready_tick <= event_window`, and `pickupVisible(ready_id)` still holds, call `cm__send(6, ready_id + 256 * ready_kind, 0, cell, quiet)` with the cell\n  of `(ready_x, ready_y)` and quiet of `SK.motor`. When `cm__sent = 1`, set `rs_tick = ready_tick + 1`. In\n  `__recv`: set `j = cm__fa MOD 256`. When `j < 64`, set `rr_kind(j) = cm__fa / 256`, decode the cell to\n  `(rr_x(j), rr_y(j))`, and set `rr_t(j) = worldTick`. `__recv` runs once for each decoded message of this\n  wire type, after generated code fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the\n  claimed sender seat) and `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message was\n  sent on tick `worldTick - 1`. `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB,\n  cell, quiet)`. It runs only when no message of higher priority was sent this tick. It changes its own memory\n  only after `cm__sent = 1`. A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() -\n  mapMinY() + 1`. Encode: `gx = (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped\n  to 0..255, and `cell = gx + 256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx\n  * w + w / 2) / 256` and `y = mapMinY() + (gy * h + h / 2) / 256`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Report a supply that became ready, and keep teammates' ready reports.",
+        "Uses": "`K.pickups`, `SK.motor`"
+      },
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "packet": 2,
+          "rr_kind": 64,
+          "rr_t": 64,
+          "rr_x": 64,
+          "rr_y": 64
+        },
+        "params": [
+          "event_window"
+        ]
+      },
+      "llm": true,
+      "prefix": "com_pickup_ready",
+      "text_hash": "sha256:e3f7157eb590f40fe1191aa7b38837ae92ea2de93a5f21d0e328d33d1f1bf7aa",
+      "uses": [
+        "K.pickups",
+        "SK.motor"
+      ]
+    },
+    "COM.pickup_taken": {
+      "compiled_text": "### COM.pickup_taken\n- Summary: Report a supply we took, and keep teammates' reports of taken supplies.\n- Spec: In `__send`: when `taken_id >= 0` of `K.pickups`, `taken_tick + 1 > ks_tick` and `worldTick -\n  taken_tick <= event_window`, call `cm__send(5, taken_id, left, cell, quiet)` with `left = taken_ready_in -\n  (worldTick - taken_tick)` clamped to 0..720, the cell of `(taken_x, taken_y)` and quiet of `SK.motor`. When\n  `cm__sent = 1`, set `ks_tick = taken_tick + 1`. In `__recv`: when `cm__fa < 64`, set `rk_until(cm__fa) =\n  worldTick - 1 + cm__fb` and `rk_t(cm__fa) = worldTick`. rk_t is the send tick plus 1,\n  so it is comparable to rr_t of a ready report. `__recv` runs once for each decoded message of this wire type, after generated code\n  fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender seat) and\n  `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message was sent on tick `worldTick -\n  1`. `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`. It runs only\n  when no message of higher priority was sent this tick. It changes its own memory only after `cm__sent = 1`.\n  A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() + 1`. Encode: `gx =\n  (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255, and `cell = gx +\n  256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w / 2) / 256` and `y =\n  mapMinY() + (gy * h + h / 2) / 256`.\n- Uses: `K.pickups`, `SK.motor`\n- Content: the station, the ticks until it is ready, and its position\n- Encoding: comms-v1 5 -- K, strategy/comms.md\n- Send when: we took a supply in the last event_window ticks\n- On receipt: the receiver does not walk to that station until it is ready\n- Directions: both\n- Outputs:\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - rk_until[64] -- the tick each station is ready again by report, or 0\n  - rk_t[64] -- send tick plus 1 of the latest empty report, or 0\n- Log: packet\n- Params:\n  - event_window = 24 ticks [6, 48, 6] -- hand-set, new. A take waits this long for the one shout.\n- Checks (reads):\n  - Acted properly: Reads: `COM.pickup_taken`.packet, PWC.s, replay\n  - Result: Reads: `COM.pickup_taken`.packet, PWC.s, PWC.w, replay\n  - True: Reads: `COM.pickup_taken`.packet, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: each sent packet decodes and its fields match the sender's replay state at the send tick. Reads: `COM.pickup_taken`.packet, PWC.s, replay\n  - Result: teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity. Reads: `COM.pickup_taken`.packet, PWC.s, PWC.w, replay\n  - True: the reported station was taken by the sender within event_window ticks before the send in the replay. Reads: `COM.pickup_taken`.packet, replay",
+        "Content": "the station, the ticks until it is ready, and its position",
+        "Directions": "both",
+        "Encoding": "comms-v1 5 -- K, strategy/comms.md",
+        "Log": "packet",
+        "On receipt": "the receiver does not walk to that station until it is ready",
+        "Outputs": "\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - rk_until[64] -- the tick each station is ready again by report, or 0\n  - rk_t[64] -- send tick plus 1 of the latest empty report, or 0",
+        "Params": "\n  - event_window = 24 ticks [6, 48, 6] -- hand-set, new. A take waits this long for the one shout.",
+        "Send when": "we took a supply in the last event_window ticks",
+        "Spec": "In `__send`: when `taken_id >= 0` of `K.pickups`, `taken_tick + 1 > ks_tick` and `worldTick -\n  taken_tick <= event_window`, call `cm__send(5, taken_id, left, cell, quiet)` with `left = taken_ready_in -\n  (worldTick - taken_tick)` clamped to 0..720, the cell of `(taken_x, taken_y)` and quiet of `SK.motor`. When\n  `cm__sent = 1`, set `ks_tick = taken_tick + 1`. In `__recv`: when `cm__fa < 64`, set `rk_until(cm__fa) =\n  worldTick - 1 + cm__fb` and `rk_t(cm__fa) = worldTick`. rk_t is the send tick plus 1,\n  so it is comparable to rr_t of a ready report. `__recv` runs once for each decoded message of this wire type, after generated code\n  fills `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender seat) and\n  `cm__rx_x`, `cm__rx_y` (the sender's exact position at send time). The message was sent on tick `worldTick -\n  1`. `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`. It runs only\n  when no message of higher priority was sent this tick. It changes its own memory only after `cm__sent = 1`.\n  A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() + 1`. Encode: `gx =\n  (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255, and `cell = gx +\n  256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w / 2) / 256` and `y =\n  mapMinY() + (gy * h + h / 2) / 256`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Report a supply we took, and keep teammates' reports of taken supplies.",
+        "Uses": "`K.pickups`, `SK.motor`"
+      },
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "packet": 2,
+          "rk_t": 64,
+          "rk_until": 64
+        },
+        "params": [
+          "event_window"
+        ]
+      },
+      "llm": true,
+      "prefix": "com_pickup_taken",
+      "text_hash": "sha256:a17bf6ff53ee210a97d2d377451bb5f6464a1fdb7c54cf157a6fb72518f067b8",
+      "uses": [
+        "K.pickups",
+        "SK.motor"
+      ]
+    },
+    "COM.under_fire": {
+      "compiled_text": "### COM.under_fire\n- Summary: Report that we lose hit points and see no enemy, and keep the latest such report.\n- Spec: In `__send`: when `hp_drop = 1` of `K.self_motion` and `foes_seen = 0` of `K.contacts`: choose the gun\n  sound i (`soundKind(i) = 1`) with the smallest `soundAge(i)`, for `i < soundCount() AND i < 12`. Set `dir =\n  soundDirection(i)` and `dist = soundDistance(i)`, or `dir = 8` and `dist = 3` when there is none. Call\n  `cm__send(3, hp + 16 * dir, dist, 0, quiet)` with `hp = selfHp` clamped to 0..15 and quiet of `SK.motor`. In\n  `__recv`: set `du_x = cm__rx_x`, `du_y = cm__rx_y`, `du_dir = cm__fa / 16` and `du_until = worldTick +\n  danger_ttl`. `__recv` runs once for each decoded message of this wire type, after generated code fills\n  `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender seat) and `cm__rx_x`,\n  `cm__rx_y` (the sender's exact position at send time). The message was sent on tick `worldTick - 1`.\n  `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`. It runs only\n  when no message of higher priority was sent this tick. It changes its own memory only after `cm__sent = 1`.\n  A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() + 1`. Encode: `gx =\n  (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255, and `cell = gx +\n  256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w / 2) / 256` and `y =\n  mapMinY() + (gy * h + h / 2) / 256`.\n- Uses: `K.self_motion`, `K.contacts`, `SK.motor`\n- Content: our hit points, the gunfire direction octant, and the distance class\n- Encoding: comms-v1 3 -- U, strategy/comms.md\n- Send when: we lost hit points and see no enemy\n- On receipt: the receiver keeps the latest danger area at the sender position\n- Directions: both\n- Outputs:\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - du_x -- sender x of the latest report\n  - du_y -- sender y of the latest report\n  - du_dir -- gunfire octant of the latest report, 8 unknown\n  - du_until -- its last tick plus 1, or 0\n- Log: packet\n- Params:\n  - danger_ttl = 48 ticks [24, 120, 12] -- hand-set, comms.md default\n- Checks (reads):\n  - Acted properly: Reads: `COM.under_fire`.packet, PWC.s, replay\n  - Result: Reads: `COM.under_fire`.packet, PWC.s, PWC.w, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: each sent packet decodes and its fields match the sender's replay state at the send tick. Reads: `COM.under_fire`.packet, PWC.s, replay\n  - Result: teammates alive within 12.8 m of the sender decode it on the next tick, within decode capacity. Reads: `COM.under_fire`.packet, PWC.s, PWC.w, replay",
+        "Content": "our hit points, the gunfire direction octant, and the distance class",
+        "Directions": "both",
+        "Encoding": "comms-v1 3 -- U, strategy/comms.md",
+        "Log": "packet",
+        "On receipt": "the receiver keeps the latest danger area at the sender position",
+        "Outputs": "\n  - packet[2] -- the decoded payload blocks A and B of the last message, filled by generated code\n  - du_x -- sender x of the latest report\n  - du_y -- sender y of the latest report\n  - du_dir -- gunfire octant of the latest report, 8 unknown\n  - du_until -- its last tick plus 1, or 0",
+        "Params": "\n  - danger_ttl = 48 ticks [24, 120, 12] -- hand-set, comms.md default",
+        "Rationale": "The octant and distance class are the engine's sound fields (mechanics.nim soundDirection, emitSound). Gun shots are sound kind 1.",
+        "Send when": "we lost hit points and see no enemy",
+        "Spec": "In `__send`: when `hp_drop = 1` of `K.self_motion` and `foes_seen = 0` of `K.contacts`: choose the gun\n  sound i (`soundKind(i) = 1`) with the smallest `soundAge(i)`, for `i < soundCount() AND i < 12`. Set `dir =\n  soundDirection(i)` and `dist = soundDistance(i)`, or `dir = 8` and `dist = 3` when there is none. Call\n  `cm__send(3, hp + 16 * dir, dist, 0, quiet)` with `hp = selfHp` clamped to 0..15 and quiet of `SK.motor`. In\n  `__recv`: set `du_x = cm__rx_x`, `du_y = cm__rx_y`, `du_dir = cm__fa / 16` and `du_until = worldTick +\n  danger_ttl`. `__recv` runs once for each decoded message of this wire type, after generated code fills\n  `packet`. It reads `cm__fa`, `cm__fb`, `cm__cell`, `cm__speaker` (the claimed sender seat) and `cm__rx_x`,\n  `cm__rx_y` (the sender's exact position at send time). The message was sent on tick `worldTick - 1`.\n  `__send` proposes at most one message with `cm__send(type, fieldsA, fieldsB, cell, quiet)`. It runs only\n  when no message of higher priority was sent this tick. It changes its own memory only after `cm__sent = 1`.\n  A cell packs a point. Set `w = mapMaxX() - mapMinX() + 1` and `h = mapMaxY() - mapMinY() + 1`. Encode: `gx =\n  (x - mapMinX()) * 256 / w` and `gy = (y - mapMinY()) * 256 / h`, each clamped to 0..255, and `cell = gx +\n  256 * gy`. Decode: `gx = cell MOD 256`, `gy = cell / 256`, `x = mapMinX() + (gx * w + w / 2) / 256` and `y =\n  mapMinY() + (gy * h + h / 2) / 256`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Report that we lose hit points and see no enemy, and keep the latest such report.",
+        "Uses": "`K.self_motion`, `K.contacts`, `SK.motor`"
+      },
+      "interface": {
+        "directions": [
+          "recv",
+          "send"
+        ],
+        "outputs": {
+          "du_dir": 1,
+          "du_until": 1,
+          "du_x": 1,
+          "du_y": 1,
+          "packet": 2
+        },
+        "params": [
+          "danger_ttl"
+        ]
+      },
+      "llm": true,
+      "prefix": "com_under_fire",
+      "text_hash": "sha256:8dd3e9fc032475fe2b27b87f983657ad46da95ac91808977b82acba5b66edb81",
+      "uses": [
+        "K.self_motion",
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "K.comms_danger": {
+      "compiled_text": "### K.comms_danger\n- Summary: Live grenade zones and the most recent under-fire area that teammates reported.\n- Spec: In `__update`, on every tick, do these steps. Step 1: for `i = 0` to 3, copy `gz_x(i)`, `gz_y(i)` and\n  `gz_until(i)` of `COM.grenade_warning` into `grenade_x(i)`, `grenade_y(i)` and `grenade_until(i)`. Set\n  `grenade_until(i) = 0` when `gz_until(i) <= worldTick`. Set `zone_count` to the number of i with\n  `grenade_until(i) > worldTick`. Step 2: if `du_until > worldTick` of `COM.under_fire`, set\n  `danger_x = du_x`, `danger_y = du_y`, `danger_dir = du_dir` and `danger_until = du_until`. Else set all four to 0.\n- Sources: messages from `COM.grenade_warning` and `COM.under_fire`\n- Uses: `COM.grenade_warning`, `COM.under_fire`\n- Outputs:\n  - grenade_x[4] -- x of each grenade zone\n  - grenade_y[4] -- y of each grenade zone\n  - grenade_until[4] -- last tick plus 1 of each zone, 0 when expired\n  - zone_count -- live grenade zones\n  - danger_x -- x of the latest under-fire report, or 0\n  - danger_y -- y of the latest under-fire report, or 0\n  - danger_dir -- its gunfire octant 0 to 7, 8 unknown, or 0\n  - danger_until -- its last tick plus 1, 0 when expired\n- Log: zone_count, danger_until every 24 ticks\n- Params:\n  - clear_radius = 450 cm [250, 700, 50] -- hand-set, comms.md grenade_clear_radius default\n- Checks (reads):\n  - Believed: Reads: `K.comms_danger`.zone_count, `K.comms_danger`.danger_until\n  - True: Reads: `COM.grenade_warning`.packet, replay\n",
+      "fields": {
+        "Checks": "\n  - Believed: live zones and the danger expiry are logged. Reads: `K.comms_danger`.zone_count, `K.comms_danger`.danger_until\n  - True: a live zone covers the replay landing point of the reported grenade. Reads: `COM.grenade_warning`.packet, replay",
+        "Log": "zone_count, danger_until every 24 ticks",
+        "Outputs": "\n  - grenade_x[4] -- x of each grenade zone\n  - grenade_y[4] -- y of each grenade zone\n  - grenade_until[4] -- last tick plus 1 of each zone, 0 when expired\n  - zone_count -- live grenade zones\n  - danger_x -- x of the latest under-fire report, or 0\n  - danger_y -- y of the latest under-fire report, or 0\n  - danger_dir -- its gunfire octant 0 to 7, 8 unknown, or 0\n  - danger_until -- its last tick plus 1, 0 when expired",
+        "Params": "\n  - clear_radius = 450 cm [250, 700, 50] -- hand-set, comms.md grenade_clear_radius default",
+        "Rationale": "`SK.motor` reads these outputs and clear_radius. A Skill cannot read a COM component.",
+        "Sources": "messages from `COM.grenade_warning` and `COM.under_fire`",
+        "Spec": "In `__update`, on every tick, do these steps. Step 1: for `i = 0` to 3, copy `gz_x(i)`, `gz_y(i)` and\n  `gz_until(i)` of `COM.grenade_warning` into `grenade_x(i)`, `grenade_y(i)` and `grenade_until(i)`. Set\n  `grenade_until(i) = 0` when `gz_until(i) <= worldTick`. Set `zone_count` to the number of i with\n  `grenade_until(i) > worldTick`. Step 2: if `du_until > worldTick` of `COM.under_fire`, set\n  `danger_x = du_x`, `danger_y = du_y`, `danger_dir = du_dir` and `danger_until = du_until`. Else set all four to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Live grenade zones and the most recent under-fire area that teammates reported.",
+        "Uses": "`COM.grenade_warning`, `COM.under_fire`"
+      },
+      "interface": {
+        "outputs": {
+          "danger_dir": 1,
+          "danger_until": 1,
+          "danger_x": 1,
+          "danger_y": 1,
+          "grenade_until": 4,
+          "grenade_x": 4,
+          "grenade_y": 4,
+          "zone_count": 1
+        },
+        "params": [
+          "clear_radius"
+        ]
+      },
+      "llm": true,
+      "prefix": "k_comms_danger",
+      "text_hash": "sha256:c775c0ad3680892749969efb905bc02bf5abc1186ffdb8459d2be55a1f6b87b6",
+      "uses": [
+        "COM.grenade_warning",
+        "COM.under_fire"
+      ]
+    },
+    "K.contacts": {
+      "compiled_text": "### K.contacts\n- Summary: The visible enemy we fight, friend and hostile classification of visible bodies, the visible\n  enemy carrier, the local fight balance, and the freshest heard enemy.\n- Spec: In `__update`, on every tick, do Steps 0 to 6 in order. A label is an observed seat 0 to 15.\n  Step 0 (classification). For each label `i = 0` to 15 set `friend(i) = 0` and `hostile(i) = 0`. Set\n  `friend(selfId) = 1`. Then, for each `i <> selfId` with `visible(i)`:\n  Step 0a (friendly disguise). If `df_until(i) > worldTick` of `COM.disguise_friend`: when\n  `df_until(i) <> kf_src(i)`, set `kf_x(i) = df_x(i)`, `kf_y(i) = df_y(i)` and `kf_src(i) = df_until(i)`. Then,\n  when `(playerX(i) - kf_x(i)) * (playerX(i) - kf_x(i)) + (playerY(i) - kf_y(i)) * (playerY(i) - kf_y(i)) <=\n  friend_radius * friend_radius`, with friend_radius of `COM.disguise_friend`, set `kf_x(i) = playerX(i)`,\n  `kf_y(i) = playerY(i)` and `friend(i) = 1`, and skip to the next i. A friend record always wins over Step 0c.\n  Step 0b (enemy parity). If `i MOD 2 <> selfTeam`, set `hostile(i) = 1`.\n  Step 0c (teammate parity). Else set `friend(i) = 1`. Then set `hostile(i) = 1` and `friend(i) = 0` when\n  either corroboration holds for body i.\n  Own evidence: `cm__heard_t(i) > 0`, `worldTick + 1 - cm__heard_t(i) <= x_window`, and\n  `(playerX(i) - cm__heard_x(i)) * (playerX(i) - cm__heard_x(i)) + (playerY(i) - cm__heard_y(i)) *\n  (playerY(i) - cm__heard_y(i)) > x_distance * x_distance`. The runtime keeps cm__heard_t, cm__heard_x and\n  cm__heard_y for each claimed sender seat. cm__heard_t holds the receipt tick plus 1, or 0.\n  Two witnesses: `xa_amb(i) = 0`, `xa_t1(i) > worldTick` and `xa_t2(i) > worldTick` of\n  `COM.disguise_alert`, `xa_s1(i) <> xa_s2(i)`, and body i is within x_radius of both `(xa_x1(i), xa_y1(i))`\n  and `(xa_x2(i), xa_y2(i))`. x_window, x_distance and x_radius are Params of `COM.disguise_alert`.\n  A failed message check alone never sets hostile.\n  Also set `xe_label = -1`, `xe_x = 0` and `xe_y = 0` at the start of Step 0. Set them to i and the body\n  position for the first i (lowest) whose own evidence holds and where `i <> (selfId + 2) MOD 16`.\n  Step 1. Set `best = -1`, `best_cost = 2147483647`, `focus_best = -1`, `focus_cost = 2147483647`,\n  `thief = -1`, `foes_near = 0`, `friends_near = 1` (we count ourselves), `foe_sum_x = 0`,\n  `foe_sum_y = 0` and `foes_seen = 0`.\n  Step 2. For `i = 0` to 15, use seat i only when `i <> selfId AND visible(i)`. Set\n  `dx = playerX(i) - selfX`, `dy = playerY(i) - selfY` and `d2 = dx * dx + dy * dy`.\n  For a hostile body (`hostile(i) = 1`): set `cost = d2 - (3 - playerHp(i)) * hp_weight`. If\n  `playerCarrying(i)`, subtract `carrier_bonus` from cost and set `thief = i`. Then, if\n  `cost < best_cost AND d2 <= range_sq`, set `best = i` and `best_cost = cost`. Then, if\n  `fc_until > worldTick` of `COM.focus_call`, `i = fc_label`, `d2 <= range_sq`, the body is within\n  focus_radius of `(fc_x, fc_y)` (focus_radius of `COM.focus_call`), and `cost < focus_cost`, set\n  `focus_best = i` and `focus_cost = cost`. Then add 1 to `foes_seen`, add `playerX(i)` to `foe_sum_x` and\n  `playerY(i)` to `foe_sum_y`. If `d2 < near_foe_sq`, add 1 to `foes_near`.\n  For a friend body (`friend(i) = 1`): if `d2 < near_friend_sq`, add 1 to `friends_near`.\n  After the loop, set `focus_used = 0`. If `focus_best >= 0`, set `best = focus_best`,\n  `best_cost = focus_cost` and `focus_used = 1`.\n  Step 3. Set `best_vx = 0` and `best_vy = 0`. If `best >= 0 AND seen_tick(best) = worldTick - 1`,\n  set `best_vx = playerX(best) - old_x(best)` and `best_vy = playerY(best) - old_y(best)`.\n  The memory arrays start at 0, so on tick 1 this test compares with 0. Keep that.\n  Step 4. For every seat `i = 0` to 15, our own seat included, with `visible(i)`: set\n  `old_x(i) = playerX(i)`, `old_y(i) = playerY(i)` and `seen_tick(i) = worldTick`.\n  Also set `foe_cx = foe_sum_x / foes_seen` and `foe_cy = foe_sum_y / foes_seen` when\n  `foes_seen > 0`. Else set both to 0.\n  Step 5 (engagers). Set `best_engagers = 0`. If `best >= 0`, count each friend body `i <> selfId` with\n  `visible(i)` and `(playerX(i) - playerX(best)) * (playerX(i) - playerX(best)) + (playerY(i) - playerY(best)) *\n  (playerY(i) - playerY(best)) <= engage_range_sq`.\n  Step 6 (heard enemy). Set `heard_target = -1`, `heard_x = 0`, `heard_y = 0` and `heard_age = 0`. For each\n  label `j = 0` to 15 with `ht_until(j) > worldTick` of `COM.enemy_sighting`, `NOT visible(j)` and `df_until(j) <= worldTick` of `COM.disguise_friend`: choose the j with\n  the largest `ht_t(j)`. Strict greater-than keeps the lowest label on a tie. Set `heard_target = j`,\n  `heard_x = ht_x(j)` and `heard_y = ht_y(j)`.\n- Sources: `selfId`, `selfTeam`, `selfX`, `selfY`, `worldTick`, `visible`, `playerX`, `playerY`,\n  `playerHp`, `playerCarrying`, runtime `cm__heard_t`, `cm__heard_x`, `cm__heard_y`, and messages from\n  `COM.enemy_sighting`, `COM.focus_call`, `COM.disguise_alert`, `COM.disguise_friend`\n- Uses: `COM.enemy_sighting`, `COM.focus_call`, `COM.disguise_alert`, `COM.disguise_friend`\n- Memory: old_x, old_y and seen_tick (16 cells each, private arrays) persist for the whole match.\n  Step 3 reads them before Step 4 overwrites them. That is the same as base.bas, which aims\n  first and updates old positions after aiming. kf_x, kf_y and kf_src (16 cells each, private arrays) track\n  each friendly disguise record from its last matching body.\n- Outputs:\n  - best -- the hostile body to fight, or -1\n  - best_cost -- the cost of best (smaller is more urgent)\n  - best_vx -- best's x movement since the previous tick, or 0\n  - best_vy -- best's y movement since the previous tick, or 0\n  - thief -- the highest-index visible hostile body that carries a heart, or -1\n  - foes_near -- visible hostile bodies closer than 26 m\n  - friends_near -- 1 plus visible friend bodies closer than 12 m\n  - foes_seen -- visible hostile bodies at any range\n  - foe_cx -- mean x of visible hostile bodies, or 0\n  - foe_cy -- mean y of visible hostile bodies, or 0\n  - friend[16] -- 1 for our own seat and each visible body we must not shoot, else 0\n  - hostile[16] -- 1 for each visible body we may fight, else 0\n  - focus_used -- 1 when best came from the focus call\n  - best_engagers -- visible friend bodies other than us within engage range of best\n  - heard_target -- the freshest heard enemy label that is not visible, or -1\n  - heard_x -- its reported x, or 0\n  - heard_y -- its reported y, or 0\n  - xe_label -- the lowest label with own conflicting-position evidence, or -1\n  - xe_x -- the body x for xe_label, or 0\n  - xe_y -- the body y for xe_label, or 0\n- Log: best, foes_near, friends_near, focus_used every 24 ticks\n- Params:\n  - hp_weight = 160000 -- base.bas value, cost bonus per missing hit point\n  - carrier_bonus = 2500000 -- base.bas value, cost bonus of a heart carrier\n  - range_sq = 27562500 square cm -- base.bas value, 52.5 m target range\n  - near_foe_sq = 6760000 square cm -- base.bas value, 26 m\n  - near_friend_sq = 1440000 square cm -- base.bas value, 12 m\n  - engage_range_sq = 4549689 square cm -- hand-set, rules 49 gun reach 2133 cm squared (mechanics.nim ShortGunRange)\n- Checks (reads):\n  - Believed: Reads: `K.contacts`.best, `K.contacts`.foes_near, `K.contacts`.friends_near, `K.contacts`.focus_used\n  - True: Reads: `K.contacts`.best, replay\n  - Acted properly: Reads: `K.contacts`.best, `COM.disguise_friend`.packet, `COM.disguise_alert`.packet, `COM.focus_call`.packet, replay\n  - Result: Reads: `COM.disguise_alert`.packet, replay\n",
+      "fields": {
+        "Checks": "\n  - Believed: best, the near counts and focus_used are logged. Reads: `K.contacts`.best, `K.contacts`.foes_near, `K.contacts`.friends_near, `K.contacts`.focus_used\n  - True: the logged best is a visible hostile body in the replay within range. Reads: `K.contacts`.best, replay\n  - Acted properly: with no friendly disguise, alert or focus message in effect, best equals the baseline choice from observed parity. Reads: `K.contacts`.best, `COM.disguise_friend`.packet, `COM.disguise_alert`.packet, `COM.focus_call`.packet, replay\n  - Result: a body marked hostile because of corroboration is an enemy in the replay. Reads: `COM.disguise_alert`.packet, replay",
+        "Log": "best, foes_near, friends_near, focus_used every 24 ticks",
+        "Memory": "old_x, old_y and seen_tick (16 cells each, private arrays) persist for the whole match.\n  Step 3 reads them before Step 4 overwrites them. That is the same as base.bas, which aims\n  first and updates old positions after aiming. kf_x, kf_y and kf_src (16 cells each, private arrays) track\n  each friendly disguise record from its last matching body.",
+        "Outputs": "\n  - best -- the hostile body to fight, or -1\n  - best_cost -- the cost of best (smaller is more urgent)\n  - best_vx -- best's x movement since the previous tick, or 0\n  - best_vy -- best's y movement since the previous tick, or 0\n  - thief -- the highest-index visible hostile body that carries a heart, or -1\n  - foes_near -- visible hostile bodies closer than 26 m\n  - friends_near -- 1 plus visible friend bodies closer than 12 m\n  - foes_seen -- visible hostile bodies at any range\n  - foe_cx -- mean x of visible hostile bodies, or 0\n  - foe_cy -- mean y of visible hostile bodies, or 0\n  - friend[16] -- 1 for our own seat and each visible body we must not shoot, else 0\n  - hostile[16] -- 1 for each visible body we may fight, else 0\n  - focus_used -- 1 when best came from the focus call\n  - best_engagers -- visible friend bodies other than us within engage range of best\n  - heard_target -- the freshest heard enemy label that is not visible, or -1\n  - heard_x -- its reported x, or 0\n  - heard_y -- its reported y, or 0\n  - xe_label -- the lowest label with own conflicting-position evidence, or -1\n  - xe_x -- the body x for xe_label, or 0\n  - xe_y -- the body y for xe_label, or 0",
+        "Params": "\n  - hp_weight = 160000 -- base.bas value, cost bonus per missing hit point\n  - carrier_bonus = 2500000 -- base.bas value, cost bonus of a heart carrier\n  - range_sq = 27562500 square cm -- base.bas value, 52.5 m target range\n  - near_foe_sq = 6760000 square cm -- base.bas value, 26 m\n  - near_friend_sq = 1440000 square cm -- base.bas value, 12 m\n  - engage_range_sq = 4549689 square cm -- hand-set, rules 49 gun reach 2133 cm squared (mechanics.nim ShortGunRange)",
+        "Rationale": "With no messages, hostile equals enemy parity and friend equals teammate parity, so the\n  baseline choice, counts and costs are unchanged. The focus rule keeps the old cost inside the focus\n  group and the old choice outside it. Heard tracks never become fire targets. They only drive the\n  motor's look when it has no target.",
+        "Sources": "`selfId`, `selfTeam`, `selfX`, `selfY`, `worldTick`, `visible`, `playerX`, `playerY`,\n  `playerHp`, `playerCarrying`, runtime `cm__heard_t`, `cm__heard_x`, `cm__heard_y`, and messages from\n  `COM.enemy_sighting`, `COM.focus_call`, `COM.disguise_alert`, `COM.disguise_friend`",
+        "Spec": "In `__update`, on every tick, do Steps 0 to 6 in order. A label is an observed seat 0 to 15.\n  Step 0 (classification). For each label `i = 0` to 15 set `friend(i) = 0` and `hostile(i) = 0`. Set\n  `friend(selfId) = 1`. Then, for each `i <> selfId` with `visible(i)`:\n  Step 0a (friendly disguise). If `df_until(i) > worldTick` of `COM.disguise_friend`: when\n  `df_until(i) <> kf_src(i)`, set `kf_x(i) = df_x(i)`, `kf_y(i) = df_y(i)` and `kf_src(i) = df_until(i)`. Then,\n  when `(playerX(i) - kf_x(i)) * (playerX(i) - kf_x(i)) + (playerY(i) - kf_y(i)) * (playerY(i) - kf_y(i)) <=\n  friend_radius * friend_radius`, with friend_radius of `COM.disguise_friend`, set `kf_x(i) = playerX(i)`,\n  `kf_y(i) = playerY(i)` and `friend(i) = 1`, and skip to the next i. A friend record always wins over Step 0c.\n  Step 0b (enemy parity). If `i MOD 2 <> selfTeam`, set `hostile(i) = 1`.\n  Step 0c (teammate parity). Else set `friend(i) = 1`. Then set `hostile(i) = 1` and `friend(i) = 0` when\n  either corroboration holds for body i.\n  Own evidence: `cm__heard_t(i) > 0`, `worldTick + 1 - cm__heard_t(i) <= x_window`, and\n  `(playerX(i) - cm__heard_x(i)) * (playerX(i) - cm__heard_x(i)) + (playerY(i) - cm__heard_y(i)) *\n  (playerY(i) - cm__heard_y(i)) > x_distance * x_distance`. The runtime keeps cm__heard_t, cm__heard_x and\n  cm__heard_y for each claimed sender seat. cm__heard_t holds the receipt tick plus 1, or 0.\n  Two witnesses: `xa_amb(i) = 0`, `xa_t1(i) > worldTick` and `xa_t2(i) > worldTick` of\n  `COM.disguise_alert`, `xa_s1(i) <> xa_s2(i)`, and body i is within x_radius of both `(xa_x1(i), xa_y1(i))`\n  and `(xa_x2(i), xa_y2(i))`. x_window, x_distance and x_radius are Params of `COM.disguise_alert`.\n  A failed message check alone never sets hostile.\n  Also set `xe_label = -1`, `xe_x = 0` and `xe_y = 0` at the start of Step 0. Set them to i and the body\n  position for the first i (lowest) whose own evidence holds and where `i <> (selfId + 2) MOD 16`.\n  Step 1. Set `best = -1`, `best_cost = 2147483647`, `focus_best = -1`, `focus_cost = 2147483647`,\n  `thief = -1`, `foes_near = 0`, `friends_near = 1` (we count ourselves), `foe_sum_x = 0`,\n  `foe_sum_y = 0` and `foes_seen = 0`.\n  Step 2. For `i = 0` to 15, use seat i only when `i <> selfId AND visible(i)`. Set\n  `dx = playerX(i) - selfX`, `dy = playerY(i) - selfY` and `d2 = dx * dx + dy * dy`.\n  For a hostile body (`hostile(i) = 1`): set `cost = d2 - (3 - playerHp(i)) * hp_weight`. If\n  `playerCarrying(i)`, subtract `carrier_bonus` from cost and set `thief = i`. Then, if\n  `cost < best_cost AND d2 <= range_sq`, set `best = i` and `best_cost = cost`. Then, if\n  `fc_until > worldTick` of `COM.focus_call`, `i = fc_label`, `d2 <= range_sq`, the body is within\n  focus_radius of `(fc_x, fc_y)` (focus_radius of `COM.focus_call`), and `cost < focus_cost`, set\n  `focus_best = i` and `focus_cost = cost`. Then add 1 to `foes_seen`, add `playerX(i)` to `foe_sum_x` and\n  `playerY(i)` to `foe_sum_y`. If `d2 < near_foe_sq`, add 1 to `foes_near`.\n  For a friend body (`friend(i) = 1`): if `d2 < near_friend_sq`, add 1 to `friends_near`.\n  After the loop, set `focus_used = 0`. If `focus_best >= 0`, set `best = focus_best`,\n  `best_cost = focus_cost` and `focus_used = 1`.\n  Step 3. Set `best_vx = 0` and `best_vy = 0`. If `best >= 0 AND seen_tick(best) = worldTick - 1`,\n  set `best_vx = playerX(best) - old_x(best)` and `best_vy = playerY(best) - old_y(best)`.\n  The memory arrays start at 0, so on tick 1 this test compares with 0. Keep that.\n  Step 4. For every seat `i = 0` to 15, our own seat included, with `visible(i)`: set\n  `old_x(i) = playerX(i)`, `old_y(i) = playerY(i)` and `seen_tick(i) = worldTick`.\n  Also set `foe_cx = foe_sum_x / foes_seen` and `foe_cy = foe_sum_y / foes_seen` when\n  `foes_seen > 0`. Else set both to 0.\n  Step 5 (engagers). Set `best_engagers = 0`. If `best >= 0`, count each friend body `i <> selfId` with\n  `visible(i)` and `(playerX(i) - playerX(best)) * (playerX(i) - playerX(best)) + (playerY(i) - playerY(best)) *\n  (playerY(i) - playerY(best)) <= engage_range_sq`.\n  Step 6 (heard enemy). Set `heard_target = -1`, `heard_x = 0`, `heard_y = 0` and `heard_age = 0`. For each\n  label `j = 0` to 15 with `ht_until(j) > worldTick` of `COM.enemy_sighting`, `NOT visible(j)` and `df_until(j) <= worldTick` of `COM.disguise_friend`: choose the j with\n  the largest `ht_t(j)`. Strict greater-than keeps the lowest label on a tie. Set `heard_target = j`,\n  `heard_x = ht_x(j)` and `heard_y = ht_y(j)`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "The visible enemy we fight, friend and hostile classification of visible bodies, the visible\n  enemy carrier, the local fight balance, and the freshest heard enemy.",
+        "Uses": "`COM.enemy_sighting`, `COM.focus_call`, `COM.disguise_alert`, `COM.disguise_friend`"
+      },
+      "interface": {
+        "outputs": {
+          "best": 1,
+          "best_cost": 1,
+          "best_engagers": 1,
+          "best_vx": 1,
+          "best_vy": 1,
+          "focus_used": 1,
+          "foe_cx": 1,
+          "foe_cy": 1,
+          "foes_near": 1,
+          "foes_seen": 1,
+          "friend": 16,
+          "friends_near": 1,
+          "heard_target": 1,
+          "heard_x": 1,
+          "heard_y": 1,
+          "hostile": 16,
+          "thief": 1,
+          "xe_label": 1,
+          "xe_x": 1,
+          "xe_y": 1
+        },
+        "params": [
+          "hp_weight",
+          "carrier_bonus",
+          "range_sq",
+          "near_foe_sq",
+          "near_friend_sq",
+          "engage_range_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "k_contacts",
+      "text_hash": "sha256:dd0503229b475bdddad47f0c59c3efd21b7f5b45424c92afc027ac1abe60ee13",
+      "uses": [
+        "COM.enemy_sighting",
+        "COM.focus_call",
+        "COM.disguise_alert",
+        "COM.disguise_friend"
+      ]
+    },
+    "K.glory_hearts": {
+      "compiled_text": "### K.glory_hearts\n- Summary: Glory hearts we see or that teammates reported. Memory only. No rule uses it.\n- Spec: In `__update`, on every tick: set `count = 0`, `nearest_x = 0`, `nearest_y = 0`, `nearest_left = 0` and\n  `nearest_d2 = 2147483647`. For `i = 0` while `i < gloryHeartCount() AND i < 8`, use i when\n  `gloryHeartTicksLeft(i) >= 0` (it is in view). For `j = 0` to 7, use j when `gl_until(j) > worldTick` of\n  `COM.glory_seen` and no visible glory heart is within h_match of `(gl_x(j), gl_y(j))`, with h_match of\n  `COM.glory_seen`. For each used heart, add 1 to count. If its squared distance to us is less than nearest_d2,\n  set nearest_d2, nearest_x and nearest_y, and set nearest_left to its ticks left\n  (`gloryHeartTicksLeft(i)`, or `gl_until(j) - worldTick`).\n- Sources: `gloryHeartCount`, `gloryHeartX`, `gloryHeartY`, `gloryHeartTicksLeft`, `selfX`, `selfY`, `worldTick`,\n  and messages from `COM.glory_seen`\n- Uses: `COM.glory_seen`\n- Outputs:\n  - count -- glory hearts known now\n  - nearest_x -- x of the nearest known glory heart, or 0\n  - nearest_y -- y of the nearest known glory heart, or 0\n  - nearest_left -- its ticks left, or 0\n- Log: count, nearest_left every 24 ticks\n- Checks (reads):\n  - Believed: Reads: `K.glory_hearts`.count\n  - True: Reads: `K.glory_hearts`.count, replay\n",
+      "fields": {
+        "Checks": "\n  - Believed: the known count is logged. Reads: `K.glory_hearts`.count\n  - True: each known heart exists in the replay at that point and tick. Reads: `K.glory_hearts`.count, replay",
+        "Log": "count, nearest_left every 24 ticks",
+        "Outputs": "\n  - count -- glory hearts known now\n  - nearest_x -- x of the nearest known glory heart, or 0\n  - nearest_y -- y of the nearest known glory heart, or 0\n  - nearest_left -- its ticks left, or 0",
+        "Sources": "`gloryHeartCount`, `gloryHeartX`, `gloryHeartY`, `gloryHeartTicksLeft`, `selfX`, `selfY`, `worldTick`,\n  and messages from `COM.glory_seen`",
+        "Spec": "In `__update`, on every tick: set `count = 0`, `nearest_x = 0`, `nearest_y = 0`, `nearest_left = 0` and\n  `nearest_d2 = 2147483647`. For `i = 0` while `i < gloryHeartCount() AND i < 8`, use i when\n  `gloryHeartTicksLeft(i) >= 0` (it is in view). For `j = 0` to 7, use j when `gl_until(j) > worldTick` of\n  `COM.glory_seen` and no visible glory heart is within h_match of `(gl_x(j), gl_y(j))`, with h_match of\n  `COM.glory_seen`. For each used heart, add 1 to count. If its squared distance to us is less than nearest_d2,\n  set nearest_d2, nearest_x and nearest_y, and set nearest_left to its ticks left\n  (`gloryHeartTicksLeft(i)`, or `gl_until(j) - worldTick`).",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Glory hearts we see or that teammates reported. Memory only. No rule uses it.",
+        "Uses": "`COM.glory_seen`"
+      },
+      "interface": {
+        "outputs": {
+          "count": 1,
+          "nearest_left": 1,
+          "nearest_x": 1,
+          "nearest_y": 1
+        },
+        "params": []
+      },
+      "llm": true,
+      "prefix": "k_glory_hearts",
+      "text_hash": "sha256:08ee4c2787a2b567bb0a747761cdc19f50d907b206de92f0bfbe81bf1d8f66e2",
+      "uses": [
+        "COM.glory_seen"
+      ]
+    },
+    "K.pickups": {
+      "compiled_text": "### K.pickups\n- Summary: Supplies seen in the last ten seconds, the nearest one we want now, our own supply takes, and\n  supplies that became ready.\n- Spec: In `__update`, on every tick, do Steps 0 to 3 in order.\n  Step 0 (own take, before refresh). Count candidate stations j (`j < pickupCount() AND j < 64`) that meet every condition below.\n  `mem_tick(j) = worldTick` (previously visible and ready). Require `NOT pickupVisible(j)`.\n  `(mem_x(j) - prev_x) * (mem_x(j) - prev_x) + (mem_y(j) - prev_y) * (mem_y(j) - prev_y) <= take_radius_sq`. Require the state change for kind `mem_kind(j)`. The changes by kind are: 0 grenade:\n  `hasGrenade = 1 AND prev_grenade = 0`. 1 spray: `hasSpray = 1 AND prev_spray = 0`. 2 medkit:\n  `selfHp >= prev_hp + 2`. 3 armor: `armorHp = 3 AND prev_armor < 3`. 4 uniform:\n  `hasUniform() = 1 AND prev_uniform = 0`. 5 mister: `mistingTicks() > 0 AND prev_mist = 0`. 6 sniper:\n  `hasSniper() = 1 AND prev_sniper = 0`. 7 radar: `radarTicks() > prev_radar`.\n  When exactly one candidate j exists, set `taken_id = j`, `taken_x = mem_x(j)`, `taken_y = mem_y(j)`,\n  `taken_kind = mem_kind(j)`, `taken_tick = worldTick`, and `taken_ready_in = grenade_delay` for kind 0, else\n  `supply_delay`. Set `own_ready(j) = worldTick + taken_ready_in`. With zero or several candidates, do not\n  change the taken outputs.\n  Step 0b (ready transition). For the lowest j with `pickupVisible(j)` and either `mem_tick(j) = 0` or\n  `own_ready(j) > worldTick` or `rk_until(j) > worldTick` of `COM.pickup_taken`: set `ready_id = j`,\n  `ready_kind = pickupKind(j)`, `ready_x = pickupX(j)`, `ready_y = pickupY(j)` and `ready_tick = worldTick`.\n  Step 0c (state memory). Set `prev_x = selfX`, `prev_y = selfY`, `prev_grenade = hasGrenade`,\n  `prev_spray = hasSpray`, `prev_hp = selfHp`, `prev_armor = armorHp`, `prev_uniform = hasUniform()`,\n  `prev_mist = mistingTicks()`, `prev_sniper = hasSniper()` and `prev_radar = radarTicks()`.\n  Step 1 (refresh). For `i = 0` while `i < pickupCount() AND i < 64`: if `pickupVisible(i)`, set\n  `mem_x(i) = pickupX(i)`, `mem_y(i) = pickupY(i)`, `mem_kind(i) = pickupKind(i)` and\n  `mem_tick(i) = worldTick + 1`. Else, if `rr_t(i) > mem_tick(i)` of `COM.pickup_ready`, set\n  `mem_x(i) = rr_x(i)`, `mem_y(i) = rr_y(i)`, `mem_kind(i) = rr_kind(i)`, `mem_tick(i) = rr_t(i)`\n  and `own_ready(i) = 0`. A newer ready report supersedes an older local empty memory.\n  Step 2 (carrier). Set `carrier = 0`. For `i = 0` to 15, set `carrier = 1` when\n  `i <> selfId AND visible(i) AND i MOD 2 <> selfTeam AND playerCarrying(i)`.\n  Step 3 (choice). Set `nearest = -1`, `nearest_x = 0`, `nearest_y = 0`. Do the rest of this step\n  only when `NOT carrying AND carrier = 0`. Set `nearest_cost = reach_sq`. For `j = 0` while\n  `j < pickupCount() AND j < 64`, use j only when\n  `mem_tick(j) > 0 AND worldTick - mem_tick(j) < memory_ticks`, and skip j when `NOT pickupVisible(j)` and\n  either `own_ready(j) > worldTick` or both `rk_until(j) > worldTick` and `rk_t(j) >= rr_t(j)`.\n  A ready report newer than an empty report supersedes it. An equal-tick empty report wins.\n  Set `kind = mem_kind(j)` and\n  `wanted = (kind = 0 AND NOT hasGrenade) OR (kind = 2 AND selfHp < 3) OR (kind = 3 AND armorHp < 3 AND selfHp = 3)`.\n  If wanted: set `dx = mem_x(j) - selfX`, `dy = mem_y(j) - selfY`, and\n  `cost = dx * dx + dy * dy`. Then, if\n  `kind = 2 AND selfHp = 1`, set `cost = cost / 4`. Then, if\n  `cost < arrive_sq AND NOT pickupVisible(j)`, set `mem_tick(j) = 0` and do not use j. Else, if\n  `cost < nearest_cost`, set `nearest = j` and `nearest_cost = cost`.\n  After the loop, if `nearest >= 0`, set `nearest_x = mem_x(nearest)` and\n  `nearest_y = mem_y(nearest)`.\n  In `__init`, set `taken_id = -1` and `ready_id = -1`, and set every prev_ value from the current host values.\n- Sources: `pickupCount`, `pickupVisible`, `pickupX`, `pickupY`, `pickupKind`, `visible`,\n  `playerCarrying`, `carrying`, `hasGrenade`, `hasSpray`, `hasUniform`, `hasSniper`, `mistingTicks`,\n  `radarTicks`, `selfHp`, `armorHp`, `selfX`, `selfY`, `worldTick`, and messages from `COM.pickup_taken` and\n  `COM.pickup_ready`\n- Uses: `COM.pickup_taken`, `COM.pickup_ready`\n- Memory: mem_x, mem_y, mem_kind, mem_tick and own_ready (64 cells each, private arrays) persist for the whole\n  match and start at 0. prev_x, prev_y and the eight prev_ state values hold the previous living tick.\n  The taken and ready outputs keep their last event until a new one.\n- Outputs:\n  - nearest -- the remembered supply to fetch, or -1\n  - nearest_x -- its remembered x, or 0\n  - nearest_y -- its remembered y, or 0\n  - taken_id -- the station of our last unambiguous take, or -1\n  - taken_x -- its x\n  - taken_y -- its y\n  - taken_kind -- its kind, 0 to 7\n  - taken_ready_in -- ticks from the take until it is ready again\n  - taken_tick -- the tick of that take\n  - ready_id -- the station of our last seen ready transition, or -1\n  - ready_kind -- its kind, 0 to 7\n  - ready_x -- its x\n  - ready_y -- its y\n  - ready_tick -- the tick of that transition\n- Log: nearest, taken_id every 24 ticks\n- Params:\n  - memory_ticks = 240 ticks -- base.bas value, ten seconds\n  - reach_sq = 4840000 square cm -- base.bas value, 22 m\n  - arrive_sq = 10000 square cm -- base.bas value, 1 m. A remembered supply this close and not visible is gone.\n  - take_radius_sq = 14400 square cm -- hand-set, engine take radius 120 cm (mechanics.nim pickupEquipment)\n  - grenade_delay = 120 ticks -- hand-set, engine grenade station delay (mechanics.nim pickupEquipment)\n  - supply_delay = 720 ticks -- hand-set, engine delay of every other station (mechanics.nim pickupEquipment)\n- Checks (reads):\n  - Believed: Reads: `K.pickups`.nearest, `K.pickups`.taken_id\n  - True: Reads: `K.pickups`.nearest, replay\n  - True: Reads: `K.pickups`.taken_id, replay\n",
+      "fields": {
+        "Checks": "\n  - Believed: the chosen supply and our last take are logged. Reads: `K.pickups`.nearest, `K.pickups`.taken_id\n  - True: a supply of the remembered kind was at the remembered point in the replay. Reads: `K.pickups`.nearest, replay\n  - True: each logged take matches a replay pickup event by this seat at that station. Reads: `K.pickups`.taken_id, replay",
+        "Log": "nearest, taken_id every 24 ticks",
+        "Memory": "mem_x, mem_y, mem_kind, mem_tick and own_ready (64 cells each, private arrays) persist for the whole\n  match and start at 0. prev_x, prev_y and the eight prev_ state values hold the previous living tick.\n  The taken and ready outputs keep their last event until a new one.",
+        "Outputs": "\n  - nearest -- the remembered supply to fetch, or -1\n  - nearest_x -- its remembered x, or 0\n  - nearest_y -- its remembered y, or 0\n  - taken_id -- the station of our last unambiguous take, or -1\n  - taken_x -- its x\n  - taken_y -- its y\n  - taken_kind -- its kind, 0 to 7\n  - taken_ready_in -- ticks from the take until it is ready again\n  - taken_tick -- the tick of that take\n  - ready_id -- the station of our last seen ready transition, or -1\n  - ready_kind -- its kind, 0 to 7\n  - ready_x -- its x\n  - ready_y -- its y\n  - ready_tick -- the tick of that transition",
+        "Params": "\n  - memory_ticks = 240 ticks -- base.bas value, ten seconds\n  - reach_sq = 4840000 square cm -- base.bas value, 22 m\n  - arrive_sq = 10000 square cm -- base.bas value, 1 m. A remembered supply this close and not visible is gone.\n  - take_radius_sq = 14400 square cm -- hand-set, engine take radius 120 cm (mechanics.nim pickupEquipment)\n  - grenade_delay = 120 ticks -- hand-set, engine grenade station delay (mechanics.nim pickupEquipment)\n  - supply_delay = 720 ticks -- hand-set, engine delay of every other station (mechanics.nim pickupEquipment)",
+        "Rationale": "Step 2 repeats the carrier test of `K.contacts` because a Knowledge component cannot\n  use another Knowledge component. The result is the same as base.bas's `thief < 0` guard. With no messages\n  and no own take, the choice is the baseline choice. The medkit rule asks for a rise of at least 2 because a\n  windex-mister heals 1 point at a time. A take with more than one candidate is not claimed.",
+        "Sources": "`pickupCount`, `pickupVisible`, `pickupX`, `pickupY`, `pickupKind`, `visible`,\n  `playerCarrying`, `carrying`, `hasGrenade`, `hasSpray`, `hasUniform`, `hasSniper`, `mistingTicks`,\n  `radarTicks`, `selfHp`, `armorHp`, `selfX`, `selfY`, `worldTick`, and messages from `COM.pickup_taken` and\n  `COM.pickup_ready`",
+        "Spec": "In `__update`, on every tick, do Steps 0 to 3 in order.\n  Step 0 (own take, before refresh). Count candidate stations j (`j < pickupCount() AND j < 64`) that meet every condition below.\n  `mem_tick(j) = worldTick` (previously visible and ready). Require `NOT pickupVisible(j)`.\n  `(mem_x(j) - prev_x) * (mem_x(j) - prev_x) + (mem_y(j) - prev_y) * (mem_y(j) - prev_y) <= take_radius_sq`. Require the state change for kind `mem_kind(j)`. The changes by kind are: 0 grenade:\n  `hasGrenade = 1 AND prev_grenade = 0`. 1 spray: `hasSpray = 1 AND prev_spray = 0`. 2 medkit:\n  `selfHp >= prev_hp + 2`. 3 armor: `armorHp = 3 AND prev_armor < 3`. 4 uniform:\n  `hasUniform() = 1 AND prev_uniform = 0`. 5 mister: `mistingTicks() > 0 AND prev_mist = 0`. 6 sniper:\n  `hasSniper() = 1 AND prev_sniper = 0`. 7 radar: `radarTicks() > prev_radar`.\n  When exactly one candidate j exists, set `taken_id = j`, `taken_x = mem_x(j)`, `taken_y = mem_y(j)`,\n  `taken_kind = mem_kind(j)`, `taken_tick = worldTick`, and `taken_ready_in = grenade_delay` for kind 0, else\n  `supply_delay`. Set `own_ready(j) = worldTick + taken_ready_in`. With zero or several candidates, do not\n  change the taken outputs.\n  Step 0b (ready transition). For the lowest j with `pickupVisible(j)` and either `mem_tick(j) = 0` or\n  `own_ready(j) > worldTick` or `rk_until(j) > worldTick` of `COM.pickup_taken`: set `ready_id = j`,\n  `ready_kind = pickupKind(j)`, `ready_x = pickupX(j)`, `ready_y = pickupY(j)` and `ready_tick = worldTick`.\n  Step 0c (state memory). Set `prev_x = selfX`, `prev_y = selfY`, `prev_grenade = hasGrenade`,\n  `prev_spray = hasSpray`, `prev_hp = selfHp`, `prev_armor = armorHp`, `prev_uniform = hasUniform()`,\n  `prev_mist = mistingTicks()`, `prev_sniper = hasSniper()` and `prev_radar = radarTicks()`.\n  Step 1 (refresh). For `i = 0` while `i < pickupCount() AND i < 64`: if `pickupVisible(i)`, set\n  `mem_x(i) = pickupX(i)`, `mem_y(i) = pickupY(i)`, `mem_kind(i) = pickupKind(i)` and\n  `mem_tick(i) = worldTick + 1`. Else, if `rr_t(i) > mem_tick(i)` of `COM.pickup_ready`, set\n  `mem_x(i) = rr_x(i)`, `mem_y(i) = rr_y(i)`, `mem_kind(i) = rr_kind(i)`, `mem_tick(i) = rr_t(i)`\n  and `own_ready(i) = 0`. A newer ready report supersedes an older local empty memory.\n  Step 2 (carrier). Set `carrier = 0`. For `i = 0` to 15, set `carrier = 1` when\n  `i <> selfId AND visible(i) AND i MOD 2 <> selfTeam AND playerCarrying(i)`.\n  Step 3 (choice). Set `nearest = -1`, `nearest_x = 0`, `nearest_y = 0`. Do the rest of this step\n  only when `NOT carrying AND carrier = 0`. Set `nearest_cost = reach_sq`. For `j = 0` while\n  `j < pickupCount() AND j < 64`, use j only when\n  `mem_tick(j) > 0 AND worldTick - mem_tick(j) < memory_ticks`, and skip j when `NOT pickupVisible(j)` and\n  either `own_ready(j) > worldTick` or both `rk_until(j) > worldTick` and `rk_t(j) >= rr_t(j)`.\n  A ready report newer than an empty report supersedes it. An equal-tick empty report wins.\n  Set `kind = mem_kind(j)` and\n  `wanted = (kind = 0 AND NOT hasGrenade) OR (kind = 2 AND selfHp < 3) OR (kind = 3 AND armorHp < 3 AND selfHp = 3)`.\n  If wanted: set `dx = mem_x(j) - selfX`, `dy = mem_y(j) - selfY`, and\n  `cost = dx * dx + dy * dy`. Then, if\n  `kind = 2 AND selfHp = 1`, set `cost = cost / 4`. Then, if\n  `cost < arrive_sq AND NOT pickupVisible(j)`, set `mem_tick(j) = 0` and do not use j. Else, if\n  `cost < nearest_cost`, set `nearest = j` and `nearest_cost = cost`.\n  After the loop, if `nearest >= 0`, set `nearest_x = mem_x(nearest)` and\n  `nearest_y = mem_y(nearest)`.\n  In `__init`, set `taken_id = -1` and `ready_id = -1`, and set every prev_ value from the current host values.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Supplies seen in the last ten seconds, the nearest one we want now, our own supply takes, and\n  supplies that became ready.",
+        "Uses": "`COM.pickup_taken`, `COM.pickup_ready`"
+      },
+      "interface": {
+        "outputs": {
+          "nearest": 1,
+          "nearest_x": 1,
+          "nearest_y": 1,
+          "ready_id": 1,
+          "ready_kind": 1,
+          "ready_tick": 1,
+          "ready_x": 1,
+          "ready_y": 1,
+          "taken_id": 1,
+          "taken_kind": 1,
+          "taken_ready_in": 1,
+          "taken_tick": 1,
+          "taken_x": 1,
+          "taken_y": 1
+        },
+        "params": [
+          "memory_ticks",
+          "reach_sq",
+          "arrive_sq",
+          "take_radius_sq",
+          "grenade_delay",
+          "supply_delay"
+        ]
+      },
+      "llm": true,
+      "prefix": "k_pickups",
+      "text_hash": "sha256:078751acc541fdc6962b03cf3f128fe1087e86c9f6f8fea949bb1d83c7219521",
+      "uses": [
+        "COM.pickup_taken",
+        "COM.pickup_ready"
+      ]
+    },
+    "K.self_motion": {
+      "compiled_text": "### K.self_motion\n- Summary: Our own movement since the previous tick, and whether we lost hit points.\n- Spec: In `__init`, set `last_x = selfX`, `last_y = selfY`, `last_hp = selfHp`, `last_uniform = 0` and\n  `uniform_since = 0`. In `__update`, on every tick, do\n  these steps in order. Step 1: set `vx = selfX - last_x` and `vy = selfY - last_y`. Step 2: if\n  `vx > teleport_step OR vx < 0 - teleport_step OR vy > teleport_step OR vy < 0 - teleport_step`,\n  set `vx = 0`, `vy = 0` and `teleported = 1`. Else set `teleported = 0`. Step 3: set\n  `last_x = selfX` and `last_y = selfY`. Step 4: set `hp_drop = 1` when `selfHp < last_hp`, else set\n  `hp_drop = 0`. Then set `last_hp = selfHp`. Step 5: if `hasUniform() = 1 AND last_uniform = 0`, set\n  `uniform_since = worldTick + 1`. If `hasUniform() = 0`, set `uniform_since = 0`. Then set\n  `last_uniform = hasUniform()`.\n- Sources: `selfX`, `selfY`, `selfHp`, `hasUniform`\n- Memory: last_x, last_y, last_hp and last_uniform, our position, hit points and uniform on the previous living\n  tick. Never reset.\n- Outputs:\n  - vx -- our x movement since the previous tick, cm per tick (0 after a teleport)\n  - vy -- our y movement since the previous tick, cm per tick (0 after a teleport)\n  - teleported -- 1 when the movement was a respawn jump, else 0\n  - hp_drop -- 1 when selfHp is lower than on the previous living tick, else 0\n  - uniform_since -- the tick plus 1 when the current disguise started, or 0 when not disguised\n- Params:\n  - teleport_step = 60 cm -- base.bas value. A respawn moves more than this on one axis.\n- Checks (reads):\n  - True: Reads: replay\n  - True: Reads: replay\n",
+      "fields": {
+        "Checks": "\n  - True: vx and vy equal the replay position change, except both are zero on initialization or when either axis exceeds teleport_step. Reads: replay\n  - True: hp_drop is 1 exactly on living ticks where the replay hit points fell. Reads: replay",
+        "Memory": "last_x, last_y, last_hp and last_uniform, our position, hit points and uniform on the previous living\n  tick. Never reset.",
+        "Outputs": "\n  - vx -- our x movement since the previous tick, cm per tick (0 after a teleport)\n  - vy -- our y movement since the previous tick, cm per tick (0 after a teleport)\n  - teleported -- 1 when the movement was a respawn jump, else 0\n  - hp_drop -- 1 when selfHp is lower than on the previous living tick, else 0\n  - uniform_since -- the tick plus 1 when the current disguise started, or 0 when not disguised",
+        "Params": "\n  - teleport_step = 60 cm -- base.bas value. A respawn moves more than this on one axis.",
+        "Rationale": "base.bas computes myVX and myVY at the top of the tick and stores lastX at the end.\n  selfX does not change during a tick, so storing it here gives the same values. hp_drop feeds\n  `COM.under_fire` and uniform_since feeds `COM.disguise_friend`, because a COM send does not run on every\n  tick. Steps 1 to 3 are unchanged.",
+        "Sources": "`selfX`, `selfY`, `selfHp`, `hasUniform`",
+        "Spec": "In `__init`, set `last_x = selfX`, `last_y = selfY`, `last_hp = selfHp`, `last_uniform = 0` and\n  `uniform_since = 0`. In `__update`, on every tick, do\n  these steps in order. Step 1: set `vx = selfX - last_x` and `vy = selfY - last_y`. Step 2: if\n  `vx > teleport_step OR vx < 0 - teleport_step OR vy > teleport_step OR vy < 0 - teleport_step`,\n  set `vx = 0`, `vy = 0` and `teleported = 1`. Else set `teleported = 0`. Step 3: set\n  `last_x = selfX` and `last_y = selfY`. Step 4: set `hp_drop = 1` when `selfHp < last_hp`, else set\n  `hp_drop = 0`. Then set `last_hp = selfHp`. Step 5: if `hasUniform() = 1 AND last_uniform = 0`, set\n  `uniform_since = worldTick + 1`. If `hasUniform() = 0`, set `uniform_since = 0`. Then set\n  `last_uniform = hasUniform()`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Our own movement since the previous tick, and whether we lost hit points."
+      },
+      "interface": {
+        "outputs": {
+          "hp_drop": 1,
+          "teleported": 1,
+          "uniform_since": 1,
+          "vx": 1,
+          "vy": 1
+        },
+        "params": [
+          "teleport_step"
+        ]
+      },
+      "llm": true,
+      "prefix": "k_self_motion",
+      "text_hash": "sha256:d728b0e7a4b728c002b2f3aa5c914b09f3700b55ec2fdcf68dc431ba2ae10102",
+      "uses": []
+    },
+    "K.squad_target": {
+      "compiled_text": "### K.squad_target\n- Summary: The heart that our squad of four attacks, derived from squad arithmetic, heart\n  ownership and our own avoid memory.\n- Spec: In `__update`, on every tick, do Steps 1 to 4 in order.\n  Step 1 (stall memory). This step reads the value of `objective` from the previous tick. It is 0\n  before the first assignment, not -1. When `worldTick MOD progress_period = 0`: set\n  `px = selfX - progress_x` and `py = selfY - progress_y`. If\n  `px * px + py * py < stall_sq AND objective >= 0 AND objective < 64`, set\n  `hx = controlX(objective) - selfX` and `hy = controlY(objective) - selfY`. If\n  `hx * hx + hy * hy > far_sq`, set `avoid_until(objective) = worldTick + avoid_ticks`. Then, on\n  every tick where `worldTick MOD progress_period = 0`, set `progress_x = selfX` and\n  `progress_y = selfY`.\n  Step 2 (squad). Set `member = (selfId / 2) MOD 8`, `squad = member / 4`, `seat = member MOD 4`.\n  Step 3 (target). Set `objective = -1`. If `heartCount() > 0`, do the two passes below. Else\n  skip to Step 4.\n  Set `other = -1`. Run `pass = 0` then `pass = 1`. In each pass, set `ref_y = homeY - ref_offset`\n  for pass 0, and `ref_y = homeY + ref_offset` for pass 1. Then, if `selfTeam = 1`, set\n  `ref_y = mirror_y - ref_y`. Set `choice = -1` and `choice_cost = 2147483647`.\n  For `j = 0` while `j < heartCount() AND j < 64`, skip j when `controlOwner(j) = selfTeam` or `j = other`. Else set\n  `dx = (controlX(j) - homeX) / 8`, `dy = (controlY(j) - ref_y) / 8`, and\n  `cost = dx * dx + dy * dy`. If `controlOwner(j) = -1`, subtract `neutral_bonus` from cost. If\n  `pass = squad AND avoid_until(j) > worldTick`, add `avoid_penalty` to cost. If\n  `cost < choice_cost`, set `choice = j` and `choice_cost = cost`. Strict less-than keeps the\n  lowest index on a tie.\n  At the end of each pass: if `pass = squad`, set `objective = choice`. Else, if `pass < squad`,\n  set `other = choice`. After both passes: if `objective < 0 AND other >= 0`, set\n  `objective = other`.\n  Step 4 (idle capture). If `objective >= 0 AND seat >= 2`: if\n  `controlCaptureTeam(objective) = selfTeam`, set `idle_capture = 0`. Else add 1 to\n  `idle_capture`. In all other cases do not change `idle_capture`.\n  Also set `heart_count = heartCount()` on every tick.\n- Sources: `selfId`, `selfTeam`, `selfX`, `selfY`, `homeX`, `homeY`, `worldTick`, `heartCount`,\n  `controlX`, `controlY`, `controlOwner`, `controlCaptureTeam`\n- Memory: avoid_until (64 cells, a private array, ticks), progress_x, progress_y, objective and\n  idle_capture persist for the whole match. Nothing resets them on death, respawn or a rule\n  change. All start at 0.\n- Outputs:\n  - objective -- the target heart index, or -1 when there is none\n  - squad -- 0 or 1, from selfId\n  - seat -- 0 to 3, our place in the squad (2 and 3 cover)\n  - idle_capture -- ticks in a row that our team was not capturing the objective (cover seats)\n  - heart_count -- heartCount() on this tick\n- Log: objective, idle_capture every 24 ticks\n- Params:\n  - progress_period = 72 ticks -- base.bas value, three seconds\n  - stall_sq = 40000 square cm -- base.bas value, less than 2 m of progress\n  - far_sq = 160000 square cm -- base.bas value, more than 4 m from the heart\n  - avoid_ticks = 360 ticks -- base.bas value, fifteen seconds\n  - ref_offset = 1500 cm -- base.bas value, squad reference point above or below home\n  - mirror_y = 4000 cm -- base.bas value, blue mirrors the reference y about this line\n  - neutral_bonus = 20000 -- base.bas value, cost bonus of a neutral heart\n  - avoid_penalty = 4000000 -- base.bas value, cost added to an avoided heart on our own pass\n- Checks (reads):\n  - Believed: Reads: `K.squad_target`.objective\n  - True: Reads: `K.squad_target`.objective, replay\n",
+      "fields": {
+        "Checks": "\n  - Believed: objective is logged as a heart index or -1. Reads: `K.squad_target`.objective\n  - True: the logged objective equals the replay re-computation using public heart state and this cog's reconstructed avoid memory. Reads: `K.squad_target`.objective, replay",
+        "Log": "objective, idle_capture every 24 ticks",
+        "Memory": "avoid_until (64 cells, a private array, ticks), progress_x, progress_y, objective and\n  idle_capture persist for the whole match. Nothing resets them on death, respawn or a rule\n  change. All start at 0.",
+        "Outputs": "\n  - objective -- the target heart index, or -1 when there is none\n  - squad -- 0 or 1, from selfId\n  - seat -- 0 to 3, our place in the squad (2 and 3 cover)\n  - idle_capture -- ticks in a row that our team was not capturing the objective (cover seats)\n  - heart_count -- heartCount() on this tick",
+        "Params": "\n  - progress_period = 72 ticks -- base.bas value, three seconds\n  - stall_sq = 40000 square cm -- base.bas value, less than 2 m of progress\n  - far_sq = 160000 square cm -- base.bas value, more than 4 m from the heart\n  - avoid_ticks = 360 ticks -- base.bas value, fifteen seconds\n  - ref_offset = 1500 cm -- base.bas value, squad reference point above or below home\n  - mirror_y = 4000 cm -- base.bas value, blue mirrors the reference y about this line\n  - neutral_bonus = 20000 -- base.bas value, cost bonus of a neutral heart\n  - avoid_penalty = 4000000 -- base.bas value, cost added to an avoided heart on our own pass",
+        "Rationale": "base.bas says the target is a pure function of public heart state. That is not\n  exactly true. Each cog applies its own avoid_until memory in its own pass. A squad 1 cog\n  predicts the squad 0 choice without squad 0's avoid memory. So two cogs of one squad can\n  disagree after one of them marks a heart as stalled.",
+        "Sources": "`selfId`, `selfTeam`, `selfX`, `selfY`, `homeX`, `homeY`, `worldTick`, `heartCount`,\n  `controlX`, `controlY`, `controlOwner`, `controlCaptureTeam`",
+        "Spec": "In `__update`, on every tick, do Steps 1 to 4 in order.\n  Step 1 (stall memory). This step reads the value of `objective` from the previous tick. It is 0\n  before the first assignment, not -1. When `worldTick MOD progress_period = 0`: set\n  `px = selfX - progress_x` and `py = selfY - progress_y`. If\n  `px * px + py * py < stall_sq AND objective >= 0 AND objective < 64`, set\n  `hx = controlX(objective) - selfX` and `hy = controlY(objective) - selfY`. If\n  `hx * hx + hy * hy > far_sq`, set `avoid_until(objective) = worldTick + avoid_ticks`. Then, on\n  every tick where `worldTick MOD progress_period = 0`, set `progress_x = selfX` and\n  `progress_y = selfY`.\n  Step 2 (squad). Set `member = (selfId / 2) MOD 8`, `squad = member / 4`, `seat = member MOD 4`.\n  Step 3 (target). Set `objective = -1`. If `heartCount() > 0`, do the two passes below. Else\n  skip to Step 4.\n  Set `other = -1`. Run `pass = 0` then `pass = 1`. In each pass, set `ref_y = homeY - ref_offset`\n  for pass 0, and `ref_y = homeY + ref_offset` for pass 1. Then, if `selfTeam = 1`, set\n  `ref_y = mirror_y - ref_y`. Set `choice = -1` and `choice_cost = 2147483647`.\n  For `j = 0` while `j < heartCount() AND j < 64`, skip j when `controlOwner(j) = selfTeam` or `j = other`. Else set\n  `dx = (controlX(j) - homeX) / 8`, `dy = (controlY(j) - ref_y) / 8`, and\n  `cost = dx * dx + dy * dy`. If `controlOwner(j) = -1`, subtract `neutral_bonus` from cost. If\n  `pass = squad AND avoid_until(j) > worldTick`, add `avoid_penalty` to cost. If\n  `cost < choice_cost`, set `choice = j` and `choice_cost = cost`. Strict less-than keeps the\n  lowest index on a tie.\n  At the end of each pass: if `pass = squad`, set `objective = choice`. Else, if `pass < squad`,\n  set `other = choice`. After both passes: if `objective < 0 AND other >= 0`, set\n  `objective = other`.\n  Step 4 (idle capture). If `objective >= 0 AND seat >= 2`: if\n  `controlCaptureTeam(objective) = selfTeam`, set `idle_capture = 0`. Else add 1 to\n  `idle_capture`. In all other cases do not change `idle_capture`.\n  Also set `heart_count = heartCount()` on every tick.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "The heart that our squad of four attacks, derived from squad arithmetic, heart\n  ownership and our own avoid memory."
+      },
+      "interface": {
+        "outputs": {
+          "heart_count": 1,
+          "idle_capture": 1,
+          "objective": 1,
+          "seat": 1,
+          "squad": 1
+        },
+        "params": [
+          "progress_period",
+          "stall_sq",
+          "far_sq",
+          "avoid_ticks",
+          "ref_offset",
+          "mirror_y",
+          "neutral_bonus",
+          "avoid_penalty"
+        ]
+      },
+      "llm": true,
+      "prefix": "k_squad_target",
+      "text_hash": "sha256:26554aca4446eb9ea610ec3ca9ca1ade3ba7d11028b4e5b3abef7707c0fccd75",
+      "uses": []
+    },
+    "P.chargeGrenade": {
+      "compiled_text": "### P.chargeGrenade\n- Summary: Charge a grenade, or throw it.\n- Spec: Host command `chargeGrenade(flag)`. A tick with flag 0 after charging throws the grenade.\n",
+      "fields": {
+        "Spec": "Host command `chargeGrenade(flag)`. A tick with flag 0 after charging throws the grenade.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Charge a grenade, or throw it."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "p_chargegrenade",
+      "text_hash": "sha256:4cf32f39b9e8d02fca7a984c19d94d51b9f974b38df473e935cd9fe00b96d737",
+      "uses": []
+    },
+    "P.lookAt": {
+      "compiled_text": "### P.lookAt\n- Summary: Turn to face a point.\n- Spec: Host command `lookAt(x, y)`.\n",
+      "fields": {
+        "Spec": "Host command `lookAt(x, y)`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Turn to face a point."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "p_lookat",
+      "text_hash": "sha256:170a72d13fded7aca0a0048425c85092c83318df0a9fbe9efc6033f19e875e88",
+      "uses": []
+    },
+    "P.shootAt": {
+      "compiled_text": "### P.shootAt\n- Summary: Order a gun shot at a point.\n- Spec: Host command `shootAt(x, y)`. The ray leaves six moves after the order.\n",
+      "fields": {
+        "Spec": "Host command `shootAt(x, y)`. The ray leaves six moves after the order.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Order a gun shot at a point."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "p_shootat",
+      "text_hash": "sha256:8506eab3254d3208ee361dcb0f89b3d2c228f3e80ebed26370d24dde6f65d905",
+      "uses": []
+    },
+    "P.shout": {
+      "compiled_text": "### P.shout\n- Summary: Speak a text message to every cog within 12.8 m.\n- Spec: Host command `shout(strNew(\"text\"))`. Enemies hear it too.\n",
+      "fields": {
+        "Spec": "Host command `shout(strNew(\"text\"))`. Enemies hear it too.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Speak a text message to every cog within 12.8 m."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "p_shout",
+      "text_hash": "sha256:b1058719718b735507e9ebf0cf4c8043e1929bf769e047015a02e3f6aeae502e",
+      "uses": []
+    },
+    "P.walkTo": {
+      "compiled_text": "### P.walkTo\n- Summary: Walk toward a point. The engine paths around walls but not around water.\n- Spec: Host command `walkTo(x, y)`.\n",
+      "fields": {
+        "Spec": "Host command `walkTo(x, y)`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Walk toward a point. The engine paths around walls but not around water."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "p_walkto",
+      "text_hash": "sha256:d09ec33972962737ffc7ac9f3d603b9b5eeb3a72933837ac0a97642274a21915",
+      "uses": []
+    },
+    "S.has_target_heart": {
+      "compiled_text": "### S.has_target_heart\n- Summary: Our squad has a target heart.\n- Spec: Set `on = 1` when objective of `K.squad_target` is 0 or more. Else set `on = 0`.\n- Uses: `K.squad_target`\n- Checks (reads):\n  - Believed: Reads: PWD.f\n",
+      "fields": {
+        "Checks": "\n  - Believed: the flag is logged with the decision. Reads: PWD.f",
+        "Spec": "Set `on = 1` when objective of `K.squad_target` is 0 or more. Else set `on = 0`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Our squad has a target heart.",
+        "Uses": "`K.squad_target`"
+      },
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": []
+      },
+      "llm": true,
+      "prefix": "s_has_target_heart",
+      "text_hash": "sha256:6b60c6ab97e4664fa799fdb79198871401925214fa58d94ce890e32c8b29a453",
+      "uses": [
+        "K.squad_target"
+      ]
+    },
+    "S.losing_fight": {
+      "compiled_text": "### S.losing_fight\n- Summary: We see more near enemies than near friends, so we refuse the fight.\n- Spec: Set `on = 1` when\n  `foes_near - friends_near >= 1 AND NOT carrying AND heart_count > 0`, using the outputs of\n  `K.contacts` and `K.squad_target`. Else set `on = 0`.\n- Uses: `K.contacts`, `K.squad_target`\n- Checks (reads):\n  - Believed: Reads: PWD.f\n",
+      "fields": {
+        "Checks": "\n  - Believed: the flag is logged with the decision. Reads: PWD.f",
+        "Rationale": "The heart_count term covers a base.bas case. With no heart, the retreat block finds\n  no heart and keeps the earlier goal.",
+        "Spec": "Set `on = 1` when\n  `foes_near - friends_near >= 1 AND NOT carrying AND heart_count > 0`, using the outputs of\n  `K.contacts` and `K.squad_target`. Else set `on = 0`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "We see more near enemies than near friends, so we refuse the fight.",
+        "Uses": "`K.contacts`, `K.squad_target`"
+      },
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": []
+      },
+      "llm": true,
+      "prefix": "s_losing_fight",
+      "text_hash": "sha256:26fa46be62e5cbe4549707e0ad8de2284b1b020f3fbbf5a06e33c15e6f295024",
+      "uses": [
+        "K.contacts",
+        "K.squad_target"
+      ]
+    },
+    "S.supply_worth": {
+      "compiled_text": "### S.supply_worth\n- Summary: A wanted supply is remembered and no close fight stops us from fetching it.\n- Spec: Set `on = 1` when `nearest >= 0` of `K.pickups` and\n  `(best < 0 OR best_cost > fight_clear_sq OR selfHp = 1)` with best and best_cost of\n  `K.contacts`. Else set `on = 0`.\n- Uses: `K.pickups`, `K.contacts`\n- Params:\n  - fight_clear_sq = 1440000 -- base.bas value, cost above which the target does not hold us\n- Checks (reads):\n  - Believed: Reads: PWD.f\n",
+      "fields": {
+        "Checks": "\n  - Believed: the flag is logged with the decision. Reads: PWD.f",
+        "Params": "\n  - fight_clear_sq = 1440000 -- base.bas value, cost above which the target does not hold us",
+        "Rationale": "`K.pickups` already applies the carrying and carrier guards.",
+        "Spec": "Set `on = 1` when `nearest >= 0` of `K.pickups` and\n  `(best < 0 OR best_cost > fight_clear_sq OR selfHp = 1)` with best and best_cost of\n  `K.contacts`. Else set `on = 0`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "A wanted supply is remembered and no close fight stops us from fetching it.",
+        "Uses": "`K.pickups`, `K.contacts`"
+      },
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": [
+          "fight_clear_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "s_supply_worth",
+      "text_hash": "sha256:562c4fb00dccbe7c5d7f9de4ad3a11e02cae113f436963f0381c63bf9cce40da",
+      "uses": [
+        "K.pickups",
+        "K.contacts"
+      ]
+    },
+    "SK.motor": {
+      "compiled_text": "### SK.motor\n- Summary: The baseline mechanics. Look around, dodge with timed legs, route around water, aim\n  with lead, hold fire on friends, and charge grenades to the range. Step out of reported grenade zones.\n- Spec: The code is authored in `skill.bas`. A capability calls `sk_motor__act(gx, gy, hold)`\n  exactly once on every tick, with its goal point and holding flag. `act` sets `quiet = 0` and\n  `charging = 0`. It runs these parts in order: the gun wait countdown, the look sweep, footwork,\n  grenade-zone avoidance, then the dry route with one `walkTo`. The gun and grenade follow. The look sweep runs\n  only when there is no target. With no target, it faces non-team speech first, then the heard enemy of\n  `K.contacts`, then the latest under-fire report of `K.comms_danger`. Avoidance moves the walk target outside\n  `clear_radius` plus 50 of a live zone when we or the walk target are inside it. Line-clear and grenade safety\n  treat every body with `friend(i) = 1` of `K.contacts` as a friend. `charge_started = 1` on the first tick of a\n  new charge (charging was 0 on the previous act). While the grenade routine orders a charge, `charging = 1`, `charge_x` and `charge_y` are the charge target, and `release_in` is the charge still needed,\n  clamped to 0..24. `sk_motor__sneak(on)` sets `quiet = on` and calls the host command `sneak(on)`.\n  `sk_motor__isqrt(n)` puts the integer square root of n into the output root.\n- Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`, `K.comms_danger`\n- Code: skills/motor/skill.bas\n- Outputs:\n  - root -- the result of the last sk_motor__isqrt call\n  - threw -- 1 on a tick where the grenade charge reached the need, else 0\n  - charging -- 1 on a tick where the grenade routine orders a charge, else 0\n  - charge_started -- 1 on the first tick of a new charge, else 0\n  - charge_x -- x of the charge target\n  - charge_y -- y of the charge target\n  - release_in -- charge ticks still needed, 0 to 24\n  - quiet -- 1 when the capability called sk_motor__sneak(1) this tick, else 0\n- Params:\n  - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route\n  - lead_ticks = 6 ticks -- base.bas value, the gun windup\n  - drift_ticks = 5 ticks -- base.bas value, our own drift to cancel\n  - gun_wait_light = 25 ticks -- base.bas value, gun cooldown\n  - gun_wait_heavy = 73 ticks -- base.bas value, cooldown with armor, in a trench, or carrying\n  - spray_range_sq = 640000 -- base.bas value, the spray gun shoots only below this target cost\n- Checks (reads):\n  - Acted properly: Reads: replay\n  - Acted properly: Reads: `K.comms_danger`.zone_count, replay\n  - Result: Reads: replay\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: a shot is ordered only when the gun wait is zero, the friend line is clear, and the spray range condition holds. Reads: replay\n  - Acted properly: while inside a live reported zone, the walk target is outside the zone. Reads: `K.comms_danger`.zone_count, replay\n  - Result: hit rate per shot at range. Reads: replay",
+        "Code": "skills/motor/skill.bas",
+        "Outputs": "\n  - root -- the result of the last sk_motor__isqrt call\n  - threw -- 1 on a tick where the grenade charge reached the need, else 0\n  - charging -- 1 on a tick where the grenade routine orders a charge, else 0\n  - charge_started -- 1 on the first tick of a new charge, else 0\n  - charge_x -- x of the charge target\n  - charge_y -- y of the charge target\n  - release_in -- charge ticks still needed, 0 to 24\n  - quiet -- 1 when the capability called sk_motor__sneak(1) this tick, else 0",
+        "Params": "\n  - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route\n  - lead_ticks = 6 ticks -- base.bas value, the gun windup\n  - drift_ticks = 5 ticks -- base.bas value, our own drift to cancel\n  - gun_wait_light = 25 ticks -- base.bas value, gun cooldown\n  - gun_wait_heavy = 73 ticks -- base.bas value, cooldown with armor, in a trench, or carrying\n  - spray_range_sq = 640000 -- base.bas value, the spray gun shoots only below this target cost",
+        "Spec": "The code is authored in `skill.bas`. A capability calls `sk_motor__act(gx, gy, hold)`\n  exactly once on every tick, with its goal point and holding flag. `act` sets `quiet = 0` and\n  `charging = 0`. It runs these parts in order: the gun wait countdown, the look sweep, footwork,\n  grenade-zone avoidance, then the dry route with one `walkTo`. The gun and grenade follow. The look sweep runs\n  only when there is no target. With no target, it faces non-team speech first, then the heard enemy of\n  `K.contacts`, then the latest under-fire report of `K.comms_danger`. Avoidance moves the walk target outside\n  `clear_radius` plus 50 of a live zone when we or the walk target are inside it. Line-clear and grenade safety\n  treat every body with `friend(i) = 1` of `K.contacts` as a friend. `charge_started = 1` on the first tick of a\n  new charge (charging was 0 on the previous act). While the grenade routine orders a charge, `charging = 1`, `charge_x` and `charge_y` are the charge target, and `release_in` is the charge still needed,\n  clamped to 0..24. `sk_motor__sneak(on)` sets `quiet = on` and calls the host command `sneak(on)`.\n  `sk_motor__isqrt(n)` puts the integer square root of n into the output root.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "The baseline mechanics. Look around, dodge with timed legs, route around water, aim\n  with lead, hold fire on friends, and charge grenades to the range. Step out of reported grenade zones.",
+        "Uses": "`P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`, `K.comms_danger`"
+      },
+      "interface": {
+        "outputs": {
+          "charge_started": 1,
+          "charge_x": 1,
+          "charge_y": 1,
+          "charging": 1,
+          "quiet": 1,
+          "release_in": 1,
+          "root": 1,
+          "threw": 1
+        },
+        "params": [
+          "wet_cost",
+          "lead_ticks",
+          "drift_ticks",
+          "gun_wait_light",
+          "gun_wait_heavy",
+          "spray_range_sq"
+        ],
+        "subs": {
+          "sk_motor__act": 3,
+          "sk_motor__avoid_grenades": 0,
+          "sk_motor__dry_route": 0,
+          "sk_motor__footwork": 0,
+          "sk_motor__grenade": 0,
+          "sk_motor__gun": 0,
+          "sk_motor__init": 0,
+          "sk_motor__isqrt": 1,
+          "sk_motor__leg_time": 4,
+          "sk_motor__look_around": 0,
+          "sk_motor__next_random": 0,
+          "sk_motor__plan_leg": 2,
+          "sk_motor__sneak": 1,
+          "sk_motor__wet_line": 4
+        }
+      },
+      "llm": false,
+      "prefix": "sk_motor",
+      "text_hash": "sha256:bef87a27ba9c9ff61962f32828e19033019182c5c5cf703dfe4c6eedea53412a",
+      "uses": [
+        "P.walkTo",
+        "P.lookAt",
+        "P.shootAt",
+        "P.chargeGrenade",
+        "K.contacts",
+        "K.self_motion",
+        "K.comms_danger"
+      ]
+    },
+    "ST.commitment": {
+      "compiled_text": "### ST.commitment\n- Summary: Select the best rule on every tick. Keep nothing from earlier ticks.\n- Spec: Switch to the best rule as soon as it differs from the current rule.\n- Params:\n  - min_hold = 0 ticks -- base.bas has no commitment\n  - preempt_margin = 0 points -- base.bas has no commitment\n  - interrupt_at = 0 points -- every better rule interrupts at once\n- Checks (reads):\n  - Acted properly: Reads: PWD.h, PWD.r\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: the selected rule is always the best rule. Reads: PWD.h, PWD.r",
+        "Params": "\n  - min_hold = 0 ticks -- base.bas has no commitment\n  - preempt_margin = 0 points -- base.bas has no commitment\n  - interrupt_at = 0 points -- every better rule interrupts at once",
+        "Spec": "Switch to the best rule as soon as it differs from the current rule.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Select the best rule on every tick. Keep nothing from earlier ticks."
+      },
+      "interface": {
+        "outputs": {},
+        "params": [
+          "min_hold",
+          "preempt_margin",
+          "interrupt_at"
+        ]
+      },
+      "llm": false,
+      "prefix": "st_commitment",
+      "text_hash": "sha256:a62939f54dc93d853ec2c9ac7c926abc8f1103602ad6f4f668012b2d4884ebac",
+      "uses": []
+    },
+    "ST.roles": {
+      "compiled_text": "### ST.roles\n- Summary: Two squads of four per team. Seats 0 and 1 of a squad take the ring, seats 2 and 3 cover.\n- Spec: The squad seat is `((selfId / 2) MOD 8) MOD 4`. Ring seats have squad seat 0 or 1.\n  Cover seats have squad seat 2 or 3.\n- Roles squad:\n  - ring = seats 0,1,2,3,8,9,10,11\n  - cover = seats 4,5,6,7,12,13,14,15\n- Checks (reads):\n  - Acted: Reads: PWD.r\n",
+      "fields": {
+        "Checks": "\n  - Acted: ring seats select only ring or shared rules. Reads: PWD.r",
+        "Roles squad": "\n  - ring = seats 0,1,2,3,8,9,10,11\n  - cover = seats 4,5,6,7,12,13,14,15",
+        "Spec": "The squad seat is `((selfId / 2) MOD 8) MOD 4`. Ring seats have squad seat 0 or 1.\n  Cover seats have squad seat 2 or 3.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Two squads of four per team. Seats 0 and 1 of a squad take the ring, seats 2 and 3 cover."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "st_roles",
+      "text_hash": "sha256:fd0d977e0586776dc72c4de77960d4a50429b94c97a7bd486f7b5c4dc6c073eb",
+      "uses": []
+    },
+    "ST.rules": {
+      "compiled_text": "### ST.rules\n- Summary: Retreat beats resupply, resupply beats the squad target, the squad target beats the default goal.\n- Spec: Evaluate the rules below each tick. The highest priority rule whose condition holds wins.\n- Checks (reads):\n  - Acted properly: Reads: PWD.r, PWD.f, PWP.n\n- `R.fall_back` [400]: WHEN `S.losing_fight` DO `C.fall_back`\n- `R.resupply` [300]: WHEN `S.supply_worth` DO `C.resupply`\n- `R.take_heart` [200]: WHEN `S.has_target_heart` DO `C.take_heart` FOR squad=ring\n- `R.cover_heart` [200]: WHEN `S.has_target_heart` DO `C.cover_heart` FOR squad=cover\n- `R.default_goal` [100]: ALWAYS DO `C.default_goal`\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: re-running selection from the logged flags gives the logged rule. Reads: PWD.r, PWD.f, PWP.n",
+        "Rationale": "base.bas computes one goal and lets later blocks override it. The retreat block\n  comes last, then supply, then the squad target. These priorities give the same order.",
+        "Spec": "Evaluate the rules below each tick. The highest priority rule whose condition holds wins.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Retreat beats resupply, resupply beats the squad target, the squad target beats the default goal."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "st_rules",
+      "text_hash": "sha256:64cfd58c11c5280cedf903bd91cb38db0a077cf93da4022117edae4e5dd6836d",
+      "uses": []
+    }
+  },
+  "created": "2026-10-05T23:52:43.451543+00:00",
+  "diagnostics": [],
+  "engine": {
+    "commit": "244dc62b",
+    "tag": "coworld-v0.3.115"
+  },
+  "full": false,
+  "intent": "behavior_change",
+  "milestone": null,
+  "previous_build": "c03010be-1",
+  "source_commit": "18e0aa1f6501af95e2c98d5d62cdc1fff6fde9f8",
+  "source_hashes": {
+    "paintbot_pw_lab/docs/policy-surface.md": "cd5067efb645a01457f73ebb102f0a0108f5ab64a33cc9984c77eb89bbb4fbd6",
+    "paintbot_pw_lab/reference/base.bas": "3679f5bb91f8cefd8d61a62af556688b1bff7189171fe540999716fb0c41d9d9",
+    "paintbot_pw_lab/strategy/STRATEGY.md": "3bea4f92f624119a1e3338ac721058a95191f9d4065976e4018d6d35017a25cb",
+    "paintbot_pw_lab/strategy/comms.md": "e0f744f7840264d1cbb1b14bcb61493a35b0057ace0e9ce5b89b2af645a9f3ef",
+    "paintbot_pw_lab/strategy/compiler/AGENT.md": "9b5233786dc1bc47a357c6e266defc8f907ceaa27a2feeee69981209a6af67c0",
+    "paintbot_pw_lab/strategy/compiler/LESSONS.md": "810dfc8380ccf3caedd598add08f282944202427ccedadfb3e19c3eb71e5f505",
+    "paintbot_pw_lab/strategy/compiler/config.json": "f0240c328e26289f6ddf41857df3b9eddaafce89404228988303df332c3d2c93",
+    "paintbot_pw_lab/strategy/compiler/runtime/comms.bas": "05639c3995e9d527f0e4b124a3d37b57d76636266102a8da7d21f5c4603d1e4e",
+    "paintbot_pw_lab/strategy/compiler/runtime/lib.bas": "ef0a6b940d95f537ac9623f53d25b6aa26b9e474d311ccb6bc64d89bfa47dee7",
+    "paintbot_pw_lab/strategy/compiler/runtime/main.bas": "735c59e4033a60229b3d8ae3d3128a26d8aac9563873999e0f5db71111a30527",
+    "paintbot_pw_lab/strategy/skills/motor/skill.bas": "0dea990b7e612224bdeb11fcc26794e6edbf0781b5f32621a155f22514c86f18",
+    "paintbot_pw_lab/tools/pw.py": "954672c1b9584cd9d091d7db3b79dccd1f21d8b67bd51bd760b4fa41560784c6",
+    "paintbot_pw_lab/tools/pw_cli.py": "3d988c9504269e7bf6944aec739633df3bddd5e0775e26303f0cd532585d5797",
+    "paintbot_pw_lab/tools/pw_intent.py": "f8ad7ee2ff30bc437637b17d5692fe7879a12627fcbb8d303c94d12c773581fe",
+    "paintbot_pw_lab/tools/pw_local.py": "fb8a1d27ac71adf7a087ec1090d4900edb50de56b2e2f4ab9b0e23e350402947",
+    "paintbot_pw_lab/tools/pw_release.py": "68283656ad029b75f119eb8ef2f9d1d04004979c00a9a70b433409e713b444dd",
+    "paintbot_pw_lab/tools/pw_strategy.py": "e56e3ff1e98d04520569a63a3e5e8005061d624c7f4b287dbe053930ae1f6405",
+    "paintbot_pw_lab/tools/pw_terrain.py": "4ddc544c60f9eed2e9bb737e4534f955bb504f6f178452e375287f438b73eade",
+    "paintbot_pw_lab/tools/release.env": "4aef9931ba55420f85b2f83edadb27debcd2d2dcf1358945c7e81204b2fc098f",
+    "paintbot_pw_lab/tools/strategy_audit.py": "6b276ed3b4924b222839c1d077034b5f7dc32182552079666959ed9a128655f6",
+    "paintbot_pw_lab/tools/strategy_audit_baseline.py": "70ae26dd9bd0a23ced231ec7dfa7e531bdfe794dd1d1df767c2e1cb505a6aa9a",
+    "paintbot_pw_lab/tools/strategy_audit_comms.py": "4ac8e81cb97c445d31df57dd8f287bcc83bd277006f7005078cd802d031b3f83",
+    "paintbot_pw_lab/tools/strategy_audit_runtime.py": "e430c38955632541dbccc854f88bcb34c9e8341e25dd65fb6faacf1c7f60f065",
+    "paintbot_pw_lab/tools/strategy_basic.py": "60878904266355b6874bcc1e2e76ec7a153a96daf2570e5b3e58e9a009d57d3a",
+    "paintbot_pw_lab/tools/strategy_build.py": "c3a3bb7ad42ecce7bbe66698033dc4ce11e9cdcaeda4352fa73f141abd76d2b8",
+    "paintbot_pw_lab/tools/strategy_comms.py": "71fad5fa243465eb71b8a80f6a070ad1554c65452c59220ceef39740cb60f8a7",
+    "paintbot_pw_lab/tools/strategy_format.py": "a81e1d4241122f2d15dc351f70e47c29a9978bff6cb9073b385b8affe987a4ab",
+    "paintbot_pw_lab/tools/strategy_gates.py": "1fe93b05e95983c245cbd8e17eab5ebd53631cadcf4b3c1899dbf27722772ec8"
+  },
+  "source_path": "paintbot_pw_lab/strategy/STRATEGY.md",
+  "units": {
+    "C.cover_heart": "reused",
+    "C.default_goal": "reused",
+    "C.fall_back": "reused",
+    "C.resupply": "reused",
+    "C.take_heart": "reused",
+    "COM.disguise_alert": "reused",
+    "COM.disguise_friend": "reused",
+    "COM.enemy_sighting": "reused",
+    "COM.focus_call": "reused",
+    "COM.glory_seen": "reused",
+    "COM.grenade_warning": "reused",
+    "COM.pickup_ready": "reused",
+    "COM.pickup_taken": "reused",
+    "COM.under_fire": "reused",
+    "K.comms_danger": "reused",
+    "K.contacts": "reused",
+    "K.glory_hearts": "reused",
+    "K.pickups": "reused",
+    "K.self_motion": "reused",
+    "K.squad_target": "reused",
+    "P.chargeGrenade": "reused",
+    "P.lookAt": "reused",
+    "P.shootAt": "reused",
+    "P.shout": "reused",
+    "P.walkTo": "reused",
+    "S.has_target_heart": "reused",
+    "S.losing_fight": "reused",
+    "S.supply_worth": "reused",
+    "SK.motor": "reused",
+    "ST.commitment": "reused",
+    "ST.roles": "reused",
+    "ST.rules": "reused"
+  }
+}

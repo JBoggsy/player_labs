@@ -561,4 +561,10 @@ The first 16-seat telemetry sample decoded all 1,420 eligible teammate deliverie
 reported D/X as not exercised. The semantic audit found two failed grenade landing claims:
 charging stopped early, so the emitted intended target differed from the actual throw.
 Those failures remain visible; transport success does not establish message truth.
-Hosted acceptance and the final exact-build evidence remain pending.
+Final build `18e0aa1f-1` reuses those units and passes G1–G5, with 56 identical-play matches.
+Its six local recordings decode 16,326/16,326 eligible teammate deliveries. Two truth checks
+fail: disguised teammates reported as enemies, and grenade warnings without the predicted
+landing. Grenade association follows the actual charge lifecycle, including held commands
+while disarmed; it has no deadline inferred from the packet estimate. The 150 cm landing
+criterion is unchanged. Full suite: 441 tests. Hosted acceptance is pending in the
+[M3 qualification record](2026-10-05-m3-qualification.md).

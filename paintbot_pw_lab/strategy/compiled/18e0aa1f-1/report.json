@@ -1,0 +1,606 @@
+{
+  "budget": {
+    "array_cells": 2324,
+    "array_cells_limit": 4096,
+    "arrays": 105,
+    "arrays_limit": 256,
+    "globals": 354,
+    "globals_limit": 512,
+    "source_bytes": 127897,
+    "source_limit": 131072,
+    "telemetry": {
+      "bytes": 434,
+      "events": 63,
+      "limit_bytes": 512,
+      "limit_events": 64,
+      "lines": {
+        "PWB": {
+          "bytes": 76,
+          "count": 5,
+          "events": 11
+        },
+        "PWC": {
+          "batch": true,
+          "bytes": 205,
+          "count": 1,
+          "events": 22
+        },
+        "PWD": {
+          "bytes": 50,
+          "count": 1,
+          "events": 11
+        },
+        "PWE": {
+          "bytes": 103,
+          "count": 3,
+          "events": 19
+        },
+        "PWP": {
+          "bytes": 0,
+          "count": 0,
+          "events": 0
+        }
+      },
+      "log_offsets": {
+        "K.comms_danger": 3,
+        "K.contacts": 1,
+        "K.glory_hearts": 4,
+        "K.pickups": 2,
+        "K.squad_target": 0
+      }
+    }
+  },
+  "build_id": "18e0aa1f-1",
+  "error": null,
+  "gaps": [],
+  "gates": {
+    "G1": {
+      "passed": true,
+      "summary": []
+    },
+    "G2": {
+      "passed": true,
+      "summary": {
+        "failures": [],
+        "seats": 16
+      }
+    },
+    "G3": {
+      "limits": {
+        "instructions": 40000,
+        "print_bytes": 512,
+        "print_events": 64,
+        "work": 100000
+      },
+      "max_ticks": 14400,
+      "passed": true,
+      "per_seat": {
+        "instructions": [
+          20766,
+          19545,
+          21185,
+          18909,
+          18832,
+          19894,
+          19258,
+          20295,
+          19639,
+          19136,
+          18728,
+          20682,
+          20134,
+          18615,
+          18330,
+          19741
+        ],
+        "work": [
+          31833,
+          28261,
+          31811,
+          28836,
+          28281,
+          28792,
+          29469,
+          30670,
+          29694,
+          27929,
+          28352,
+          31666,
+          30697,
+          28461,
+          28111,
+          30324
+        ]
+      },
+      "seed": 7,
+      "summary": {
+        "instructions": 21185,
+        "print_bytes": 434,
+        "print_events": 63,
+        "work": 31833
+      }
+    },
+    "G4": {
+      "identical_play": true,
+      "intent": "behavior_change",
+      "matches_with_bad_seats": 0,
+      "outcome_advisory": true,
+      "passed": true,
+      "summary": {
+        "ci95_high": 0.5,
+        "ci95_low": 0.5,
+        "mean_outcome": 0.5,
+        "n_seeds": 28
+      },
+      "warning": null
+    },
+    "G5": {
+      "coverage": {
+        "messages": {
+          "COM.disguise_alert": {
+            "received": 7,
+            "sent": 2
+          },
+          "COM.disguise_friend": {
+            "received": 0,
+            "sent": 0
+          },
+          "COM.enemy_sighting": {
+            "received": 1078,
+            "sent": 684
+          },
+          "COM.focus_call": {
+            "received": 224,
+            "sent": 126
+          },
+          "COM.glory_seen": {
+            "received": 16,
+            "sent": 14
+          },
+          "COM.grenade_warning": {
+            "received": 5,
+            "sent": 3
+          },
+          "COM.pickup_ready": {
+            "received": 313,
+            "sent": 79
+          },
+          "COM.pickup_taken": {
+            "received": 8,
+            "sent": 2
+          },
+          "COM.under_fire": {
+            "received": 0,
+            "sent": 0
+          }
+        },
+        "unexercised_event_fields": [
+          "COM.disguise_friend.packet",
+          "COM.under_fire.packet"
+        ],
+        "unexercised_message_types": [
+          "COM.disguise_friend",
+          "COM.under_fire"
+        ]
+      },
+      "failures": [],
+      "passed": true,
+      "seats": [
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a0/player-0.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 219,
+            "PWD": 92,
+            "PWE": 89,
+            "PWP": 5
+          },
+          "lines": 502,
+          "missing_fields": [],
+          "peak_bytes": 270,
+          "seat": 0
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a0/player-2.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 152,
+            "PWD": 34,
+            "PWE": 5,
+            "PWP": 5
+          },
+          "lines": 319,
+          "missing_fields": [],
+          "peak_bytes": 270,
+          "seat": 2
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a0/player-4.log",
+          "kinds": {
+            "PWB": 115,
+            "PWC": 198,
+            "PWD": 161,
+            "PWE": 213,
+            "PWP": 5
+          },
+          "lines": 653,
+          "missing_fields": [],
+          "peak_bytes": 270,
+          "seat": 4
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a0/player-6.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 68,
+            "PWD": 154,
+            "PWE": 221,
+            "PWP": 5
+          },
+          "lines": 574,
+          "missing_fields": [],
+          "peak_bytes": 270,
+          "seat": 6
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a0/player-8.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 152,
+            "PWD": 141,
+            "PWE": 173,
+            "PWP": 5
+          },
+          "lines": 602,
+          "missing_fields": [],
+          "peak_bytes": 257,
+          "seat": 8
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a0/player-10.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 155,
+            "PWD": 119,
+            "PWE": 155,
+            "PWP": 5
+          },
+          "lines": 556,
+          "missing_fields": [],
+          "peak_bytes": 258,
+          "seat": 10
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a0/player-12.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 236,
+            "PWD": 48,
+            "PWE": 21,
+            "PWP": 5
+          },
+          "lines": 409,
+          "missing_fields": [],
+          "peak_bytes": 263,
+          "seat": 12
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a0/player-14.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 269,
+            "PWD": 129,
+            "PWE": 165,
+            "PWP": 5
+          },
+          "lines": 672,
+          "missing_fields": [],
+          "peak_bytes": 257,
+          "seat": 14
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a1/player-1.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 154,
+            "PWD": 62,
+            "PWE": 49,
+            "PWP": 5
+          },
+          "lines": 393,
+          "missing_fields": [],
+          "peak_bytes": 270,
+          "seat": 1
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a1/player-3.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 133,
+            "PWD": 35,
+            "PWE": 5,
+            "PWP": 5
+          },
+          "lines": 293,
+          "missing_fields": [],
+          "peak_bytes": 258,
+          "seat": 3
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a1/player-5.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 178,
+            "PWD": 84,
+            "PWE": 71,
+            "PWP": 5
+          },
+          "lines": 470,
+          "missing_fields": [],
+          "peak_bytes": 270,
+          "seat": 5
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a1/player-7.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 135,
+            "PWD": 44,
+            "PWE": 17,
+            "PWP": 5
+          },
+          "lines": 320,
+          "missing_fields": [],
+          "peak_bytes": 257,
+          "seat": 7
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a1/player-9.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 141,
+            "PWD": 87,
+            "PWE": 83,
+            "PWP": 5
+          },
+          "lines": 450,
+          "missing_fields": [],
+          "peak_bytes": 270,
+          "seat": 9
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a1/player-11.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 190,
+            "PWD": 174,
+            "PWE": 211,
+            "PWP": 5
+          },
+          "lines": 695,
+          "missing_fields": [],
+          "peak_bytes": 258,
+          "seat": 11
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a1/player-13.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 100,
+            "PWD": 34,
+            "PWE": 5,
+            "PWP": 5
+          },
+          "lines": 270,
+          "missing_fields": [],
+          "peak_bytes": 270,
+          "seat": 13
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a1/player-15.log",
+          "kinds": {
+            "PWB": 150,
+            "PWC": 81,
+            "PWD": 84,
+            "PWE": 69,
+            "PWP": 5
+          },
+          "lines": 372,
+          "missing_fields": [],
+          "peak_bytes": 258,
+          "seat": 15
+        }
+      ],
+      "summary": {
+        "failures": 0,
+        "lines": 7550,
+        "seat_recordings": 16,
+        "unexercised_message_types": [
+          "COM.disguise_friend",
+          "COM.under_fire"
+        ]
+      }
+    }
+  },
+  "guesses": [
+    {
+      "component": "K.squad_target",
+      "decision": "Wrapped the whole stall-memory step in `IF progress_period > 0`, so a tuned value of 0 skips Step 1 instead of dividing by zero.",
+      "id": "G-K.squad_target-1",
+      "severity": "low",
+      "spec_quote": "When `worldTick MOD progress_period = 0`",
+      "state": "open",
+      "why": "AGENTS.md rule 5 requires guarding every MOD; progress_period is a tunable param, not a literal."
+    },
+    {
+      "component": "C.take_heart",
+      "decision": "Read controlX/controlY(objective) without checking objective >= 0. If the activation runs with objective = -1, the host returns -1 (invalid index), so there is no runtime error. The goal is then (-1, -1), which the engine clamps.",
+      "id": "G-C.take_heart-1",
+      "severity": "low",
+      "spec_quote": "`goal_x = controlX(objective)`",
+      "state": "open",
+      "why": "The spec has no objective >= 0 guard here, unlike the default_goal/resupply/fall_back steps. The selector presumably runs this only when S.has_target_heart is on, and controlX(-1) is safe."
+    },
+    {
+      "component": "C.cover_heart",
+      "decision": "Same as C.take_heart: no objective >= 0 guard, relying on controlX(-1) = -1 being safe.",
+      "id": "G-C.cover_heart-1",
+      "severity": "low",
+      "spec_quote": "`hx = controlX(objective)`",
+      "state": "open",
+      "why": "Literal reading of the spec. The host returns -1 for invalid indices instead of raising an error."
+    },
+    {
+      "component": "C.default_goal",
+      "decision": "Used the legacy host fields carrying, ownHeartStolen, heartX and heartY exactly as written. Under rules 47 carrying and ownHeartStolen are always 0 and heartX/heartY read the enemy home, so in practice the goal is the thief (never set, see gaps) or the enemy home.",
+      "id": "G-C.default_goal-1",
+      "severity": "medium",
+      "spec_quote": "else `(heartX, heartY)`",
+      "state": "open",
+      "why": "The spec names these fields explicitly and matches base.bas; I did not substitute control* fields."
+    },
+    {
+      "component": "COM.grenade_out",
+      "decision": "Read sk_motor__threw as left by the most recent SK.motor run before __send. If send runs before motor on a tick, the callout comes one tick late.",
+      "id": "G-COM.grenade_out-1",
+      "severity": "low",
+      "spec_quote": "when threw of `SK.motor` is 1",
+      "state": "possibly resolved",
+      "why": "Call order is generated and not visible to the unit."
+    },
+    {
+      "component": "K.pickups",
+      "decision": "Kept the literal HP thresholds (medkit wanted below 3 HP, armor only at exactly 3 HP, medkit cost quartered at 1 HP) even though rules 49 HP runs 0-10.",
+      "id": "G-K.pickups-1",
+      "severity": "medium",
+      "spec_quote": "(kind = 2 AND selfHp < 3)",
+      "state": "open",
+      "why": "The numbers are written into the Spec, not Params; changing them would be inventing behavior. Under rules 49 armor is rarely wanted and medkits only when nearly dead."
+    },
+    {
+      "component": "K.pickups",
+      "decision": "Step 0 tests mem_tick(j) = worldTick literally, so a take is detected only when the station was in view on the immediately previous tick (mem_tick = previous tick + 1). The pickupVisible, prev_ and host state values are read once per tick and reused for Step 0c.",
+      "id": "G-K.pickups-2",
+      "severity": "low",
+      "spec_quote": "`mem_tick(j) = worldTick` (previously visible and ready)",
+      "state": "open",
+      "why": "Literal reading; the runtime runs every living tick, so worldTick advances by 1 between updates."
+    },
+    {
+      "component": "K.contacts",
+      "decision": "Own evidence (and so xe_label) is evaluated only for teammate-parity bodies that reached Step 0c, that is not matched by a live friend record and not enemy parity.",
+      "id": "G-K.contacts-1",
+      "severity": "low",
+      "spec_quote": "whose own evidence holds and where",
+      "state": "open",
+      "why": "Own evidence is defined inside Step 0c, and a body matched in Step 0a skips to the next i."
+    },
+    {
+      "component": "K.contacts",
+      "decision": "Kept the literal 3 in the cost even though rules 49 HP is 0-10; the term still ranks wounded bodies first, offset by a constant.",
+      "id": "G-K.contacts-2",
+      "severity": "low",
+      "spec_quote": "`cost = d2 - (3 - playerHp(i)) * hp_weight`",
+      "state": "open",
+      "why": "The value is in the Spec, not a Param."
+    },
+    {
+      "component": "COM.disguise_alert",
+      "decision": "When a report fills witness 1 (expired slot) and the live witness 2 has the same speaker, witness 2 is expired (xa_t2 = 0).",
+      "id": "G-COM.disguise_alert-1",
+      "severity": "medium",
+      "spec_quote": "one sender never fills both witnesses",
+      "state": "open",
+      "why": "The explicit witness-1 rule does not check witness 2, so without this one sender could hold both slots and block a real second witness. Expiring the duplicate keeps the stated invariant; K.contacts also requires xa_s1 <> xa_s2."
+    },
+    {
+      "component": "COM.disguise_alert",
+      "decision": "The reset is done in __recv for label L, before this message is applied, when both xa_t1(L) and xa_t2(L) are <= worldTick.",
+      "id": "G-COM.disguise_alert-2",
+      "severity": "low",
+      "spec_quote": "Set `xa_amb(L) = 0` again when both witnesses",
+      "state": "open",
+      "why": "COM units have no per-tick SUB, and send/recv may not run on a given tick. A stale amb is harmless while both witnesses are expired, because K.contacts also requires live witnesses."
+    },
+    {
+      "component": "COM.disguise_alert",
+      "decision": "A message whose cm__fa is outside 0..15 is ignored. In __send, the strong label is used only when 0 <= xe_label < 16.",
+      "id": "G-COM.disguise_alert-3",
+      "severity": "low",
+      "spec_quote": "In `__recv`: set `L = cm__fa`, `amb = 0`",
+      "state": "open",
+      "why": "This keeps every array index in range (AGENTS.md rule 5); the wire field width is not visible to the unit."
+    },
+    {
+      "component": "COM.disguise_friend",
+      "decision": "Within means squared distance <= d_range_sq. In __recv, a cm__fa outside 0..15 is ignored.",
+      "id": "G-COM.disguise_friend-1",
+      "severity": "low",
+      "spec_quote": "visible within `d_range_sq`",
+      "state": "open",
+      "why": "Inclusive bound, plus the index guard required by rule 5."
+    },
+    {
+      "component": "COM.enemy_sighting",
+      "decision": "Teammate seats are s <> selfId with s MOD 2 = selfTeam. The cost of a body is its squared distance to the nearest such recently heard teammate, or to us when there is none.",
+      "id": "G-COM.enemy_sighting-1",
+      "severity": "low",
+      "spec_quote": "Choose the one nearest to any teammate seat s with",
+      "state": "open",
+      "why": "cm__heard_* is kept per claimed sender seat, which may include enemy-parity labels; the spec says teammate."
+    },
+    {
+      "component": "COM.glory_seen",
+      "decision": "Position matching for gl_* (in __recv) and hs_* (after a send) considers only slots in use (gl_until > 0, hs_t > 0), taking the lowest matching slot. Otherwise it takes the slot with the smallest gl_until or hs_t, lowest index on a tie.",
+      "id": "G-COM.glory_seen-1",
+      "severity": "low",
+      "spec_quote": "Use the slot j that is within h_match of `(px, py)`",
+      "state": "open",
+      "why": "Without this, an empty slot at (0, 0) would match a heart near the origin."
+    },
+    {
+      "component": "COM.grenade_warning",
+      "decision": "release_in is sent unclamped, exactly as SK.motor reports it.",
+      "id": "G-COM.grenade_warning-1",
+      "severity": "low",
+      "spec_quote": "call `cm__send(2, release_in, 0, cell, quiet)`",
+      "state": "open",
+      "why": "The spec gives no clamp; the runtime owns encoding."
+    }
+  ],
+  "status": "passed",
+  "units": {
+    "C.cover_heart": "reused",
+    "C.default_goal": "reused",
+    "C.fall_back": "reused",
+    "C.resupply": "reused",
+    "C.take_heart": "reused",
+    "COM.disguise_alert": "reused",
+    "COM.disguise_friend": "reused",
+    "COM.enemy_sighting": "reused",
+    "COM.focus_call": "reused",
+    "COM.glory_seen": "reused",
+    "COM.grenade_warning": "reused",
+    "COM.pickup_ready": "reused",
+    "COM.pickup_taken": "reused",
+    "COM.under_fire": "reused",
+    "K.comms_danger": "reused",
+    "K.contacts": "reused",
+    "K.glory_hearts": "reused",
+    "K.pickups": "reused",
+    "K.self_motion": "reused",
+    "K.squad_target": "reused",
+    "P.chargeGrenade": "reused",
+    "P.lookAt": "reused",
+    "P.shootAt": "reused",
+    "P.shout": "reused",
+    "P.walkTo": "reused",
+    "S.has_target_heart": "reused",
+    "S.losing_fight": "reused",
+    "S.supply_worth": "reused",
+    "SK.motor": "reused",
+    "ST.commitment": "reused",
+    "ST.roles": "reused",
+    "ST.rules": "reused"
+  }
+}

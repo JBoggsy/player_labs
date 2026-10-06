@@ -1,0 +1,62 @@
+{
+  "counts": {
+    "cached": 0,
+    "excluded": 0,
+    "failed": 0,
+    "processed": 2,
+    "recorded": 2
+  },
+  "exit_code": 0,
+  "failures": [],
+  "inputs": {
+    "a": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy/18e0aa1f-1/policy.bas",
+    "b": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/strategy/compiled/c03010be-1/policy.bas",
+    "command": "record",
+    "force": false,
+    "glory": "{\"behind_lives\": 5, \"behind_cogs\": 10}",
+    "out": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry",
+    "port": 8390,
+    "seeds": "7",
+    "sides": "0,1",
+    "tag": "coworld-v0.3.115",
+    "ticks": 720
+  },
+  "next": [
+    "uv run python paintbot_pw_lab/tools/pw_intent.py show /Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry --json",
+    "uv run python paintbot_pw_lab/tools/pw_intent.py audit /Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry --json"
+  ],
+  "ok": true,
+  "outputs": [
+    "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a0",
+    "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a1"
+  ],
+  "release_tag": "coworld-v0.3.115",
+  "result": {
+    "episodes": [
+      {
+        "a_side": 0,
+        "dir": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a0",
+        "disabled_seats": [],
+        "name": "policy-07ae328d_vs_policy-29f386f1_s7_a0",
+        "outcome": "1",
+        "replay": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a0/policy-07ae328d_vs_policy-29f386f1_s7_a0.replay",
+        "seed": 7,
+        "status": "recorded",
+        "ticks": 720
+      },
+      {
+        "a_side": 1,
+        "dir": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a1",
+        "disabled_seats": [],
+        "name": "policy-07ae328d_vs_policy-29f386f1_s7_a1",
+        "outcome": "1",
+        "replay": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry/policy-07ae328d_vs_policy-29f386f1_s7_a1/policy-07ae328d_vs_policy-29f386f1_s7_a1.replay",
+        "seed": 7,
+        "status": "recorded",
+        "ticks": 720
+      }
+    ],
+    "out": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/18e0aa1f-1/telemetry"
+  },
+  "tool": "pw_intent"
+}

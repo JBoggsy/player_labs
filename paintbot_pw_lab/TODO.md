@@ -8,11 +8,11 @@
   correct execution from a raw outcome or G5 coverage.
 - `pw_intent record --out RELATIVE_PATH` raises from `Path.as_uri`; an absolute `--out` works.
   Normalize the output path in the recorder with a focused regression test when fixing it.
-- M3 in progress: all nine messages and receiver effects passed G1–G5 in `c03010be-1`.
-  Finish the tooling refinements, exact-build local audit and hosted A/B. D/X were not
-  exercised in the first short sample; two grenade landing claims failed after early release.
-  Keep these separate from the passing transport checks. Use `compare --target score_outcome
-  --margin-scale 600` after rechecking the live scale; historical `elo_outcome` stays the default.
+- M3 hosted qualification in progress: final build `18e0aa1f-1` and local audit are complete;
+  finish the fixed 64-episode A/B and hosted telemetry audit. Track the current evidence in
+  `docs/designs/2026-10-05-m3-qualification.md`. Keep the two failed truth checks separate
+  from passing transport. Use `compare --target score_outcome --margin-scale 600` for this
+  preregistered comparison; historical `elo_outcome` stays the default.
 - Audit partial-load accounting: a late seat I/O failure retains valid earlier-seat evidence
   with `input_failures` and exit 1, but the episode summary can be absent. Preserve those
   verified rows while exposing an explicit partial episode summary in a future refinement.
