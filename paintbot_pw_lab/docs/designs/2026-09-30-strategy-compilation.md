@@ -40,8 +40,9 @@
   6. Every guess MUST be recorded in the report with a stable ID (§7).
   7. A bad seat always fails a build. The local screen MUST NOT veto an intended behavior change
      (§8.2).
-- **Start here to implement:** §4 (pipeline), §5 (layout), §8 (gates), §11 (milestones, M0
-  first).
+- **Start here to implement:** §4 (pipeline), §5 (layout), §8 (gates), and the
+  [maintainer/generalization guide](../strategy-compiler-maintainers.md). M0–M3 are implemented;
+  do not restart the milestone sequence when maintaining or extracting the compiler.
 
 ## 1. Problem
 
@@ -87,17 +88,18 @@ We borrow three ideas: validate the spec before generating, keep one written con
 generator obeys, and give every spec item an ID that code and tests trace to. We do not adopt a
 toolkit: they are built for one-shot, feature-by-feature application code, and do not handle
 incremental regeneration of a single BASIC file under hard per-tick budgets with a fixed runtime
-skeleton. Our pipeline is small and specific enough that a few hundred lines of Python plus one
-instruction file cost less than adapting a framework.
+skeleton. The implemented pipeline uses focused Python modules plus an instruction file and authored
+BASIC runtime. Its module boundaries and current game coupling are documented in the
+[maintainer guide](../strategy-compiler-maintainers.md); it is not a general spec toolkit.
 
 ## 4. Architecture: deterministic steps around one LLM step
 
 | Step | Done by | What it does |
 | --- | --- | --- |
-| 1. Prepare | Python: `pw.py strategy prepare` | Refuse uncommitted source. Lint `STRATEGY.md`. Hash the source. Compare component texts with the previous build's `map.json` and list components as **new**, **changed**, **unchanged**, or **removed**. Write a work order for the agent. |
-| 2. Generate | **LLM compiler agent** | Write one unit file per new or changed component (Knowledge, Situations, Capabilities, Communication). Record guesses. |
-| 3. Assemble | Python: `pw.py strategy assemble` | Copy unchanged units from the previous build. Copy each `skill.bas` and each runtime library unit unchanged. Generate the rule table, the constants block, the telemetry code tables, and the header. Join everything into `policy.bas` in the fixed per-tick order. Write `map.json` and `version.json`. |
-| 4. Verify | Python: `pw.py strategy verify` | Run the gates (§8). On a failure the agent gets the error and repairs its units; at most 3 rounds. |
+| 1. Prepare | Python: `pw.py strategy prepare` | Refuse uncommitted source. Lint `STRATEGY.md`. Hash the source. Compare component texts with the previous build's `map.json` and list components as **new**, **changed**, **reused**, or **removed**. Write a work order for the agent. |
+| 2. Generate | **LLM compiler agent** | Write one unit file per new or changed component (Knowledge, Situations, Capabilities, Adaptation conditions, Communication). Record guesses. |
+| 3. Assemble | Python: `pw.py strategy assemble` | Copy unchanged units from the previous build. Copy each `skill.bas` and each runtime library unit unchanged. Generate the rule table, the constants block, the telemetry code tables, and the header. Join everything into `policy.bas` in the fixed per-tick order. Write `map.json` and `budget.json`; `version.json` is written at finalization. |
+| 4. Verify | Python: `pw.py strategy verify` | Run the gates (§8), then finalize. Only the `compile` driver calls the agent for repairs (at most 3 rounds); the standalone `verify` command does not. |
 | 5. Report | Python + agent | Write `report.json` and `report.md` (§7). |
 
 A Python driver, `pw.py strategy compile`, runs all five steps and calls the agent for step 2
@@ -142,9 +144,17 @@ Every kind can define `__init()`, called once on the first tick. A unit writes o
 names (never its params, inputs, or condition constants, which generated code sets), reads its
 own names, host data, the declared outputs and params of components in its `Uses`, and the
 runtime exports `rt__rule`, `rt__cap`, `rt__since`, `rt__pver`, and calls only its own SUBs,
-SUBs of skills in its `Uses`, and host functions. A unit has no top-level statements and never
-`PRINT`s. `strategy_basic.check_unit` enforces all of this; its diagnostics are the repair-loop
-feedback.
+SUBs of skills in its `Uses`, and host functions. A unit has no top-level executable statements and never
+`PRINT`s; top-level DIM/SUB declarations are allowed. `strategy_basic.check_unit` enforces
+structure and namespace permissions, but is not a control-flow proof: it checks assignment
+presence, not every execution path. Unknown host calls are left to G2. Its diagnostics feed
+the repair loop.
+
+For `Encoding: comms-v1 N`, generated dispatch owns COM `got`, `from`, `sent` and `packet[2]`;
+units must not assign them. Receive runs once per accepted packet; send routines run only
+until one succeeds. Codec units can read the declared `cm__` fields and call `cm__send`.
+The exact permissions are returned by `unit_contract`; see
+[AGENT.md](../../strategy/compiler/AGENT.md) and [comms.md](../../strategy/comms.md).
 
 ## 5. Build layout
 
@@ -155,7 +165,8 @@ paintbot_pw_lab/strategy/
     AGENT.md                                # compiler instructions, agent-neutral
     config.json                             # default agent and model
     LESSONS.md                              # compiler memory, reviewed like code
-    runtime/lib.bas, runtime/main.bas       # hand-written library: selection, adaptation, telemetry v2; per-tick order
+    runtime/lib.bas, runtime/main.bas       # authored selection, adaptation, telemetry and tick order
+    runtime/comms.bas                       # optional comms-v1 codec for opted-in builds
   compiled/
     <build-id>/
       units/<ID>.bas                        # one per LLM component, SK.<name>.bas verbatim,
@@ -192,13 +203,15 @@ paintbot_pw_lab/strategy/
 | --- | --- |
 | `build_id` | as above |
 | `source_commit` | git SHA of the source |
-| `source_hashes` | sha256 of `STRATEGY.md`, `comms.md`, every `skill.bas`, every runtime unit |
-| `previous_build` | build ID used for the incremental step, or null for a full build |
+| `source_hashes` | Repo-relative path → SHA256 for the inventory in `strategy_build.source_files`: source, skills tree, comms, compiler directory/tools, release pin, policy reference and frozen starter |
+| `previous_build` | Referenced passed build, or null if none; `--full` can still use a predecessor for context and comparison |
 | `compiler` | agent (`claude` or `codex`) and its CLI version, model ID, sha256 of `AGENT.md`, sha256 of `LESSONS.md` |
 | `engine` | the `coworld` tag and commit the gates ran against (`tools/release.env`) |
 | `policy_sha256` | sha256 of `policy.bas` |
 | `gates` | pass/fail per gate (§8) |
 | `created` | date and time |
+| `source_path`, `intent`, `status`, `driver` | Repo-relative source path, gate intent, final pass/fail, and driver commit/dirty record |
+| `artifact_hashes` | SHA256 of finalized files except `version.json` itself and diagnostic `.log` files |
 
 - **Uploads** append to `compiled/uploads.jsonl` (`build_id`, policy ref `name:vN`, date; audits additionally require the
   immutable `policy_version_id` and `policy_sha256`), so a
@@ -226,10 +239,10 @@ Two files per build: `report.json` for loops, `report.md` for people. Contents:
 - **Gates:** the result of every gate, with numbers.
 - **Budget:** peak instructions, work units, and print use per tick.
 
-Guesses carry forward between builds. The edit loop closes a guess by changing the component (or
-by recording in `STRATEGY.md` that the guess is the intended behavior); the next build then shows
-it as `possibly resolved`, and the edit loop confirms. Any open guess of severity `high` blocks
-`Status: tested` for its component.
+Guesses carry forward between builds. A component change or the agent's `resolved` disposition
+marks a guess `possibly resolved`; neither closes it. The edit loop closes it by adding its
+exact ID to source `Accepts` and compiling a new build. `kept` stays open unless previously
+accepted. Any unclosed high-severity guess blocks `Status: tested` or `proven` at finalization.
 
 ## 8. Verification gates
 
@@ -325,8 +338,9 @@ files and a Python driver; each agent needs only a thin wrapper.
 
 ## 10. Incremental builds
 
-- `prepare` hashes each component's normalized text (fields that the compiler reads: `Spec`,
-  `Params`, `Uses`, `Done when`, `Abort when`, `Log`; not `Rationale`, `Evidence`, or `Status`).
+- `prepare` hashes each component's normalized ID and every nonmetadata field, including
+  Summary, Accepts and Encoding. Evidence, Status and Rationale are excluded; Checks contribute
+  only their level/Reads entries, not predicate prose (source-format §4.9).
   A component is **changed** when that hash differs from `map.json`.
 - A component is also rebuilt when a component it uses changed its interface (globals or SUB
   signature). `prepare` computes this from `map.json`.
@@ -334,6 +348,10 @@ files and a Python driver; each agent needs only a thin wrapper.
   accumulates.
 - Rule tables, constants, and telemetry tables are regenerated every build; they
   are deterministic, so unchanged input gives unchanged output.
+- Runtime/instruction/tool changes do not automatically regenerate LLM units. Source-declared
+  interface changes invalidate direct consumers; implementation-only dependency changes do not
+  trigger recursive regeneration. Current authored skills are always copied. See the
+  [hash and reuse contract](../strategy-compiler-maintainers.md#source-model-and-hashes).
 
 ## 11. Rollout
 

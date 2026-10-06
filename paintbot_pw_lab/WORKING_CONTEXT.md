@@ -8,6 +8,15 @@ define behavior; this file must not substitute for a live-state query.
 Maintain only the active objective, unresolved constraints and next action here.
 Replace completed or superseded context in place.
 
+## Compiler maintenance and parallel work
+
+The compiler documentation entry point for maintainers and the agent generalizing to other
+Polyworld games is [docs/strategy-compiler-maintainers.md](docs/strategy-compiler-maintainers.md).
+It describes existing interfaces, game coupling, evidence requirements and a proposed extraction
+sequence. Generalization is not implemented. James intends Paintbot policy work to continue
+separately; coordinate shared compiler/runtime changes at committed build boundaries, using
+separate worktrees. Do not change inputs underneath an active compilation.
+
 ## Objective
 
 **Build the strategy-as-source pipeline, then write the policy in it.** Both designs were

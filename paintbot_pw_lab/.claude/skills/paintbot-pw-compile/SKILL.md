@@ -34,4 +34,9 @@ Read `checks`, `levels`, `episodes`, `input_failures`, and the report's reasons.
 means analysis completed; `fail` is a finding, `unmeasurable` and `not_declared` never
 pass. Inspect `evidence.jsonl` for exact ticks. Fix missing evidence or a check's source
 criterion before treating raw outcomes as conditional Results. No gameplay or telemetry
-source changes are implied by an audit finding. Hosted confirmation remains separately gated.
+source changes are implied by an audit finding. Hosted evaluation is outside this command;
+follow the current task authorization and shared evaluation skill. Existing authorization
+applies without another permission checkpoint. League submission remains a separate action.
+
+Compiler maintainers and agents adapting another game should start with
+`paintbot_pw_lab/docs/strategy-compiler-maintainers.md`.

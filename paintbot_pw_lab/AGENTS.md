@@ -140,3 +140,8 @@ finalized BASIC builds. Source and compiler inputs must be committed first.
 verified build. Read the [audit contract](docs/tools/pw_strategy.md#five-level-audit-m2):
 exit 0 means analysis completed, not that checks passed. Unmeasurable checks and missing
 level declarations never pass. M2 is qualified locally and in a hosted episode on 0.3.115; see WORKING_CONTEXT.
+
+For compiler architecture, Python interfaces, artifact contracts and cross-game adaptation,
+read [the maintainer guide](docs/strategy-compiler-maintainers.md). The compiler is currently
+Paintbot-specific; `--source` does not select a different game. Coordinate compiler/runtime
+edits with concurrent policy work, and never change inputs underneath an active build.

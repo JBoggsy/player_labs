@@ -5,8 +5,8 @@ The format is defined in docs/designs/2026-09-30-strategy-file-format.md. This m
 Markdown into a typed model (`Strategy`, `Component`, `Rule`) and checks everything the compile
 loop depends on: IDs, references and layering, the machine fields that Python compiles (Params,
 Inputs, Outputs, Log, Done/Abort, Effect, Roles, rules, commitment), checks' `Reads:` coverage,
-and the telemetry v2 print budget. Python-facing contract: tmp/collab/strategy/API.md until the
-design docs carry it.
+and the telemetry v2 print budget. Python-facing contract:
+docs/strategy-compiler-maintainers.md (source model and hashes).
 
     import strategy_format as sf
     strategy = sf.parse_strategy(Path("paintbot_pw_lab/strategy/STRATEGY.md"))
@@ -232,7 +232,7 @@ class Strategy:
         return [c for c in self.components.values() if c.llm]
 
     def codes(self) -> dict:
-        """Telemetry code tables (API.md §3). 0 means none in every space."""
+        """Telemetry code tables (maintainer guide: source model and hashes). 0 means none in every space."""
         conditions = {c.id: {k.name: k.code for k in c.conditions} for c in self.of_kind("C")}
         roles = {name: {role: i + 1 for i, role in enumerate(members)} for name, members in self.roles.items()}
         return {
@@ -705,7 +705,7 @@ def condition_text(cond: Cond) -> str:
 
 
 def compiled_text(comp: Component, rule_lines: list[tuple[int, str]]) -> str:
-    """Exactly what the compiler agent sees and what the hash covers (API.md §1.3): the ID and every
+    """Exactly what the compiler agent sees and what the hash covers: the ID and every
     field except metadata, in source order; Checks contributes only its Reads lists."""
     out = [f"### {comp.id}"]
     for name, text in comp.fields.items():
@@ -724,7 +724,7 @@ def compiled_text(comp: Component, rule_lines: list[tuple[int, str]]) -> str:
 
 
 def declared_interface(comp: Component, strategy: Strategy) -> dict:
-    """The component's interface as declared in the source (API.md §1.4). Skills add their SUB
+    """The component's interface as declared in the source. Skills add their SUB
     signatures, read from skill.bas (source) when it exists."""
     interface: dict = {"outputs": {o.name: o.cells for o in comp.outputs},
                        "params": [p.name for p in comp.params]}

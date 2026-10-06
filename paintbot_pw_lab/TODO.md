@@ -16,3 +16,9 @@
 - Audit partial-load accounting: a late seat I/O failure retains valid earlier-seat evidence
   with `input_failures` and exit 1, but the episode summary can be absent. Preserve those
   verified rows while exposing an explicit partial episode summary in a future refinement.
+
+- Compiler maintenance: manual `strategy verify` can return gate success when finalization
+  rejects high-severity guesses; propagate final report status as `compile` already does.
+  Also make the assembled source banner reflect `--source` rather than the fixed default path.
+  These findings are documented in the [maintainer guide](docs/strategy-compiler-maintainers.md);
+  this documentation audit does not change compiler behavior.

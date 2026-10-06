@@ -58,9 +58,9 @@ policy cannot report budget headroom. Measure peaks locally with `PW_BASIC_PEAKS
   episodes with our policy. Confirmed 2026-09-30 (seed pilot): our XP episodes return
   `logs/policy_agent_<seat>.log` for our seats ([field.md](../field.md#seeds-what-actually-reaches-the-engine)).
   Individual logs can be missing for minutes after completion; refetch with `--force`. PRINT
-  output lands in these files (the engine's print callback writes the seat log,
-  `src/polyworld/coworld.nim:151-171` at `118e1619`), but no hosted episode has yet run a policy that prints,
-  so no `PWI` line has been seen in a hosted log.
+  output lands in these files. Strategy v2 and compact PWC v3 telemetry have been verified
+  in hosted M2/M3 episodes on 0.3.115; see the [qualification record](../designs/2026-10-05-m3-qualification.md).
+  This does not establish hosted coverage for the separate legacy PWI format.
 - **Local**: `paintbot-headless` and the native library (`pw_local.py`) **discard** PRINT
   output. `pw_intent.py record` runs the release's hosted handoff (`coworld/paintbot/runtime/host.py`
   with the `-d:coworld` engine that `build_tools.sh` leaves in the worktree), which writes one
@@ -245,12 +245,12 @@ a real policy of ours emits the line.
 
 ## Not verified / limits
 
-- No real policy of ours emits the line yet. The verification wiring is
+- The compiled strategy uses v2/v3, not this legacy PWI line. The verification wiring is
   `reference/wire_intent_base.py` (an instrumented copy of `base.bas`). The mode and reason
   codes follow base.bas's modules and should be revised with the first real policy (keep
   `MODE_NAMES`/`REASON_NAMES` in step).
-- No hosted episode has yet carried `PWI` lines (the only uploaded policy, `jb-pw-base:v1`, prints
-  nothing); hosted seat-log retrieval itself works (see above).
+- Hosted `PWI` v1 emission is not qualified. `jb-pw-base:v1` prints nothing; the uploaded
+  M2/M3 policies use the separately qualified strategy v2/v3 formats.
 - `record` has no parity guard against `paintbot-headless`. The replay it writes is
   hash-checked by `pw_trace` when loaded, which is the check that matters for analysis.
 - `ffa.bas` and `ffa_blind.bas` (now in `reference/heartland/`) target the Heartland coworld

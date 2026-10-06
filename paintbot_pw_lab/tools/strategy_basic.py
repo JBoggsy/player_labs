@@ -16,7 +16,8 @@ Python part the driver calls between them:
                                                  selection and adaptation arithmetic
 
 The unit ABI, the name spaces and the telemetry v2 line formats are documented in the
-compilation design §5-§6 and tmp/collab/strategy/API.md. Stdlib only.
+compilation design §4.2, the source-format design §6, and
+docs/strategy-compiler-maintainers.md. Stdlib only.
 """
 
 from __future__ import annotations
@@ -55,7 +56,7 @@ CODEC_WIRE_TYPES = range(9)
 # block B: 1e9 + pB), no separators, at most BATCH_RECEIVES receives then at most one send.
 BATCH_HEADER, BATCH_SEPARATOR = "PWC v=3 t=", " b="
 BATCH_RECEIVES, BATCH_SENDS, BATCH_VALUE_BYTES = sc.MAX_DECODE, 1, 10
-# runtime.comms interface (tmp/collab/strategy/m3/CODEC-INTERFACE.md). Codec COM units may read the
+# runtime.comms interface: unit_contract below and strategy/compiler/AGENT.md. Codec COM units may read the
 # decoded packet fields and the per-seat heard/suspect memories, and call cm__send; they never write
 # runtime names. Each codec COM declares `packet[2]` and logs it; generated code fills it.
 CODEC_READS = {"cm__type", "cm__speaker", "cm__fa", "cm__fb", "cm__cell", "cm__pa", "cm__pb", "cm__rx_index",
@@ -276,7 +277,7 @@ def _dependency_names(strategy: sf.Strategy, comp: sf.Component) -> tuple[set[st
 
 
 def unit_contract(strategy: sf.Strategy, component_id: str) -> dict:
-    """Everything the compiler agent needs about one unit's ABI (compilation design §5.1)."""
+    """Everything the compiler agent needs about one unit's ABI (compilation design §4.2)."""
     comp = strategy.components[component_id]
     p = comp.prefix
     scalars, arrays, subs = _dependency_names(strategy, comp)
@@ -916,7 +917,7 @@ def policy_stats(policy: str) -> dict:
 
 def assemble(strategy: sf.Strategy, units: dict[str, str], runtime_dir: Path, build_id: str,
              source_commit: str) -> dict:
-    """Check every unit, generate the tables and join policy.bas (API.md §2). Raises BuildError."""
+    """Check every unit, generate the tables and join policy.bas. Raises BuildError."""
     diags = [d for d in sf.lint_strategy(strategy) if d.level == "error"]
     plan, comms_diags = comms_plan(strategy)
     diags += comms_diags

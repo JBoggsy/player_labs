@@ -4,6 +4,9 @@
 an immutable BASIC build. It runs locally and never uploads or submits a policy.
 The [source format](../designs/2026-09-30-strategy-file-format.md) and
 [compilation design](../designs/2026-09-30-strategy-compilation.md) define the contract.
+For Python interfaces, provenance, implementation limits and cross-game extraction, read the
+[maintainer guide](../strategy-compiler-maintainers.md). `--source` selects a source document;
+it does not select a different game backend.
 
 The checked-in `strategy/STRATEGY.md` specifies M3 communications and receiver effects.
 The frozen baseline [M1 build report](../../strategy/compiled/b41ef1fc-1/report.md) records passing G1–G5;
@@ -27,7 +30,7 @@ From the repository root:
 uv run python paintbot_pw_lab/tools/pw.py strategy lint --json
 uv run python paintbot_pw_lab/tools/pw.py strategy compile --agent claude --json
 uv run python paintbot_pw_lab/tools/pw.py strategy compile --agent codex --full --json
-uv run python paintbot_pw_lab/tools/pw.py strategy compile --milestone m1 --json
+uv run python paintbot_pw_lab/tools/pw.py strategy compile --agent codex --json
 uv run python paintbot_pw_lab/tools/pw.py strategy trace <build-id> --json
 ```
 
@@ -42,6 +45,16 @@ is an ancestor of HEAD. `--full` regenerates every LLM component.
 `assemble ID` assembles staged units. `verify ID` runs the gates and finalizes the
 build, successful or failed. These commands support inspecting individual steps;
 `compile` owns the complete agent/repair cycle and is the normal entry point.
+There is no `generate` subcommand; programmatic generation uses
+`strategy_build.generate(order, errors=None, timeout=900)`. `verify` runs gates and finalizes
+without repairs. Check the finalized `report.json.status`: the manual `verify` envelope
+currently reflects gate failures but can miss a finalization failure from unresolved guesses.
+`compile` propagates the finalized status correctly.
+
+`--milestone m1` is only for a faithful baseline build: it compares with `reference/base.bas`.
+Do not use it for the current M3 behavior change. `--milestone m0` has no special gate override.
+`trace` reports component text/interface changes; it does not verify artifact hashes or
+all input drift (for example changed runtime or skill implementation bytes).
 `compile --agent-timeout SECONDS` bounds each agent call (default 900).
 
 ## Source and agent boundaries
@@ -79,9 +92,11 @@ commitment and tables. Skills and runtime files are copied verbatim.
   interval's upper bound ≥ 0.5. M1 compares against `reference/base.bas` and requires
   the interval to contain 0.5.
 - G5: two bounded local recordings through `pw_intent`, with seat logs. V2 lines
-  must parse and decode with this build's map, and each candidate seat must supply
-  its declared check/log fields and every initial rule-priority snapshot. Missing fields
-  are unmeasurable and fail coverage.
+  must parse and decode with this build's map. Every candidate seat must supply its
+  unconditional declared fields and initial rule-priority snapshots. Legacy builds require
+  all declared fields per seat. Codec builds require send and receive paths across the
+  recording set; absent rare message types are reported as `not_exercised`, not failed
+  coverage or semantic passes. Missing unconditional fields fail coverage.
   This checks wire format and coverage, not whether gameplay checks are true.
 
 The compile driver allows at most three generation/gate rounds. G4 never requests a
