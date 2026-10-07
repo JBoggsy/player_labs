@@ -5,9 +5,9 @@
 Continue the authorized optimizer loop. Parent is submitted v8 (build5cee1447-1), whose
 fresh hosted Richard improvement over v6 was +.133064, CI[+.009925,+.256203].
 Opening child87324810-1 is uploaded as jb-pw-opt:v9; its broad-field A/B is being launched.
-Current source is an independent spray-distance correction on v8: use physical target distance
-instead of HP-weighted ranking cost for both spray range gates. Activation counts actual newly
-allowed shot requests. Next is the independent spray-safety child. V7 cadence repair is running;
+Spray-distance child7faadaa4-1 passed G1–G5 and is uploading. It uses physical target distance
+instead of HP-weighted ranking cost for both spray range gates. Current source is the independent
+spray-safety child on v8: withhold otherwise-ready shots when a visible teammate is in the spray cone. V7 cadence repair is running;
 combine with v8 only if the repaired hosted comparison supports it. Reports6/7/10–14 own details.
 
 Local games establish runtime health, activation and mechanisms, never performance or a veto.
@@ -117,8 +117,9 @@ All clean candidates proceed to hosted real-opponent A/B. Current iteration13 re
 opening-supply gate on v8. Next: spray-distance correction and spray-safety on v8, independently;
 gun-corridor lever if credits allow. V7 platform-failed slots will be re-requested explicitly.
 New A/B allocations cover the whole top field under James's latest instruction, not only
-league neighbours. Default: 192 Richard episodes, 48 xolod, and 8 per named remaining opponent,
-all balanced by arm and side: 288 episodes / estimated 144 credits per candidate.
+league neighbours. Default: 192 Richard episodes, 48 xolod, and 8 per named remaining opponent, with finist increased to16 after brief opening activity was
+verified. New cohorts total296 episodes / estimated148 credits; already-fixed i13 stays288/144.
+All cohorts are balanced by arm and side.
 Richard is the primary outcome; small opponent samples detect ports and large regressions,
 not precise competitiveness. Campaign previews total 764.5 after v7 repair; per iteration300/day1,400.
 Reports/manifests own exact spend and identities.

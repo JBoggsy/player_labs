@@ -298,13 +298,13 @@ Reading aid (the compiler receives component fields, not this introduction):
   once, then calls sk_motor__act(gx, gy, 1). Only C.cover_heart calls this helper when it is
   already inside the objective capture ring and our team is capturing there. The forced
   holding flag uses the existing motor ring-preserving footwork. No other motor logic changes.
-  Before footwork, compute spray_distance_sq from self to the current best target's actual
-  playerX/playerY coordinates when best of `K.contacts` is nonnegative. Use this distance
-  instead of best_cost in both spray-range tests: footwork want_shot and the gun's firing
-  gate. Keep the existing strict spray_range_sq threshold and every other gate unchanged.
-  Best_cost remains the HP-weighted ranking score; do not treat it as a physical distance.
-  After an actual shootAt request with hasSpray, increment spray_distance_shots_total if
-  the former best_cost test would have rejected it. This counter starts at zero and persists.
+  When a spray can is held, add a spray-cone teammate veto to the original gun-line check.
+  Use the same selected aim and visible observed-teammate loop. Set spray_clear to 1 first.
+  For each teammate, if along > 0 AND along <= 905 AND across <= along * 4 \ 5 + 55,
+  set spray_clear to 0. This is rules49 spray reach850 plus body radius55, with cone slope4/5.
+  When the original spray-range test permits firing and clear = 1 but spray_clear = 0,
+  set clear to 0. Also increment spray_hold_total if gun_wait = 0 on that tick.
+  Keep the original gun corridor, private gun timer, all aim calculations and grenade tracking.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
@@ -319,7 +319,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- cumulative ticks where continuity prevents the old early release
   - forced_total -- cumulative releases forced by becoming disarmed during a charge
   - tracking_updates_total -- cumulative armed charging ticks with a changed safe aim or charge requirement
-  - spray_distance_shots_total -- actual spray requests enabled by the physical-distance range check
+  - spray_hold_total -- otherwise ready spray requests withheld by the teammate cone
   - cover_capture_ticks_total -- cover-capability ticks spent holding an already-started capture
 - Params:
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
@@ -506,7 +506,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
   On a send, copy blocked_total, continued_total, forced_total and
-  tracking_updates_total, cover_capture_ticks_total and spray_distance_shots_total from `SK.motor` into same-named outputs for periodic telemetry.
+  tracking_updates_total, cover_capture_ticks_total and spray_hold_total from `SK.motor` into same-named outputs for periodic telemetry.
 - Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
@@ -517,8 +517,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
-  - spray_distance_shots_total -- actual newly enabled spray requests through this snapshot
-- Log: blocked_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total, spray_distance_shots_total
+  - spray_hold_total -- additional ready spray requests withheld through this snapshot
+- Log: blocked_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total, spray_hold_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay
