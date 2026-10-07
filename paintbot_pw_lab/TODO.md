@@ -22,3 +22,7 @@
   Also make the assembled source banner reflect `--source` rather than the fixed default path.
   These findings are documented in the [maintainer guide](docs/strategy-compiler-maintainers.md);
   this documentation audit does not change compiler behavior.
+
+- Task 0 Bassy migration: foundation build `3d0f8a4f-1` disables 16/16 seats on 0.3.123
+  (11 exact-int32 errors, five fixed-point range errors). Resolve the compiler/runtime port
+  boundary with the orchestrator before compiling/uploading; see `tmp/collab/optimizer/QUESTION.md`.

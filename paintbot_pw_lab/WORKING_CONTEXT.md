@@ -74,7 +74,7 @@ evidence) and lossless compact batch telemetry under the existing 512-byte/64-ev
 X targeting requires our own
 conflicting-position evidence or matching reports from two distinct teammates; a failed check
 alone does not trigger friendly fire. G5 reports rare message types as not exercised while
-requiring valid per-seat unconditional logs and exercised send/receive paths. Codec/transport engine checks and batch parsing are implemented. The current source contains
+requiring valid per-seat unconditional logs and exercised send/receive paths. Codec/transport engine checks and batch parsing are implemented. The inactive M3 source at `2184fc64` contains
 all nine COM components and motor receiver effects. Final build `18e0aa1f-1` passed G1–G5 with all
 units reused from the peer-reviewed first M3 build `c03010be-1`. It uses 354 globals,
 2,324 array cells and 127,897/131,072 source bytes; sampled peaks are 21,185 instructions
@@ -217,6 +217,18 @@ Inputs the policy (`STRATEGY.md`) should build on:
 - What a policy can do and afford: [policy-surface.md](docs/policy-surface.md) (BASIC surface,
   budgets: base.bas uses 18% of instructions, the neural lane).
 - How we will test it: [paintbot-pw-ab](.claude/skills/paintbot-pw-ab/SKILL.md) and the loop charter below.
+
+## Task 0 migration status
+
+The live league resolves to `coworld-v0.3.123` / `28030de6`, rules 49. Both tool and native
+builds completed on this pin. Coworld CLI is updated to 0.1.57 (latest checked), softmax-cli
+remains 0.26.38. James Botts is verified active. Working `STRATEGY.md` and motor source
+are restored from foundation commit `3d0f8a4f`; M3 remains recoverable at `2184fc64` and
+is documented as inactive in `strategy/comms.md`. No optimizer baseline has been uploaded.
+
+Bassy changed division and boolean semantics despite the unchanged simulation rules number.
+The foundation compiler contract requires migration before qualification can be claimed.
+Current evidence and the next decision live in `tmp/collab/optimizer/`.
 
 ## Loop charter
 

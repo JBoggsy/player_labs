@@ -1,7 +1,9 @@
 # Paintbot PW mechanics (as deployed)
 
-> **Currency.** Active tools target `coworld-v0.3.115` / `244dc62b` (2026-10-05), rules 49.
-> Rules-49 changes below were verified against `sim.nim` and `mechanics.nim` at that commit.
+> **Currency.** Active tools target `coworld-v0.3.123` / `28030de6` (2026-10-06), rules 49.
+> The 0.3.115→0.3.123 diff preserves simulation rules; changes in `sim.nim` and
+> `mechanics.nim` add training damage/pickup telemetry. Earlier rules-49 changes below
+> were verified at `244dc62b`. BASIC execution changes materially: see policy-surface §2.
 > Unqualified `file:line` citations retain their `118e1619` anchors; new rules-49 claims name
 > `244dc62b`. `PW_DOCS_SHA` remains `118e1619` because the wider neural/oracle documentation
 > has not been fully requalified. Historical hosted measurements are not rules-49 evidence.

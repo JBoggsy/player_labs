@@ -1,6 +1,6 @@
 # Paintbot PW evidence pipeline
 
-> **Currency.** Active tools target `coworld-v0.3.115` / `244dc62b` (2026-10-05), rules 49.
+> **Currency.** Active tools target `coworld-v0.3.123` / `28030de6` (2026-10-06), rules 49.
 > The current trace adds rules-49 commands/equipment and separates self-destruct damage.
 > Prior hosted measurements below remain evidence about 0.3.79/0.3.89, not hosted rules 49.
 > New local qualification is recorded in [WORKING_CONTEXT.md](../WORKING_CONTEXT.md).
@@ -17,6 +17,19 @@ The lab's tools built on this pipeline are indexed in [docs/tools/README.md](too
 `pw_trace` (hash-checked expansion), `pw_episodes` (reader, cache, Parquet tables:
 [tables.md](tools/tables.md)), `pw_metrics`, `pw_local` and the analysis tools on top. This page
 is the reference for the artifacts and the re-simulation they rest on.
+
+### Runtime migration and evidence limits
+
+The 0.3.115→0.3.123 engine diff keeps rules 49 while replacing the BASIC runtime with
+Bassy. Replaying recorded commands does not execute policy BASIC, so hash-exact replay
+is evidence for simulation reconstruction, not policy compatibility. Recompile and execute
+policies under the new runtime before treating old hosted policy results as transferable.
+
+Upstream training telemetry now adds mister/sniper/radar pickup counters and a damage
+queue distinguishing ordinary gun, sniper and self-destruct (`sim.nim`, `mechanics.nim`,
+`native_env.nim` at `28030de6`). These upstream additions do not automatically change the
+lab's table schema or establish exact attribution in the existing lab exporter.
+Native snapshots now encode Bassy typed values; do not reuse old VM snapshots across runtimes.
 
 ### Rules-49 trace contract
 

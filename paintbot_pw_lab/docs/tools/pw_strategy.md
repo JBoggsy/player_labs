@@ -8,7 +8,9 @@ For Python interfaces, provenance, implementation limits and cross-game extracti
 [maintainer guide](../strategy-compiler-maintainers.md). `--source` selects a source document;
 it does not select a different game backend.
 
-The checked-in `strategy/STRATEGY.md` specifies M3 communications and receiver effects.
+The checked-in `strategy/STRATEGY.md` is restored to foundation build `3d0f8a4f-1`.
+M3 communications are inactive and recoverable from commit `2184fc64`. Bassy migration
+at 0.3.123 remains unresolved; the old foundation disables all 16 seats in a local diagnostic.
 The frozen baseline [M1 build report](../../strategy/compiled/b41ef1fc-1/report.md) records passing G1–G5;
 the side-balanced 28-seed screen reports identical play, and all 16 candidate-seat recordings
 pass telemetry parsing and coverage on the original 0.3.89 release.

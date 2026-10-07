@@ -1,4 +1,4 @@
-' SK.motor: baseline mechanics plus the specified communication receiver effects.
+' SK.motor: the baseline's mechanics (authored source, copied verbatim into every build).
 ' Taken from reference/base.bas with every name moved into the sk_motor__ namespace and the
 ' same int32 expressions in the same order: integer square root, wet-line sampling, footwork
 ' legs, dry routing, the gun with lead and drift cancel, and the grenade charge. The goal, the
@@ -122,38 +122,10 @@ SUB sk_motor__look_around()
       sk_motor__look_y = selfY - 2000 * sk_motor__facing
     END IF
   END IF
-  ' Heard enemy tracks and danger cues never become invisible fire targets.
-  IF k_comms_danger__danger_until > worldTick THEN
-    sk_motor__look_x = k_comms_danger__danger_x
-    sk_motor__look_y = k_comms_danger__danger_y
-    sk_motor__bearing = k_comms_danger__danger_dir
-    IF sk_motor__bearing = 0 OR sk_motor__bearing = 1 OR sk_motor__bearing = 7 THEN
-      sk_motor__look_x = sk_motor__look_x + 1000
-    END IF
-    IF sk_motor__bearing = 3 OR sk_motor__bearing = 4 OR sk_motor__bearing = 5 THEN
-      sk_motor__look_x = sk_motor__look_x - 1000
-    END IF
-    IF sk_motor__bearing = 1 OR sk_motor__bearing = 2 OR sk_motor__bearing = 3 THEN
-      sk_motor__look_y = sk_motor__look_y + 1000
-    END IF
-    IF sk_motor__bearing = 5 OR sk_motor__bearing = 6 OR sk_motor__bearing = 7 THEN
-      sk_motor__look_y = sk_motor__look_y - 1000
-    END IF
+  IF heardCount() > 0 THEN
+    sk_motor__look_x = heardX(0)
+    sk_motor__look_y = heardY(0)
   END IF
-  IF k_contacts__heard_target >= 0 THEN
-    sk_motor__look_x = k_contacts__heard_x
-    sk_motor__look_y = k_contacts__heard_y
-  END IF
-  sk_motor__i = 0
-  sk_motor__heard_found = 0
-  WHILE sk_motor__i < heardCount() AND sk_motor__heard_found = 0
-    IF cm__rx_valid(sk_motor__i) = 0 THEN
-      sk_motor__look_x = heardX(sk_motor__i)
-      sk_motor__look_y = heardY(sk_motor__i)
-      sk_motor__heard_found = 1
-    END IF
-    sk_motor__i = sk_motor__i + 1
-  WEND
   IF soundCount() > 0 THEN
     sk_motor__sound_best = -1
     sk_motor__sound_cost = 2147483647
@@ -331,7 +303,7 @@ SUB sk_motor__gun()
       sk_motor__tx = sk_motor__tx - k_self_motion__vx * sk_motor__drift_ticks
       sk_motor__ty = sk_motor__ty - k_self_motion__vy * sk_motor__drift_ticks
     END IF
-    ' Hold fire when a visible friend, including a protected disguise, stands in the line.
+    ' Hold fire when a visible teammate (by observed slot parity) stands in the line.
     sk_motor__clear = 1
     sk_motor__sx = sk_motor__tx - selfX
     sk_motor__sy = sk_motor__ty - selfY
@@ -340,7 +312,7 @@ SUB sk_motor__gun()
     IF sk_motor__reach > 0 THEN
       sk_motor__i = 0
       WHILE sk_motor__i < 16
-        IF sk_motor__i <> selfId AND k_contacts__friend(sk_motor__i) AND visible(sk_motor__i) THEN
+        IF sk_motor__i <> selfId AND sk_motor__i MOD 2 = selfTeam AND visible(sk_motor__i) THEN
           sk_motor__ox = playerX(sk_motor__i) - selfX
           sk_motor__oy = playerY(sk_motor__i) - selfY
           sk_motor__along = (sk_motor__ox * sk_motor__sx + sk_motor__oy * sk_motor__sy) / sk_motor__reach
@@ -374,7 +346,7 @@ SUB sk_motor__gun()
   END IF
 END SUB
 
-' Grenade: match the charge to the distance, never onto a visible friend (D/X classification,
+' Grenade: match the charge to the distance, never onto a visible teammate (observed slot parity,
 ' the thrower included). Sets sk_motor__threw = 1 on the tick the charge reaches the need.
 SUB sk_motor__grenade()
   IF hasGrenade AND k_contacts__best >= 0 THEN
@@ -386,7 +358,7 @@ SUB sk_motor__grenade()
     sk_motor__safe = 1
     sk_motor__i = 0
     WHILE sk_motor__i < 16
-      IF k_contacts__friend(sk_motor__i) AND visible(sk_motor__i) THEN
+      IF sk_motor__i MOD 2 = selfTeam AND visible(sk_motor__i) THEN
         sk_motor__fx = playerX(sk_motor__i) - sk_motor__nx
         sk_motor__fy = playerY(sk_motor__i) - sk_motor__ny
         IF sk_motor__fx * sk_motor__fx + sk_motor__fy * sk_motor__fy < 202500 THEN
@@ -402,17 +374,7 @@ SUB sk_motor__grenade()
         sk_motor__need = 1
       END IF
       lookAt(sk_motor__nx, sk_motor__ny)
-      sk_motor__charging = grenadeCharge < sk_motor__need
-      sk_motor__charge_x = sk_motor__nx
-      sk_motor__charge_y = sk_motor__ny
-      sk_motor__release_in = sk_motor__need - grenadeCharge
-      IF sk_motor__release_in < 0 THEN
-        sk_motor__release_in = 0
-      END IF
-      IF sk_motor__release_in > 24 THEN
-        sk_motor__release_in = 24
-      END IF
-      chargeGrenade(sk_motor__charging)
+      chargeGrenade(grenadeCharge < sk_motor__need)
       IF grenadeCharge >= sk_motor__need THEN
         sk_motor__threw = 1
       END IF
@@ -424,10 +386,6 @@ END SUB
 ' the cog stands on its post (the capability decides both).
 SUB sk_motor__act(sk_motor_gx, sk_motor_gy, sk_motor_hold)
   sk_motor__threw = 0
-  sk_motor__was_charging = sk_motor__charging
-  sk_motor__charging = 0
-  sk_motor__charge_started = 0
-  sk_motor__quiet = 0
   IF k_self_motion__teleported THEN
     sk_motor__gun_wait = 0
   END IF
@@ -441,50 +399,7 @@ SUB sk_motor__act(sk_motor_gx, sk_motor_gy, sk_motor_hold)
     sk_motor__look_around()
   END IF
   sk_motor__footwork()
-  sk_motor__avoid_grenades()
-  IF sk_motor__evading THEN
-    walkTo(sk_motor__move_x, sk_motor__move_y)
-  ELSE
-    sk_motor__dry_route()
-  END IF
+  sk_motor__dry_route()
   sk_motor__gun()
   sk_motor__grenade()
-  IF sk_motor__charging AND sk_motor__was_charging = 0 THEN
-    sk_motor__charge_started = 1
-  END IF
-END SUB
-
-
-' Capabilities keep their existing quiet predicate and call this after act.
-SUB sk_motor__sneak(sk_motor_on)
-  sk_motor__quiet = sk_motor_on
-  sneak(sk_motor_on)
-END SUB
-
-' Prefer a point outside a reported blast zone when inside it or headed into it.
-' This is a movement order, not a claim that the cog can leave instantly.
-SUB sk_motor__avoid_grenades()
-  sk_motor__evading = 0
-  sk_motor__i = 0
-  WHILE sk_motor__i < 4
-    IF k_comms_danger__grenade_until(sk_motor__i) > worldTick THEN
-      sk_motor__dx = selfX - k_comms_danger__grenade_x(sk_motor__i)
-      sk_motor__dy = selfY - k_comms_danger__grenade_y(sk_motor__i)
-      sk_motor__fx = sk_motor__move_x - k_comms_danger__grenade_x(sk_motor__i)
-      sk_motor__fy = sk_motor__move_y - k_comms_danger__grenade_y(sk_motor__i)
-      IF sk_motor__dx * sk_motor__dx + sk_motor__dy * sk_motor__dy < k_comms_danger__clear_radius * k_comms_danger__clear_radius OR sk_motor__fx * sk_motor__fx + sk_motor__fy * sk_motor__fy < k_comms_danger__clear_radius * k_comms_danger__clear_radius THEN
-        sk_motor__isqrt(sk_motor__dx * sk_motor__dx + sk_motor__dy * sk_motor__dy)
-        IF sk_motor__root = 0 THEN
-          sk_motor__dx = 1 - 2 * selfTeam
-          sk_motor__dy = 0
-          sk_motor__root = 1
-        END IF
-        sk_motor__move_x = k_comms_danger__grenade_x(sk_motor__i) + sk_motor__dx * (k_comms_danger__clear_radius + 50) / sk_motor__root
-        sk_motor__move_y = k_comms_danger__grenade_y(sk_motor__i) + sk_motor__dy * (k_comms_danger__clear_radius + 50) / sk_motor__root
-        sk_motor__evading = 1
-        sk_motor__dr_active = 0
-      END IF
-    END IF
-    sk_motor__i = sk_motor__i + 1
-  WEND
 END SUB
