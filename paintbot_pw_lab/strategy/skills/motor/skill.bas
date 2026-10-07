@@ -465,12 +465,8 @@ SUB sk_motor__finish_cover_capture(sk_motor_capture_x, sk_motor_capture_y)
   sk_motor__act(sk_motor_capture_x, sk_motor_capture_y, 1)
 END SUB
 
-' Called only at the former quiet-approach command sites.
-SUB sk_motor__quiet_approach(sk_motor_objective)
-  IF sk_motor_objective >= 0 AND controlOwner(sk_motor_objective) = -1 AND controlContested(sk_motor_objective) = 0 THEN
-    sneak(0)
-    sk_motor__neutral_rush_ticks_total = sk_motor__neutral_rush_ticks_total + 1
-  ELSE
-    sneak(1)
-  END IF
+' Count the post-capture pursuit selected by C.default_goal; motor behavior is unchanged.
+SUB sk_motor__cleanup(sk_motor_gx, sk_motor_gy, sk_motor_hold)
+  sk_motor__cleanup_ticks_total = sk_motor__cleanup_ticks_total + 1
+  sk_motor__act(sk_motor_gx, sk_motor_gy, sk_motor_hold)
 END SUB

@@ -305,18 +305,15 @@ Reading aid (the compiler receives component fields, not this introduction):
   Best_cost remains the HP-weighted ranking score; do not treat it as a physical distance.
   After an actual shootAt request with hasSpray, increment spray_distance_shots_total if
   the former best_cost test would have rejected it. This counter starts at zero and persists.
-  The helper sk_motor__quiet_approach(objective) is called only when the original capability's
-  quiet-approach conditions hold. If objective >= 0 AND controlOwner(objective) = -1 AND
-  controlContested(objective) = 0, call sneak(0) and increment neutral_rush_ticks_total.
-  Otherwise call sneak(1). This cumulative counter starts at zero and persists for the match.
-  It counts actual previously-sneaking command sites suppressed for neutral uncontested hearts.
-  Preserve the existing caller gates, including no visible target, audible sound and proximity.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
+  The helper sk_motor__cleanup(gx, gy, hold) increments cleanup_ticks_total once, then
+  calls sk_motor__act(gx, gy, hold). Only the default-goal capability calls it for visible
+  post-capture pursuit. The cumulative counter starts at zero and persists for the match.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
-  - neutral_rush_ticks_total -- actual quiet-approach commands suppressed at neutral uncontested hearts
+  - cleanup_ticks_total -- actual default-goal ticks pursuing a visible enemy after all hearts are owned
   - root -- the result of the last sk_motor__isqrt call
   - threw -- 1 on a commanded or forced grenade release tick, else 0
   - release_charge -- observed charge on this release decision
@@ -350,7 +347,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   `goal_x = controlX(objective)` and `goal_y = controlY(objective)`, with objective of
   `K.squad_target`. Step 2: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when
   `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 3: call `sk_motor__act(goal_x, goal_y, hold)` of
-  `SK.motor`. Step 4 (quiet approach): call sk_motor__quiet_approach(objective) of `SK.motor` when all of these hold. best
+  `SK.motor`. Step 4 (quiet approach): call the host command `sneak(1)` when all of these hold. best
   of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
   (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of
   `K.squad_target`. Step 5: set status to 0.
@@ -382,7 +379,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   `goal_y = hy + (ay * 3 + ax * 2 * side) * post_radius \ root`. Step 3: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when
   `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 4: if finish_capture = 1,
   call sk_motor__finish_cover_capture(hx, hy). Else call
-  `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (quiet approach): call sk_motor__quiet_approach(objective) of `SK.motor` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
+  `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (quiet approach): call the host command
+  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
   (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of
   `K.squad_target`. Step 6: set status to 0.
 - Uses: `K.squad_target`, `K.contacts`, `SK.motor`
@@ -403,31 +401,50 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ### C.default_goal
-- Summary: With no squad target, go for the thief, home, or the heart.
-- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: with thief of
-  `K.contacts`: if `carrying`, then the goal is the position of thief when
-  `ownHeartStolen AND thief >= 0`, else `(homeX, homeY)`. If not carrying, the goal is the
-  position of thief when `thief >= 0`, else `(heartX, heartY)`. The position of a seat is
-  `(playerX(seat), playerY(seat))`. Step 2: call `sk_motor__act(goal_x, goal_y, 0)` of
-  `SK.motor`. Step 3 (quiet approach): call sk_motor__quiet_approach(objective) of `SK.motor` when all of these
-  hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is
-  0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
-  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 4: set status to 0.
+- Summary: After all hearts are owned, pursue visible enemies instead of only their home.
+- Spec: `__start` does nothing. `__tick` does these steps in order.
+  Step 1 preserves the original fallback. With thief of `K.contacts`: if `carrying`, then
+  the goal is the position of thief when `ownHeartStolen AND thief >= 0`, else `(homeX, homeY)`.
+  If not carrying, the goal is the position of thief when `thief >= 0`, else `(heartX, heartY)`.
+  The position of a seat is `(playerX(seat), playerY(seat))`.
+  Step 2 sets pursuit = 0 and hold = 0. Only when carrying = 0 AND thief < 0 AND
+  heart_count of `K.squad_target` > 0 AND objective of `K.squad_target` < 0:
+  set target = best of `K.contacts`. If target < 0, scan i = 0 to 15, using only
+  i <> selfId AND i MOD 2 <> selfTeam AND visible(i). Choose the smallest squared
+  distance from self to playerX(i),playerY(i), with strict less-than preserving the lower
+  seat on a tie. This scan has no gun-range cutoff: the goal is to approach a visible enemy
+  that the firing selector cannot yet reach. Do not read coordinates of an invisible seat.
+  If target >= 0: set pursuit = 1; set goal_x = playerX(target), goal_y = playerY(target).
+  Set d2 to squared distance from self to this goal. Set stop_sq = gun_stop_sq, or
+  stop_sq = spray_stop_sq when hasSpray. If d2 <= stop_sq, set goal_x = selfX,
+  goal_y = selfY and hold = 1. This keeps the selected enemy in practical firing range.
+  Step 3: if pursuit = 1 call sk_motor__cleanup(goal_x, goal_y, hold) of `SK.motor`.
+  Otherwise call sk_motor__act(goal_x, goal_y, 0). The helper only counts activation and
+  calls the unchanged motor. No enemy memory, privileged coordinates or opponent identity.
+  Step 4 preserves quiet approach: call `sneak(1)` when best of `K.contacts` < 0 AND
+  soundCount() > 0 AND objective of `K.squad_target` >= 0. Inside that guard, call sneak(1)
+  only if squared distance to that objective is below quiet_sq. Step 5: set status to 0.
 - Uses: `K.contacts`, `K.squad_target`, `SK.motor`
 - Params:
-  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective
+  - gun_stop_sq = 2890000 square cm -- approach within17m for an ordinary gun
+  - spray_stop_sq = 360000 square cm -- approach within6m for a spray gun
+  - quiet_sq = 810000 square cm -- original9m quiet-approach condition
 - Done when: never
 - Checks:
-  - Acted: the rule selects this capability when no other rule holds. Reads: PWD.r, PWD.c
-- Status: specified (2026-10-05)
-- Rationale: The rule selects this capability only when objective is -1. Step 3 never fires then.
-  It stays for a literal match with base.bas.
+  - Acted: pursuit activation is counted by cleanup_ticks_total. Reads: PWE.e, replay
+  - Acted properly: pursuit only replaces the default goal after all hearts are owned; fallback, supply and heart rules retain priority. Reads: PWD.r, replay
+  - Result: time from all hearts owned to elimination or meter victory, and winning glory. Reads: replay
+- Status: specified (2026-10-07)
+- Rationale: The original legacy heartX/heartY goal is the enemy home in current teams rules.
+  Selected v10-xolod wins waited about48s after owning all hearts, with2–5 enemies alive
+  at meter victory. Visible survivors away from that fixed point are a pursuit opportunity.
+  Winning sooner is a hypothesis; lost territory, survival and glory awards remain measured.
 
 ### C.resupply
 - Summary: Walk to the remembered supply.
 - Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: call
   `sk_motor__act(nearest_x, nearest_y, 0)` of `SK.motor`, with nearest_x and nearest_y of
-  `K.pickups`. Step 2 (quiet approach): call sk_motor__quiet_approach(objective) of `SK.motor` when all of these
+  `K.pickups`. Step 2 (quiet approach): call the host command `sneak(1)` when all of these
   hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is
   0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
   (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 3: set status to 0.
@@ -449,7 +466,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   `my = (controlY(j) - selfY) \ 16`, and `score = ex * ex + ey * ey - (mx * mx + my * my) \ 2`.
   If `score > away_score`, set `away = j` and `away_score = score`. Step 2: if `away >= 0`, the
   goal is `(controlX(away), controlY(away))`. Else the goal is our own position. Step 3: call
-  `sk_motor__act(goal_x, goal_y, 0)` of `SK.motor`. Step 4 (quiet approach): call sk_motor__quiet_approach(objective) of `SK.motor` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`.
+  `sk_motor__act(goal_x, goal_y, 0)` of `SK.motor`. Step 4 (quiet approach): call the host command
+  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`.
   objective of `K.squad_target` is 0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
   (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 5:
   set status to 0.
@@ -510,20 +528,20 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy neutral_rush_ticks_total, continued_total, forced_total and
+  On a send, copy cleanup_ticks_total, continued_total, forced_total and
   tracking_updates_total, cover_capture_ticks_total and spray_distance_shots_total from `SK.motor` into same-named outputs for periodic telemetry.
 - Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
 - Outputs:
-  - neutral_rush_ticks_total -- neutral full-speed approach ticks through this status snapshot
+  - cleanup_ticks_total -- post-capture pursuit ticks through this status snapshot
   - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
   - spray_distance_shots_total -- actual newly enabled spray requests through this snapshot
-- Log: neutral_rush_ticks_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total, spray_distance_shots_total
+- Log: cleanup_ticks_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total, spray_distance_shots_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

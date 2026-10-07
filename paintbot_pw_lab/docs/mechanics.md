@@ -1,6 +1,7 @@
 # Paintbot PW mechanics (as deployed)
 
-> **Currency.** Active tools target `coworld-v0.3.123` / `28030de6` (2026-10-06), rules 49.
+> **Currency.** Active tools target `coworld-v0.3.124` / `7a29ed7a` (2026-10-07), rules 49.
+> The 0.3.123→0.3.124 diff adds training-map registration only; hosted simulation rules are unchanged.
 > The 0.3.115→0.3.123 diff preserves simulation rules; changes in `sim.nim` and
 > `mechanics.nim` add training damage/pickup telemetry. Earlier rules-49 changes below
 > were verified at `244dc62b`. BASIC execution changes materially: see policy-surface §2.

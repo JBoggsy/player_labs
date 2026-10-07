@@ -1,6 +1,7 @@
 # Paintbot PW evidence pipeline
 
-> **Currency.** Active tools target `coworld-v0.3.123` / `28030de6` (2026-10-06), rules 49.
+> **Currency.** Active tools target `coworld-v0.3.124` / `7a29ed7a` (2026-10-07), rules 49.
+> The 0.3.123→0.3.124 diff adds training-map registration only; hosted simulation rules are unchanged.
 > The current trace adds rules-49 commands/equipment and separates self-destruct damage.
 > Prior hosted measurements below remain evidence about 0.3.79/0.3.89, not hosted rules 49.
 > New local qualification is recorded in [WORKING_CONTEXT.md](../WORKING_CONTEXT.md).

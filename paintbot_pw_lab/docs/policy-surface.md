@@ -1,7 +1,7 @@
 # Paintbot PW policy surface: what a script can know and do
 
-> **Currency.** Raw BASIC host integration rechecked at `coworld-v0.3.123` / `28030de6`
-> (2026-10-06). The engine now imports Bassy, pinned to `77629c038fd2161c61b6a89505f39efa6bb26617`
+> **Currency.** Raw BASIC host integration is unchanged at `coworld-v0.3.124` / `7a29ed7a`
+> (2026-10-07): diff from the verified0.3.123/28030de6 contains training-map changes only. The engine now imports Bassy, pinned to `77629c038fd2161c61b6a89505f39efa6bb26617`
 > in `coworld/dependencies.lock`. `src/polyworld/basic.nim` was deleted; its old line
 > references below are historical anchors, not the current runtime. Neural ZIP/oracle
 > details remain scoped to 0.3.89 and require separate requalification before use.
