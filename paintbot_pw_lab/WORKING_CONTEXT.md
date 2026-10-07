@@ -28,7 +28,10 @@ Build21b9c416-1 passed G1–G5 and is uploaded as jb-pw-opt:v6
 (912ada85-9d70-4c23-b624-c11c32c1016a). Local39/56 vs v3,53/56 upstream,526 tracking
 updates across22/32 recorded seats. Grenade enemyHP563→814, teammate69→127,self6→9
 in matched24 local games. Fresh240-game A/B is running,192 Richard plus48 xolod;
-Richard alone is primary. Actual previews120 new credits on384 previous; request
+Richard alone is primary. Full result: v6 56/96 vs v3 36/96 wins, score delta+.197569
+[+.072426,+.322713]; xolod both24/24, delta−.006563. H1 supported. V6 is now research
+parent; v3 remains the last confirmed submitted version. Candidate seat-status artifacts
+remain pending (not operationally qualified). Actual previews120 new credits on384 previous; request
 manifest are authoritative. REPORT-6.md records evidence and limits.
 See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
 posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
@@ -39,12 +42,14 @@ Standing pipeline rule (orchestrator): while a hosted batch runs, diagnose and p
 next single-change candidate locally on the current candidate; compile and screen vs v3,
 the parent candidate and upstream. Hold its upload until the running A/B decides its parent.
 The previous v5 pipeline child is parked after negative local screens. Working source is now
-an unuploaded child of v6: issue safe trigger requests every eligible tick and let engine
+the v7 candidate on v6: issue safe trigger requests every eligible tick and let engine
 cooldown/windup enforce firing cadence, with repeat_trigger_total activation. The uploaded
 v6 build remains immutable. Build7c0a5e01-1 passes G1–G5, with33/56 local wins vs v6,36/56 vs v3 and53/56
 upstream. Counter16374 across30/32seats,23477 lines without validation failures. Four matched
 local games show637→694 actual shots and152→160 gun enemyHP; not a field claim.
-Upload waits for its parent Richard A/B. REPORT-7.md records evidence and limits.
+Parent A/B supported v6. Child uploaded as jb-pw-opt:v7
+(cdb7b8d3-4b79-4690-bafd-7f5ffcfd1636);240 fresh A/B episodes against v6 are being created,
+192Richard/48xolod. REPORT-7.md records evidence and limits.
 
 The pipeline remains strategy-as-source: edit `strategy/STRATEGY.md` or authored skills,
 commit inputs, then run `pw.py strategy compile`. Compiled builds are immutable. A compiler
