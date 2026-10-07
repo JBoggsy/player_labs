@@ -21,11 +21,12 @@ Paths are relative to the repo root. `sim.nim` and `mechanics.nim` are under `ex
 
 ## 1. The one thing to get right: winning, glory, and rank
 
-> **Current ranking update (2026-10-05).** Authenticated settings for
-> `league_ae677105-0ab8-4561-81ec-c9cf6735821c` now report OpenSkill,
-> `margin_scale: 600`, `round_scoring_rule: mean`. The Elo formula below describes the
-> retired league, not the current ranking algorithm. Verify backend semantics and
-> requalify the A/B metric before performance comparisons; this is tracked in TODO.
+> **Current ranking (2026-10-06).** League
+> `league_ae677105-0ab8-4561-81ec-c9cf6735821c` uses OpenSkill with
+> `margin_scale: 600`, `round_scoring_rule: mean`, `new_version_sigma: 6.0`.
+> Matchmaking is `team_n` / `elo_softmax`, temperature 100, favouring rating neighbours.
+> Settings evidence: `tmp/collab/optimizer/league.json`; source verification below.
+> The later Elo subsection describes the retired league only.
 
 > **Currency of this section.** Rules verified 2026-09-30 against paintbot-pw `118e1619` (tag
 > `coworld-v0.3.89`, the league's build that day; teams recordings are stamped rules 48 and play
@@ -43,7 +44,25 @@ Three different numbers matter, and only the last one is what the league ranks b
 2. **Glory is the score the platform receives.** The winner keeps its glory; the loser and both
    sides of a draw get 0.
 3. **League rank (MMR) is platform-owned.** The current settings use OpenSkill with
-   `margin_scale: 600`; its precise score-to-rank semantics are not yet source-verified here.
+   `margin_scale: 600`. Ratings belong to the player and displayed MMR is the conservative
+   ordinal `mu - 3*sigma`. Each two-team episode uses the soft outcome
+   `clamp(0.5 + (our glory - their glory)/1200, 0, 1)`.
+
+**Source verification:** metta revision `bb174d5ffb`,
+`packages/observatory-competitions/src/observatory_competitions/v2/ladders/rankings/openskill.py`
+(lines 194–196, 220–227, 288), and `.../ladders/updater.py:416-425`.
+A champion version change preserves player rating but widens sigma to at least 6.0;
+its immediate ordinal cost is `3*max(0, 6 - old_sigma)` before episode updates.
+Submit clear improvements and combine small wins into fewer submissions; uploads for
+experimentation do not themselves trigger this champion-version update.
+
+In rounds 849–852, all four observed league games for us were against Richard (v6 went 3–1).
+That is observed pairing frequency, not a guarantee of future opponents. The source-verified
+ladder explains why Richard matters to current MMR. James nevertheless requires broad hosted
+A/B coverage: Richard primary, xolod a substantial guard, and small samples for the remaining
+leaders, including frozen policies. Finist, zhar and relh had no-shot/zero-score or passive-score
+outcomes on 0.3.123 in this scout; replay activity must be rechecked to detect ports.
+
 
 ### 1.1 Heart meter versus glory
 

@@ -2,56 +2,19 @@
 
 ## Current objective and boundary
 
-The optimizer loop is authorized by `tmp/collab/optimizer/BRIEF.md`, subsequent verdicts,
-and James's local-first iteration-2 direction. Iteration 1 selected and uploaded range+HP
-as `jb-pw-opt:v2` (61662d47-c26e-4873-ac13-333f70d6b341), build `32ed3f70-1`.
-Its hosted confirmation is still downloading under shared API throttling. Iteration 2
-uses 24 recorded local games (seeds101–112, both sides) to select grenade charge continuity:
-173 teammate grenade HP exceeds gun129 and spray46; short throws account for98 teammate
-and154 self HP. Strategy source now specifies committed charging with periodic activation telemetry.
-Candidate `jb-pw-opt:v3` (73e01dfb-128b-44c6-ac0c-8276f82be78e), build `2a539036-1`,
-is uploaded with passing G1–G5. Matched24 local games reduce grenade teammate HP173→69
-and self HP188→6, with enemy HP481→563. It wins37/56 directly against v2 locally.
-Hosted fresh A/B is complete: v3 won72/72 versus v2's69/72; score_outcome .939028 versus
-.912836 (margin600). No failed episodes; all72 candidate episode status files (576 seats) verified clean. Orchestrator reports jb-pw-opt:v3 submitted as `sub_f210fc05-12a0-4f0a-8a94-d0bd8b9b3c09`. The optimizer did not submit; league placement is not independently verified here.
-Iteration4 fixed192-game score cohort is complete: v5 .747020 vs v3 .768218,
-delta−.021198 [−.090825,.048429]. Orchestrator agrees to retain v3. Median-time/status
-artifact collection remains partial and does not gate work. Local resupply child97b77787-1
-is parked and never uploaded (26/56 vs v5,47/56 upstream); do not stack on it.
-Iteration6 targets Richard (co-gas-paintbot-bassy-richard:v1 UUID
-f8b80a37-9dda-4d1c-98ea-adce5222a9a9). All28 v3 loss replays downloaded and hash-verified:
-Richard grenade HP958 vs our559, effective throws84% vs52%, while our gun HP is higher.
-Dense geometry shows our frozen aim/charge produces208cm median landing error vs51cm.
-Working source restores v3 and refreshes committed grenade aim/need on fresh safe eligibility,
-retaining continuity on lost eligibility. Counter tracking_updates_total supplies activation.
-Build21b9c416-1 passed G1–G5 and is uploaded as jb-pw-opt:v6
-(912ada85-9d70-4c23-b624-c11c32c1016a). Local39/56 vs v3,53/56 upstream,526 tracking
-updates across22/32 recorded seats. Grenade enemyHP563→814, teammate69→127,self6→9
-in matched24 local games. Fresh240-game A/B is running,192 Richard plus48 xolod;
-Richard alone is primary. Full result: v6 56/96 vs v3 36/96 wins, score delta+.197569
-[+.072426,+.322713]; xolod both24/24, delta−.006563. H1 supported. V6 is now research
-parent; orchestrator confirms v6 submitted as sub_9d9511f9-264c-4ed5-b0f8-026d924377b4; v6 is baseline/parent. Candidate seat-status artifacts
-verify16/120 episodes (128 seats), all clean; remaining coverage pending. V6 submission is orchestrator-confirmed; optimizer did not submit. Actual previews120 new credits on384 previous; request
-manifest are authoritative. REPORT-6.md records evidence and limits.
-See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
-posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
-starter stopgap; do not replace that entrant or infer its identity from our upload.
-Rank-9 rating archaeology is explicitly dropped by VERDICT-0.
+Continue the authorized optimizer loop. Parent is submitted v8 (build5cee1447-1), whose
+fresh hosted Richard improvement over v6 was +.133064, CI[+.009925,+.256203].
+Opening child87324810-1 is uploaded as jb-pw-opt:v9; its broad-field A/B is being launched.
+Current source is an independent spray-distance correction on v8: use physical target distance
+instead of HP-weighted ranking cost for both spray range gates. Activation counts actual newly
+allowed shot requests. Next is the independent spray-safety child. V7 cadence repair is running;
+combine with v8 only if the repaired hosted comparison supports it. Reports6/7/10–14 own details.
 
-Standing pipeline rule (orchestrator): prepare candidates while hosted batches run.
-Independent single-change children of the submitted parent may upload and run separate A/Bs
-in parallel; do not serialize siblings. Combine supported winners afterwards and evaluate
-the combination. V7 cadence and v8 capture completion are both children of submitted v6.
-V7 build7c0a5e01-1 UUIDcdb7b8d3-4b79-4690-bafd-7f5ffcfd1636 has240 A/B episodes
-(192Richard/48xolod); REPORT-7.md owns that decision. V8 build5cee1447-1 UUID
-32f1b591-b444-4210-94a8-35521d7f90f1 has its own fresh240-game A/B vs v6, same opponent
-allocation. REPORT-10.md and DESIGN-10.md own the capture experiment. Do not pool baselines.
-
-The pipeline remains strategy-as-source: edit `strategy/STRATEGY.md` or authored skills,
-commit inputs, then run `pw.py strategy compile`. Compiled builds are immutable. A compiler
-infrastructure change may edit runtime templates, generators and contracts; coordinate such
-changes at committed build boundaries with parallel compiler work. The maintainer entry point
-is [docs/strategy-compiler-maintainers.md](docs/strategy-compiler-maintainers.md).
+Local games establish runtime health, activation and mechanisms, never performance or a veto.
+Every clean compiled candidate proceeds to hosted A/B. Keep preparing the next candidate while
+hosted batches run; no hosted self-play, league submissions, public posts or git pushes.
+The orchestrator owns league submission. Live round853 confirms v8 is James Botts's champion.
+Broad-field coverage includes frozen leaders under James's latest instruction; see charter below.
 
 ## Foundation qualification (v1 reference)
 
@@ -118,16 +81,16 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   compiled with `pw.py strategy compile`. Never hand-edit compiled policy BASIC; compiler-owned runtime templates are editable infrastructure. Working source starts
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
-- baseline: retained `jb-pw-opt:v3`, version `73e01dfb-128b-44c6-ac0c-8276f82be78e`, build `2a539036-1`.
-- candidate: iteration6 safe grenade tracking from v3, compile/upload pending. No v5 or
-  parked resupply behavior is included; source is STRATEGY.md plus motor/skill.bas.
-- opponents: refresh the current leaderboard plus recent public 0.3.123 episodes every iteration;
-  keep real opponents with shots or kills above zero in scout. Current rounds842–840 scout:
-  `co-gas-paintbot-bassy-richard:v1` (new priority), `xolod:v14`, `daveey-pw-league-smoke-l17c-s41u150-hc:v1`.
-  Exclude our own policies and inactive unported leaders. Evidence: `tmp/collab/optimizer/iteration4-scout/`.
-- local benchmark: `reference/base-bassy-28030de6.bas`, 28 seeds × both sides with
-  `pw.py local screen` for every candidate before credits; also screen against build
-  `2898e485-1`. Local evidence is not field evidence.
+- baseline: submitted `jb-pw-opt:v8`, version `32f1b591-b444-4210-94a8-35521d7f90f1`, build `5cee1447-1`.
+- candidate: opening supply gate on v8, build `87324810-1`; independent spray-distance and spray-safety children follow.
+- opponents: every top-8 leaderboard entrant except us, plus all explicitly named targets:
+  Richard (primary, heavy), xolod (substantial guard), and small matched samples against
+  finist, zhar, relh, basic-v22, daveey/Alpha, and Rohit. Refresh exact versions every iteration.
+  Include frozen leaders for port detection; flag verified new activity in STATUS and increase
+  their allocation in subsequent preregistered batches. Never use our policies as hosted opponents.
+- local benchmark: upstream and own builds for runtime health, activation and mechanisms only.
+  Local outcomes never rank, park or reject candidates. Every clean compiled candidate proceeds
+  to hosted A/B against the real field.
 - iteration 1: range clamp, spawn-HP thresholds, support pickups, disarmed following,
   each in a separate source commit/build with activation tracing. VERDICT-1 permits stacking
   locally passing changes into one uploaded bundle and one hosted A/B.
@@ -153,6 +116,9 @@ UUID32f1b591-b444-4210-94a8-35521d7f90f1. Local outcomes are not performance sig
 All clean candidates proceed to hosted real-opponent A/B. Current iteration13 rebases the
 opening-supply gate on v8. Next: spray-distance correction and spray-safety on v8, independently;
 gun-corridor lever if credits allow. V7 platform-failed slots will be re-requested explicitly.
-New A/B allocations will follow recent league opponent frequencies with a Richard floor,
-including zhar/finist/relh only after replay activity verification. Campaign744 before repairs
-and new batches; per iteration300/day1,400. Reports/manifests own exact spend and identities.
+New A/B allocations cover the whole top field under James's latest instruction, not only
+league neighbours. Default: 192 Richard episodes, 48 xolod, and 8 per named remaining opponent,
+all balanced by arm and side: 288 episodes / estimated 144 credits per candidate.
+Richard is the primary outcome; small opponent samples detect ports and large regressions,
+not precise competitiveness. Campaign previews total 764.5 after v7 repair; per iteration300/day1,400.
+Reports/manifests own exact spend and identities.
