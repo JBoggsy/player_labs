@@ -24,7 +24,12 @@ Richard grenade HP958 vs our559, effective throws84% vs52%, while our gun HP is 
 Dense geometry shows our frozen aim/charge produces208cm median landing error vs51cm.
 Working source restores v3 and refreshes committed grenade aim/need on fresh safe eligibility,
 retaining continuity on lost eligibility. Counter tracking_updates_total supplies activation.
-REPORT-6.md records evidence and limits. Total committed spend384; iteration6 zero so far.
+Build21b9c416-1 passed G1–G5 and is uploaded as jb-pw-opt:v6
+(912ada85-9d70-4c23-b624-c11c32c1016a). Local39/56 vs v3,53/56 upstream,526 tracking
+updates across22/32 recorded seats. Grenade enemyHP563→814, teammate69→127,self6→9
+in matched24 local games. Fresh240-game A/B creation is running,192 Richard plus48 xolod;
+Richard alone is primary. Projected120 new credits on384 previous; previews in request
+manifest are authoritative. REPORT-6.md records evidence and limits.
 See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
 posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
 starter stopgap; do not replace that entrant or infer its identity from our upload.
