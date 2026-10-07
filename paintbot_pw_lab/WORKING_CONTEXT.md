@@ -1,234 +1,70 @@
-# paintbot_pw_lab working context
+# Paintbot PW working context
 
-Use the current user request to establish the objective, scope and next decision.
-Resolve the active game configuration, policy identity and roster through the platform
-before evaluating or changing live participation. Source code and current API responses
-define behavior; this file must not substitute for a live-state query.
+## Current objective and boundary
 
-Maintain only the active objective, unresolved constraints and next action here.
-Replace completed or superseded context in place.
+Task 0 is complete under `tmp/collab/optimizer/BRIEF.md` and `VERDICT-0.md`.
+Wait for the orchestrator's PROCEED before iteration 1. The optimizer never submits,
+posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
+starter stopgap; do not replace that entrant or infer its identity from our upload.
+Rank-9 rating archaeology is explicitly dropped by VERDICT-0.
 
-## Compiler maintenance and parallel work
+The pipeline remains strategy-as-source: edit `strategy/STRATEGY.md` or authored skills,
+commit inputs, then run `pw.py strategy compile`. Compiled builds are immutable. A compiler
+infrastructure change may edit runtime templates, generators and contracts; coordinate such
+changes at committed build boundaries with parallel compiler work. The maintainer entry point
+is [docs/strategy-compiler-maintainers.md](docs/strategy-compiler-maintainers.md).
 
-The compiler documentation entry point for maintainers and the agent generalizing to other
-Polyworld games is [docs/strategy-compiler-maintainers.md](docs/strategy-compiler-maintainers.md).
-It describes existing interfaces, game coupling, evidence requirements and a proposed extraction
-sequence. Generalization is not implemented. James intends Paintbot policy work to continue
-separately; coordinate shared compiler/runtime changes at committed build boundaries, using
-separate worktrees. Do not change inputs underneath an active compilation.
+## Active baseline and qualification
 
-## Objective
+- Release: `coworld-v0.3.123`, engine `28030de6`, simulation rules 49. Both tools and native
+  library rebuilt; 30 current public replays hash-verified. Live ranking settings: OpenSkill,
+  `margin_scale: 600`, `round_scoring_rule: mean`. Refresh live state before evaluation.
+- Policy: **`jb-pw-opt:v1`**, version **`bac0d7d0-60f3-4c76-a1e6-aa947f9958ed`**, James Botts
+  (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`). Uploaded with coworld 0.1.57; softmax-cli 0.26.38.
+- Build: [`2898e485-1`](strategy/compiled/2898e485-1/report.md), from committed foundation
+  strategy port. All G1–G5 passed first round; 33 artifact hashes verified. Upload provenance
+  is in `strategy/compiled/uploads.jsonl`. Hosted performance is not yet measured.
+- G2: 16 enabled seats. G3: sampled peak 10,241 instructions / 17,329 work units.
+  Static telemetry bound 313 bytes / 51 events. G4: 56 full matches, no bad seats, 22 wins /
+  34 losses; side-balanced local outcome 0.450357, 95% interval [0.384288, 0.516426].
+- G5: 3,477 lines from 16 candidate-seat recordings, all required fields and both message
+  types exercised, no failures. This is transport/coverage, not a semantic or competitive pass.
+- G4 reference is upstream's ported starter copied verbatim at `28030de6` into
+  `reference/base-bassy-28030de6.bas`. It also changes targeting range, HP/pickup handling,
+  and support behavior. Exact identity is therefore not claimed. The regression screen passed;
+  the wide interval does not establish statistical non-inferiority or equality.
 
-**Build the strategy-as-source pipeline, then write the policy in it.** Both designs were
-accepted on 2026-09-30 (James):
+Bassy changed `/` to fixed-point division, comparisons to -1, and logical operators to bitwise.
+The foundation port preserves integer division using `\`, explicit 0/1 outputs, and legacy
+host calls still supported by Bassy. Source strategy/thresholds are unchanged. A release change
+now invalidates component reuse. Compiler unit validation rejects fixed-point `/` under the
+integer strategy contract. Existing runtime lib/main required no semantic edits. Inactive M3
+codec runtime and units have **not** been ported or requalified.
 
-- [Strategy file format](docs/designs/2026-09-30-strategy-file-format.md): `strategy/STRATEGY.md`
-  is the load-bearing source of truth (structured Markdown in Simplified Technical English;
-  Knowledge, Situations, Skills, Capabilities, prioritized rules, Adaptations, Communication;
-  five-level checks; telemetry v2). Compiled BASIC is never edited by hand; Skills carry authored
-  `skill.bas`.
-- [Compilation](docs/designs/2026-09-30-strategy-compilation.md): a Python driver
-  (`pw.py strategy compile --agent claude|codex`) around one LLM step; one unit per component;
-  `version.json` + compile report; gates G1-G5; the local screen never vetoes an intended
-  behavior change.
-- [Comms v1](strategy/comms.md): 9 scrambled 20-digit message types (focus calls, disguise
-  friend/foe, sightings, grenades, glory hearts, pickups). Three engine questions to verify first
-  (its §11).
+M3 remains an inactive lever: source recoverable at `2184fc64`, immutable build `18e0aa1f-1`,
+protocol and limitations in [strategy/comms.md](strategy/comms.md). Its 0.3.115 hosted A/B was
+inconclusive. Do not substitute it for the current baseline.
 
-**M0 and M1 are complete and locally qualified.** Both real compiler builds
-passed G1–G5: [Claude `f4ffb408-1`](strategy/compiled/f4ffb408-1/report.md) and
-[Codex `ee55887d-1`](strategy/compiled/ee55887d-1/report.md). Deterministic tests include
-engine-backed selection/adaptation checks. Changed units now receive their previous BASIC
-as read-only compiler input in `context/previous/`, with requested outputs initially
-absent; regression tests cover both handoff and stale-output rejection.
+## Evidence limits and next experiment
 
-**Qualified baseline:** [build `b41ef1fc-1`](strategy/compiled/b41ef1fc-1/report.md)
-was generated by Claude Opus 5.5 from the committed `STRATEGY.md` and authored motor skill.
-All G1–G5 passed on the first round. G4 reports identical play against `reference/base.bas`
-across 28 seeds on both sides (56 matches), with no bad seats and interval [0.5, 0.5]. G5
-parsed 2,712 lines from 16 candidate-seat recordings without failures. Static use is 275/512
-globals and 983/4,096 array cells; the sampled peaks are 10,175 instructions and 17,298 work
-units. Telemetry bounds are 482 bytes and 59 print events per tick. The full suite passes
-320 tests, build artifact hashes verify, and trace reports every source component unchanged.
+The current public scout (`episode_data/optimizer-task0/scout.json`) found near-total
+inactivity and zero shots for zhar, finist, relh and our old jb-pw-base. Xolod was active.
+Both the frozen starter and old foundation disabled all 16 seats in direct 0.3.123 diagnostics.
+Do not interpret old-runtime wins or wins against inactive opponents as current field strength.
+Re-resolve opponents before evaluation; the useful field may change as policies are ported.
+The scout report's historical margin-1000 Elo column is not the current ladder score.
 
-The immutable compiler report retains five open guesses (four low, one medium). Review found
-no behavior substitution: the positive-period guard does not affect the default 72; take/cover
-run only with a valid target; legacy host fields match the baseline; Communication runs after
-the motor, so the grenade callout is on the same tick. These M1 gates are not a five-level semantic
-audit or proof of all game configurations. M2 and M3 are qualified on rules49; current limitations and the next edit-loop decision are below.
+The foundation still targets to 52.5 m despite ordinary gun reach about 21 m, retains old
+3-HP strategic thresholds despite 10 HP / one life, and can abandon grenade charges.
+These are separate candidate changes, not part of the Bassy port. Every new or re-gated
+behavior must include activation tracing. Report hypotheses to the orchestrator.
 
-**M2 is complete: local five-level audit and hosted telemetry confirmed.**
-`pw.py strategy audit ROOT... --build 567feb38-1 --json` connects scheduled beliefs,
-change-complete decisions, runtime events and hash-verified replay outcomes. It reports
-all 26 baseline checks, missing declarations and explicit unmeasurable reasons. The
-[tool reference](docs/tools/pw_strategy.md#five-level-audit-m2) is the current contract.
-
-James authorized active-pin migration, then all uploads and hosted testing needed to
-finish M2 on 2026-10-05. Do not add permission checkpoints for those tests. League submission,
-Git publishing remains outside this testing objective. James subsequently authorized M3 implementation and the testing needed to get it working. Work is committed
-locally. The reviewer session is `pw-m2-review` (Claude Opus 5.5); its bounded handoffs and
-verification scripts are under `tmp/collab/strategy/m2/`.
-
-**M3 implementation and acceptance are complete.** James chose lightweight scrambling (failed checks are uncertain disguise
-evidence) and lossless compact batch telemetry under the existing 512-byte/64-event cap.
-X targeting requires our own
-conflicting-position evidence or matching reports from two distinct teammates; a failed check
-alone does not trigger friendly fire. G5 reports rare message types as not exercised while
-requiring valid per-seat unconditional logs and exercised send/receive paths. Codec/transport engine checks and batch parsing are implemented. The inactive M3 source at `2184fc64` contains
-all nine COM components and motor receiver effects. Final build `18e0aa1f-1` passed G1–G5 with all
-units reused from the peer-reviewed first M3 build `c03010be-1`. It uses 354 globals,
-2,324 array cells and 127,897/131,072 source bytes; sampled peaks are 21,185 instructions
-and 31,833 work units. Static telemetry is 434 bytes/63 events. Its G5 sample has 7,550 lines
-from 16 seats, no failures and D/U not exercised. All 43 artifact hashes match.
-
-Six local recordings cover 48 candidate-seat recordings and all nine message types.
-The final local semantic audit has 16,326/16,326 eligible teammate deliveries decoded,
-18 passing checks, 38 unmeasurable and two failing checks. Enemy reports include 62/5,793
-reports of disguised teammates. Grenade claims fail in 61/82 measurable cases: 32 charges
-never start (the motor can request charging while disarmed) and 29 land elsewhere. Another
-54 warnings are superseded, five lifecycles unfinished and two landings beyond episode end. The evaluator follows the actual
-charge command/lifecycle, including delayed start and release, instead of imposing an
-unsupported deadline. These policy findings remain visible; gameplay was not retuned.
-Full suite: 443 passed. M2 hosted regression: 17 pass, nine unmeasurable, zero failures.
-
-Uploaded `jb-pw-strategy-m3:v1` is version `7361ffff-f0d4-4c59-925b-6706331b59d4`, linked to
-`18e0aa1f-1` in `strategy/compiled/uploads.jsonl`. The fixed 64-episode hosted comparison is
-complete on 0.3.115: 32 matched pairs, no exclusions or operational failures. Score outcome
-(margin 600) is 0.797552 baseline versus 0.781094 M3; difference −0.016458, unadjusted 95%
-paired interval [−0.229000, +0.196083], BY-adjusted p = 1.0. Wins are 26/32 versus 25/32.
-The verdict is inconclusive; retain the baseline as the competitive reference.
-
-All 256 candidate-seat logs pass G5 (416,062 lines, peak 270 bytes/tick, all nine types
-exercised). The four-game dense audit covers both opponents and sides: all 32 runtime
-reconstructions pass, and 13,126/13,126 eligible messages decode. Its checks are 17 pass,
-36 unmeasurable, three X checks not exercised and two fail: 87/5,661 enemy claims describe
-teammates; 80/94 measurable grenade claims fail (37 unstarted charges, 43 different landings).
-A reviewed loss links a successfully decoded warning to a blast 740 cm away that killed
-the thrower and two receiving teammates. Delivery is not message truth or proven benefit.
-See the [qualification record](docs/designs/2026-10-05-m3-qualification.md) and its linked
-machine-readable request/episode identities, statistics and evidence. M4 has not started.
-Requests and downloads are in `episode_data/m3-18e0aa1f-ab/`. The implementation plan and
-peer reviews are under `tmp/collab/strategy/m3/`; Claude Opus 5.5 in `pw-m2-review` reviews
-implementation and owns bounded audit edits; root owns integration and qualification.
-See `strategy/comms.md` for the protocol and verified rules49 details. Foundation build
-`3d0f8a4f-1` passed G1–G5 with all 23 component units reused and 56 identical-play matches
-(no bad seats, interval [0.5, 0.5]). It qualifies generated PWD printing while retaining the
-literal baseline shouts; it is not the M3 communication policy.
-Its static telemetry bound is 313 bytes/51 events, and memory is 275 globals/983 array cells.
-Its two G5 tapes audit to 16 pass, nine known unknowns and one unexercised check, with all 16
-runtime reconstructions passing. The final M3 upload and hosted evidence are tracked above.
-
-**Known evidence limits:** baseline Results cannot be conditional on full correct execution
-because private motor state is not logged. Self-motion and pickup remembered values also
-lack logs; cover “near” has no threshold; full grenade charge uses a private flag. Situation
-True checks are absent from source. These are source/evidence findings, not permission to
-change baseline behavior or increase telemetry. Unknown checks never pass, and raw
-outcomes remain available separately. The five immutable compiler guesses remain open.
-
-**Active-pin migration locally qualified (2026-10-05):** teams release `0.3.115`, commit
-`244dc62b38a8a89721cbb1625f05a99ca60d0c13`, rules 49. Authenticated lookup resolved teams
-league `league_ae677105-0ab8-4561-81ec-c9cf6735821c` to
-`cow_7109be6e-ad0c-4088-991d-060057a33c4e`. Both `deployed_ref` and public-league lookup
-now use that league. The scratch clone `tmp/collab/strategy/m2/migration-engine` supplies
-builds through `PW_CLONE`; the original engine checkout remains untouched.
-
-[Build `567feb38-1`](strategy/compiled/567feb38-1/report.md) passed G1–G5 first round.
-All 23 component entries are reused, every BASIC unit is byte-identical to M1, and the
-assembled policy differs only in its provenance header. The 28-seed, both-side screen
-reports identical play, no bad seats, interval [0.5, 0.5]. Sampled peaks are 10,519
-instructions / 17,776 work units; memory remains 275 globals / 983 cells. G5 parsed
-3,098 lines across 16 candidate-seat logs without failures. The five inherited guesses
-remain open with the same reviewed dispositions; no strategy improvement is implied.
-The frozen baseline still assumes 3 HP and targets out to 52.5 m against a 21 m gun.
-
-The six-recording rules49 audit (two G5 tapes plus seeds 1–2, both sides, full length)
-covers 75,420 living decision ticks: 17 pass, nine unmeasurable, zero fail. All measurable
-checks are exercised. Four full matches ended at 3,833, 3,833, 1,951 and 1,951 ticks.
-The report is `analysis/strategy_audit/567feb38-1-dee5881ab1c5/report.md`; the source
-recordings are `tmp/strategy-evidence/567feb38-1/`. Independent evidence checks confirm
-182/182 status sends at t+1 (182 violations at either neighboring offset), 22 terminal-death
-windows without a later PWE death line, all three new pickup kinds exercised, and all 83
-report input hashes matching. The original six rules48 recordings still yield 17 pass,
-nine unmeasurable, zero fail with the rebuilt old exporter. A rules48 tape also hash-verifies
-under the new exporter. Full suite: 364 passed.
-
-Trace schema 2 / table version 3 expose self-destruct and new equipment. Exact engine/rules
-pairs gate the audit. Self-destruct is separate from grenade metrics; source-bound baseline
-semantics and evidence gaps are unchanged. Aim inference is uncalibrated for rules49;
-radar-then-other-item takers can be unassigned. The same-owner lob/self-destruct collision
-is source-reviewed but not a separate integration test. See the evidence-pipeline reference.
-
-**Hosted acceptance (2026-10-05):** `jb-pw-strategy-m2:v1`, immutable version
-`e7cf2caf-3d02-4368-9dcd-2b75b429d15f`, is linked to build `567feb38-1` and its SHA256 in
-[`strategy/compiled/uploads.jsonl`](strategy/compiled/uploads.jsonl). Upload used coworld
-0.1.56 through a `uv run --with` overlay; the shared lockfile is unchanged. The platform's
-version-detail response does not expose the file hash/size, so receipt provenance is the
-successful hash-based CLI upload, immutable returned version and unchanged local bytes;
-there is no independent downloaded-policy hash claim. The exact command was:
-
-```bash
-uv run --with 'coworld[auth]==0.1.56' coworld upload-policy \
-  --file paintbot_pw_lab/strategy/compiled/567feb38-1/policy.bas --name jb-pw-strategy-m2
-```
-
-The local SHA256 checked immediately after upload was
-`812a2f20a8e84bea87a7a4d0566a2773113d69212177322d62f3d70288e7ebae`, matching the build.
-Telemetry alone cannot distinguish this build from M1 because their runtime units are identical.
-
-Private request `xreq_b602c137-06ad-4696-b334-3e99a02d0de2` completed its single episode,
-`ereq_20200b19-34c2-439c-94da-7d0166b7383e`, on the pinned 0.3.115 coworld, `1v1`, seed
-1701. Candidate even seats faced `aaron-paintbot-pw:v60` on odd seats. Eight candidate copies
-provide telemetry coverage for this task, not a broader performance-roster preference.
-Creation estimated 0.5 credits; this is not a measured charge. The ordinary player session
-could not read the account credit endpoint (403); no elevated access was used.
-
-All eight logs arrived: 5,800 telemetry lines, all five families and declared G5 fields,
-zero parse/order/runtime-disable failures, peak 150 bytes per tick, largest log 36,809 bytes.
-The rules49 replay hash-verifies through 3,850 ticks. The hosted audit covers 19,829 living
-decision ticks: 17 pass, the same nine known unmeasurable checks, zero fail or input failures.
-All 56 status sends align at t+1; neighboring offsets each mismatch all 56. All 24 audit input
-hashes verify. The candidate won this one game (510–0); no performance conclusion follows. This hosted check covers only the even side; both sides
-are covered locally. Claude Opus 5.5 reviewed the artifacts and found no acceptance blocker.
-
-Artifacts: `episode_data/m2-567feb38-1/`; report:
-`analysis/strategy_audit/567feb38-1-hosted/report.md`. The existing G5 reader checked unchanged
-log bytes through scratch symlinks with candidate side derived from verified hosted identity.
-The full suite passes 364 tests; after correcting the report's erroneous local-only label,
-the focused audit tests pass. The leaders tool now defaults to the current Competition division
-`div_63c08219-c269-4bc5-84ae-5ccfc55b0a90`. No telemetry/parser or baseline changes were needed.
-
-`PW_DOCS_SHA` stays `118e1619`: BASIC/rules49 changes are source-verified in relevant docs,
-but wider neural/oracle references remain explicitly scoped to 0.3.89. Live doctor passed
-on 0.3.115 after a 429 retry. softmax-cli 0.26.38 matched the latest release; coworld 0.1.56
-was used for hosted operations. M3 acceptance is complete as described above; the next
-edit-loop direction is for James.
-
-Inputs the policy (`STRATEGY.md`) should build on:
-
-- What wins and how it is scored: [mechanics.md §1](docs/mechanics.md) (glory, margin-scaled Elo:
-  speed and survival dominate; a win at t seconds is worth ~600 − t).
-- How the field plays and who leads: [field.md](docs/field.md#how-the-field-plays-80-league-episodes-2026-09-29)
-  and [the 80-episode analysis](docs/reports/2026-09-29-league-field-analysis.md) (elimination in
-  78/80, champion lineages and styles, the Aaron `FIRE22`/`ITEM23` shout protocol, friendly fire,
-  uniforms).
-- Candidate levers with their evidence: [TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md) (abandoned
-  grenade charges self-kill, uniforms are a liability or an infiltration tool, win by killing fast,
-  lives decide matches, targeting disguised teammates).
-- What a policy can do and afford: [policy-surface.md](docs/policy-surface.md) (BASIC surface,
-  budgets: base.bas uses 18% of instructions, the neural lane).
-- How we will test it: [paintbot-pw-ab](.claude/skills/paintbot-pw-ab/SKILL.md) and the loop charter below.
-
-## Task 0 migration status
-
-The live league resolves to `coworld-v0.3.123` / `28030de6`, rules 49. Both tool and native
-builds completed on this pin. Coworld CLI is updated to 0.1.57 (latest checked), softmax-cli
-remains 0.26.38. James Botts is verified active. Working `STRATEGY.md` and motor source
-are restored from foundation commit `3d0f8a4f`; M3 remains recoverable at `2184fc64` and
-is documented as inactive in `strategy/comms.md`. No optimizer baseline has been uploaded.
-
-Bassy changed division and boolean semantics despite the unchanged simulation rules number.
-The foundation compiler contract requires migration before qualification can be claimed.
-Current evidence and the next decision live in `tmp/collab/optimizer/`.
+Five inherited compiler guesses remain open (four low, one medium); none is new to the port.
+Private motor state and several source check thresholds remain unlogged/unspecified, so G5
+cannot establish all five audit levels. Never promote an unmeasurable or unexercised check to
+pass. The 0.3.115 M2/M3 audit evidence does not requalify the audit engine at 0.3.123.
+`PW_DOCS_SHA` remains `118e1619` for unreverified neural/oracle references; current raw-BASIC
+facts have explicit currency blocks in mechanics, policy-surface and evidence docs.
 
 ## Loop charter
 
@@ -240,10 +76,10 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   live margin) of our policy against the current top-4 league entrants, then climb the
   paintbot-pw league standings with a submitted improvement.
 - policy_file: `paintbot_pw_lab/strategy/STRATEGY.md` plus authored `strategy/skills/*/skill.bas`,
-  compiled with `pw.py strategy compile`. Never hand-edit other `.bas`. Working source starts
+  compiled with `pw.py strategy compile`. Never hand-edit compiled policy BASIC; compiler-owned runtime templates are editable infrastructure. Working source starts
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
-- baseline: first upload of the migrated foundation source as `jb-pw-opt` (set when uploaded).
+- baseline: `jb-pw-opt:v1`, version `bac0d7d0-60f3-4c76-a1e6-aa947f9958ed`, build `2898e485-1`.
 - opponents: `xolod:v14`, `zhar:v55`, `finist:v2`, `relh-paintbot-pw:v56` (resolved 2026-10-07
   round 832); re-resolve with `pw.py leaders --json` before each baseline evaluation.
 - allowed_changes: any single attributable change to the strategy source or a skill, including
@@ -253,101 +89,10 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
 - max_iterations: 20. Stop rules in the loop skill mean "report to the orchestrator and wait
   for PROCEED", not "stop working".
 
-## Identity and presence
+## Identity, roster and budget
 
-- Account players: "James Botts" (default) and "Games Bond". James Botts runs `jb-pw-base:v1`
-  (unchanged `base.bas`, uploaded and submitted 2026-09-30, champion in the paintbot-pw league and,
-  by `entrants_from_league_id` chaining, auto-entered into Heartland and Heartland Big; see
-  [field.md § Our account](docs/field.md#our-account)). Confirm `uv run coworld player list`
-  marks the intended player (●) as active before any upload; `softmax status` shows only the user.
-- James Botts was verified active for the M2 upload on 2026-10-05. Recheck `coworld player list` before later uploads; sessions expire.
-- Credits: 20,000 balance at the cap, refilling ~1,429/day (2026-09-28). A league-like
-  episode costs ~0.3 credits.
-
-## Decisions for James
-
-1. ~~Starting policy lane~~ **Decided 2026-09-30: plain BASIC**, compiled from `STRATEGY.md`
-   (not the Jev advisor, not the neural ZIP lane).
-2. **Player identity** for the real policy (James Botts, which already runs `jb-pw-base:v1`, or
-   Games Bond / a new player). Ratings belong to the player.
-3. **Heartland memberships:** submitting to the paintbot-pw league auto-entered `jb-pw-base:v1`
-   into Heartland and Heartland Big (FFA-kin, out of scope). Retire them, or leave them?
-4. **Evaluation roster:** `user_preferences.md` says hosted requests carry one copy of our policy
-   (stated for Gods of the Arena's 10 seats). The paintbot-pw league seats one policy on all 8 seats
-   of a team, so mirroring the league means 8 copies vs 8 pinned opponent seats (used so far).
-   Confirm this exception for paintbot-pw.
-5. **A/B default design:** paired on the Elo outcome score (built) vs unpaired `field` (the
-   measurements argue for `field`: pairing needs one request per seed and barely reduced variance).
-6. **The loop charter** above, if the loop should run unattended.
-7. Defaults already taken (change any): paired/SPRT statistics added to the shared `coworld-ab`
-   engine; the intent-telemetry knob defaults on; rerun.io not added.
-
-## Measured findings (2026-09-29)
-
-League facts (80 hash-verified 0.3.79 episodes; [field.md](docs/field.md#how-the-field-plays-80-league-episodes-2026-09-29),
-[field analysis](docs/reports/2026-09-29-league-field-analysis.md)):
-
-- 78 of 80 matches end by elimination (median 82 s); winning glory median 544, of which the
-  countdown (−88) dominates and all awards add +42. Speed and survival decide rank.
-- No side advantage in the league (odd seats 43/80, Wilson 43-64%). The local base-vs-base
-  71% odd-side rate is a mirror-match effect, so keep local screens side-balanced anyway.
-- Every league episode has its own engine seed (`crc32("<division>:<round_index>") + job
-  index`); the API's `game_config.seed: 2026` is a placeholder. Live configs carry
-  `behind_lives: 5, behind_cogs: 10`.
-- Uniforms are a net liability: a disguised cog is hit ~31× as often per tick, mostly by its
-  own team; 7.1% of all hits are friendly. Grenades: 100 self-kills vs 164 enemy kills.
-- Top policies: the Aaron pair (flank opening, grenade-heavy, `FIRE22`/`ITEM23` shout
-  protocol) and daveey-pw-neural (silent, gun-only, wins by killing, 74 s median win).
-
-Tooling facts:
-
-- Hosted tapes built with Nim 2.2.10 re-simulate hash-exactly under local Nim 2.2.6 (80/80
-  0.3.79 episodes). Teams tapes carry header rules 48; the teams game plays rules 47.
-- `pw_local` runs about 1.5 matches/s on 14 cores; `jev.bas` without an oracle plays
-  move-for-move like `base.bas` (`local screen` reports `identical_play`).
-- Seed pairing barely reduced outcome-score variance locally (per-pair SD 0.40 vs ~0.44
-  unpaired); about 330 pairs detect +0.05 on the Elo outcome. An explicit request seed makes
-  every episode of that request the same world, so a paired design needs one single-episode
-  request per (arm, opponent, side, seed). Given the small variance gain, consider the unpaired
-  `field` design the default (decision 5 below).
-- `base.bas` peaks at 9,116 instructions and 15,538 work units per decision (18% / 12% of the
-  budget); it aims at disguised teammates on ~1% of target lines and hits them in about half of
-  those cases.
-
-## Answered 2026-09-30
-
-- The ladder-wide MMR drop (top ~2,370 → ~1,820) is Elo settling at a tighter spread under
-  `margin_scale` (a win is worth ~0.77, not 1.0; max spread ~210 points), not a re-rating.
-- The Jev oracle's model is allowed (platform allowlist null; the league setting is schema-only)
-  and Beta very probably gets answers (its answer-triggered relay shouts appear in 20/20 episodes).
-- Hearts ignore disguises: capture, credit and contest use the true team, and public heart state
-  reveals a disguised capturer's real team ([mechanics.md, Disguise](docs/mechanics.md)).
-- Explicit XP seeds fix the world (pilot: identical final hashes per request), and hosted seat logs
-  come back for our own policy ([field.md § Seeds](docs/field.md#seeds-what-actually-reaches-the-engine)).
-
-## Open constraints
-
-- Tools are pinned to `244dc62b` (coworld-v0.3.115, rules49), locally and hosted-qualified
-  above. The broader historical source-citation anchor is `118e1619` (0.3.89). From 0.3.80
-  to 0.3.89 no teams rule changed (same hashes, same BASIC peaks), but 0.3.89 added `rnd(n)` (now a reserved host
-  name: `pw.py local compile` accepts `x = rnd(10)` and rejects `rnd = 3`), moved BASIC perception
-  into `seat_view.nim`, and retired every earlier neural contract. `pw_trace.nim` and `pw_map.nim`
-  now define the wading test locally (0.3.89 removed `neural_contract.inWater`), and
-  `deployed-ref` also diffs `seat_view.nim`, `neural_contract.nim` and `guide.md`. Record
-  `coworld_version` per episode and never pool rules versions.
-- 0.3.89's `-d:pwTraining` terrain table fills whole 64 × 64 blocks on first touch (upstream
-  #183), which made every fresh lab process pay ~20 s. The tools now share one terrain file
-  instead (`tools/.cache/terrain/<tag>/island-f2047.pwterrain`, 621 MB). It is built once per
-  release in ~27 s, and later runs take `pw_trace` ~0.3 s per tape, `pw_map` 0.08 s, and a
-  16-match screen 10.6 s. Results are identical. Disk is bounded: one file per release and
-  terrain flag set, other releases' files deleted, LRU cap 2 GB (`PW_TERRAIN_CACHE_MAX_GB`),
-  off with `PW_TERRAIN_CACHE=0`, inspect with `pw.py terrain-cache status`
-  ([pw_release.md § Terrain cache](docs/tools/pw_release.md#terrain-cache)). This Mac's disk was
-  99% full (4.6 GB free) on 2026-09-30, so the file is a real share of what is left.
-- A seat that fails host staging now fails the whole hosted episode on the platform (no scores,
-  no replay; round 2510, 2026-09-30), like a compile error. Findings about Alpha
-  (`daveey-pw-neural`) from before 2026-09-30 describe a policy on the retired neural contracts.
-- The Observatory replay wrapper does not forward a tick (`t=`); only the game's own viewer URL
-  honors `?t=`. Match reports link episodes without a tick.
-- Thresholds in `pw_flags`, `pw_fights`, `pw_metrics` and `pw_intent` are uncalibrated
-  defaults; calibrate them on the first 100+ episode batch of our own policy.
+James Botts was verified active immediately before upload. Confirm again for future uploads.
+Eight copies of our policy face eight copies of one pinned real opponent, matching this league.
+No hosted self-play. Budget 0.5 credits per episode and ledger estimates from request previews;
+the ordinary player session gets 403 from the credit endpoint. Task 0 spent zero XP credits.
+Heartland memberships and the orchestrator's stopgap are outside this optimizer's scope.

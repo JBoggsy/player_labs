@@ -1,0 +1,66 @@
+{
+  "guesses": [
+    {
+      "component": "K.squad_target",
+      "decision": "Wrapped the whole stall-memory step in `IF progress_period > 0`, so a tuned value of 0 skips Step 1 instead of dividing by zero.",
+      "id": "G-K.squad_target-1",
+      "severity": "low",
+      "spec_quote": "When `worldTick MOD progress_period = 0`",
+      "state": "kept",
+      "why": "AGENTS.md rule 5 requires guarding every MOD; progress_period is a tunable param, not a literal."
+    },
+    {
+      "component": "C.take_heart",
+      "decision": "Read controlX/controlY(objective) without checking objective >= 0. If the activation runs with objective = -1, the host returns -1 (invalid index), so there is no runtime error. The goal is then (-1, -1), which the engine clamps.",
+      "id": "G-C.take_heart-1",
+      "severity": "low",
+      "spec_quote": "`goal_x = controlX(objective)`",
+      "state": "kept",
+      "why": "The spec has no objective >= 0 guard here, unlike the default_goal/resupply/fall_back steps. The selector presumably runs this only when S.has_target_heart is on, and controlX(-1) is safe."
+    },
+    {
+      "component": "C.cover_heart",
+      "decision": "Same as C.take_heart: no objective >= 0 guard, relying on controlX(-1) = -1 being safe.",
+      "id": "G-C.cover_heart-1",
+      "severity": "low",
+      "spec_quote": "`hx = controlX(objective)`",
+      "state": "kept",
+      "why": "Literal reading of the spec. The host returns -1 for invalid indices instead of raising an error."
+    },
+    {
+      "component": "C.default_goal",
+      "decision": "Used the legacy host fields carrying, ownHeartStolen, heartX and heartY exactly as written. Under rules 47 carrying and ownHeartStolen are always 0 and heartX/heartY read the enemy home, so in practice the goal is the thief (never set, see gaps) or the enemy home.",
+      "id": "G-C.default_goal-1",
+      "severity": "medium",
+      "spec_quote": "else `(heartX, heartY)`",
+      "state": "kept",
+      "why": "The spec names these fields explicitly and matches base.bas; I did not substitute control* fields."
+    },
+    {
+      "component": "COM.grenade_out",
+      "decision": "Read sk_motor__threw as left by the most recent SK.motor run before __send. If send runs before motor on a tick, the callout comes one tick late.",
+      "id": "G-COM.grenade_out-1",
+      "severity": "low",
+      "spec_quote": "when threw of `SK.motor` is 1",
+      "state": "kept",
+      "why": "Call order is generated and not visible to the unit."
+    }
+  ],
+  "gaps": [
+    {
+      "component": "K.contacts",
+      "need": "Identify a visible enemy carrying a heart.",
+      "substitute": "Retained playerCarrying as specified; the current host returns 0, so thief remains -1 and the carrier bonus does not apply."
+    },
+    {
+      "component": "K.pickups",
+      "need": "Suppress supply selection while we or a visible enemy carry a heart.",
+      "substitute": "Retained carrying and playerCarrying as specified; both are legacy fields returning 0 in the current game."
+    },
+    {
+      "component": "C.default_goal",
+      "need": "Choose between the stolen-heart carrier, our home, and the enemy heart using capture-the-flag state.",
+      "substitute": "Retained the specified legacy host fields. carrying and ownHeartStolen are 0, and heartX/heartY identify the enemy home."
+    }
+  ]
+}

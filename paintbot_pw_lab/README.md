@@ -16,7 +16,8 @@ docs** name the commit their line citations are exact for (`PW_DOCS_SHA`). The a
 release is 0.3.123 (`28030de6`, rules 49). `PW_DOCS_SHA` remains `118e1619` for unreverified
 neural/oracle references; current raw-BASIC changes have explicit currency blocks in the
 mechanics, policy-surface and evidence docs. Bassy changes arithmetic semantics even though
-the simulation rules number is unchanged. The foundation policy is not yet qualified on it.
+the simulation rules number is unchanged. The foundation port `2898e485-1` passes G1–G5 and is uploaded as `jb-pw-opt:v1`;
+current evidence and scope are in WORKING_CONTEXT.
 
 For a readable overview, start with the [onboarding report](../docs/reports/paintbot-pw-onboarding-2026-09-28.html)
 (revised 2026-09-29; Markdown twin beside it).
@@ -26,8 +27,8 @@ For a readable overview, start with the [onboarding report](../docs/reports/pain
 Two teams of eight wheeled cogs (Red on even seats, Blue on odd) fight over ten heart
 towers on Heartwick island. Standing near a heart for 72 ticks captures it; each owned
 heart fills the team's meter at one point per second, and the first team to 900 wins
-(five hearts for three minutes), or the higher meter at 10:00. Cogs have 3 HP, four
-lives, a hitscan paint gun, and fog-gated pickups (grenade, spray can, shield, medkit).
+(five hearts for three minutes), or the higher meter at 10:00. Cogs have 10 HP, one
+life, a hitscan paint gun, and fog-gated pickups (grenade, spray can, shield, medkit).
 The **score** is not the meter but **glory**: 600 minus one per second, plus awards,
 kept only by the winner. Every seat is a BASIC script run inside the engine.
 
@@ -46,7 +47,7 @@ kept only by the winner. Every seat is a BASIC script run inside the engine.
 | How the field plays | 97.5% of matches end by elimination (median 82 s); speed dominates glory; no side advantage; champion styles and shout protocols; friendly fire 7.1% of hits; uniforms are a liability (80 episodes, 2026-09-29). | [field.md](docs/field.md#how-the-field-plays-80-league-episodes-2026-09-29), [field analysis report](docs/reports/2026-09-29-league-field-analysis.md) |
 | Evaluation budget | Experience-request fields, the roster trap (pin all 8 opponent seats), credits (~0.3 per episode). | [field.md §Experience requests](docs/field.md) |
 | Community | Forum empty; wiki is a stale README copy; the maintainer's guide and DEPLOYMENT notes carry the only measurements, and some are out of date. | [community.md](docs/community.md) |
-| **Policy source and compilation** (M0–M3 complete) | The policy is written as `strategy/STRATEGY.md` (structured Markdown in Simplified Technical English: Knowledge, Situations, Skills, Capabilities, prioritized rules, Adaptations, Communication), the source of truth. A Python driver plus one LLM agent (Claude Code or Codex) compiles it to one BASIC file per build, with a report, `version.json`, and local gates. The current source is the foundation baseline pending Bassy migration; comms v1 is inactive; M3 is qualified locally and hosted, with an inconclusive A/B and two failed message-truth checks; see the [qualification record](docs/designs/2026-10-05-m3-qualification.md). M0 tooling is qualified with both agents. The M1 baseline build passes G1–G5 and reports identical play against `base.bas` across 28 seeds on both sides. | [compiler commands](docs/tools/pw_strategy.md), [maintainer and generalization guide](docs/strategy-compiler-maintainers.md), [strategy file format](docs/designs/2026-09-30-strategy-file-format.md), [compilation](docs/designs/2026-09-30-strategy-compilation.md), [comms v1](strategy/comms.md) |
+| **Policy source and compilation** (M0–M3 complete) | The policy is written as `strategy/STRATEGY.md` (structured Markdown in Simplified Technical English: Knowledge, Situations, Skills, Capabilities, prioritized rules, Adaptations, Communication), the source of truth. A Python driver plus one LLM agent (Claude Code or Codex) compiles it to one BASIC file per build, with a report, `version.json`, and local gates. The current source is the foundation baseline ported to Bassy; comms v1 is inactive; M3 is qualified locally and hosted, with an inconclusive A/B and two failed message-truth checks; see the [qualification record](docs/designs/2026-10-05-m3-qualification.md). M0 tooling is qualified with both agents. The M1 baseline build passes G1–G5 and reports identical play against `base.bas` across 28 seeds on both sides. | [compiler commands](docs/tools/pw_strategy.md), [maintainer and generalization guide](docs/strategy-compiler-maintainers.md), [strategy file format](docs/designs/2026-09-30-strategy-file-format.md), [compilation](docs/designs/2026-09-30-strategy-compilation.md), [comms v1](strategy/comms.md) |
 | Evidence pipeline | Artifacts, the `POLYWORLDREPLAY` tape, hash-checked re-simulation (one build replays older rules), local runs. The tools built on it are indexed in [docs/tools/README.md](docs/tools/README.md). | [evidence-pipeline.md](docs/evidence-pipeline.md) |
 
 ## Instruments

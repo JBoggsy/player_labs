@@ -78,7 +78,7 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 | `docs/designs/` | Design documents. [`2026-09-29-tooling-plan.html`](docs/designs/2026-09-29-tooling-plan.html) is the tools-and-skills plan, now implemented (brief: `.tooling-plan-brief.md`). [`2026-09-30-strategy-file-format.md`](docs/designs/2026-09-30-strategy-file-format.md) (rendered: `.html`) is the **accepted** format for the load-bearing strategy file (2026-09-30). [`2026-09-30-strategy-compilation.md`](docs/designs/2026-09-30-strategy-compilation.md) (rendered: `.html`) is the **accepted** compile process: deterministic Python around one LLM step, unit files, versioning, report, gates. |
 | `tools/` | The instruments: `pw.py` (dispatcher, catalog, doctor), `pw_cli.py` (shared CLI contract), `release.env` / `pw_release.py` (engine pin), Nim `pw_trace` / `pw_map`, Python readers, metrics, visuals, A/B, local harness, scouting, miner, win probability, tuning; `tests/`. Build products go to gitignored `tools/bin/` and `tools/.cache/`. |
 | `.claude/skills/` | The seven lab skills listed above. |
-| `reference/base.bas`, `reference/jev.bas` | Frozen official teams starters at 0.3.89 (preserved across engine-pin migration), from `coworld/paintbot/players/` (the files the manifest's `player[]` hashes name). The repo's `examples/paintbot/players/base.bas` is an older engine-test copy; do not use it. Keep reference files distinct from candidates. |
+| `reference/base.bas`, `reference/jev.bas` | Frozen official teams starters at 0.3.89 (preserved across engine-pin migration), from `coworld/paintbot/players/` (the files the manifest's `player[]` hashes name). For Bassy compilation use `reference/base-bassy-28030de6.bas`, copied verbatim from upstream `examples/paintbot/players/base.bas` at `28030de6`; frozen pre-Bassy starters fail on 0.3.123. Keep reference files distinct from candidates. |
 | `reference/intent_telemetry.bas`, `reference/wire_intent_base.py` | The intent-line module for our policies, and a script that wires it into `base.bas` for audits. |
 | `reference/heartland/` | FFA-kin starters for the separate Heartland coworld; they do not compile in the teams game. |
 | `reference/manifest-0.3.80.json` | The deployed coworld manifest (config schema, variants, readme). |
@@ -87,7 +87,8 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 ## Rules specific to this lab
 
 - **Every policy change goes through `strategy/STRATEGY.md` and the compiler.** Never hand-edit
-  `.bas` files outside skills: edit `STRATEGY.md` (or a skill's authored `skill.bas`), then build
+  compiled policy `.bas` files. Compiler-owned runtime templates are editable infrastructure
+  under the Task 0 VERDICT-0 authorization; for policy changes, edit `STRATEGY.md` (or a skill's authored `skill.bas`), then build
   with `pw.py strategy compile`. This applies to optimizer loops, local experiments and tuning
   candidates alike; the paintbot-pw-loop skill's `policy_file` means the strategy source.
   (James, 2026-10-06.)

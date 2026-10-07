@@ -1,7 +1,8 @@
 # Comms v1: team messages over `shout`
 
 > **Status:** Inactive optimization lever. Working strategy source is restored to foundation
-> build `3d0f8a4f-1` (baseline play with compact telemetry). The full M3 strategy and motor
+> build `3d0f8a4f-1`, now ported to Bassy as `2898e485-1` (baseline play with compact telemetry).
+> The inactive codec runtime/units are not yet ported to Bassy. The full M3 strategy and motor
 > remain recoverable from commit `2184fc64`; its immutable build is `18e0aa1f-1`.
 > M3 implementation and acceptance completed on 2026-10-05. The codec and compact telemetry
 > reader have engine-backed tests; all nine strategy components passed G1–G5 in build
