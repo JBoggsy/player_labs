@@ -346,7 +346,7 @@ SUB sk_motor__gun()
   END IF
 END SUB
 
-' Grenade: validate a start, then retain its aim point and required charge until release.
+' Grenade: preserve charging; track a fresh safe aim/need while armed, retain the last on loss.
 ' Rechecking eligibility must never silently drop an already charging grenade at our feet.
 SUB sk_motor__grenade()
   sk_motor__eligible = 0
@@ -393,6 +393,14 @@ SUB sk_motor__grenade()
       END IF
     END IF
     IF sk_motor__charging THEN
+      IF sk_motor__eligible AND mistingTicks() = 0 AND radarTicks() = 0 THEN
+        IF sk_motor__locked_x <> sk_motor__nx OR sk_motor__locked_y <> sk_motor__ny OR sk_motor__locked_need <> sk_motor__need THEN
+          sk_motor__tracking_updates_total = sk_motor__tracking_updates_total + 1
+          sk_motor__locked_x = sk_motor__nx
+          sk_motor__locked_y = sk_motor__ny
+          sk_motor__locked_need = sk_motor__need
+        END IF
+      END IF
       lookAt(sk_motor__locked_x, sk_motor__locked_y)
       sk_motor__release_charge = grenadeCharge
       sk_motor__release_need = sk_motor__locked_need
@@ -440,14 +448,4 @@ SUB sk_motor__act(sk_motor_gx, sk_motor_gy, sk_motor_hold)
   sk_motor__dry_route()
   sk_motor__gun()
   sk_motor__grenade()
-END SUB
-
-' Count a skipped quiet approach without changing any motor command.
-SUB sk_motor__skip_quiet()
-  sk_motor__quiet_skipped_total = sk_motor__quiet_skipped_total + 1
-END SUB
-
-' Separate attribution for the resupply-only extension of full-speed movement.
-SUB sk_motor__skip_resupply_quiet()
-  sk_motor__resupply_quiet_skipped_total = sk_motor__resupply_quiet_skipped_total + 1
 END SUB

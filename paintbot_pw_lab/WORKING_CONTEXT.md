@@ -14,15 +14,17 @@ is uploaded with passing G1–G5. Matched24 local games reduce grenade teammate 
 and self HP188→6, with enemy HP481→563. It wins37/56 directly against v2 locally.
 Hosted fresh A/B is complete: v3 won72/72 versus v2's69/72; score_outcome .939028 versus
 .912836 (margin600). No failed episodes; all72 candidate episode status files (576 seats) verified clean. Orchestrator reports jb-pw-opt:v3 submitted as `sub_f210fc05-12a0-4f0a-8a94-d0bd8b9b3c09`. The optimizer did not submit; league placement is not independently verified here.
-Iteration3 is closed by VERDICT-3: wider gun corridor reduced local FF but hosted gain
-+.007222,95%CI[-.005270,.019714] is inconclusive. Keep it as an inactive lever for stronger
-fields. Optional candidate status checks continue without gating new work.
-Iteration4 removes sound-triggered sneaking near heart objectives, starting from v3.
-Existing24 local games show37,458 moving-sneak seat-ticks,7.34% of living time; the engine
-halves speed. First9 hosted v3 results show elapsed time is the largest score debit.
-The new public scout identifies active co-gas-paintbot-bassy-richard:v1, UUID
-f8b80a37-9dda-4d1c-98ea-adce5222a9a9, with2/2 wins including one over v3. It is the
-priority fresh A/B opponent. All192 episodes created in16 requests for96 credits; committed spend384. REPORT-4.md and DESIGN-4.md specify evidence, activation and limits.
+Iteration4 fixed192-game score cohort is complete: v5 .747020 vs v3 .768218,
+delta−.021198 [−.090825,.048429]. Orchestrator agrees to retain v3. Median-time/status
+artifact collection remains partial and does not gate work. Local resupply child97b77787-1
+is parked and never uploaded (26/56 vs v5,47/56 upstream); do not stack on it.
+Iteration6 targets Richard (co-gas-paintbot-bassy-richard:v1 UUID
+f8b80a37-9dda-4d1c-98ea-adce5222a9a9). All28 v3 loss replays downloaded and hash-verified:
+Richard grenade HP958 vs our559, effective throws84% vs52%, while our gun HP is higher.
+Dense geometry shows our frozen aim/charge produces208cm median landing error vs51cm.
+Working source restores v3 and refreshes committed grenade aim/need on fresh safe eligibility,
+retaining continuity on lost eligibility. Counter tracking_updates_total supplies activation.
+REPORT-6.md records evidence and limits. Total committed spend384; iteration6 zero so far.
 See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
 posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
 starter stopgap; do not replace that entrant or infer its identity from our upload.
@@ -31,12 +33,8 @@ Rank-9 rating archaeology is explicitly dropped by VERDICT-0.
 Standing pipeline rule (orchestrator): while a hosted batch runs, diagnose and prepare the
 next single-change candidate locally on the current candidate; compile and screen vs v3,
 the parent candidate and upstream. Hold its upload until the running A/B decides its parent.
-Current local child: iteration5 full-speed resupply on v5, build97b77787-1, passes G1–G5.
-The four v5 recordings attribute90% of remaining moving-sneak ticks to resupply. The child
-activates1,285 times across16/32 seats but wins26/56 vs v5 and47/56 vs upstream (v5:52/56).
-Local benefit is unsupported; do not promote or stack further changes on it. Upload held
-pending the parent decision; no iteration5 credits spent. Source currently represents
-this held child; the uploaded v5 parent is immutable build780bef24-1.
+The previous v5 pipeline child is parked after negative local screens. With its parent not
+retained, current work returns to v3 for the Richard-directed countermeasure.
 
 The pipeline remains strategy-as-source: edit `strategy/STRATEGY.md` or authored skills,
 commit inputs, then run `pw.py strategy compile`. Compiled builds are immutable. A compiler
@@ -110,9 +108,8 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
 - baseline: retained `jb-pw-opt:v3`, version `73e01dfb-128b-44c6-ac0c-8276f82be78e`, build `2a539036-1`.
-- candidate: `jb-pw-opt:v5`, UUID`b143f701-3455-46b1-9dc2-8f9ac3d44ac9`, build`780bef24-1`.
-  Full-speed heart approach from v3;42/56 local wins vs v3,52/56 vs upstream. Hosted
-  A/B pending. Activation quiet_skipped_total6,403 across29/32 traced seats.
+- candidate: iteration6 safe grenade tracking from v3, compile/upload pending. No v5 or
+  parked resupply behavior is included; source is STRATEGY.md plus motor/skill.bas.
 - opponents: refresh the current leaderboard plus recent public 0.3.123 episodes every iteration;
   keep real opponents with shots or kills above zero in scout. Current rounds842–840 scout:
   `co-gas-paintbot-bassy-richard:v1` (new priority), `xolod:v14`, `daveey-pw-league-smoke-l17c-s41u150-hc:v1`.
