@@ -1,5 +1,5 @@
 {
- "generation": 3,
+ "generation": 5,
  "population": {
   "g2-0ed5": {
    "genome": {
@@ -13,52 +13,10 @@
     "OPP_MODEL_LEVEL": 0,
     "STRENGTH_WEIGHT": 918
    },
-   "fitness": 0.10621301123023691,
-   "generations": 1,
-   "parent": "bismarckxtalleyrand",
-   "last": 0.1062
-  },
-  "g1-7de3": {
-   "genome": {
-    "SEARCH_OBJECTIVE": "share",
-    "SEARCH_RESTARTS": 1,
-    "SPRING_ATTACK_WEIGHT": 882,
-    "SPRING_DEFENSE_WEIGHT": 100,
-    "FALL_DEFENSE_WEIGHT": 150,
-    "SEARCH_POS_WEIGHT": 2.0,
-    "STRENGTH_WEIGHT": 1107
-   },
-   "fitness": 0.0892,
-   "generations": 2,
-   "parent": "talleyrandxbismarck",
-   "last": 0.0061
-  },
-  "talleyrand": {
-   "genome": {
-    "SEARCH_OBJECTIVE": "share",
-    "SEARCH_RESTARTS": 1
-   },
-   "fitness": 0.0444,
+   "fitness": 0.0745,
    "generations": 3,
-   "parent": null,
-   "last": 0.056
-  },
-  "g3-54b6": {
-   "genome": {
-    "SEARCH_OBJECTIVE": "share",
-    "SEARCH_RESTARTS": 1,
-    "SPRING_ATTACK_WEIGHT": 967,
-    "SPRING_DEFENSE_WEIGHT": 100,
-    "FALL_DEFENSE_WEIGHT": 150,
-    "SEARCH_POS_WEIGHT": 2.0,
-    "STRENGTH_WEIGHT": 918,
-    "FALL_ATTACK_WEIGHT": 850,
-    "SEARCH_OPPONENT_SAMPLES": 17,
-    "SEARCH_BUILDS": 0
-   },
-   "fitness": null,
-   "generations": 0,
-   "parent": "g1-7de3xg2-0ed5"
+   "parent": "bismarckxtalleyrand",
+   "last": 0.0522
   },
   "g3-a9d8": {
    "genome": {
@@ -71,19 +29,78 @@
     "STRENGTH_WEIGHT": 1107,
     "SEARCH_OPPONENT_SAMPLES": 6
    },
-   "fitness": null,
-   "generations": 0,
-   "parent": "g1-7de3"
+   "fitness": 0.0546,
+   "generations": 2,
+   "parent": "g1-7de3",
+   "last": 0.0506
   },
-  "g3-76d1": {
+  "g4-c2bd": {
+   "genome": {
+    "SPRING_ATTACK_WEIGHT": 967,
+    "SPRING_DEFENSE_WEIGHT": 100,
+    "FALL_ATTACK_WEIGHT": 850,
+    "FALL_DEFENSE_WEIGHT": 150,
+    "SEARCH_DISLODGED_WEIGHT": 0.5,
+    "SEARCH_POS_WEIGHT": 2.0,
+    "SEARCH_RESTARTS": 1,
+    "OPP_MODEL_LEVEL": 0,
+    "STRENGTH_WEIGHT": 1279
+   },
+   "fitness": 0.05098162633609421,
+   "generations": 1,
+   "parent": "g2-0ed5",
+   "last": 0.051
+  },
+  "g5-c004": {
    "genome": {
     "SEARCH_OBJECTIVE": "share",
     "SEARCH_RESTARTS": 1,
-    "SPRING_DEFENSE_WEIGHT": 146
+    "SPRING_ATTACK_WEIGHT": 882,
+    "SPRING_DEFENSE_WEIGHT": 100,
+    "FALL_DEFENSE_WEIGHT": 150,
+    "SEARCH_POS_WEIGHT": 2.0,
+    "STRENGTH_WEIGHT": 1375,
+    "SEARCH_OPPONENT_SAMPLES": 6
    },
    "fitness": null,
    "generations": 0,
-   "parent": "talleyrand"
+   "parent": "g3-a9d8"
+  },
+  "g5-15ce": {
+   "genome": {
+    "SEARCH_OBJECTIVE": "share",
+    "SEARCH_RESTARTS": 1,
+    "SPRING_ATTACK_WEIGHT": 882,
+    "SPRING_DEFENSE_WEIGHT": 100,
+    "FALL_DEFENSE_WEIGHT": 150,
+    "SEARCH_POS_WEIGHT": 2.0,
+    "STRENGTH_WEIGHT": 1107,
+    "SEARCH_OPPONENT_SAMPLES": 6,
+    "FALL_ATTACK_WEIGHT": 850,
+    "SEARCH_DISLODGED_WEIGHT": 0.5,
+    "SEARCH_LEARNED_WEIGHT": 0.49,
+    "OPP_MODEL_LEVEL": 0
+   },
+   "fitness": null,
+   "generations": 0,
+   "parent": "g3-a9d8xg2-0ed5"
+  },
+  "g5-859c": {
+   "genome": {
+    "SPRING_ATTACK_WEIGHT": 967,
+    "SPRING_DEFENSE_WEIGHT": 100,
+    "FALL_ATTACK_WEIGHT": 850,
+    "FALL_DEFENSE_WEIGHT": 150,
+    "SEARCH_DISLODGED_WEIGHT": 0.5,
+    "SEARCH_POS_WEIGHT": 1.35,
+    "SEARCH_RESTARTS": 1,
+    "OPP_MODEL_LEVEL": 0,
+    "STRENGTH_WEIGHT": 918,
+    "SEARCH_OPPONENT_SAMPLES": 17
+   },
+   "fitness": null,
+   "generations": 0,
+   "parent": "g2-0ed5xg4-c2bd"
   }
  },
  "hall_of_fame": [
@@ -134,6 +151,44 @@
    "generations": 1,
    "parent": "bismarckxtalleyrand",
    "last": 0.1062
+  },
+  {
+   "gen": 3,
+   "name": "g2-0ed5",
+   "genome": {
+    "SPRING_ATTACK_WEIGHT": 967,
+    "SPRING_DEFENSE_WEIGHT": 100,
+    "FALL_ATTACK_WEIGHT": 850,
+    "FALL_DEFENSE_WEIGHT": 150,
+    "SEARCH_DISLODGED_WEIGHT": 0.5,
+    "SEARCH_POS_WEIGHT": 2.0,
+    "SEARCH_RESTARTS": 1,
+    "OPP_MODEL_LEVEL": 0,
+    "STRENGTH_WEIGHT": 918
+   },
+   "fitness": 0.0969,
+   "generations": 2,
+   "parent": "bismarckxtalleyrand",
+   "last": 0.0876
+  },
+  {
+   "gen": 4,
+   "name": "g2-0ed5",
+   "genome": {
+    "SPRING_ATTACK_WEIGHT": 967,
+    "SPRING_DEFENSE_WEIGHT": 100,
+    "FALL_ATTACK_WEIGHT": 850,
+    "FALL_DEFENSE_WEIGHT": 150,
+    "SEARCH_DISLODGED_WEIGHT": 0.5,
+    "SEARCH_POS_WEIGHT": 2.0,
+    "SEARCH_RESTARTS": 1,
+    "OPP_MODEL_LEVEL": 0,
+    "STRENGTH_WEIGHT": 918
+   },
+   "fitness": 0.0745,
+   "generations": 3,
+   "parent": "bismarckxtalleyrand",
+   "last": 0.0522
   }
  ]
 }

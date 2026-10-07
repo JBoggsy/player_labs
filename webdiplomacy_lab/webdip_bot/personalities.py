@@ -63,6 +63,13 @@ PERSONALITIES = {
         "overrides": {"SEARCH_EVAL": "learned", "SEARCH_RESTARTS": 1},
         "motto": "Patience and time: judges positions by where they lead two years on (learned).",
     },
+    "blucher": {
+        "base": "search",
+        "overrides": {"SPRING_ATTACK_WEIGHT": 967, "SPRING_DEFENSE_WEIGHT": 100, "FALL_ATTACK_WEIGHT": 850,
+                      "FALL_DEFENSE_WEIGHT": 150, "SEARCH_DISLODGED_WEIGHT": 0.5, "SEARCH_POS_WEIGHT": 2.0,
+                      "SEARCH_RESTARTS": 1, "OPP_MODEL_LEVEL": 0, "STRENGTH_WEIGHT": 918},
+        "motto": "Marshal Forwards. Bred by evolution (g2-0ed5), not designed: always attacking.",
+    },
 }
 
 
