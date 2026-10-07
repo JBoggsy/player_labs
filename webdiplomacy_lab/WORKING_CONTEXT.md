@@ -32,6 +32,13 @@ Submit the best one to the league and curate the league's filler roster.
   - `evolve.py`: image v8a, anchor = champion, generation 15+.
   - `ab-likelihood`: finishing.
 
+## Live competition
+
+- **relh** (Richard H) entered with `co-gas-webdiplomacy-relh:v2` (policy version 15563512…).
+  The ladder after round 2: James Botts 0.084 (2 rounds), relh 0.0 (1 round). Hosted
+  `xreq_72926300…` (v6 vs relh vs 5 fillers, 14 episodes) is running. Use relh as a real
+  opponent in hosted evaluations from now on. Its private artifacts stay off-limits.
+
 ## Known hazards
 
 - The disk is about 98% full. Local replays are slimmed automatically.
