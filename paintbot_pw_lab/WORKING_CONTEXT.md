@@ -149,5 +149,7 @@ No iteration limit: max_iterations is none (continuous). Keep building structura
 and queuing hosted cohorts while earlier cohorts run. A supported result is a submission
 candidate for orchestrator.
 
-Current source i21: four capturer/escort frontier pairs on v8, with visible pair anchors and
-capture preservation. REPORT-21 owns hypothesis/risks. I22 shared focus targeting is next.
+I21 four frontier pairs passed as8e26035f-1 and is uploading. REPORT-21 owns hypothesis/risks.
+Current source i22: supported focus attack on v8. Shared target choice and a priority250
+approach/hold capability form one structural combat behavior; retreat, supply and active
+capture guards remain. REPORT-22 records the narrow ranking-only falsification and risks.
