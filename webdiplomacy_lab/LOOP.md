@@ -11,6 +11,22 @@ All commands run from the repo root `~/coding/personal_labs/personal_labs_webdip
 `HOME=$SCRATCH/home` for every softmax/coworld CLI call (see AGENTS.md "Identity
 hygiene").
 
+## Always-on engine: evolutionary self-play
+
+`tools/evolve.py` runs generation after generation unattended.
+- Each generation, 6 SearchBot config genomes plus the Calhamer anchor play 12 games, every agent in every game.
+- Fitness is power-adjusted score, averaged across the generations a genome survives (exponential moving average).
+- The top 3 survive; the rest are refilled with mutants and crossovers.
+
+State lives in `experiments/evolve_state.json` and the run resumes from it after a restart.
+Each generation appends a line to `experiments/ledger.jsonl`, and `local_runs/evolve.log`
+shows progress. Every tick checks that it is alive and restarts it if not:
+`nohup uv run python webdiplomacy_lab/tools/evolve.py --image <tag> --games 12 --parallel 2 >
+webdiplomacy_lab/local_runs/evolve.log 2>&1 & disown`. When a genome stays the top elite
+for 3+ generations with fitness above +0.05, it is promoted. Promotion means: add it as a
+named personality, re-validate it in the arena against the DumbBot field, upload it, and
+submit it if it beats the champion.
+
 ## Tick checklist
 
 1. **Health.**
