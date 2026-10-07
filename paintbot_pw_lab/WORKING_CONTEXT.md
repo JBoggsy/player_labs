@@ -19,10 +19,13 @@ Player James Botts: `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`.
 League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 
 Current source: i39 terrain-aware combat leg selection on guarded v29, independent
-of rejected v31 dodge and still-running v32 direct capture. REPORT-39 records the
+of rejected v31 dodge and inconclusive/rejected v32 direct capture. REPORT-39 records the
 24-game replay mechanism sample from i37's400-game v29 baseline, contrary evidence,
 implementation and fresh1200-game A/B design. Water-only explanations are unsupported;
 the code-path gap is that short combat movement bypasses the long-range dry router.
+Build `acb3609f-1` passed, uploaded v33 UUID
+`3573612e-5b51-4aaf-9ff4-bd25c0b2e656`; fresh400Richard+200xolod per arm vs v29
+queued. Activation13changed legs/4seats,3474validlines,0failures.
 Guard-only child build `1fe285df-1` passed and uploaded as v30; not submitted. **Do not submit v30 alone.**
 Standing orchestrator rule: retain the geometry guard in v31/v32 and every future
 candidate, and ship it only with the next real gameplay improvement. The current
@@ -34,7 +37,8 @@ Its26/26state-hash checks through800ticks match v29 on Heartwick and v10 on all1
 shipped alternate maps, both sides; compiler28-seed Heartwick play is identical.
 Dodge rebase i37 build `757ec5d2-1` passed and uploaded as v31, UUID
 `f56b16e7-c204-4335-ab29-487755205821`. Its fresh400Richard+200xolod per arm
-comparison vs v29 is queued; Richard delta>=+.05/CI>0, xolod lowerCI>=-.02.
+comparison vs v29 is complete and rejected: Richard-.037619[-.093054,+.017817],
+xolod+.007471[-.004326,+.019268],0episode failures. Do not inherit it.
 The submitted v29 artifact is immutable and retains its original heart-count-only guard.
 V28 dodge remains recoverable at `4f0e5d4e-1`; do not substitute its v10 parent.
 
@@ -116,7 +120,7 @@ Coworld 0.1.57 and softmax-cli 0.26.38 were release-checked during i31; refresh 
 future CLI diagnosis. Broader neural/oracle references retain `PW_DOCS_SHA=118e1619`.
 M3 comms remains inactive and unqualified on current Bassy; see [comms.md](strategy/comms.md).
 
-I32–i35 are complete; their workers exited. I37 complete/rejected; i38 results remain active. I39 is being built. Admission/results workers exit on terminal work;
+I32–i35 are complete; their workers exited. I37/i38 complete and fail their gates. I39 admission/results are active. Admission/results workers exit on terminal work;
 field_watch.py is stopped by explicit handoff. Dashboard 8810 stays off. Do not poll
 terminal requests for optional artifacts. Future authorized polling/retries: at least
 120 seconds, bounded artifacts, finite exit. No hosted self-play. Local games establish

@@ -13,7 +13,8 @@ on unknown ten-heart maps. The guarded child checks exact public geometry. No BA
 map identity exists; an unseen map matching every checked field is indistinguishable.
 I34 dodge was inconclusive; its i37 rebase vs v29 is rejected: Richard-0.037619
 [-0.093054,+0.017817], xolod+0.007471[-0.004326,+0.019268],0episode failures.
-Do not inherit dodge or pool the old controls. I38 capture staffing is still running.
+Do not inherit dodge or pool the old controls. I38 conditional capture staffing also fails: Richard+0.028544[-0.026064,+0.083151],
+xolod-0.000275[-0.014716,+0.014166],0episode failures. V29 remains parent.
 
 ## Evidence scope
 
