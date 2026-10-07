@@ -10,7 +10,7 @@ xolod -.0062674,95%CI[-.0225313,+.0099966],48/arm. I18 now complete584/584,0fail
 -.021875 [-.030849,-.012901],4/arm, both policies4/4wins. Other guards have no negative interval. Existing i19-i22 v8-control cohorts remain immutable.
 I23 frontier pairs on v10 passed as a5c28ea4-1, uploaded v18. I24 focus attack on v10
 passed as cae2480d-1, uploaded v19. Both have fresh full-roster controls against v10.
-Current i27 stacks v10 + four frontier pairs + direct capture staffing under VERDICT-26.
+I27 frozen candidate stacks v10 + four frontier pairs + direct capture staffing under VERDICT-26.
 I23 and i26 Richard effects were+.035183 and+.032175, respectively, both inconclusive.
 Use400 Richard episodes per arm plus the usual roster,984games/492estimatedcredits.
 Print SUBMIT CANDIDATE only if fixed Richard delta>=+.05 and95%CI excludes0, with no guard regression. Guard regression means an opponent delta CI entirely below0; partial/unknown guards never pass.
@@ -21,7 +21,8 @@ Round870 field refresh: v10 rank1, engine0.3.123; xolod/Richard active, finist/z
 still startup-only in30 verified public games. Opponent entrant versions unchanged.
 PROPOSAL-28 approved: current i28 source implements full-speed uncontested neutral-heart
 approaches on v10. Existing quiet gates preserved; neutral_rush_ticks_total counts actual
-suppressed commands. No i27 stack behavior included.
+suppressed commands. Passed builda8229ce1-1, uploaded v23 UUID8ad02aae-6d85-4733-b60b-0781b6b3f5ba.
+584-game v10-control cohort queued; xolod duration collection prioritized. No i27 stack behavior included.
 Xolod sampled margin varied mainly with behind awards, so speed and score must be separated.
 I17 retreat eligibility regressed and is excluded from combinations.
 
@@ -95,7 +96,7 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
 - baseline: submitted `jb-pw-opt:v10`, version `8c4947c7-0679-4826-a653-9de20c62ffa3`, build `7faadaa4-1`.
-- candidate: i27/v22 frontier-pair plus direct-capture stack versus v10; prior i19-i26 complete.
+- candidates: i27/v22 frontier-plus-capture stack and i28/v23 neutral approach versus v10; prior i19-i26 complete.
 - opponents: every top-8 leaderboard entrant except us, plus all explicitly named targets:
   Richard (primary, heavy), xolod (substantial guard), and small matched samples against
   finist, zhar, relh, basic-v22, daveey/Alpha, and Rohit. Refresh exact versions every iteration.
