@@ -195,8 +195,12 @@ Reading aid (the compiler receives component fields, not this introduction):
   Step 1 (refresh). For `i = 0` while `i < pickupCount() AND i < 64`: if `pickupVisible(i)`, set
   `mem_x(i) = pickupX(i)`, `mem_y(i) = pickupY(i)`, `mem_kind(i) = pickupKind(i)` and
   `mem_tick(i) = worldTick + 1`.
-  Step 2 (carrier). Set `carrier = 0`. For `i = 0` to 15, set `carrier = 1` when
+  Step 2 (carrier and friends). Set `carrier = 0` and `friends_near = 1` (ourselves).
+  For `i = 0` to 15, set `carrier = 1` when
   `i <> selfId AND visible(i) AND i MOD 2 <> selfTeam AND playerCarrying(i)`.
+  For each other visible teammate (`i <> selfId AND visible(i) AND i MOD 2 = selfTeam`),
+  add 1 to friends_near when `(playerX(i) - selfX) * (playerX(i) - selfX) +
+  (playerY(i) - selfY) * (playerY(i) - selfY) < support_friend_sq`.
   Step 3 (choice). Set `nearest = -1`, `nearest_x = 0`, `nearest_y = 0`. Do the rest of this step
   only when `carrying = 0 AND carrier = 0`. Set `nearest_cost = reach_sq`. For `j = 0` while
   `j < pickupCount() AND j < 64`, use j only when
@@ -205,16 +209,24 @@ Reading aid (the compiler receives component fields, not this introduction):
   For activation tracing only, compute `old_wanted` with the same expression but both
   `hp_cap` references replaced by 3. If the truth of wanted differs from old_wanted,
   increment `hp_changed_total` once for this remembered pickup observation.
-  If wanted: set `dx = mem_x(j) - selfX`, `dy = mem_y(j) - selfY`, and
+  Next extend wanted to include `(kind = 6 AND hasSniper() = 0 AND hasSpray = 0)`
+  OR `(kind = 5 AND selfHp * 2 <= hp_cap AND mistingTicks() = 0)`
+  OR `(kind = 7 AND friends_near >= 3 AND radarTicks() = 0)`.
+  Finally, if `radarTicks() > 0`, clear wanted unless `kind = 2 AND selfHp * 3 <= hp_cap`.
+  These are upstream's sniper, mister and radar eligibility rules. Uniform and spray
+  remain unwanted. If wanted: set `dx = mem_x(j) - selfX`, `dy = mem_y(j) - selfY`, and
   `cost = dx * dx + dy * dy`. Then, if
   `kind = 2 AND critical = 1`, set `cost = cost \ 4`. Then, if
   `cost < arrive_sq AND pickupVisible(j) = 0`, set `mem_tick(j) = 0` and do not use j. Else, if
   `cost < nearest_cost`, set `nearest = j` and `nearest_cost = cost`.
   After the loop, if `nearest >= 0`, set `nearest_x = mem_x(nearest)` and
-  `nearest_y = mem_y(nearest)`.
+  `nearest_y = mem_y(nearest)`. If nearest is one of kinds 5, 6 or 7,
+  increment support_selected_total once this tick. This records the proposed supply,
+  even if a higher-priority action prevents actual resupply.
 - Sources: `pickupCount`, `pickupVisible`, `pickupX`, `pickupY`, `pickupKind`, `visible`,
-  `playerCarrying`, `carrying`, `hasGrenade`, `selfHp`, `armorHp`, `selfX`, `selfY`, `worldTick`
-- Memory: hp_cap and hp_changed_total start at 0 and persist for the whole match.
+  `playerCarrying`, `carrying`, `hasGrenade`, `selfHp`, `armorHp`, `selfX`, `selfY`, `worldTick`,
+  `playerX`, `playerY`, `hasSniper`, `hasSpray`, `mistingTicks`, `radarTicks`
+- Memory: hp_cap, hp_changed_total and support_selected_total start at 0 and persist for the whole match.
   mem_x, mem_y, mem_kind and mem_tick (64 cells each, private arrays) persist for the
   whole match and start at 0.
 - Outputs:
@@ -224,8 +236,10 @@ Reading aid (the compiler receives component fields, not this introduction):
   - hp_cap -- maximum selfHp observed since initialization
   - critical -- 1 when alive and at most one third of hp_cap, else 0
   - hp_changed_total -- cumulative remembered pickup observations whose eligibility changed with spawn-HP thresholds
-- Log: nearest, hp_cap, hp_changed_total every 24 ticks
+  - support_selected_total -- cumulative ticks proposing a sniper, mister or radar pickup
+- Log: nearest, hp_cap, hp_changed_total, support_selected_total every 24 ticks
 - Params:
+  - support_friend_sq = 1440000 square cm -- teammates within 12 m count toward radar eligibility
   - memory_ticks = 240 ticks -- base.bas value, ten seconds
   - reach_sq = 4840000 square cm -- base.bas value, 22 m
   - arrive_sq = 10000 square cm -- base.bas value, 1 m. A remembered supply this close and not visible is gone.
