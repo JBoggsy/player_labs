@@ -10,10 +10,12 @@ xolod -.0062674,95%CI[-.0225313,+.0099966],48/arm. I18 now complete584/584,0fail
 -.021875 [-.030849,-.012901],4/arm, both policies4/4wins. Other guards have no negative interval. Existing i19-i22 v8-control cohorts remain immutable.
 I23 frontier pairs on v10 passed as a5c28ea4-1, uploaded v18. I24 focus attack on v10
 passed as cae2480d-1, uploaded v19. Both have fresh full-roster controls against v10.
-Current i26 source directly staffs heart rings with cover-role cogs on v10. Build7723f557-1
-passed and uploaded v21 UUIDe00624c5-deef-4bd1-93c1-20d2225459b0, queued versusv10. REPORT-26
-owns opportunity measurements, low-confidence+.10 planning hypothesis and crowding risk.
-I25 regroup combination is uploaded v20 and queued; it is not a supported winner.
+Current i27 stacks v10 + four frontier pairs + direct capture staffing under VERDICT-26.
+I23 and i26 Richard effects were+.035183 and+.032175, respectively, both inconclusive.
+Use400 Richard episodes per arm plus the usual roster,984games/492estimatedcredits.
+Print SUBMIT CANDIDATE only if fixed Richard delta>=+.05 and95%CI excludes0.
+All i19-i26 cohorts completed584games each with0failures; full opponent tables in reports.
+Refresh public field and propose one xolod time-to-win improvement after queuing the stack.
 I17 retreat eligibility regressed and is excluded from combinations.
 
 No daily cap; balance floor10,000 and per-iteration approximately600 credits. Respect pending
