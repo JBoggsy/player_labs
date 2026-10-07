@@ -18,7 +18,7 @@ import diplomacy
 
 from webdip_bot import config, fastadj
 from webdip_bot.dipmap import COUNTRY, POWER, DipMap
-from webdip_bot.dumbbot import DumbBot
+from webdip_bot.dumbbot import Board, DumbBot
 
 _MAPS = {}
 _GAME = None
@@ -147,42 +147,120 @@ class SearchBot:
 
         # 2. Seeds from DumbBot for our own power (separate instance: keeps self.trace clean).
         seeder = DumbBot(self.variant, self.board, self.country, self.phase, self.turn, self.rng, board_model=b)
-        best, best_score = None, None
+        seeds = []
         for _ in range(config.SEARCH_SEEDS):
             cand = seeder.choose(slots)
-            s = self._evaluate(cand)
-            if best_score is None or s > best_score:
-                best, best_score = cand, s
-        self.trace["search_seed_score"] = round(best_score, 1)
+            seeds.append((self._evaluate(cand), cand))
+        seeds.sort(key=lambda x: -x[0])
+        self.trace["search_seed_score"] = round(seeds[0][0], 1)
 
-        # 3. Coordinate ascent over each unit's legal orders.
-        joints = self._joint_alternatives(mine)
-        improved_any = 0
+        # 3. Coordinate ascent over each unit's legal orders, from the best few seeds.
+        self.joints = self._joint_alternatives(mine)
+        self.improved_any = 0
+        finals = []
+        seen = set()
+        for score, cand in seeds[: config.SEARCH_RESTARTS]:
+            score, cand = self._ascend(cand, score, started)
+            key = tuple(_key(o) for o in cand)
+            if key not in seen:
+                seen.add(key)
+                finals.append((score, cand))
+        finals.sort(key=lambda x: -x[0])
+        best_score, best = finals[0]
+        improved_any = self.improved_any
+        if config.SEARCH_ROLLOUT and self.turn % 2 == 0 and len(finals) > 1:
+            best = self._rollout_rerank(finals, mine, started)
+        self.trace["search_improvements"] += improved_any
+        self.trace["search_sims"] += self.sims
+        self.trace["search_score"] = round(best_score, 1)
+        self.trace["search_ms"] = round((time.monotonic() - started) * 1000)
+        return [self.dumb._legal_or_hold(u, o) for u, o in zip(mine, best)]
+
+    def _ascend(self, best, best_score, started):
         for _ in range(config.SEARCH_PASSES):
             changed = False
-            order_idx = list(range(len(mine)))
+            order_idx = list(range(len(best)))
             self.rng.shuffle(order_idx)
             for i in order_idx:
                 if time.monotonic() - started > config.SEARCH_TIME_BUDGET_S:
                     self.trace["search_budget_hit"] += 1
-                    break
-                for joint in joints[i]:
+                    return best_score, best
+                for joint in self.joints[i]:
                     if all(_same(o, best[k]) for k, o in joint.items()):
                         continue
                     cand = [joint.get(k, o) for k, o in enumerate(best)]
                     s = self._evaluate(cand)
                     if s > best_score + 1e-9:
                         best, best_score, changed = cand, s, True
-                        improved_any += 1
+                        self.improved_any += 1
                         if len(joint) > 1:
                             self.trace["search_joint_improvement"] += 1
             if not changed:
                 break
-        self.trace["search_improvements"] += improved_any
-        self.trace["search_sims"] += self.sims
-        self.trace["search_score"] = round(best_score, 1)
-        self.trace["search_ms"] = round((time.monotonic() - started) * 1000)
-        return [self.dumb._legal_or_hold(u, o) for u, o in zip(mine, best)]
+        return best_score, best
+
+    def _rollout_rerank(self, finals, mine, started):
+        """Spring only: re-rank the top distinct ascent results by a simulated autumn.
+
+        For each candidate and opponent sample: adjudicate spring (fastadj), drop dislodged
+        units, let every power (us included) play DumbBot in autumn, adjudicate, and count
+        the resulting supply centres. Combined with the static score as a tie-breaker.
+        """
+        pool = finals[: config.SEARCH_ROLLOUT_POOL]
+        n = min(config.SEARCH_ROLLOUT_SAMPLES, len(self.fast_samples))
+        best, best_value = pool[0][1], None
+        for static, cand in pool:
+            mu, mo = fast_orders(self.mine_units, cand, self.parent)
+            if mo is None:
+                continue
+            total, count = 0.0, 0
+            for units, fu, fo, raw in self.fast_samples[:n]:
+                if fo is None:
+                    continue
+                if time.monotonic() - started > config.SEARCH_TIME_BUDGET_S:
+                    self.trace["rollout_budget_hit"] += 1
+                    break
+                total += self._rollout(mu + fu, mo + fo, self.mine_units + units, cand + raw)
+                count += 1
+            if not count:
+                continue
+            value = total / count + config.SEARCH_ROLLOUT_STATIC_WEIGHT * static
+            if best_value is None or value > best_value:
+                best, best_value = cand, value
+        if best is not pool[0][1]:
+            self.trace["rollout_changed_choice"] += 1
+        self.trace["rollouts"] += 1
+        return best
+
+    def _rollout(self, fu, fo, units, orders):
+        moved, dislodged = fastadj.adjudicate(fu, fo)
+        new_units = []
+        for (country, prov, utype), o, mv, dl, u, raw in zip(fu, fo, moved, dislodged, units, orders):
+            if dl:
+                continue
+            new_units.append({"id": u["id"], "countryID": country, "type": utype,
+                              "terrID": raw["toTerrID"] if mv else u["terrID"], "retreating": False})
+        unit_at = {self.parent[u["terrID"]]: u["id"] for u in new_units}
+        terrs = [{"terrID": t, "ownerCountryID": (self.b.status.get(t) or {}).get("ownerCountryID") or 0,
+                  "unitID": unit_at.get(t), "standoff": False, "occupiedFromTerrID": None}
+                 for t, x in self.b.terr.items() if x["coast"] != "Child"]
+        board = {"units": new_units, "territories": terrs}
+        model = Board(self.variant, board)
+        fall = []
+        for c in {u["countryID"] for u in new_units}:
+            theirs = [u for u in new_units if u["countryID"] == c]
+            bot = DumbBot(self.variant, board, c, "Diplomacy", self.turn + 1, self.rng, board_model=model)
+            fall.extend(zip(theirs, bot.choose([{"unitID": u["id"]} for u in theirs])))
+        fu2, fo2 = fast_orders([u for u, _ in fall], [o for _, o in fall], self.parent)
+        if fo2 is None:
+            return 0.0
+        moved2, dislodged2 = fastadj.adjudicate(fu2, fo2)
+        occupied = {}
+        for (country, prov, _), o, mv, dl in zip(fu2, fo2, moved2, dislodged2):
+            if not dl:
+                occupied[o[1] if mv else prov] = country
+        sc = sum(1 for t, owner in self.b.owner.items() if occupied.get(t, owner) == self.country)
+        return config.SEARCH_SC_WEIGHT * sc
 
     def _joint_alternatives(self, mine):
         """Per primary unit i: list of {unit index: order} changes to try together.
@@ -332,6 +410,10 @@ class SearchBot:
             node = ("Army" if u[0] == "A" else "Fleet", self.dm.terr[u[2:]])
             pos += self.dumb.value.get(node, 0.0) / vmax
         return config.SEARCH_SC_WEIGHT * sc + config.SEARCH_POS_WEIGHT * pos - config.SEARCH_DISLODGED_WEIGHT * dislodged
+
+
+def _key(o):
+    return (o["type"], o["terrID"], o["toTerrID"], o["fromTerrID"])
 
 
 def _same(a, b):

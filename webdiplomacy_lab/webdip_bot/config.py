@@ -46,3 +46,9 @@ OPP_LOGODDS_CLIP = 8.0
 # Search objective: "sc" (our projected centres) or "share" (projected SC^2 share x34).
 SEARCH_OBJECTIVE = "sc"
 SEARCH_FAST_ADJ = 1  # use fastadj (no-convoy turns); package fallback otherwise
+SEARCH_RESTARTS = 3  # coordinate ascent from the best N DumbBot seeds
+# Spring re-ranking of the top ascent results by a simulated DumbBot autumn (0 = off).
+SEARCH_ROLLOUT = 0
+SEARCH_ROLLOUT_POOL = 3
+SEARCH_ROLLOUT_SAMPLES = 8
+SEARCH_ROLLOUT_STATIC_WEIGHT = 0.5
