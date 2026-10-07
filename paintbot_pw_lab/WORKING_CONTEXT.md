@@ -2,18 +2,15 @@
 
 ## Current objective and boundary
 
-Continue the authorized optimizer loop on submitted v8, build5cee1447-1. I13–i16 are
-independent children for opening supply, spray distance, spray safety and gun corridor;
-collect their complete hosted verdicts and combine all supported winners, then evaluate
-that combination. Do not promote partial estimates or local outcomes to wins.
-
-Current iteration17 source tests a narrower outnumbered-retreat enemy count on v8.
-K.contacts exposes fight_foes within both26m and current gunRange; S.losing_fight uses it
-with the original friendly count. Other combat, supply, targeting and retreat destination
-logic remain v8. Counter retreat_range_saved_total attributes suppressed retreat eligibility.
-Eight hash-verified v8 Richard losses show161/506 post20s retreat-eligible observations
-removed by this count; seven involve an enemy sniper outside our range. This is a tactical
-hypothesis with exposure risk, not a proof of safety. REPORT-17 owns diagnosis and design.
+Continue the authorized optimizer loop on submitted jb-pw-opt:v10, build7faadaa4-1,
+UUID8c4947c7-0679-4826-a653-9de20c62ffa3, submission
+sub_1616ba24-8791-47aa-9f13-51931d9a42db (orchestrator authorization).
+I18 Richard confirmation: +.0981375,95%CI[+.0172507,+.1790243],200/arm;
+xolod -.0062674,95%CI[-.0225313,+.0099966],48/arm. Finish remaining guards and
+report any regression. Existing i19-i22 v8-control cohorts remain immutable.
+Current i23 source rebases frontier pairs onto v10; i24 will rebase supported focus
+attack independently onto v10. Both get fresh full-roster controls against v10.
+I17 retreat eligibility regressed and is excluded from combinations.
 
 No daily cap; balance floor10,000 and per-iteration approximately600 credits. Respect pending
 request capacity and120s minimum polling. Every watcher exits on cohort completion.
@@ -84,8 +81,8 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   compiled with `pw.py strategy compile`. Never hand-edit compiled policy BASIC; compiler-owned runtime templates are editable infrastructure. Working source starts
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
-- baseline: submitted `jb-pw-opt:v8`, version `32f1b591-b444-4210-94a8-35521d7f90f1`, build `5cee1447-1`.
-- candidate: iteration17 retreat-range count on v8; i13–i16 hosted cohorts continue independently.
+- baseline: submitted `jb-pw-opt:v10`, version `8c4947c7-0679-4826-a653-9de20c62ffa3`, build `7faadaa4-1`.
+- candidate: i23 frontier pairs on v10, followed by i24 supported focus attack on v10.
 - opponents: every top-8 leaderboard entrant except us, plus all explicitly named targets:
   Richard (primary, heavy), xolod (substantial guard), and small matched samples against
   finist, zhar, relh, basic-v22, daveey/Alpha, and Rohit. Refresh exact versions every iteration.
@@ -115,7 +112,7 @@ Heartland memberships and the orchestrator's stopgap are outside this optimizer'
 
 ## Current pipeline source
 
-Parent remains submitted v8/build5cee1447-1, UUID32f1b591-b444-4210-94a8-35521d7f90f1.
+Parent is submitted v10/build7faadaa4-1, UUID8c4947c7-0679-4826-a653-9de20c62ffa3.
 I13–i16 completed inconclusively against Richard. V10 spray distance and v12 gun corridor
 have positive point estimates; VERDICT-17 authorizes testing their combination without
 requiring individual significance. No proven new winner or optimizer league submission.
@@ -152,7 +149,7 @@ candidate for orchestrator.
 
 I21 four frontier pairs passed as8e26035f-1 and uploaded v16, UUID969f9847-8e01-4c3a-a128-b49a42093789.
 Activation7575,3682 valid lines,0 failures. REPORT-21 owns hypothesis/risks.
-Current source i22: supported focus attack on v8. Shared target choice and a priority250
+I22 frozen source: supported focus attack on v8. Shared target choice and a priority250
 approach/hold capability form one structural combat behavior; retreat, supply and active
 capture guards remain. REPORT-22 records the narrow ranking-only falsification and risks.
 
