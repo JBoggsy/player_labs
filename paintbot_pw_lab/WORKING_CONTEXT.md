@@ -10,6 +10,8 @@ V22 remains a Richard reserve, not submitted: Richard+.060 but xolod-.01323
 48/arm, both48wins. Mean win time130.341s baseline vs125.445s candidate; faster did not
 improve score. Median129.438s vs127.083s. Old cohorts i19–i28 are complete.
 
+I29/v24 post-capture pursuit is uploaded as UUIDfebf78e0-a9d8-4f62-995e-549c9f91e41d,
+build6121c0a2-1. Its664-game cohort is queued;213pursuit ticks in6of32 targeted recordings.
 I29 diagnosis and design are in tmp/collab/optimizer/REPORT-29.md. Eight selected v10-xolod
 wins finish on the heart meter with2–5 enemies alive. All hearts are owned well before
 completion. Investigate post-capture pursuit without changing earlier capture decisions.
@@ -97,4 +99,3 @@ cannot establish all five audit levels. Never promote an unmeasurable or unexerc
 pass. The 0.3.115 M2/M3 audit evidence does not requalify the audit engine at 0.3.123.
 `PW_DOCS_SHA` remains `118e1619` for unreverified neural/oracle references; current raw-BASIC
 facts have explicit currency blocks in mechanics, policy-surface and evidence docs.
-
