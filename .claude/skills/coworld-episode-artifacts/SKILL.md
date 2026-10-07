@@ -15,7 +15,7 @@ uv run python "$S" --round round_ID --out /tmp/round
 uv run python "$S" --policy POLICY --version VERSION -n 20 --out /tmp/policy
 ```
 
-Replace IDs/placeholders. Stream immediately after creating the request so downloading overlaps execution. `--watch` supports `--xreq`; multiple `--ereq`, `--round` or `--episode` flags combine within their selection mode. `--division` discovers its rounds. Use explicit request, round, division or episode selection.
+Replace IDs/placeholders. Stream immediately after creating the request so downloading overlaps execution. `--watch` supports `--xreq` and exits when the request drains, after `--max-idle-hours` (default 2) with no new terminal episode, or after `--max-hours` (default 24); rerunning resumes; multiple `--ereq`, `--round` or `--episode` flags combine within their selection mode. `--division` discovers its rounds. Use explicit request, round, division or episode selection.
 
 Use `--no-replay`, `--no-results`, `--no-logs` or `--no-artifacts` only when the question doesn't require that evidence. `--force` refetches existing data. HTTP 429 pauses the watch pass and retries after `--interval` without consuming an episode artifact attempt; it is not evidence that an artifact is absent. Reduce concurrent streamers if throttling persists. Watch artifact retries are bounded by `--max-attempts`; exhausted episodes yield a nonzero status and remain in the index. Watch retries reuse already downloaded immutable results, replay and seat files within a partial episode, so a late 429 does not restart the entire download. One-shot `--force` still refetches files. Rerunning resumes from disk; an exhausted request needs its attempt state inspected/reset deliberately to retry.
 

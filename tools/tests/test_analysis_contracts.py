@@ -217,7 +217,8 @@ def test_malformed_artifact_is_bounded_and_other_episode_progresses(tmp_path):
             return {'episode_count': 1, 'completed_count': 1}
         def get_bytes_or_none(self, path):
             return b'<html>not JSON</html>'
-    args = argparse.Namespace(xreq='xreq_test', out=tmp_path, num=10, interval=0, max_attempts=2)
+    args = argparse.Namespace(xreq='xreq_test', out=tmp_path, num=10, interval=0, max_attempts=2,
+                              max_idle_hours=2.0, max_hours=24.0)
     assert fa.watch_loop(BrokenClient(), args, 'https://example.invalid',
                          want_replay=False, want_results=True, want_logs=False, want_artifacts=False) == 1
     assert json.loads((tmp_path/'watch_state.json').read_text())['ereq_bad'] == 2

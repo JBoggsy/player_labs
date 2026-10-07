@@ -50,6 +50,9 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   --port <port> xreq_...`) and give James the `http://localhost:<port>` link in the same
   message that reports the request was created. Reuse a running dashboard's port only by
   restarting it with the new xreq id(s); don't leave it pointed at a stale request.
+  Every poller/dashboard must exit when its cohort is complete. Stop watching terminal
+  requests even if optional artifacts remain missing. Poll no faster than once every
+  two minutes. A session-specific instruction to stop a dashboard overrides starting it.
 
 - **Keep documentation current.** All repository documentation and game wiki pages must describe current behavior. Remove historical reports, version logs, obsolete measurements, change narratives and references to removed information. Retain supported lessons as current guidance; do not recreate archival documentation.
 
