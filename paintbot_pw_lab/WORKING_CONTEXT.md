@@ -10,11 +10,10 @@ the frozen automated decision remains a fail. REPORT-35 records both distinctly.
 
 Champion: `jb-pw-opt:v29`, UUID `cf05fa48-71e3-408c-96cf-ed1ce74409ea`,
 build `e42b7834-1`, source `e42b7834`. V10 is the historical fallback behavior.
-Current task: VERDICT-39 analysis-only plateau review complete in
-`tmp/collab/optimizer/REPORT-40.md`. No new hosted cohorts until verified balance>=14000
-or an orchestrator-confirmed field/engine change. No auto-resume at11000. Explicit follow-up exception: build i41 refuse-and-counter on guarded v29 and run
-ONE cohort400Richard+100xolod perarm; all other cohorts remain held until>=14000. V29 remains champion; all future builds retain
-the map guard. No optimizer submission; account hard floor10000.
+Current task: i41 is complete and rejected; result and refuted-lever lesson recorded
+in REPORT-41 and TENTATIVE_LESSONS. V29 remains champion. No active cohort or remaining
+exception. Hosted cohorts paused until verified balance>=14000; orchestrator reports11809.
+STOOD DOWN by explicit orchestrator instruction. No further work without fresh authorization. Retain map guard in future builds. Hard floor10000.
 
 Player James Botts: `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`.
 League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
@@ -25,7 +24,10 @@ Two capture cogs and six separated staging posts, public distant-capture transit
 releases bounded counterattack;40s deadline returns to baseline. Phase/trigger tracing
 is present. Exact map-guard unit unchanged. Local recording188activations/16seats,
 3634valid telemetry lines,0failures; counter release not yet seen in short recording.
-ONE authorized cohort400Richard+100xolod perarm versus fresh v29,1000games/~500credits.
+Completed400Richard+100xolod perarm versus fresh v29,1000games,0failed episodes.
+Rejected: Richard-0.067460[-0.123897,-0.011024], xolod-0.007792[-0.019625,+0.004042].
+Refusing the first central fight hands Richard a lasting lead (orchestrator interpretation);
+the A/B establishes harm from the complete plan, not isolated mediation. Do not inherit.
 I39/v33 is rejected: Richard+0.016600[-0.038049,+0.071249],
 xolod+0.004696[-0.007212,+0.016603]; its terrain planner is not inherited.
 Guard-only child build `1fe285df-1` passed and uploaded as v30; not submitted. **Do not submit v30 alone.**
@@ -122,24 +124,19 @@ Coworld 0.1.57 and softmax-cli 0.26.38 were release-checked during i31; refresh 
 future CLI diagnosis. Broader neural/oracle references retain `PW_DOCS_SHA=118e1619`.
 M3 comms remains inactive and unqualified on current Bassy; see [comms.md](strategy/comms.md).
 
-I32–i35 are complete; their workers exited. I37/i38 complete and fail their gates. I39 is complete/rejected; its workers exited. I41 is the only authorized active cohort. Admission/results workers exit on terminal work;
+I32–i35 are complete; their workers exited. I37/i38 complete and fail their gates. I39 is complete/rejected; its workers exited. I41 is complete/rejected; active queue is empty. Admission/results workers exit on terminal work;
 field_watch.py is stopped by explicit handoff. Dashboard 8810 stays off. Do not poll
 terminal requests for optional artifacts. Future authorized polling/retries: at least
 120 seconds, bounded artifacts, finite exit. No hosted self-play. Local games establish
 runtime/activation/mechanisms, never competitive superiority. No optimizer league
 submission, public writes or git push without authorization.
 
-Credits: VERDICT-39 holds all new cohorts until verified balance>=14000 or an
-orchestrator-confirmed field/engine change. `tmp/collab/optimizer/hosted-hold.json` blocks
-the local admission helper except for the explicitly whitelisted i41 cohort.
-All other cohorts require balance>=14000 under the latest orchestrator instruction.
-After release, one hosted cohort at a time. Future cohorts use400Richard+100xolod games
-per arm (1000total, approximately500 preview credits). I39/v33 is grandfathered at
-400Richard+200xolod per arm; finish its frozen1200-game design unchanged.
-After the VERDICT-39 hold is released, pause NEW cohorts below11000 until next refill;
-refill is approximately1429/day at00:00UTC. Preserve the10000 hard floor throughout.
-The orchestrator reported12337 when setting this rule; re-read actual balance before
-admission. Local diagnosis/build preparation may continue while hosted admission is
-paused. Finite workers only, no faster than120s polling. Requests/previews remain in
-frozen manifests; account observations in `tmp/collab/optimizer/credit-observations.jsonl`.
-Net account movement includes other spending and is not attributable cohort cost.
+Standing down supersedes the credit-resumption condition: balance>=14000 does not
+authorize automatic resumption. Fresh explicit authorization is required.
+Recorded worker PIDs60480/60481 and prior84137/11417 are absent (signal0 check).
+Credits: retain the10000 hard floor for any future authorized work. The i41 exception
+is exhausted; hosted-hold.json has no allowed cohorts. Orchestrator reports11809; no
+fresh credit API read for this recording task. Hard floor10000. No local work or hosted work without fresh authorization.
+After authorized release: one cohort at a time,400Richard+100xolod perarm (~500preview
+credits). Finite workers,>=120s polling, no terminal-request polling. Refill~1429/day
+at00:00UTC. Account snapshots include other spending and are not attributable cohort cost.

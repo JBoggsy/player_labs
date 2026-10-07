@@ -111,10 +111,31 @@ not for submitting v22. Exact local evidence: `tmp/collab/optimizer/standby-pair
 
 V33 dry combat movement did not clear its gate: Richard+0.016600
 [-0.038049,+0.071249], xolod+0.004696[-0.007212,+0.016603]. V29 remains parent.
-The next structural hypotheses are event-triggered refusal/counterattack, dynamic
-capture pairs plus reserve, held-out route interception, and staggered weapon roles.
+Event-triggered refusal/counterattack is now refuted by i41 below. Remaining untested
+structural hypotheses are dynamic capture pairs plus reserve, held-out route
+interception, and staggered weapon roles.
 None has evidence supporting an expected+0.10 causal gain. REPORT-40 gives local
 falsification criteria. V22 already contains direct capture, overlapping v32; adding
 positive effect estimates across parents is invalid. No bundle test justified now.
-Hosted work is held until verified balance>=14000 or orchestrator-confirmed field/
-engine change; keep the exact map guard in every eventual build.
+Hosted work is held until verified balance>=14000; keep the exact map guard in
+every eventual build.
+
+## Refuted lever: refuse the first central fight
+
+I41/v34 is rejected. Against fresh v29 controls, Richard delta is -0.067460
+(95% CI [-0.123897,-0.011024],400games per arm): a significant regression.
+Xolod delta is -0.007792 [-0.019625,+0.004042],100games per arm. All1000games
+completed with zero failed episodes. V29 remains champion and parent.
+
+Operational lesson: refusing the first central fight hands Richard a lasting lead;
+do not inherit this staging/counter plan or retry it as a minor threshold change.
+This is the orchestrator's mechanism interpretation of the refuted intervention.
+The randomized comparison establishes harm from the whole plan; it does not isolate
+territory concession from staging geometry, release timing or missing triggers.
+Do not generalize it to every possible defensive policy. Reopening the idea requires
+new replay evidence for a materially different mechanism, not its plausible narrative.
+
+The single-cohort exception is exhausted. Hosted cohorts stay paused until verified
+balance>=14000; latest orchestrator-reported balance11809 (not a fresh API read).
+Explicit STAND DOWN now supersedes credit-based resumption: no further local or
+hosted work until fresh authorization. Every future build retains the map guard. No submission.

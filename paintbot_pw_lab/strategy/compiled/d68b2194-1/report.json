@@ -1,0 +1,172 @@
+{
+  "budget": {
+    "array_cells": 983,
+    "array_cells_limit": 4096,
+    "arrays": 22,
+    "arrays_limit": 256,
+    "globals": 303,
+    "globals_limit": 512,
+    "source_bytes": 58879,
+    "source_limit": 131072,
+    "telemetry": {
+      "bytes": 395,
+      "events": 64,
+      "limit_bytes": 512,
+      "limit_events": 64,
+      "lines": {
+        "PWB": {
+          "bytes": 76,
+          "count": 3,
+          "events": 11
+        },
+        "PWC": {
+          "bytes": 166,
+          "count": 2,
+          "events": 23
+        },
+        "PWD": {
+          "bytes": 50,
+          "count": 1,
+          "events": 11
+        },
+        "PWE": {
+          "bytes": 103,
+          "count": 3,
+          "events": 19
+        },
+        "PWP": {
+          "bytes": 0,
+          "count": 0,
+          "events": 0
+        }
+      },
+      "log_offsets": {
+        "K.contacts": 1,
+        "K.pickups": 2,
+        "K.squad_target": 0
+      }
+    }
+  },
+  "build_id": "d68b2194-1",
+  "error": "build failed after round 3: [{'gate': 'G2', 'passed': False, 'summary': {'seats': 0, 'failures': [{'id': 'environment', 'code': 'environment_missing', 'message': 'missing release worktree /Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tools/.cache/coworld-v0.3.123 (PW_CACHE_DIR or tools/.cache): run paintbot_pw_lab/tools/build_native.sh'}]}}, {'gate': 'G3', 'passed': False, 'summary': 'not run: G2 failed'}, {'gate': 'G4', 'passed': False, 'summary': 'not run: G2 failed'}, {'gate': 'G5', 'passed': False, 'summary': 'not run: G2 failed'}]",
+  "gaps": [],
+  "gates": {
+    "G1": {
+      "passed": true,
+      "summary": [
+        {
+          "code": "ste",
+          "component": "SK.motor",
+          "level": "warning",
+          "line": 289,
+          "message": "`Spec` uses a semicolon; write two sentences"
+        },
+        {
+          "code": "ste",
+          "component": "SK.motor",
+          "level": "warning",
+          "line": 289,
+          "message": "`Spec` has a sentence over 25 words"
+        }
+      ]
+    },
+    "G2": {
+      "passed": false,
+      "summary": {
+        "failures": [
+          {
+            "code": "environment_missing",
+            "id": "environment",
+            "message": "missing release worktree /Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tools/.cache/coworld-v0.3.123 (PW_CACHE_DIR or tools/.cache): run paintbot_pw_lab/tools/build_native.sh"
+          }
+        ],
+        "seats": 0
+      }
+    },
+    "G3": {
+      "passed": false,
+      "summary": "not run: G2 failed"
+    },
+    "G4": {
+      "passed": false,
+      "summary": "not run: G2 failed"
+    },
+    "G5": {
+      "passed": false,
+      "summary": "not run: G2 failed"
+    }
+  },
+  "guesses": [
+    {
+      "component": "K.squad_target",
+      "decision": "Wrapped the whole stall-memory step in `IF progress_period > 0`, so a tuned value of 0 skips Step 1 instead of dividing by zero.",
+      "id": "G-K.squad_target-1",
+      "severity": "low",
+      "spec_quote": "When `worldTick MOD progress_period = 0`",
+      "state": "open",
+      "why": "AGENTS.md rule 5 requires guarding every MOD; progress_period is a tunable param, not a literal."
+    },
+    {
+      "component": "C.take_heart",
+      "decision": "Read controlX/controlY(objective) without checking objective >= 0. For an invalid objective, the host returns -1 and the engine clamps the resulting goal.",
+      "id": "G-C.take_heart-1",
+      "severity": "low",
+      "spec_quote": "`goal_x = controlX(objective)`",
+      "state": "open",
+      "why": "The spec still requires these reads without an objective guard, and the host safely returns -1 for invalid indices."
+    },
+    {
+      "component": "C.cover_heart",
+      "decision": "Read controlX/controlY(objective) without an objective >= 0 guard, preserving the previous unit's behavior.",
+      "id": "G-C.cover_heart-1",
+      "severity": "low",
+      "spec_quote": "`hx = controlX(objective)`",
+      "state": "open",
+      "why": "The spec still omits this guard for the coordinate reads, and invalid objective indices return -1 without a runtime error. The new finish_capture condition separately requires objective >= 0."
+    },
+    {
+      "component": "C.default_goal",
+      "decision": "Use the legacy carrying, ownHeartStolen, heartX and heartY fields exactly as specified. With the documented current host behavior, the default goal is the enemy home.",
+      "id": "G-C.default_goal-1",
+      "severity": "medium",
+      "spec_quote": "else `(heartX, heartY)`",
+      "state": "open",
+      "why": "The spec explicitly retains these legacy fields; substituting control objectives would change the requested behavior."
+    },
+    {
+      "component": "COM.grenade_out",
+      "decision": "Read sk_motor__threw as left by the most recent SK.motor run before __send. If send runs before motor on a tick, the callout comes one tick late.",
+      "id": "G-COM.grenade_out-1",
+      "severity": "low",
+      "spec_quote": "when threw of `SK.motor` is 1",
+      "state": "open",
+      "why": "Call order is generated and not visible to the unit."
+    }
+  ],
+  "status": "failed",
+  "units": {
+    "C.cover_heart": "changed",
+    "C.default_goal": "changed",
+    "C.fall_back": "changed",
+    "C.resupply": "changed",
+    "C.take_heart": "changed",
+    "COM.grenade_out": "reused",
+    "COM.status_call": "changed",
+    "K.contacts": "changed",
+    "K.pickups": "reused",
+    "K.self_motion": "reused",
+    "K.squad_target": "reused",
+    "P.chargeGrenade": "reused",
+    "P.lookAt": "reused",
+    "P.shootAt": "reused",
+    "P.shout": "reused",
+    "P.walkTo": "reused",
+    "S.has_target_heart": "reused",
+    "S.losing_fight": "changed",
+    "S.supply_worth": "changed",
+    "SK.motor": "changed",
+    "ST.commitment": "reused",
+    "ST.roles": "reused",
+    "ST.rules": "reused"
+  }
+}
