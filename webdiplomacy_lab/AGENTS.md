@@ -51,8 +51,14 @@ bodies and creation responses go under `experiments/<experiment>/` (committed).
 [`webdip_bot/`](webdip_bot/README.md) holds every agent in one image: DumbBot, SearchBot
 (the champion line, with the fast adjudicator), NashBot, and the personality roster.
 Platform policies:
-- `webdip-dumbbot` is the champion lineage: v1 DumbBot, v2–v3 search, v4 fastadj search,
-  v5 with the opponent-belief fix.
+- `webdip-dumbbot` is the champion lineage:
+  - v1 DumbBot;
+  - v2–v3 search;
+  - v4 fastadj search;
+  - v5 opponent-belief fix;
+  - v6 Kissinger (level-1 opponents);
+  - v7 convoy approximation;
+  - v8 modular refactor + Nim adjudicator (behaviour identical to v7).
 - `webdip-<personality>` policies are the league fillers. The league filler roster is
   curated through the filler-policies API (see the gameplay doc).
 
@@ -65,6 +71,10 @@ Self-play tooling:
 - `tools/evolve.py` runs continuous evolutionary self-play, with the champion as the anchor.
 - `tools/value_fit.py` fits the learned evaluation.
 - `tools/stop_run.sh` stops a run and its containers.
+- `tools/paired.py DIR A B` gives the paired difference of two agents seated in the same games.
+- `webdip_bot/golden.py` holds the behaviour contract (run `check` after any search refactor),
+  `check_search_parity.py` runs the deeper differential check, and `profile_search.py` profiles
+  or times frozen fixtures.
 - The overnight runbook is [`LOOP.md`](LOOP.md).
 
 ## Identity hygiene
