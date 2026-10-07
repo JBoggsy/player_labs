@@ -187,7 +187,8 @@ Replace superseded context in place (lab doc rules); keep request bodies and ids
 
 Stop the loop and report to the orchestrator and wait for PROCEED when any of these happens:
 
-- `max_iterations` reached, or the daily `credit_budget` would be exceeded;
+- `max_iterations` reached, or the charter credit budget/account reserve would be violated
+  (apply a daily cap only when the current charter specifies one);
 - two consecutive iterations end `accept_h0` or inconclusive;
 - a preflight finds changed rule-bearing engine files;
 - a proposed change is outside `allowed_changes`;

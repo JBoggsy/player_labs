@@ -2,20 +2,22 @@
 
 ## Current objective and boundary
 
-Continue the authorized optimizer loop. Parent is submitted v8 (build5cee1447-1), whose
-fresh hosted Richard improvement over v6 was +.133064, CI[+.009925,+.256203].
-Opening child87324810-1 is uploaded as jb-pw-opt:v9; its broad-field A/B is being launched.
-Spray-distance child7faadaa4-1 passed G1–G5 and is uploading. It uses physical target distance
-instead of HP-weighted ranking cost for both spray range gates. Spray-safety child5fa13fa0-1 also passed G1–G5 and is uploading. Current source is the
-independent gun-corridor retest on v8: widen the visible teammate corridor from95cm to195cm
-for guns only, keeping spray width95cm. Counter gun_held_total attributes newly withheld shots. V7 cadence repair is running;
-combine with v8 only if the repaired hosted comparison supports it. Reports6/7/10–14 own details.
+Continue the authorized optimizer loop on submitted v8, build5cee1447-1. I13–i16 are
+independent children for opening supply, spray distance, spray safety and gun corridor;
+collect their complete hosted verdicts and combine all supported winners, then evaluate
+that combination. Do not promote partial estimates or local outcomes to wins.
 
-Local games establish runtime health, activation and mechanisms, never performance or a veto.
-Every clean compiled candidate proceeds to hosted A/B. Keep preparing the next candidate while
-hosted batches run; no hosted self-play, league submissions, public posts or git pushes.
-The orchestrator owns league submission. Live round853 confirms v8 is James Botts's champion.
-Broad-field coverage includes frozen leaders under James's latest instruction; see charter below.
+Current iteration17 source tests a narrower outnumbered-retreat enemy count on v8.
+K.contacts exposes fight_foes within both26m and current gunRange; S.losing_fight uses it
+with the original friendly count. Other combat, supply, targeting and retreat destination
+logic remain v8. Counter retreat_range_saved_total attributes suppressed retreat eligibility.
+Eight hash-verified v8 Richard losses show161/506 post20s retreat-eligible observations
+removed by this count; seven involve an enemy sniper outside our range. This is a tactical
+hypothesis with exposure risk, not a proof of safety. REPORT-17 owns diagnosis and design.
+
+No daily cap; balance floor10,000 and per-iteration approximately600 credits. Respect pending
+request capacity and120s minimum polling. Every watcher exits on cohort completion.
+No hosted self-play, league submissions, public posts or git pushes by the optimizer.
 
 ## Foundation qualification (v1 reference)
 
@@ -83,7 +85,7 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
 - baseline: submitted `jb-pw-opt:v8`, version `32f1b591-b444-4210-94a8-35521d7f90f1`, build `5cee1447-1`.
-- candidate: opening supply gate on v8, build `87324810-1`; independent spray-distance and spray-safety children follow.
+- candidate: iteration17 retreat-range count on v8; i13–i16 hosted cohorts continue independently.
 - opponents: every top-8 leaderboard entrant except us, plus all explicitly named targets:
   Richard (primary, heavy), xolod (substantial guard), and small matched samples against
   finist, zhar, relh, basic-v22, daveey/Alpha, and Rohit. Refresh exact versions every iteration.
@@ -98,8 +100,9 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
 - allowed_changes: any single attributable change to the strategy source or a skill, including
   targeting/range, grenade use, pickups, movement/routing, thresholds and constants, roles. A
   new win strategy or comms protocol needs an orchestrator PROCEED first.
-- credit_budget: 300 credits per iteration, 1,400 per day (budget 0.5 credits per episode).
-- max_iterations: 20. Stop rules in the loop skill mean "report to the orchestrator and wait
+- credit_budget: no daily cap; keep the account balance above 10,000 credits (cap 20,000, refill
+  ~1,429/day; unspent refill at the cap is lost). Up to ~600 credits per iteration.
+- max_iterations: none (continuous; the orchestrator stops the loop). Stop rules in the loop skill mean "report to the orchestrator and wait
   for PROCEED", not "stop working".
 
 ## Identity, roster and budget
@@ -126,5 +129,17 @@ verified. New cohorts total296 episodes / estimated148 credits; already-fixed i1
 All cohorts are balanced by arm and side.
 Richard is the primary outcome; small opponent samples detect ports and large regressions,
 not precise competitiveness. Campaign previews total1,056.5 after i13/i14; all four reserved cohorts total1,352.5.
-Per iteration300/day1,400.
+Current budget: approximately600 per iteration, no daily cap, balance floor10,000.
 Reports/manifests own exact spend and identities.
+
+## Current operating limit
+
+James corrected the budget: no daily cap or midnight hold. Keep balance above10,000;
+approximately600 credits per iteration. Reported account balance19,335/20,000, refill
+about1,429/day. This is James's observation, not a successful optimizer balance read.
+Record actual snapshots separately from creation previews; holds/refills/other account work
+can change available balance, and preview totals are not actual metered spend.
+Admission of i13–i16 continues immediately, respecting pending-request capacity.
+New justified cohorts are authorized within this reserve; do not spend merely to fill the cap.
+Dashboard8810 remains stopped. Poll at least120s apart and exit on completed/terminal cohorts;
+optional artifact gaps do not keep old watchers alive. I6/i7/i10 polling remains stopped.

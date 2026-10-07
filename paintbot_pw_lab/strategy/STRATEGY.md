@@ -136,7 +136,7 @@ Reading aid (the compiler receives component fields, not this introduction):
 ### K.contacts
 - Summary: The visible enemy we fight, the visible enemy carrier, and the local fight balance.
 - Spec: In `__update`, on every tick, do Steps 1 to 4 in order.
-  Step 1. Set `best = -1`, `best_cost = 2147483647`, `thief = -1`, `foes_near = 0`,
+  Step 1. Set `best = -1`, `best_cost = 2147483647`, `thief = -1`, `foes_near = 0`, `fight_foes = 0`,
   `friends_near = 1` (we count ourselves), `foe_sum_x = 0`, `foe_sum_y = 0`, `foes_seen = 0`.
   Step 2. For `i = 0` to 15, use seat i only when `i <> selfId AND visible(i)`. Set
   `dx = playerX(i) - selfX`, `dy = playerY(i) - selfY`, `d2 = dx * dx + dy * dy`.
@@ -148,7 +148,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   `range_rejected_total`. This counter is cumulative across ticks, starts at zero, and
   never changes target ranking or other behavior. Then add 1 to
   `foes_seen`, add `playerX(i)` to `foe_sum_x` and `playerY(i)` to `foe_sum_y`. If
-  `d2 < near_foe_sq`, add 1 to `foes_near`.
+  `d2 < near_foe_sq`, add 1 to `foes_near`. In that case, also add 1 to
+  `fight_foes` when `d2 <= gunRange() * gunRange()`. Keep the original enemy
+  count, target ranking and friendly count unchanged.
   For a teammate seat (`i MOD 2 = selfTeam`): if `d2 < near_friend_sq`, add 1 to `friends_near`.
   Step 3. Set `best_vx = 0` and `best_vy = 0`. If `best >= 0 AND seen_tick(best) = worldTick - 1`,
   set `best_vx = playerX(best) - old_x(best)` and `best_vy = playerY(best) - old_y(best)`.
@@ -170,6 +172,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - best_vy -- best's y movement since the previous tick, or 0
   - thief -- the highest-index visible enemy seat that carries a heart, or -1
   - foes_near -- visible enemy seats closer than 26 m
+  - fight_foes -- visible enemy seats within both the original near radius and our current gun reach
   - friends_near -- 1 plus visible teammate seats closer than 12 m
   - foes_seen -- visible enemy seats at any range
   - foe_cx -- mean x of visible enemy seats, or 0
@@ -239,16 +242,23 @@ Reading aid (the compiler receives component fields, not this introduction):
 ## Situations
 
 ### S.losing_fight
-- Summary: We see more near enemies than near friends, so we refuse the fight.
+- Summary: Retreat when visible enemies within our gun reach outnumber nearby support.
 - Spec: Set `on = 1` when
-  `foes_near - friends_near >= 1 AND carrying = 0 AND heart_count > 0`, using the outputs of
-  `K.contacts` and `K.squad_target`. Else set `on = 0`.
+  `fight_foes - friends_near >= 1 AND carrying = 0 AND heart_count > 0`, using
+  fight_foes and friends_near of `K.contacts`, and heart_count of `K.squad_target`.
+  Else set `on = 0`. After computing on, if on = 0 AND carrying = 0 AND
+  heart_count > 0 AND foes_near - friends_near >= 1, increment retreat_range_saved_total.
+  Here foes_near is the original 26m count from `K.contacts`. The cumulative counter
+  starts at zero and persists. It counts rejected retreat eligibility, not damage avoided.
+  Preserve the nearby friendly radius, every other rule and the retreat destination.
 - Uses: `K.contacts`, `K.squad_target`
+- Outputs:
+  - retreat_range_saved_total -- retreat eligibility rejected only by the current gun-reach count
 - Checks:
   - Believed: the flag is logged with the decision. Reads: PWD.f
-- Status: specified (2026-10-05)
-- Rationale: The heart_count term covers a base.bas case. With no heart, the retreat block finds
-  no heart and keeps the earlier goal.
+- Status: specified (2026-10-06)
+- Rationale: Loss replays show distant enemy observations triggering high-priority retreats.
+  This tests staying engaged longer. Enemy snipers and long throws can still threaten us.
 
 ### S.supply_worth
 - Summary: A wanted supply is remembered and no close fight stops us from fetching it.
@@ -300,11 +310,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   holding flag uses the existing motor ring-preserving footwork. No other motor logic changes.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
-  For guns (hasSpray = 0), widen the visible teammate corridor from previous_line_width to
-  teammate_line_width. Keep the original along-ray bounds and observed-parity test.
-  The added margin covers movement during windup; no future collision guarantee is made.
-  Preserve the previous width for spray. Increment gun_held_total once when the gun wait is
-  zero and only the widened corridor prevents the gun order. Keep aiming while holding fire.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
@@ -317,7 +322,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- cumulative ticks where continuity prevents the old early release
   - forced_total -- cumulative releases forced by becoming disarmed during a charge
   - tracking_updates_total -- cumulative armed charging ticks with a changed safe aim or charge requirement
-  - gun_held_total -- ready gun orders withheld only by the wider teammate corridor
   - cover_capture_ticks_total -- cover-capability ticks spent holding an already-started capture
 - Params:
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
@@ -325,8 +329,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   - drift_ticks = 5 ticks -- base.bas value, our own drift to cancel
   - gun_wait_light = 25 ticks -- base.bas value, gun cooldown
   - gun_wait_heavy = 73 ticks -- base.bas value, cooldown with armor, in a trench, or carrying
-  - previous_line_width = 95 cm -- original teammate corridor, retained for spray and activation attribution
-  - teammate_line_width = 195 cm -- gun corridor including a movement margin for the windup
   - spray_range_sq = 640000 -- base.bas value, the spray gun shoots only below this target cost
 - Checks:
   - Acted properly: a shot is ordered only when the gun wait is zero, the teammate line is clear, and the spray range condition holds. Reads: replay
@@ -506,8 +508,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
   On a send, copy blocked_total, continued_total, forced_total and
-  tracking_updates_total, cover_capture_ticks_total and gun_held_total from `SK.motor` into same-named outputs for periodic telemetry.
-- Uses: `K.contacts`, `SK.motor`, `P.shout`
+  tracking_updates_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry. Also copy retreat_range_saved_total from `S.losing_fight`
+  into the same-named output.
+- Uses: `K.contacts`, `SK.motor`, `S.losing_fight`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
@@ -517,8 +520,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
-  - gun_held_total -- ready gun orders withheld only by the wider corridor
-- Log: blocked_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total, gun_held_total
+  - retreat_range_saved_total -- distant-enemy retreat rejections through this snapshot
+- Log: blocked_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total, retreat_range_saved_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay
