@@ -102,6 +102,51 @@ Reading aid (the compiler receives component fields, not this introduction):
   8/9 in the discovery sample. All capture fields are public. Unrecognized public geometry and missed
   classification ticks retain the champion behavior. This does not read opponent identity.
 
+### K.counter_phase
+- Summary: A shared public-state refusal phase followed by a bounded counterattack.
+- Spec: In `__init`, set phase = 0, trigger = 0, release_tick = 0, stage_ticks = 0,
+  counter_ticks = 0, split_heart = -1 and target = 9 - selfTeam. Set armed = 0.
+  In `__update`, if heartCount() <> 10 OR worldTick < start_tick, exit without changing phase.
+  Phase bookkeeping runs independently of classifier eligibility. Only S.refuse_counter
+  enables actual behavior, requiring exact map match and default route class.
+  If phase = 0: if worldTick >= stage_deadline, set phase = 3 and trigger = 2 and exit.
+  Otherwise set phase = 1. For j from 0 while j < heartCount() AND j < 64, set
+  was_capturing(j) = 0; if controlCaptureTeam(j) = 1 - selfTeam AND controlCaptureTicks(j) > 0,
+  set was_capturing(j) = 1. Set armed = 1 and exit this update. This records entry state;
+  an already-running distant capture is not a new split trigger.
+  If phase = 1: increment stage_ticks. Set split_heart = -1.
+  For j from 0 while j < heartCount() AND j < 64, set active = 0; if
+  controlCaptureTeam(j) = 1 - selfTeam AND controlCaptureTicks(j) > 0, set active = 1.
+  If active = 1 AND was_capturing(j) = 0 AND worldTick >= earliest_release AND
+  controlOwner(target) = 1 - selfTeam AND split_heart = -1, set dx = controlX(j) - controlX(target)
+  and dy = controlY(j) - controlY(target); when dx * dx + dy * dy >= split_distance_sq,
+  set split_heart = j. Set was_capturing(j) = active on every loop iteration.
+  After the loop, if split_heart >= 0, set phase = 2, trigger = 1, release_tick = worldTick.
+  Else if worldTick >= stage_deadline, set phase = 3, trigger = 2, release_tick = worldTick.
+  If phase = 2: if worldTick - release_tick >= counter_duration, set phase = 3;
+  else increment counter_ticks. Preserve trigger and release_tick after leaving phase2.
+  The split is a public capture transition, not a claim about enemy headcount or visibility.
+- Sources: `worldTick`, `selfTeam`, `heartCount`, `controlOwner`, `controlCaptureTeam`, `controlCaptureTicks`, `controlX`, `controlY`
+- Memory: phase, trigger, release_tick, stage_ticks, counter_ticks, split_heart, target,
+  armed and was_capturing (64 cells) persist. Never restart a finished phase.
+- Outputs:
+  - phase -- 0 inactive, 1 staging, 2 counterattack, 3 normal v29 released
+  - trigger -- 0 none, 1 new distant enemy capture while central heart enemy-owned, 2 deadline
+  - release_tick -- tick of event release or deadline
+  - stage_ticks -- cumulative updates in staging
+  - counter_ticks -- cumulative updates in counterattack
+  - split_heart -- heart whose new capture triggered release, or -1
+  - target -- normalized forward central heart, 9 minus selfTeam
+- Params:
+  - start_tick = 360 ticks -- fifteen seconds, same as opening classification
+  - earliest_release = 420 ticks -- wait until seventeen and a half seconds
+  - stage_deadline = 960 ticks -- abandon refusal by forty seconds
+  - counter_duration = 240 ticks -- at most ten seconds of counterattack
+  - split_distance_sq = 4000000 square cm -- twenty metre separation from target
+- Checks:
+  - True: shared phase and trigger follow public heart capture transitions. Reads: replay
+- Status: specified (2026-10-07)
+
 ### K.self_motion
 - Summary: Our own movement since the previous tick.
 - Spec: In `__init`, set `last_x = selfX` and `last_y = selfY`. In `__update`, on every tick, do
@@ -334,6 +379,17 @@ Reading aid (the compiler receives component fields, not this introduction):
   - Believed: the opening flag is recorded in the selected rule flags. Reads: PWD.f
 - Status: specified (2026-10-07)
 
+### S.refuse_counter
+- Summary: The bounded team plan overrides routine movement but not emergency duties.
+- Spec: Set on = 1 when map_known of `K.opening_signature` = 1 AND
+  route_class of `K.opening_signature` = 2 AND
+  (phase of `K.counter_phase` = 1 OR phase of `K.counter_phase` = 2) AND
+  critical of `K.pickups` = 0. Else set on = 0.
+- Uses: `K.opening_signature`, `K.counter_phase`, `K.pickups`
+- Checks:
+  - Believed: the team phase and critical supply gate agree with the rule flag. Reads: PWD.f
+- Status: specified (2026-10-07)
+
 ## Skills
 
 ### SK.motor
@@ -370,25 +426,12 @@ Reading aid (the compiler receives component fields, not this introduction):
   Best_cost remains the HP-weighted ranking score; do not treat it as a physical distance.
   After an actual shootAt request with hasSpray, increment spray_distance_shots_total if
   the former best_cost test would have rejected it. This counter starts at zero and persists.
-  At the end of plan_leg, after normalizing leg_x and leg_y, call sk_motor__dry_combat_leg.
-  That helper returns unchanged if map_known of `K.opening_signature` = 0, holding is true,
-  or waterAt(goal_x, goal_y) is true. Otherwise evaluate the original leg, then eight compass
-  vectors in order (28,0),(20,20),(0,28),(-20,20),(-28,0),(-20,-20),(0,-28),(20,-20).
-  For each vector count waterAt samples at self position plus vector times dry_probe_stride
-  times j, for j=1 through4. If the original has zero wet samples, return unchanged.
-  Choose the vector with fewest wet samples, breaking ties by largest dot product with
-  the original vector, then evaluation order. Replace the leg only if wet sample count
-  strictly decreases; increment dry_combat_changed_total once when replaced. Preserve
-  random draws, leg duration, holding clamp, stall fallback and all gun/grenade logic.
-  The probes inspect public terrain only, not hidden opponents. This planner can choose
-  a backward heading; combat delay versus exposure is a hosted tradeoff.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
-- Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`, `K.opening_signature`
+- Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
   - opening_ticks_total -- cumulative ticks controlled by the coordinated central opening
-  - dry_combat_changed_total -- combat legs replaced by a strictly drier compass heading
   - root -- the result of the last sk_motor__isqrt call
   - threw -- 1 on a commanded or forced grenade release tick, else 0
   - release_charge -- observed charge on this release decision
@@ -401,7 +444,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   - spray_distance_shots_total -- actual spray requests enabled by the physical-distance range check
   - cover_capture_ticks_total -- cover-capability ticks spent holding an already-started capture
 - Params:
-  - dry_probe_stride = 4 ticks -- four probes at approximately1.12m intervals
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
   - lead_ticks = 6 ticks -- base.bas value, the gun windup
   - drift_ticks = 5 ticks -- base.bas value, our own drift to cancel
@@ -416,6 +458,52 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ## Capabilities
+
+### C.refuse_counter
+- Summary: A capture pair and six separated staging cogs counter a public split event.
+- Spec: `__start` does nothing. Each `__tick`, set member = (selfId \ 2) MOD 8.
+  Set forward = 1 when selfTeam = 0, else forward = -1.
+  Set gx = homeX and gy = homeY. Set target = target of `K.counter_phase`.
+  When phase of `K.counter_phase` = 1:
+  If member < 2, choose the nearest non-enemy heart on our half of the map that is not
+  already ours. Set choice = -1 and best_cost = 2147483647. For j from 0 while
+  j < heartCount() AND j < 64: only consider j when controlOwner(j) <> selfTeam AND
+  controlOwner(j) <> 1 - selfTeam AND forward * (controlX(j) - homeX) <= safe_forward_cm.
+  Set dx = controlX(j) - selfX and dy = controlY(j) - selfY, cost = dx * dx + dy * dy.
+  If cost < best_cost, set choice = j and best_cost = cost. If choice >= 0, set
+  gx = controlX(choice) and gy = controlY(choice); otherwise keep home coordinates.
+  If member >= 2, set post = member - 2, row = post \ 3 and lane = post MOD 3 - 1.
+  Set gx = homeX + forward * (stage_forward_cm + row * row_gap_cm),
+  gy = homeY + lane * lane_gap_cm. Set tries = 0. While waterAt(gx, gy) AND tries < dry_steps,
+  subtract forward * dry_step_cm from gx and increment tries. If still wet, set gx = homeX.
+  When phase of `K.counter_phase` = 2:
+  For member < 2, set gx = controlX(target), gy = controlY(target).
+  For member >= 2, set post = member - 2, row = post \ 3 and lane = post MOD 3 - 1.
+  Set gx = controlX(target) - forward * (counter_back_cm + row * row_gap_cm),
+  gy = controlY(target) + lane * lane_gap_cm. Set tries = 0. While waterAt(gx, gy) AND
+  tries < dry_steps, subtract forward * dry_step_cm from gx and increment tries.
+  If still wet, set gx = homeX and gy = homeY + lane * lane_gap_cm.
+  Finally set dx = gx - selfX and dy = gy - selfY; set hold = 1 if
+  dx * dx + dy * dy <= hold_sq, else hold = 0.
+  Call sk_motor__central_opening(gx, gy, hold) of `SK.motor` exactly once, preserving
+  baseline motor/weapons and its existing opening_ticks_total activation count.
+  Set status = 0. No secret positions or opponent identity are read. Separate posts
+  are requested positions, not a guarantee against combat footwork or navigation drift.
+- Uses: `K.counter_phase`, `SK.motor`
+- Params:
+  - safe_forward_cm = 1200 cm -- capture pair stays on the home half
+  - stage_forward_cm = 900 cm -- rear row staging depth
+  - row_gap_cm = 500 cm -- five metre separation between rows
+  - lane_gap_cm = 600 cm -- six metre lateral separation
+  - counter_back_cm = 600 cm -- rifle line behind the capture pair
+  - dry_step_cm = 100 cm -- move dry search toward home
+  - dry_steps = 16 -- bounded dry station search
+  - hold_sq = 14400 square cm -- hold within 120 cm
+- Done when: never
+- Checks:
+  - Acted: selected phase movement increments the motor opening counter. Reads: PWD.c, replay
+  - Result: first-fight location, first-death timing and capture opportunities. Reads: replay
+- Status: specified (2026-10-07)
 
 ### C.central_opening
 - Summary: Two four-cog squads meet the opponent on the two central heart approaches.
@@ -607,6 +695,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   comes last, then supply, then the squad target. The opening adds a bounded commitment
   between retreat and noncritical supply for both squads.
 - `R.fall_back` [400]: WHEN `S.losing_fight` DO `C.fall_back`
+- `R.refuse_counter` [360]: WHEN `S.refuse_counter` DO `C.refuse_counter`
 - `R.central_opening` [350]: WHEN `S.central_opening` DO `C.central_opening`
 - `R.resupply` [300]: WHEN `S.supply_worth` DO `C.resupply`
 - `R.take_heart` [200]: WHEN `S.has_target_heart` DO `C.take_heart` FOR squad=ring
@@ -627,32 +716,29 @@ Reading aid (the compiler receives component fields, not this introduction):
 ## Communication
 
 ### COM.status_call
-- Summary: Every fifteen seconds, say whether we are in contact, falling back, or moving.
+- Summary: Existing public callouts with team-phase activation snapshots.
 - Spec: In `__send`, when `worldTick MOD 360 = selfId * 21`, shout one message. If best of
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
-  "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy route_class, classified_tick and map_known from `K.opening_signature` into same-named outputs.
-  Also copy opening_ticks_total and
-  dry_combat_changed_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
-- Uses: `K.contacts`, `K.opening_signature`, `SK.motor`, `P.shout`
-- Content: our contact state. No teammate decodes it.
+  "Moving with the squad.". Set sent to 1 on a tick with a shout, else0.
+  On a send, copy phase, trigger, release_tick, stage_ticks and counter_ticks from
+  `K.counter_phase` into same-named outputs; copy map_known from `K.opening_signature`.
+- Uses: `K.contacts`, `K.counter_phase`, `K.opening_signature`, `P.shout`
+- Content: existing contact callouts, no teammate decodes them.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
 - Outputs:
-  - route_class -- 0 pending, 1 outer-route signature, 2 default
-  - classified_tick -- exact tick when the classifier latched
-  - opening_ticks_total -- cumulative adaptive opening calls
-  - dry_combat_changed_total -- terrain-directed combat leg changes through this snapshot
-  - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
-  - map_known -- whether exact Heartwick public geometry matched
-- Log: route_class, classified_tick, opening_ticks_total, dry_combat_changed_total, cover_capture_ticks_total, map_known
+  - phase -- current shared counter phase
+  - trigger -- public event1 or deadline2, otherwise0
+  - release_tick -- phase release tick
+  - stage_ticks -- cumulative staging updates
+  - counter_ticks -- cumulative counter updates
+  - map_known -- exact public layout match
+- Log: phase, trigger, release_tick, stage_ticks, counter_ticks, map_known
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay
-- Status: specified (2026-10-05)
-- Rationale: Listeners turn to the first heard message. base.bas shouts this before the grenade
-  call, so this component comes first.
+- Status: specified (2026-10-07)
 
 ### COM.grenade_out
 - Summary: Call out a grenade when the charge is ready.
