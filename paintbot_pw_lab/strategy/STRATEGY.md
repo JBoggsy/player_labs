@@ -298,16 +298,21 @@ Reading aid (the compiler receives component fields, not this introduction):
   once, then calls sk_motor__act(gx, gy, 1). Only C.cover_heart calls this helper when it is
   already inside the objective capture ring and our team is capturing there. The forced
   holding flag uses the existing motor ring-preserving footwork. No other motor logic changes.
-  The helper sk_motor__regroup(gx, gy, has_buddy) increments regroup_ticks_total when
-  has_buddy = 1, otherwise local_retreat_ticks_total, then calls sk_motor__act(gx, gy, 0).
-  These cumulative counters start at zero and persist for the match. Only C.fall_back calls it.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
+  For guns (hasSpray = 0), widen the visible teammate corridor from previous_line_width to
+  teammate_line_width. Keep the original along-ray bounds and observed-parity test.
+  The added margin covers movement during windup; no future collision guarantee is made.
+  Preserve the previous width for spray. Increment gun_held_total once when the gun wait is
+  zero and only the widened corridor prevents the gun order. Keep aiming while holding fire.
+  Both spray readiness in footwork and the actual spray gun order must use physical squared
+  distance to the selected visible target, not best_cost. Compute spray_distance_sq before
+  footwork using the target's observed position, or0 if no target. Preserve target selection,
+  range threshold and all other gates. Increment spray_distance_shots_total on an actual
+  spray order when best_cost would have rejected that order under the original gate.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
-  - regroup_ticks_total -- fallback ticks steering behind a visible teammate
-  - local_retreat_ticks_total -- fallback ticks steering locally without a teammate anchor
   - root -- the result of the last sk_motor__isqrt call
   - threw -- 1 on a commanded or forced grenade release tick, else 0
   - release_charge -- observed charge on this release decision
@@ -317,6 +322,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- cumulative ticks where continuity prevents the old early release
   - forced_total -- cumulative releases forced by becoming disarmed during a charge
   - tracking_updates_total -- cumulative armed charging ticks with a changed safe aim or charge requirement
+  - spray_distance_shots_total -- spray orders newly allowed by physical distance
+  - gun_held_total -- ready gun orders withheld only by the wider teammate corridor
   - cover_capture_ticks_total -- cover-capability ticks spent holding an already-started capture
 - Params:
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
@@ -324,6 +331,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - drift_ticks = 5 ticks -- base.bas value, our own drift to cancel
   - gun_wait_light = 25 ticks -- base.bas value, gun cooldown
   - gun_wait_heavy = 73 ticks -- base.bas value, cooldown with armor, in a trench, or carrying
+  - previous_line_width = 95 cm -- original teammate corridor, retained for spray and activation attribution
+  - teammate_line_width = 195 cm -- gun corridor including a movement margin for the windup
   - spray_range_sq = 640000 -- base.bas value, the spray gun shoots only below this target cost
 - Checks:
   - Acted properly: a shot is ordered only when the gun wait is zero, the teammate line is clear, and the spray range condition holds. Reads: replay
@@ -432,38 +441,29 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ### C.fall_back
-- Summary: Regroup behind a nearby teammate, or make a short local retreat and reassess.
-- Spec: `__start` does nothing. On every `__tick`, do these steps in order.
-  Step 1: read cx = foe_cx and cy = foe_cy from `K.contacts`. Set buddy = -1 and
-  buddy_cost = 2147483647. For i = 0 to 15, consider only i <> selfId with visible(i)
-  and i MOD 2 = selfTeam. Let dx = playerX(i) - selfX, dy = playerY(i) - selfY and
-  d2 = dx * dx + dy * dy. When d2 > buddy_min_sq AND d2 <= buddy_max_sq AND
-  d2 < buddy_cost, set buddy = i and buddy_cost = d2. Lowest seat wins exact ties.
-  Step 2: when buddy >= 0, set anchor_x = playerX(buddy), anchor_y = playerY(buddy)
-  and has_buddy = 1. Otherwise set anchor_x = selfX, anchor_y = selfY and has_buddy = 0.
-  Set dx = anchor_x - cx and dy = anchor_y - cy. Set scale to the larger of ABS(dx)
-  and ABS(dy). If scale = 0, replace dx with homeX - selfX and dy with homeY - selfY,
-  and recompute scale. When scale > 0, set goal_x = anchor_x + dx * retreat_step \ scale
-  and goal_y = anchor_y + dy * retreat_step \ scale. Otherwise set goal_x = anchor_x
-  and goal_y = anchor_y. This places the goal behind the teammate relative to the visible
-  enemy centroid; without a teammate it retreats at most retreat_step on each axis.
-  Step 3: call sk_motor__regroup(goal_x, goal_y, has_buddy) of `SK.motor`, then set status = 0.
-  The motor still aims, dodges, fires and finishes grenades normally. Do not change retreat
-  eligibility, squad objectives, supply gates or capture behavior. Recompute each tick;
-  do not retain a stale teammate location. No quiet-approach override in this capability.
-- Uses: `K.contacts`, `SK.motor`
+- Summary: Head for the heart that is far from the enemies and near us.
+- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set
+  `cx = foe_cx` and `cy = foe_cy` of `K.contacts`. Set `away = -1` and
+  `away_score = -2147483647`. For `j = 0` while `j < heartCount() AND j < 64`, set `ex = (controlX(j) - cx) \ 16`,
+  `ey = (controlY(j) - cy) \ 16`, `mx = (controlX(j) - selfX) \ 16`,
+  `my = (controlY(j) - selfY) \ 16`, and `score = ex * ex + ey * ey - (mx * mx + my * my) \ 2`.
+  If `score > away_score`, set `away = j` and `away_score = score`. Step 2: if `away >= 0`, the
+  goal is `(controlX(away), controlY(away))`. Else the goal is our own position. Step 3: call
+  `sk_motor__act(goal_x, goal_y, 0)` of `SK.motor`. Step 4 (quiet approach): call the host command
+  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`.
+  objective of `K.squad_target` is 0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
+  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 5:
+  set status to 0.
+- Uses: `K.contacts`, `K.squad_target`, `SK.motor`
 - Params:
-  - buddy_min_sq = 90000 square cm -- do not chase a teammate already within 3 m
-  - buddy_max_sq = 6760000 square cm -- seek support within 26 m
-  - retreat_step = 600 cm -- offset behind the anchor, bounded per axis
+  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective
 - Done when: never
 - Checks:
-  - Acted: fallback goals follow the visible teammate anchor or local retreat construction. Reads: replay
-  - Result: isolated deaths per minute decrease and owned hearts at 60 seconds increase. Reads: replay
-- Status: specified (2026-10-06)
-- Rationale: Distant-heart retreat destinations can disperse the squad and concede territory.
-  A nearby teammate is not guaranteed safe: joining one can move toward a fight or cluster
-  us under grenades. This structural regrouping hypothesis needs hosted evaluation.
+  - Acted: the rule selects this capability when we are losing the fight. Reads: PWD.r, PWD.c
+  - Result: we survive the activation. Reads: PWE.e, replay
+- Status: specified (2026-10-05)
+- Rationale: `S.losing_fight` needs a heart, so away is never -1 here. A losing fight also means a
+  visible target, so Step 4 never fires. Both stay for a literal match with base.bas.
 
 ## Strategy
 
@@ -511,20 +511,20 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy regroup_ticks_total, local_retreat_ticks_total, continued_total, forced_total and
-  tracking_updates_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
+  On a send, copy spray_distance_shots_total, continued_total, forced_total and
+  tracking_updates_total, cover_capture_ticks_total and gun_held_total from `SK.motor` into same-named outputs for periodic telemetry.
 - Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
 - Outputs:
-  - regroup_ticks_total -- teammate regroup ticks through this status snapshot
-  - local_retreat_ticks_total -- local retreat ticks through this status snapshot
+  - spray_distance_shots_total -- newly allowed spray orders through this status snapshot
   - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
-- Log: regroup_ticks_total, local_retreat_ticks_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total
+  - gun_held_total -- ready gun orders withheld only by the wider corridor
+- Log: spray_distance_shots_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total, gun_held_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

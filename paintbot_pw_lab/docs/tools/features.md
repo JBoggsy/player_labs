@@ -51,7 +51,7 @@ refuses fewer).
   sample. `policy_key` is the exact `policy_version_id` for hosted episodes and
   `local:<file name>` for local ones.
 - **Score** (`--score`, stored in the row): `elo` (default) is the ladder's Elo outcome score,
-  `clamp(0.5 + (our glory − their glory)/2000, 0, 1)`, which is what league rank moves by
+  `clamp(0.5 + (our glory − their glory)/2000, 0, 1)`, a legacy score which is not the current OpenSkill margin score. See
   ([mechanics.md §1](../mechanics.md)). `win` is 1 / 0.5 / 0. The adapter reports both as
   **outcome points, 0-100** (`SCORE_SCALE`), because the engine emits no hypothesis whose
   swing is under 0.3 score units, which a 0-1 score could never reach.
@@ -119,9 +119,10 @@ signal) but also pay behind-in-lives glory to the side that is behind, and their
 
 ## Not verified / limits
 
-- Not yet run on a hosted corpus of one policy version: the public samples hold at most 5
-  episodes per policy. A real run needs ≥ 8 (better 30+) episodes of **our** uploaded
-  version against the field.
+- Hosted use is supported with exact policy-version selection and hash-checked replays.
+  Use `--score win` when studying wins/losses: the legacy `elo` option does not use the
+  current ladder margin scale. A real run needs ≥8 (better30+) episodes of one uploaded
+  version; outcome-selected samples are descriptive and do not estimate field rates.
 - Mix of opponents and sides confounds the corpus. Mine one opponent set at a time when the
   corpus is large enough, and read `notes` (team, opponents) on surprising rows.
 - `vm_error_logged` and the intent features exist only where our seat logs exist. Hosted XP

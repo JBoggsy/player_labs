@@ -142,11 +142,14 @@ this account-level movement is not measured cohort spend.
 
 Prefer structural changes predicted to move Richard score by at least+.10; predictions
 are planning hypotheses, not gains inferred from the miner. REPORT-18 ranks regrouping,
-frontier assignment and focus fire. Current source is iteration19 regrouping on v8,
-with original retreat eligibility (v13 remains a separate child). Compile source through
+frontier assignment and focus fire. Iteration19 regrouping on v8 passed as482cacdc-1 and is uploading. Its source retains
+original retreat eligibility (v13 remains a separate child). Compile source through
 immutable pipeline; report runtime activation and then hosted200 Richard episodes/arm.
 I18 spray confirmation was resized before admission to584games/292credits, including
 200 Richard games/arm and unchanged other opponents. Old888/444 sizing is superseded.
 Test combinations when two changes have positive hosted point estimates, even when not
 individually significant. V10+v12 is queued as iteration20; not a proven combination.
 League submission remains the orchestrator's action after a supported submission candidate.
+
+Current source is iteration20: v10 spray distance plus v12 gun corridor, both on v8.
+Separate activation counters are retained. REPORT-20 and DESIGN-20 own evaluation details.
