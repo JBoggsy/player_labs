@@ -1,58 +1,12 @@
 {
- "generation": 37,
+ "generation": 39,
  "population": {
-  "g36-be64": {
+  "g38-ef0a": {
    "genome": {
-    "SPRING_ATTACK_WEIGHT": 967,
+    "SPRING_ATTACK_WEIGHT": 1000,
     "SPRING_DEFENSE_WEIGHT": 190,
-    "FALL_ATTACK_WEIGHT": 302,
-    "FALL_DEFENSE_WEIGHT": 122,
-    "SEARCH_DISLODGED_WEIGHT": 1.36,
-    "SEARCH_POS_WEIGHT": 1.91,
-    "SEARCH_RESTARTS": 1,
-    "OPP_MODEL_LEVEL": 0,
-    "STRENGTH_WEIGHT": 1163,
-    "COMPETITION_WEIGHT": 137,
-    "SEARCH_RISK": 0.62,
-    "SEARCH_EVAL": "learned",
-    "SEARCH_LEARNED_WEIGHT": 0.2,
-    "SEARCH_OPPONENT_SAMPLES": 24,
-    "SEARCH_OBJECTIVE": "sc"
-   },
-   "fitness": 0.044886838425582776,
-   "generations": 1,
-   "parent": "g33-3ea5",
-   "last": 0.0449
-  },
-  "g36-7576": {
-   "genome": {
-    "SPRING_ATTACK_WEIGHT": 967,
-    "SPRING_DEFENSE_WEIGHT": 190,
-    "FALL_ATTACK_WEIGHT": 480,
-    "FALL_DEFENSE_WEIGHT": 122,
-    "SEARCH_DISLODGED_WEIGHT": 0.06,
-    "SEARCH_POS_WEIGHT": 1.91,
-    "SEARCH_RESTARTS": 1,
-    "OPP_MODEL_LEVEL": 0,
-    "STRENGTH_WEIGHT": 1163,
-    "COMPETITION_WEIGHT": 704,
-    "SEARCH_RISK": 0.62,
-    "SEARCH_EVAL": "learned",
-    "SEARCH_LEARNED_WEIGHT": 0.2,
-    "SEARCH_OPPONENT_SAMPLES": 26,
-    "SEARCH_OBJECTIVE": "sc"
-   },
-   "fitness": 0.00747651233442166,
-   "generations": 1,
-   "parent": "g32-7729xg33-3ea5",
-   "last": 0.0075
-  },
-  "g32-7729": {
-   "genome": {
-    "SPRING_ATTACK_WEIGHT": 967,
-    "SPRING_DEFENSE_WEIGHT": 190,
-    "FALL_ATTACK_WEIGHT": 480,
-    "FALL_DEFENSE_WEIGHT": 122,
+    "FALL_ATTACK_WEIGHT": 456,
+    "FALL_DEFENSE_WEIGHT": 37,
     "SEARCH_DISLODGED_WEIGHT": 1.36,
     "SEARCH_POS_WEIGHT": 1.91,
     "SEARCH_RESTARTS": 1,
@@ -65,10 +19,10 @@
     "SEARCH_OPPONENT_SAMPLES": 24,
     "SEARCH_OBJECTIVE": "sc"
    },
-   "fitness": 0.0071,
-   "generations": 5,
-   "parent": "g30-aa6dxg31-cb96",
-   "last": -0.023
+   "fitness": 0.023832984966442088,
+   "generations": 1,
+   "parent": "g37-af8f",
+   "last": 0.0238
   },
   "g37-af8f": {
    "genome": {
@@ -88,16 +42,40 @@
     "SEARCH_OPPONENT_SAMPLES": 24,
     "SEARCH_OBJECTIVE": "sc"
    },
-   "fitness": null,
-   "generations": 0,
-   "parent": "g32-7729"
+   "fitness": 0.0186,
+   "generations": 2,
+   "parent": "g32-7729",
+   "last": 0.0051
   },
-  "g37-65c2": {
+  "g36-be64": {
+   "genome": {
+    "SPRING_ATTACK_WEIGHT": 967,
+    "SPRING_DEFENSE_WEIGHT": 190,
+    "FALL_ATTACK_WEIGHT": 302,
+    "FALL_DEFENSE_WEIGHT": 122,
+    "SEARCH_DISLODGED_WEIGHT": 1.36,
+    "SEARCH_POS_WEIGHT": 1.91,
+    "SEARCH_RESTARTS": 1,
+    "OPP_MODEL_LEVEL": 0,
+    "STRENGTH_WEIGHT": 1163,
+    "COMPETITION_WEIGHT": 137,
+    "SEARCH_RISK": 0.62,
+    "SEARCH_EVAL": "learned",
+    "SEARCH_LEARNED_WEIGHT": 0.2,
+    "SEARCH_OPPONENT_SAMPLES": 24,
+    "SEARCH_OBJECTIVE": "sc"
+   },
+   "fitness": 0.0146,
+   "generations": 3,
+   "parent": "g33-3ea5",
+   "last": 0.0154
+  },
+  "g39-d3d4": {
    "genome": {
     "SPRING_ATTACK_WEIGHT": 1000,
     "SPRING_DEFENSE_WEIGHT": 190,
-    "FALL_ATTACK_WEIGHT": 375,
-    "FALL_DEFENSE_WEIGHT": 122,
+    "FALL_ATTACK_WEIGHT": 452,
+    "FALL_DEFENSE_WEIGHT": 37,
     "SEARCH_DISLODGED_WEIGHT": 1.36,
     "SEARCH_POS_WEIGHT": 1.91,
     "SEARCH_RESTARTS": 1,
@@ -106,88 +84,60 @@
     "COMPETITION_WEIGHT": 704,
     "SEARCH_RISK": 0.62,
     "SEARCH_EVAL": "learned",
-    "SEARCH_LEARNED_WEIGHT": 0.2,
-    "SEARCH_OPPONENT_SAMPLES": 26,
+    "SEARCH_LEARNED_WEIGHT": 0.03,
+    "SEARCH_OPPONENT_SAMPLES": 27,
     "SEARCH_OBJECTIVE": "sc"
    },
    "fitness": null,
    "generations": 0,
-   "parent": "g36-be64xg36-7576"
+   "parent": "g37-af8f"
   },
-  "g37-5be8": {
+  "g39-8537": {
    "genome": {
     "SPRING_ATTACK_WEIGHT": 1000,
     "SPRING_DEFENSE_WEIGHT": 190,
-    "FALL_ATTACK_WEIGHT": 480,
+    "FALL_ATTACK_WEIGHT": 456,
+    "FALL_DEFENSE_WEIGHT": 37,
+    "SEARCH_DISLODGED_WEIGHT": 1.36,
+    "SEARCH_POS_WEIGHT": 1.91,
+    "SEARCH_RESTARTS": 1,
+    "OPP_MODEL_LEVEL": 0,
+    "STRENGTH_WEIGHT": 1118,
+    "COMPETITION_WEIGHT": 704,
+    "SEARCH_RISK": 0.62,
+    "SEARCH_EVAL": "learned",
+    "SEARCH_LEARNED_WEIGHT": 0.2,
+    "SEARCH_OPPONENT_SAMPLES": 24,
+    "SEARCH_OBJECTIVE": "sc"
+   },
+   "fitness": null,
+   "generations": 0,
+   "parent": "g37-af8fxg38-ef0a"
+  },
+  "g39-b1b0": {
+   "genome": {
+    "SPRING_ATTACK_WEIGHT": 967,
+    "SPRING_DEFENSE_WEIGHT": 190,
+    "FALL_ATTACK_WEIGHT": 487,
     "FALL_DEFENSE_WEIGHT": 122,
-    "SEARCH_DISLODGED_WEIGHT": 0.06,
+    "SEARCH_DISLODGED_WEIGHT": 1.36,
     "SEARCH_POS_WEIGHT": 1.91,
     "SEARCH_RESTARTS": 1,
     "OPP_MODEL_LEVEL": 0,
     "STRENGTH_WEIGHT": 1163,
-    "COMPETITION_WEIGHT": 408,
+    "COMPETITION_WEIGHT": 137,
     "SEARCH_RISK": 0.62,
     "SEARCH_EVAL": "learned",
     "SEARCH_LEARNED_WEIGHT": 0.2,
-    "SEARCH_OPPONENT_SAMPLES": 26,
+    "SEARCH_OPPONENT_SAMPLES": 24,
     "SEARCH_OBJECTIVE": "sc"
    },
    "fitness": null,
    "generations": 0,
-   "parent": "g36-7576"
+   "parent": "g36-be64xg37-af8f"
   }
  },
  "hall_of_fame": [
-  {
-   "gen": 17,
-   "name": "g17-60ff",
-   "genome": {
-    "SPRING_ATTACK_WEIGHT": 967,
-    "SPRING_DEFENSE_WEIGHT": 85,
-    "FALL_ATTACK_WEIGHT": 480,
-    "FALL_DEFENSE_WEIGHT": 150,
-    "SEARCH_DISLODGED_WEIGHT": 0.5,
-    "SEARCH_POS_WEIGHT": 1.29,
-    "SEARCH_RESTARTS": 1,
-    "OPP_MODEL_LEVEL": 1,
-    "STRENGTH_WEIGHT": 1279,
-    "COMPETITION_WEIGHT": 1039,
-    "SEARCH_RISK": 0.58,
-    "SEARCH_EVAL": "learned",
-    "SEARCH_LEARNED_WEIGHT": 0.01,
-    "SEARCH_OPPONENT_SAMPLES": 24
-   },
-   "fitness": 0.05387529715592836,
-   "generations": 1,
-   "parent": "g16-ba75",
-   "last": 0.0539
-  },
-  {
-   "gen": 18,
-   "name": "g17-c1b1",
-   "genome": {
-    "SPRING_ATTACK_WEIGHT": 967,
-    "SPRING_DEFENSE_WEIGHT": 85,
-    "FALL_ATTACK_WEIGHT": 480,
-    "FALL_DEFENSE_WEIGHT": 150,
-    "SEARCH_DISLODGED_WEIGHT": 0.47,
-    "SEARCH_POS_WEIGHT": 0.95,
-    "SEARCH_RESTARTS": 1,
-    "OPP_MODEL_LEVEL": 1,
-    "STRENGTH_WEIGHT": 1279,
-    "COMPETITION_WEIGHT": 1039,
-    "SEARCH_RISK": 0.58,
-    "SEARCH_EVAL": "learned",
-    "SEARCH_LEARNED_WEIGHT": 0.01,
-    "SEARCH_OPPONENT_SAMPLES": 24,
-    "SEARCH_BUILDS": 0,
-    "SEARCH_OBJECTIVE": "share"
-   },
-   "fitness": 0.0734,
-   "generations": 2,
-   "parent": "g16-6023",
-   "last": 0.1004
-  },
   {
    "gen": 19,
    "name": "g17-c1b1",
@@ -633,6 +583,56 @@
    "generations": 1,
    "parent": "g33-3ea5",
    "last": 0.0449
+  },
+  {
+   "gen": 37,
+   "name": "g37-65c2",
+   "genome": {
+    "SPRING_ATTACK_WEIGHT": 1000,
+    "SPRING_DEFENSE_WEIGHT": 190,
+    "FALL_ATTACK_WEIGHT": 375,
+    "FALL_DEFENSE_WEIGHT": 122,
+    "SEARCH_DISLODGED_WEIGHT": 1.36,
+    "SEARCH_POS_WEIGHT": 1.91,
+    "SEARCH_RESTARTS": 1,
+    "OPP_MODEL_LEVEL": 0,
+    "STRENGTH_WEIGHT": 1163,
+    "COMPETITION_WEIGHT": 704,
+    "SEARCH_RISK": 0.62,
+    "SEARCH_EVAL": "learned",
+    "SEARCH_LEARNED_WEIGHT": 0.2,
+    "SEARCH_OPPONENT_SAMPLES": 26,
+    "SEARCH_OBJECTIVE": "sc"
+   },
+   "fitness": 0.0409012810616433,
+   "generations": 1,
+   "parent": "g36-be64xg36-7576",
+   "last": 0.0409
+  },
+  {
+   "gen": 38,
+   "name": "g38-ef0a",
+   "genome": {
+    "SPRING_ATTACK_WEIGHT": 1000,
+    "SPRING_DEFENSE_WEIGHT": 190,
+    "FALL_ATTACK_WEIGHT": 456,
+    "FALL_DEFENSE_WEIGHT": 37,
+    "SEARCH_DISLODGED_WEIGHT": 1.36,
+    "SEARCH_POS_WEIGHT": 1.91,
+    "SEARCH_RESTARTS": 1,
+    "OPP_MODEL_LEVEL": 0,
+    "STRENGTH_WEIGHT": 1163,
+    "COMPETITION_WEIGHT": 704,
+    "SEARCH_RISK": 0.62,
+    "SEARCH_EVAL": "learned",
+    "SEARCH_LEARNED_WEIGHT": 0.2,
+    "SEARCH_OPPONENT_SAMPLES": 24,
+    "SEARCH_OBJECTIVE": "sc"
+   },
+   "fitness": 0.023832984966442088,
+   "generations": 1,
+   "parent": "g37-af8f",
+   "last": 0.0238
   }
  ]
 }

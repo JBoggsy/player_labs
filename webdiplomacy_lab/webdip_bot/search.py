@@ -641,21 +641,42 @@ def _same(a, b):
 def fast_orders(units, orders, parent):
     """webDip units + parallel movement orders -> fastadj (units, order tuples), province level.
 
-    Returns None for the orders if any is a Convoy / convoyed move (caller falls back)."""
+    Convoys (SEARCH_CONVOY_APPROX, default on): a convoying fleet holds; a convoyed army move
+    becomes a plain move when every fleet on its path is ordered to convoy exactly that move,
+    otherwise a hold. This ignores convoy disruption by dislodging a fleet, which is fine for
+    *evaluating* hypotheticals and keeps almost every simulation on the fast path (the
+    package fallback was ~95% of search time against convoy-happy random opponents).
+    With the approximation off, any convoy returns None (caller falls back to the package)."""
     fu, fo = [], []
+    convoys = None
     for u, o in zip(units, orders):
         fu.append((int(u["countryID"]), parent[u["terrID"]], u["type"]))
         kind = o["type"]
         if kind == "Move":
             if o.get("viaConvoy") in ("Yes", True):
-                return fu, None
+                if not config.SEARCH_CONVOY_APPROX:
+                    return fu, None
+                if convoys is None:
+                    convoys = {
+                        (parent[c["terrID"]], parent[c["fromTerrID"]], parent[c["toTerrID"]])
+                        for c in orders if c["type"] == "Convoy"
+                    }
+                src, dst = parent[o["terrID"]], parent[o["toTerrID"]]
+                path = (o.get("convoyPath") or [])[1:]
+                if path and all((parent[f], src, dst) in convoys for f in path):
+                    fo.append(("M", dst))
+                else:
+                    fo.append(("H",))
+                continue
             fo.append(("M", parent[o["toTerrID"]]))
         elif kind == "Support hold":
             fo.append(("SH", parent[o["toTerrID"]]))
         elif kind == "Support move":
             fo.append(("SM", parent[o["fromTerrID"]], parent[o["toTerrID"]]))
         elif kind == "Convoy":
-            return fu, None
+            if not config.SEARCH_CONVOY_APPROX:
+                return fu, None
+            fo.append(("H",))
         else:
             fo.append(("H",))
     return fu, fo

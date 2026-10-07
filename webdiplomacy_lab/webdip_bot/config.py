@@ -74,3 +74,4 @@ OPP_LIKELIHOOD = "competent"
 # plan rather than the raw DumbBot plan (a mixed opponent model).
 OPP_LEVEL1_SHARE = 1.0
 SEARCH_TRIPLES = 0  # joint move + two supports alternatives
+SEARCH_CONVOY_APPROX = 1  # evaluate convoys inside fastadj (approximation) instead of the package
