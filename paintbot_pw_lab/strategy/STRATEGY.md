@@ -275,17 +275,31 @@ Reading aid (the compiler receives component fields, not this introduction):
 
 ### SK.motor
 - Summary: The baseline mechanics. Look around, dodge with timed legs, route around water, aim
-  with lead, hold fire on teammates, and charge grenades to the range.
+  with lead, hold fire on teammates, and finish committed grenade charges.
 - Spec: The code is authored in `skill.bas`. A capability calls `sk_motor__act(gx, gy, hold)`
   exactly once on every tick, with its goal point and holding flag. `act` runs six parts in
   this order. They are the gun wait countdown, the look sweep, footwork, the dry route with the
   one `walkTo`, the gun, and the grenade. The look sweep runs only when there is no target. `sk_motor__isqrt(n)` puts the integer square root of n
-  into the output root.
+  into the output root. Grenades retain the original visible-teammate and distance checks
+  when starting, and additionally require mistingTicks() and radarTicks() to be zero.
+  On a start, lock the aim point and required charge. Continue charging toward that point
+  until the locked charge is reached, even if contact or start eligibility is lost; do not
+  let an omitted command release an undercharged grenade. Reset commitment after release
+  or loss of the grenade. Rules 49 forces release if disarmed mid-charge; count that event.
+  This is charge continuity, not a guarantee that teammates cannot enter the eventual blast.
+  Count starts, disarmed start blocks, ticks where continuation avoids the original release,
+  and forced disarmed releases. Expose the release charge and locked need for each throw.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
   - root -- the result of the last sk_motor__isqrt call
-  - threw -- 1 on a tick where the grenade charge reached the need, else 0
+  - threw -- 1 on a commanded or forced grenade release tick, else 0
+  - release_charge -- observed charge on this release decision
+  - release_need -- committed charge required for this throw
+  - starts_total -- cumulative committed grenade starts
+  - blocked_total -- cumulative otherwise eligible starts blocked while disarmed
+  - continued_total -- cumulative ticks where continuity prevents the old early release
+  - forced_total -- cumulative releases forced by becoming disarmed during a charge
 - Params:
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
   - lead_ticks = 6 ticks -- base.bas value, the gun windup
@@ -295,6 +309,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - spray_range_sq = 640000 -- base.bas value, the spray gun shoots only below this target cost
 - Checks:
   - Acted properly: a shot is ordered only when the gun wait is zero, the teammate line is clear, and the spray range condition holds. Reads: replay
+  - Acted: committed grenade charge continues until its locked need unless equipment is lost or disarm forces release. Reads: replay
+  - Result: grenade teammate and self damage per episode, with enemy damage retained. Reads: replay
   - Result: hit rate per shot at range. Reads: replay
 - Status: specified (2026-10-05)
 
@@ -477,11 +493,20 @@ Reading aid (the compiler receives component fields, not this introduction):
 ### COM.grenade_out
 - Summary: Call out a grenade when the charge is ready.
 - Spec: In `__send`, when threw of `SK.motor` is 1, shout "Grenade out!" and set sent to 1. Else
-  set sent to 0.
+  set sent to 0. On a send, copy release_charge, release_need, starts_total, blocked_total,
+  continued_total and forced_total from `SK.motor` into same-named outputs for telemetry.
 - Uses: `SK.motor`, `P.shout`
 - Content: a warning. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("Grenade out!"))`
 - Send when: threw of `SK.motor` is 1
+- Outputs:
+  - release_charge -- charge at the throw decision
+  - release_need -- locked charge requirement
+  - starts_total -- committed starts through this throw
+  - blocked_total -- disarmed start blocks through this throw
+  - continued_total -- rescued charging ticks through this throw
+  - forced_total -- disarmed forced releases through this throw
+- Log: release_charge, release_need, starts_total, blocked_total, continued_total, forced_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay with each full charge. Reads: replay

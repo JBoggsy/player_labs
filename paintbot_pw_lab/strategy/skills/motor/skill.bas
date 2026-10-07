@@ -1,6 +1,6 @@
-' SK.motor: the baseline's mechanics (authored source, copied verbatim into every build).
+' SK.motor: foundation mechanics with persistent grenade charging (authored source).
 ' Taken from reference/base.bas with every name moved into the sk_motor__ namespace and the
-' same int32 expressions in the same order: integer square root, wet-line sampling, footwork
+' integer arithmetic: integer square root, wet-line sampling, footwork
 ' legs, dry routing, the gun with lead and drift cancel, and the grenade charge. The goal, the
 ' holding flag and the quiet approach are decided by the calling capability, not here.
 ' Call order per tick: a capability calls sk_motor__act exactly once, on every tick.
@@ -346,9 +346,13 @@ SUB sk_motor__gun()
   END IF
 END SUB
 
-' Grenade: match the charge to the distance, never onto a visible teammate (observed slot parity,
-' the thrower included). Sets sk_motor__threw = 1 on the tick the charge reaches the need.
+' Grenade: validate a start, then retain its aim point and required charge until release.
+' Rechecking eligibility must never silently drop an already charging grenade at our feet.
 SUB sk_motor__grenade()
+  sk_motor__eligible = 0
+  IF hasGrenade = 0 OR grenadeCharge = 0 THEN
+    sk_motor__charging = 0
+  END IF
   IF hasGrenade AND k_contacts__best >= 0 THEN
     sk_motor__nx = playerX(k_contacts__best)
     sk_motor__ny = playerY(k_contacts__best)
@@ -373,10 +377,44 @@ SUB sk_motor__grenade()
       IF sk_motor__need < 1 THEN
         sk_motor__need = 1
       END IF
-      lookAt(sk_motor__nx, sk_motor__ny)
-      chargeGrenade(grenadeCharge < sk_motor__need)
-      IF grenadeCharge >= sk_motor__need THEN
-        sk_motor__threw = 1
+      sk_motor__eligible = 1
+    END IF
+  END IF
+  IF hasGrenade THEN
+    IF sk_motor__charging = 0 AND sk_motor__eligible THEN
+      IF mistingTicks() = 0 AND radarTicks() = 0 THEN
+        sk_motor__charging = 1
+        sk_motor__locked_x = sk_motor__nx
+        sk_motor__locked_y = sk_motor__ny
+        sk_motor__locked_need = sk_motor__need
+        sk_motor__starts_total = sk_motor__starts_total + 1
+      ELSE
+        sk_motor__blocked_total = sk_motor__blocked_total + 1
+      END IF
+    END IF
+    IF sk_motor__charging THEN
+      lookAt(sk_motor__locked_x, sk_motor__locked_y)
+      sk_motor__release_charge = grenadeCharge
+      sk_motor__release_need = sk_motor__locked_need
+      IF mistingTicks() > 0 OR radarTicks() > 0 THEN
+        ' Rules 49 forces release even when the charge command is held while disarmed.
+        chargeGrenade(1)
+        IF grenadeCharge > 0 THEN
+          sk_motor__forced_total = sk_motor__forced_total + 1
+          sk_motor__threw = 1
+        END IF
+        sk_motor__charging = 0
+      ELSE
+        IF grenadeCharge < sk_motor__locked_need THEN
+          IF sk_motor__eligible = 0 OR grenadeCharge >= sk_motor__need THEN
+            sk_motor__continued_total = sk_motor__continued_total + 1
+          END IF
+          chargeGrenade(1)
+        ELSE
+          chargeGrenade(0)
+          sk_motor__threw = 1
+          sk_motor__charging = 0
+        END IF
       END IF
     END IF
   END IF

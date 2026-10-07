@@ -2,8 +2,14 @@
 
 ## Current objective and boundary
 
-Task 0 is complete under `tmp/collab/optimizer/BRIEF.md` and `VERDICT-0.md`.
-Wait for the orchestrator's PROCEED before iteration 1. The optimizer never submits,
+The optimizer loop is authorized by `tmp/collab/optimizer/BRIEF.md`, subsequent verdicts,
+and James's local-first iteration-2 direction. Iteration 1 selected and uploaded range+HP
+as `jb-pw-opt:v2` (61662d47-c26e-4873-ac13-333f70d6b341), build `32ed3f70-1`.
+Its hosted confirmation is still downloading under shared API throttling. Iteration 2
+uses 24 recorded local games (seeds101–112, both sides) to select grenade charge continuity:
+173 teammate grenade HP exceeds gun129 and spray46; short throws account for98 teammate
+and154 self HP. Strategy source now specifies committed charging with per-throw telemetry.
+See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
 posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
 starter stopgap; do not replace that entrant or infer its identity from our upload.
 Rank-9 rating archaeology is explicitly dropped by VERDICT-0.
