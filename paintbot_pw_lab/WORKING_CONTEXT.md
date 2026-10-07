@@ -41,8 +41,10 @@ the parent candidate and upstream. Hold its upload until the running A/B decides
 The previous v5 pipeline child is parked after negative local screens. Working source is now
 an unuploaded child of v6: issue safe trigger requests every eligible tick and let engine
 cooldown/windup enforce firing cadence, with repeat_trigger_total activation. The uploaded
-v6 build remains immutable. Compile and local screens determine viability; upload waits for
-its parent Richard A/B. REPORT-7.md records source evidence and measurement limits.
+v6 build remains immutable. Build7c0a5e01-1 passes G1–G5, with33/56 local wins vs v6,36/56 vs v3 and53/56
+upstream. Counter16374 across30/32seats,23477 lines without validation failures. Four matched
+local games show637→694 actual shots and152→160 gun enemyHP; not a field claim.
+Upload waits for its parent Richard A/B. REPORT-7.md records evidence and limits.
 
 The pipeline remains strategy-as-source: edit `strategy/STRATEGY.md` or authored skills,
 commit inputs, then run `pw.py strategy compile`. Compiled builds are immutable. A compiler

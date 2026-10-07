@@ -1,0 +1,147 @@
+{
+  "counts": {
+    "excluded": 0,
+    "failed": 0,
+    "processed": 16
+  },
+  "exit_code": 0,
+  "failures": [],
+  "inputs": {
+    "command": "compile",
+    "glory": "{\"behind_lives\": 5, \"behind_cogs\": 10}",
+    "policy": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy/7c0a5e01-1/policy.bas",
+    "seed": 7,
+    "tag": "coworld-v0.3.123",
+    "ticks": 720
+  },
+  "next": [],
+  "ok": true,
+  "outputs": [],
+  "release_tag": "coworld-v0.3.123",
+  "result": {
+    "build": "coworld-v0.3.123",
+    "ok": true,
+    "policy": {
+      "path": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy/7c0a5e01-1/policy.bas",
+      "sha256": "9b6dcb5fdd0888b4161079c06531007abe9c70ddc95f864d92db88238bc8b3dd"
+    },
+    "rules": 49,
+    "seats": [
+      {
+        "message": "",
+        "seat": 0,
+        "set_script": 0,
+        "status": "running",
+        "team": 0
+      },
+      {
+        "message": "",
+        "seat": 1,
+        "set_script": 0,
+        "status": "running",
+        "team": 1
+      },
+      {
+        "message": "",
+        "seat": 2,
+        "set_script": 0,
+        "status": "running",
+        "team": 0
+      },
+      {
+        "message": "",
+        "seat": 3,
+        "set_script": 0,
+        "status": "running",
+        "team": 1
+      },
+      {
+        "message": "",
+        "seat": 4,
+        "set_script": 0,
+        "status": "running",
+        "team": 0
+      },
+      {
+        "message": "",
+        "seat": 5,
+        "set_script": 0,
+        "status": "running",
+        "team": 1
+      },
+      {
+        "message": "",
+        "seat": 6,
+        "set_script": 0,
+        "status": "running",
+        "team": 0
+      },
+      {
+        "message": "",
+        "seat": 7,
+        "set_script": 0,
+        "status": "running",
+        "team": 1
+      },
+      {
+        "message": "",
+        "seat": 8,
+        "set_script": 0,
+        "status": "running",
+        "team": 0
+      },
+      {
+        "message": "",
+        "seat": 9,
+        "set_script": 0,
+        "status": "running",
+        "team": 1
+      },
+      {
+        "message": "",
+        "seat": 10,
+        "set_script": 0,
+        "status": "running",
+        "team": 0
+      },
+      {
+        "message": "",
+        "seat": 11,
+        "set_script": 0,
+        "status": "running",
+        "team": 1
+      },
+      {
+        "message": "",
+        "seat": 12,
+        "set_script": 0,
+        "status": "running",
+        "team": 0
+      },
+      {
+        "message": "",
+        "seat": 13,
+        "set_script": 0,
+        "status": "running",
+        "team": 1
+      },
+      {
+        "message": "",
+        "seat": 14,
+        "set_script": 0,
+        "status": "running",
+        "team": 0
+      },
+      {
+        "message": "",
+        "seat": 15,
+        "set_script": 0,
+        "status": "running",
+        "team": 1
+      }
+    ],
+    "seed": 7,
+    "ticks": 720
+  },
+  "tool": "pw_local"
+}
