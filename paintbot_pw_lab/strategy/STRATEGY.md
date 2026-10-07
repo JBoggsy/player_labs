@@ -140,7 +140,11 @@ Reading aid (the compiler receives component fields, not this introduction):
   `dx = playerX(i) - selfX`, `dy = playerY(i) - selfY`, `d2 = dx * dx + dy * dy`.
   For an enemy seat (`i MOD 2 <> selfTeam`, not playerTeam): set `cost = d2 - (3 - playerHp(i)) * hp_weight`. If `playerCarrying(i)`,
   subtract `carrier_bonus` from cost and set `thief = i`. Then, if
-  `cost < best_cost AND d2 <= range_sq`, set `best = i` and `best_cost = cost`. Then add 1 to
+  `cost < best_cost AND d2 <= gunRange() * gunRange()`, set `best = i` and `best_cost = cost`.
+  For activation tracing, independently count each visible enemy observation with
+  `d2 <= former_range_sq AND d2 > gunRange() * gunRange()` by adding 1 to
+  `range_rejected_total`. This counter is cumulative across ticks, starts at zero, and
+  never changes target ranking or other behavior. Then add 1 to
   `foes_seen`, add `playerX(i)` to `foe_sum_x` and `playerY(i)` to `foe_sum_y`. If
   `d2 < near_foe_sq`, add 1 to `foes_near`.
   For a teammate seat (`i MOD 2 = selfTeam`): if `d2 < near_friend_sq`, add 1 to `friends_near`.
@@ -152,8 +156,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   Also set `foe_cx = foe_sum_x \ foes_seen` and `foe_cy = foe_sum_y \ foes_seen` when
   `foes_seen > 0`. Else set both to 0.
 - Sources: `selfId`, `selfTeam`, `selfX`, `selfY`, `worldTick`, `visible`, `playerX`, `playerY`,
-  `playerHp`, `playerCarrying`
-- Memory: old_x, old_y and seen_tick (16 cells each, private arrays) persist for the whole match.
+  `playerHp`, `playerCarrying`, `gunRange`
+- Memory: range_rejected_total persists for the whole match, initialized to 0.
+  Also, old_x, old_y and seen_tick (16 cells each, private arrays) persist for the whole match.
   Step 3 reads them before Step 4 overwrites them. That is the same as base.bas, which aims
   first and updates old positions after aiming.
 - Outputs:
@@ -167,11 +172,12 @@ Reading aid (the compiler receives component fields, not this introduction):
   - foes_seen -- visible enemy seats at any range
   - foe_cx -- mean x of visible enemy seats, or 0
   - foe_cy -- mean y of visible enemy seats, or 0
-- Log: best, foes_near, friends_near every 24 ticks
+  - range_rejected_total -- cumulative visible enemy observations excluded by the real gun range but within the former range
+- Log: best, foes_near, friends_near, range_rejected_total every 24 ticks
 - Params:
   - hp_weight = 160000 -- base.bas value, cost bonus per missing hit point
   - carrier_bonus = 2500000 -- base.bas value, cost bonus of a heart carrier
-  - range_sq = 27562500 square cm -- base.bas value, 52.5 m target range
+  - former_range_sq = 27562500 square cm -- former 52.5 m cap, used only for activation tracing
   - near_foe_sq = 6760000 square cm -- base.bas value, 26 m
   - near_friend_sq = 1440000 square cm -- base.bas value, 12 m
 - Checks:

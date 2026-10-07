@@ -19,7 +19,7 @@ Do not generate a monolithic policy yourself or edit finalized builds.
 
 Read the JSON envelope and `report.md`. A failed build is evidence to diagnose, not
 an artifact to upload. Resolve guesses in the source; repeat compilation after committing.
-For M1 use `--milestone m1`; its reference is `reference/base.bas`.
+For M1 use `--milestone m1`; its current Bassy reference is `reference/base-bassy-28030de6.bas`.
 
 This skill performs local compilation only. Uploads, league entry, hosted evaluations,
 and strategy improvements are separate work.

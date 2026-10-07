@@ -73,15 +73,23 @@ gave that session full control of Paintbot PW, including league submission. The 
 reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for briefs and verdicts.
 
 - objective: raise mean `score_outcome` (`--target score_outcome --margin-scale 600`, recheck the
-  live margin) of our policy against the current top-4 league entrants, then climb the
+  live margin) of our policy against currently active league opponents, then climb the
   paintbot-pw league standings with a submitted improvement.
 - policy_file: `paintbot_pw_lab/strategy/STRATEGY.md` plus authored `strategy/skills/*/skill.bas`,
   compiled with `pw.py strategy compile`. Never hand-edit compiled policy BASIC; compiler-owned runtime templates are editable infrastructure. Working source starts
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
 - baseline: `jb-pw-opt:v1`, version `bac0d7d0-60f3-4c76-a1e6-aa947f9958ed`, build `2898e485-1`.
-- opponents: `xolod:v14`, `zhar:v55`, `finist:v2`, `relh-paintbot-pw:v56` (resolved 2026-10-07
-  round 832); re-resolve with `pw.py leaders --json` before each baseline evaluation.
+- opponents: refresh the current leaderboard plus recent public 0.3.123 episodes every iteration;
+  keep real opponents with shots or kills above zero in scout. Current round-834 sample:
+  `xolod:v14`, `paintbot-pw-basic-v22:v1`, `daveey-pw-league-smoke-l17c-s41u150-hc:v1`.
+  Exclude our own policies and inactive unported leaders. Evidence: `tmp/collab/optimizer/iteration1-scout/`.
+- local benchmark: `reference/base-bassy-28030de6.bas`, 28 seeds × both sides with
+  `pw.py local screen` for every candidate before credits; also screen against build
+  `2898e485-1`. Local evidence is not field evidence.
+- iteration 1: range clamp, spawn-HP thresholds, support pickups, disarmed following,
+  each in a separate source commit/build with activation tracing. VERDICT-1 permits stacking
+  locally passing changes into one uploaded bundle and one hosted A/B.
 - allowed_changes: any single attributable change to the strategy source or a skill, including
   targeting/range, grenade use, pickups, movement/routing, thresholds and constants, roles. A
   new win strategy or comms protocol needs an orchestrator PROCEED first.
