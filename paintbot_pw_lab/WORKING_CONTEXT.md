@@ -17,9 +17,14 @@ the field changes. About every2h check engine doctor, leaders and recent public 
 new opponent versions or resumed top-four activity. A change triggers a v10 evaluation,
 STATUS update and NEED ORCHESTRATOR. Watch does not authorize league or public writes.
 
+Uploaded bundle jb-pw-opt:v26 UUID4faf6330-9863-4b8e-b761-be4f65c2fa64, build c11410ab-1.
+See tmp/collab/optimizer/REPORT-31.md and frozen optimizer-i31/requests/manifest.json.
+Watch worker field_watch.py waits for the fixed decision, then checks every2h; its PID,
+watch-state.json and logs live beside REPORT-31. It never builds or submits a policy.
+
 ## Loop charter
 
-- objective: improve mean score_outcome against xolod:v14 at margin_scale600; secondary median win time and our glory. Finist is the secondary opponent, Richard the strength guard.
+- objective: evaluate the robust bundle for xolod non-regression and significant finist or Richard improvement, then watch the field.
 - policy_file: paintbot_pw_lab/strategy/STRATEGY.md
 - policy_name / player: jb-pw-opt on James Botts, ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce.
 - baseline: jb-pw-opt:v10, UUID8c4947c7-0679-4826-a653-9de20c62ffa3, build7faadaa4-1.
@@ -36,7 +41,7 @@ Diff from0.3.123/28030de6 adds training-map registration, without hosted rules/B
 Historical results retain their original game version; new cohorts use fresh v10 controls on0.3.124.
 Project coworld0.1.57 and softmax-cli0.26.38 match current PyPI releases. Source clone
 fast-forwarded to7a29ed7a; lab origin/main merged without conflicts, preserving local work.
-Latest credits16393.82823 before new cohort; previews and net account movements recorded
+Latest credits15930.78275 before the robust bundle; previews and net account movements recorded
 separately because concurrent requests and refill prevent per-cohort spend attribution.
 
 No hosted self-play: eight own seats against eight seats of one pinned real opponent.
