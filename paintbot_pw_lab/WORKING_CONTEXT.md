@@ -120,7 +120,8 @@ I13–i16 completed inconclusively against Richard. V10 spray distance and v12 g
 have positive point estimates; VERDICT-17 authorizes testing their combination without
 requiring individual significance. No proven new winner or optimizer league submission.
 
-I17 v13/buildd68b2194-2: gun-range retreat eligibility, all1192 games admitted,596 previews.
+I17 v13/buildd68b2194-2 COMPLETE1192/1192: Richard−.063002,95%CI[−.116387,−.009617].
+Regressed; exclude from combinations.596 creation previews, health coverage in REPORT-17.
 I18 unchanged v10 independent confirmation: resized before admission to584games/292credits,
 Richard200/arm, other opponents unchanged. Discovery plus confirmation440 estimated credits.
 I19 v14/build482cacdc-1: structural teammate regroup/local retreat, original v8 eligibility.
@@ -135,13 +136,13 @@ New uploads passed G1–G5. No local performance conclusions or performance veto
 
 No daily cap. Keep balance above10000; approximately600 per iteration. Live credits command:
 `uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py credits`.
-Latest manual snapshot18770.60182, cap20000, refill1428.57143/day. Record snapshots and account
+Latest admission snapshot18442.10002, cap20000, refill1428.57143/day. Record snapshots and account
 net movements separately from previews; concurrent work/refills prevent per-cohort attribution.
-All four current designs total1472 preview credits; new admissions conservatively reserve this
-amount plus the floor. Shared round-robin admission avoids waiting for another cohort's results.
+Admission conservatively reserves full previews for every incomplete queued design plus
+the floor; completed cohorts are excluded from that future reserve. Shared round-robin admission avoids waiting for another cohort's results.
 At least120s between API polling/retries; every worker exits on admission completion or cohort
 terminal status. Dashboard8810 stays stopped. New finite port check uses cached cohort metadata.
-Round857 opponent identities unchanged. Source release0.3.123/28030de6; project CLIcoworld0.1.57
+Round859 opponent identities unchanged. Source release0.3.123/28030de6; project CLIcoworld0.1.57
 and softmax-cli0.26.38 match current releases. Clone main fetched/current; lab branch ahead
 contains authorized local experiments. No changes to the main metta checkout.
 
@@ -149,7 +150,16 @@ No iteration limit: max_iterations is none (continuous). Keep building structura
 and queuing hosted cohorts while earlier cohorts run. A supported result is a submission
 candidate for orchestrator.
 
-I21 four frontier pairs passed as8e26035f-1 and is uploading. REPORT-21 owns hypothesis/risks.
+I21 four frontier pairs passed as8e26035f-1 and uploaded v16, UUID969f9847-8e01-4c3a-a128-b49a42093789.
+Activation7575,3682 valid lines,0 failures. REPORT-21 owns hypothesis/risks.
 Current source i22: supported focus attack on v8. Shared target choice and a priority250
 approach/hold capability form one structural combat behavior; retreat, supply and active
 capture guards remain. REPORT-22 records the narrow ranking-only falsification and risks.
+
+I22 supported focus passed as9a90e9dc-1 and uploaded v17,
+UUIDfa6dc4e1-638b-4571-bba2-24ea271ea6f2. Activation182 changed targets and351 supported-attack
+ticks,4480 valid lines,0 failures. Both i21/i22 have frozen584game/292credit designs.
+Current workers:admit_continuous.py and continuous_results_queue.py, driven by
+active-cohorts.json. They admit round-robin under capacity and poll at least120s apart.
+They exit after all registered admissions/results are terminal; restart when adding a cohort
+if the finite worker has already exited. Old per-cohort pipeline scripts are inactive.
