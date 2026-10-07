@@ -6,3 +6,9 @@ talleyrand 266670b8-4fa2-45cb-bc78-6c43b4daf007
 napoleon 312b0a45-f31e-4fbd-9106-daaafcb36782
 blucher 4247912e-737b-4731-948d-99c7cd2d8194
 machiavelli-v2 39a7f008-692b-4247-95b0-78dc19bdc200
+machiavelli-v3 a1a3c8dc-e375-4741-9a3a-51539c6ca327
+bismarck-v2 fe45834c-7cc1-4826-994b-724408f4a21d
+metternich-v2 e7f7300a-2ea8-47c0-91ec-58cb3396d627
+talleyrand-v2 907306fb-30bd-4894-a789-c7e74a23c706
+napoleon-v2 31844f07-a361-4b07-8a08-9124e7d5cc83
+blucher-v2 2427e40f-d0fe-40f8-b619-4358f8a4c697
