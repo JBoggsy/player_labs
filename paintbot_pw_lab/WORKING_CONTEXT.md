@@ -13,14 +13,16 @@ Candidate `jb-pw-opt:v3` (73e01dfb-128b-44c6-ac0c-8276f82be78e), build `2a539036
 is uploaded with passing G1–G5. Matched24 local games reduce grenade teammate HP173→69
 and self HP188→6, with enemy HP481→563. It wins37/56 directly against v2 locally.
 Hosted fresh A/B is complete: v3 won72/72 versus v2's69/72; score_outcome .939028 versus
-.912836 (margin600). No failed episodes; all72 candidate episode status files (576 seats) verified clean. VERDICT-2 operational gate met; SUBMIT CANDIDATE emitted to orchestrator.
+.912836 (margin600). No failed episodes; all72 candidate episode status files (576 seats) verified clean. Orchestrator reports jb-pw-opt:v3 submitted as `sub_f210fc05-12a0-4f0a-8a94-d0bd8b9b3c09`. The optimizer did not submit; league placement is not independently verified here.
 The iteration2 score/status collection is complete. Iteration3 source3d21c018 widens only the gun
 teammate corridor95→195cm; build3d21c018-1 passes G1–G5 at60/64 telemetry events.
 Local iteration3 results are mixed:27/56 vs v3, ordinary gun FF109→51HP, enemy gun
 HP1097→947, overall enemy HP1819→1823 on matched24 games. Uploaded experiment jb-pw-opt:v4
 (8512e63c-3a9a-455e-96d2-3e69b3be4dd6); all12 fresh field A/B requests created under DESIGN-3.md (144 episodes,72 credits).
-Results retrieval is throttled; a sequential120s queue continues. Total committed spend288.
-V3 remains retained/recommended. One sequential results/status-only collector serves both.
+All144 scores retrieved: v4 .934618 vs fresh v3 .927396, delta+.007222
+95%CI[-.005270,.019714]. H1+.03 not supported; smaller gain inconclusive.
+Candidate seat status collection remains incomplete; sequential120s queue continues.
+Total committed spend288. V3 remains retained/submitted per orchestrator. One sequential results/status-only collector serves both.
 See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
 posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
 starter stopgap; do not replace that entrant or infer its identity from our upload.
@@ -97,11 +99,10 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   compiled with `pw.py strategy compile`. Never hand-edit compiled policy BASIC; compiler-owned runtime templates are editable infrastructure. Working source starts
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
-- baseline: `jb-pw-opt:v1`, version `bac0d7d0-60f3-4c76-a1e6-aa947f9958ed`, build `2898e485-1`.
-- candidate: `jb-pw-opt:v2`, version `61662d47-c26e-4873-ac13-333f70d6b341`, build
-  `32ed3f70-1` (real gun range plus spawn-HP supply thresholds). Working source matches it.
-  Support/follow experiments are retained in builds `28ad2e2a-1` and `faf2ea88-1`, but local
-  selection favored the HP build. Hosted A/B against deployed `jb-pw-base:v2` is pending.
+- baseline: retained `jb-pw-opt:v3`, version `73e01dfb-128b-44c6-ac0c-8276f82be78e`, build `2a539036-1`.
+- candidate: `jb-pw-opt:v4`, version `8512e63c-3a9a-455e-96d2-3e69b3be4dd6`, build
+  `3d21c018-1` (gun teammate corridor95→195cm). Working source matches it. Hosted fixed
+  A/B does not demonstrate improvement; retain v3 and do not stack v4 into the next experiment.
 - opponents: refresh the current leaderboard plus recent public 0.3.123 episodes every iteration;
   keep real opponents with shots or kills above zero in scout. Current round-834 sample:
   `xolod:v14`, `paintbot-pw-basic-v22:v1`, `daveey-pw-league-smoke-l17c-s41u150-hc:v1`.
