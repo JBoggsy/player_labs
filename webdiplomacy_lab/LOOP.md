@@ -1,5 +1,9 @@
 # Overnight self-play loop (runbook)
 
+**Status: wound down on 2026-10-07** at James's request (crons deleted, `evolve.py` stopped
+at generation 53). This runbook stays as the recipe for restarting an unattended loop.
+The lessons it produced are in `best_practices.md`.
+
 James's standing instruction (2026-10-06): drive the optimization loop autonomously,
 overnight, without asking permission. Submit, upload and change league fillers at will.
 When an agent stalls, start a new one from a different perspective. Ask for advice via

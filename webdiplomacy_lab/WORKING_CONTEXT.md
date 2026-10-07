@@ -6,9 +6,18 @@ overnight loop runbook is [LOOP.md](LOOP.md).
 
 ## Objective
 
-Standing authority from James (2026-10-06): run the self-play optimization loop
-autonomously overnight. Grow a diverse population of strong, distinctively styled agents.
-Submit the best one to the league and curate the league's filler roster.
+The continuous improvement loop was wound down on 2026-10-07. The current focus is
+**consolidating lessons and refining the final policy**:
+
+1. `final-candidates`: a 48-game, 4-way paired run comparing Kissinger with Kissinger plus
+   risk 0.5, plus build search, and plus builds, risk and Castlereagh diplomacy combined.
+   `ab-fabius` runs alongside it.
+2. Codex is refactoring the search into modular, tunable components on branch
+   `webdip-refactor` (worktree `personal_labs_webdip_refactor`). Every phase is held to the
+   golden contract (334 exact decisions) plus a differential parity check; Nim is conditional.
+3. The final policy is the best `final-candidates` variant (plain Kissinger unless a
+   combination wins at z ≥ 2). It ships on the refactored code once parity is verified, as the
+   next `webdip-dumbbot` version, and the champion-matching filler is refreshed.
 
 ## State (update every tick)
 
