@@ -151,7 +151,8 @@ Heartland memberships and the orchestrator's stopgap are outside this optimizer'
 Iteration11 starts from submitted v6 and only defers noncritical resupply for designated
 ring capturers pursuing a neutral heart in the first20 seconds. Opening pickup detours
 collapse the intended two-squad split: all224 v3 seats at1s target a pickup across28 losses.
-V6 local ring seats spend57.86% of first10s at exact pickup goals. REPORT-11.md records
-assignment/route evidence and limits. Compile and screen vs v6/v8; hold upload until v7/v8
-decide. V8 capture build5cee1447-1 and v7 cadence remain immutable independent experiments.
+V6 local ring seats spend57.86% of first10s at exact pickup goals. Build c85230af-1 passes
+G1–G5; local26/56 vs v6,21/56 vs v8,49/56 upstream. Matched24 first capture16.67→9.17s
+and30s ownership2.625→4.167, but full-game improvement is not supported. REPORT-11.md
+records activation and limits. Hold upload until v7/v8 decide; no automatic combination. V8 capture build5cee1447-1 and v7 cadence remain immutable independent experiments.
 V6 remains submitted baseline sub_9d9511f9-264c-4ed5-b0f8-026d924377b4. Campaign744credits.
