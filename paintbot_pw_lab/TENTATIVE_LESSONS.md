@@ -106,3 +106,15 @@ not for submitting v22. Exact local evidence: `tmp/collab/optimizer/standby-pair
 - On an orchestrator wake-up, verify release and recent pairings before choosing a parent.
   V22 merits a fresh comparison if Richard's share grows materially; no old reserve result
   authorizes submission. No agent watch/polling continues during standby.
+
+## Current plateau review (VERDICT-39)
+
+V33 dry combat movement did not clear its gate: Richard+0.016600
+[-0.038049,+0.071249], xolod+0.004696[-0.007212,+0.016603]. V29 remains parent.
+The next structural hypotheses are event-triggered refusal/counterattack, dynamic
+capture pairs plus reserve, held-out route interception, and staggered weapon roles.
+None has evidence supporting an expected+0.10 causal gain. REPORT-40 gives local
+falsification criteria. V22 already contains direct capture, overlapping v32; adding
+positive effect estimates across parents is invalid. No bundle test justified now.
+Hosted work is held until verified balance>=14000 or orchestrator-confirmed field/
+engine change; keep the exact map guard in every eventual build.

@@ -86,7 +86,9 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   not raise it with the maintainer unless James asks. (Stated 2026-09-30.)
 
 - **Pipeline independent candidates in parallel.** Single-change siblings of the same submitted
-  parent may each upload and run a separate A/B without waiting for one another. Combine
+  parent may each upload and run a separate A/B without waiting for one another when
+  the active campaign permits concurrent cohorts. Campaign credit-pacing rules override
+  this default; local preparation can still overlap hosted evaluation. Combine
   candidates afterwards and evaluate the combination; the active campaign decides its evidence
   threshold. Campaign-specific budgets
   belong in the owning lab context. (Stated 2026-10-06.)
