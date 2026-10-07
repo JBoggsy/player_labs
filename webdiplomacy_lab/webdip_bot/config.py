@@ -55,3 +55,6 @@ SEARCH_ROLLOUT_STATIC_WEIGHT = 0.5
 # Winter builds/disbands chosen by a reduced search of the following spring (0 = DumbBot).
 SEARCH_BUILDS = 0
 SEARCH_BUILD_CANDIDATES = 12
+# Opponent sophistication: 0 = DumbBot samples; 1 = each DumbBot sample improved by one pass
+# of that power's own best response (iterated best response, one level).
+OPP_MODEL_LEVEL = 0

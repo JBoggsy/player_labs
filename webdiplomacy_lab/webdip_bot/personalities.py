@@ -53,6 +53,11 @@ PERSONALITIES = {
         "overrides": {"SEARCH_ROLLOUT": 1},
         "motto": "Thinks one season ahead: spring moves judged by the autumn they set up.",
     },
+    "kissinger": {
+        "base": "search",
+        "overrides": {"OPP_MODEL_LEVEL": 1},
+        "motto": "Assumes you are clever too: best-responds to opponents who best-respond.",
+    },
 }
 
 

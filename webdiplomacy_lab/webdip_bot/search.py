@@ -114,14 +114,23 @@ class SearchBot:
             theirs[c] = [u for u in b.units if int(u["countryID"]) == c]
         legal = {u["id"]: b.legal.movement(u) for us in theirs.values() for u in us}
         dumb_samples = {c: [] for c in models}
-        for _ in range(config.SEARCH_OPPONENT_SAMPLES):
+        n_samples = config.SEARCH_OPPONENT_SAMPLES
+        for _ in range(n_samples):
+            for c, model in models.items():
+                dumb_samples[c].append(model.choose([{"unitID": u["id"]} for u in theirs[c]]))
+        if config.OPP_MODEL_LEVEL >= 1:
+            self.parent = {t: self.b.province(t) for t in self.b.terr}
+            own_model = DumbBot(self.variant, self.board, self.country, self.phase, self.turn, self.rng, board_model=b)
+            our_dumb = [own_model.choose(slots) for _ in range(n_samples)]
+        for j in range(n_samples):
             sample = {}
             raw = []
             for c, model in models.items():
-                d = model.choose([{"unitID": u["id"]} for u in theirs[c]])
-                dumb_samples[c].append(d)
+                d = dumb_samples[c][j]
                 if self.rng.random() < self._dumb_share(c):
                     chosen = d
+                    if config.OPP_MODEL_LEVEL >= 1:
+                        chosen = self._improve_for(c, models[c], theirs[c], d, j, models, theirs, dumb_samples, mine, our_dumb, legal)
                 else:
                     chosen = [self.rng.choice(legal[u["id"]]) for u in theirs[c]]
                     self.trace["opp_random_samples"] += 1
@@ -253,6 +262,43 @@ class SearchBot:
         finally:
             for k, v in saved.items():
                 setattr(config, k, v)
+
+    def _improve_for(self, c, model, units_c, base, j, models, theirs, dumb_samples, mine, our_dumb, legal):
+        """Level-1 opponent: one pass of single-unit best response for power c, against
+        DumbBot plans for everyone else (two context samples), scored from c's side."""
+        n = len(our_dumb)
+        contexts = []
+        for k in (j, (j + 1) % n):
+            ctx = list(zip(mine, our_dumb[k]))
+            for other, us in theirs.items():
+                if other != c:
+                    ctx.extend(zip(us, dumb_samples[other][k]))
+            contexts.append(([u for u, _ in ctx], [o for _, o in ctx]))
+        vmax = max(model.value.values()) or 1.0
+
+        def value(orders_c):
+            total = 0.0
+            for cu, co in contexts:
+                fu, fo = fast_orders(units_c + cu, orders_c + co, self.parent)
+                if fo is None:
+                    return float("-inf")
+                total += self._score_fast(fu, fo, units_c + cu, orders_c + co, country=c, value=model.value, vmax=vmax)
+            return total / len(contexts)
+
+        best = list(base)
+        best_value = value(best)
+        idx = list(range(len(units_c)))
+        self.rng.shuffle(idx)
+        for i in idx:
+            for alt in legal[units_c[i]["id"]]:
+                if alt["type"] == "Convoy" or alt.get("viaConvoy") == "Yes" or _same(alt, best[i]):
+                    continue
+                cand = best[:i] + [alt] + best[i + 1:]
+                v = value(cand)
+                if v > best_value + 1e-9:
+                    best, best_value = cand, v
+                    self.trace["opp_level1_improvements"] += 1
+        return best
 
     def _ascend(self, best, best_score, started):
         for _ in range(config.SEARCH_PASSES):
@@ -420,29 +466,33 @@ class SearchBot:
                 self.trace["search_package_sims"] += 1
         return total / len(self.fast_samples)
 
-    def _score_fast(self, fu, fo, units, orders):
+    def _score_fast(self, fu, fo, units, orders, country=None, value=None, vmax=None):
+        """Static evaluation of an adjudicated outcome from `country`'s side (default: us)."""
+        me = self.country if country is None else country
+        value = self.dumb.value if value is None else value
+        vmax = self.vmax if vmax is None else vmax
         moved, dislodged = fastadj.adjudicate(fu, fo)
         occupied = {}
         my_nodes = []
         lost = 0
         for (country, prov, utype), o, mv, dl, u, raw in zip(fu, fo, moved, dislodged, units, orders):
             if dl:
-                lost += country == self.country
+                lost += country == me
                 continue
             where = o[1] if mv else prov
             occupied[where] = country
-            if country == self.country:
+            if country == me:
                 my_nodes.append((utype, raw["toTerrID"] if mv else u["terrID"]))
         counts = {}
         for t, owner in self.b.owner.items():
             holder = occupied.get(t, owner)
             if holder:
                 counts[holder] = counts.get(holder, 0) + 1
-        sc = counts.get(self.country, 0)
+        sc = counts.get(me, 0)
         if config.SEARCH_OBJECTIVE == "share":
             total = sum(v * v for v in counts.values()) or 1
             sc = 34.0 * sc * sc / total
-        pos = sum(self.dumb.value.get(n, 0.0) for n in my_nodes) / self.vmax
+        pos = sum(value.get(n, 0.0) for n in my_nodes) / vmax
         return config.SEARCH_SC_WEIGHT * sc + config.SEARCH_POS_WEIGHT * pos - config.SEARCH_DISLODGED_WEIGHT * lost
 
     def _adjudicate(self, mine, sample):

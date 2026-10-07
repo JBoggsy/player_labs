@@ -1,34 +1,42 @@
 # webdiplomacy_lab working context
 
 Resolve live state (league settings, champion, policy versions) through the platform
-before acting; this file holds only the active objective and next decision.
+before acting. This file holds only the active objective, state and next decision. The
+overnight loop runbook is [LOOP.md](LOOP.md).
 
 ## Objective
 
-Build a genuinely strong Diplomacy policy for the `webdiplomacy` league
-(`classic-gunboat`). Step 1 was done on 2026-10-06: a quick random baseline, then a
-DumbBot port as the first acceptable bot. **Next: design the proper bot (direction
-chosen by James).**
+Standing authority from James (2026-10-06): run the self-play optimization loop
+autonomously overnight. Grow a diverse population of strong, distinctively styled agents.
+Submit the best one to the league and curate the league's filler roster.
 
-## Active artifacts
+## State (update every tick)
 
-- Baseline: `webdiplomacy-random:v1` (bundled random bot, James Botts, current league
-  champion). Hosted: `experiments/baseline-random-v1/`.
-- Candidate: `webdip-dumbbot:v1` (policy version `aabe87ad-9bdd-4ddc-bcef-8fd090bfc634`,
-  James Botts). Hosted against six random fillers (`experiments/dumbbot-v1-vs-random/`,
-  28 episodes, 23 with results; the 5 gaps completed but their downloads were rate-limited):
-  mean score 0.91 vs field par 0.02, solo 18/23, 0 rejected orders, max 17 ms per
-  decision. The 5 non-solos were England (3) and Turkey (2), corner powers that stalled
-  at 10–14 centres; the bot issues no convoys. **Not submitted.** League submission needs
-  James's go-ahead.
+- **League:** `webdip-dumbbot:v3` submitted 2026-10-06 (search + joint moves + adaptive
+  opponent model). Hosted against random filler it won 26 of 26 scored games (score 1.0).
+  The v1 champion scores 0.91.
+- **Personalities uploaded (v1, James Botts):** calhamer, machiavelli, bismarck,
+  metternich, talleyrand, napoleon. Version UUIDs are in
+  `experiments/personality_versions.txt`. Hosted filler validation runs as
+  `xreq_6ed8198a…`. League fillers are not changed yet; the filler is still the random
+  bot only.
+- **Local evidence against six DumbBot v1** (slot-0 score; parity 0.143):
 
-## Constraints and open questions
+  | Version | Score | Games |
+  | --- | --- | --- |
+  | v2 search | 0.556 | 24 |
+  | v3a | 0.571 | 23 |
+  | v3b share objective | 0.679 | 19 |
+  | v4a fastadj | 0.756 | 15 |
+  | v4b rollout + restarts | 0.549 | 23 |
 
-- The hosted field today is only the random filler (we are the league's only
-  entrant), so hosted runs cannot tell strong bots apart. Screening between strong
-  candidates needs a local field of DumbBot opponents.
-- The player image's base is the published 0.7.7 player image, pinned by digest. A
-  game release must be re-checked (`uv run coworld list`).
-- AGPL: the coworld is AGPL-3.0. Whether uploading our image counts as distribution
-  under the platform's terms is unresolved; assume our player source must be
-  AGPL-compatible.
+- **Running:**
+  - `tourney-pop1`: all 7 personalities, 28 games.
+  - `arena-v5a-builds-vs-dumb`: machiavelli with build search.
+  - `arena-v5b-kissinger-vs-dumb`: level-1 opponent model.
+
+## Known hazards
+
+- The disk is about 98% full. Local replays are slimmed automatically.
+- Other sessions prune Docker images; `wd.py` re-pulls them.
+- Other sessions switch the shared Softmax login; use the private HOME copy.
