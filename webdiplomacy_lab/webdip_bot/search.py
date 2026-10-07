@@ -207,6 +207,23 @@ class SearchBot:
                 finals.append((score, cand))
         finals.sort(key=lambda x: -x[0])
         best_score, best = finals[0]
+        if config.SEARCH_SOFTMAX_T > 0:
+            # Mixed strategy: sample among the best distinct plans seen, weighted by
+            # exp(score / T). Harder for best-responding opponents to anticipate.
+            import math
+
+            pool, keys = list(finals), {tuple(_key(o) for o in c) for _, c in finals}
+            for sc, c in sorted(self.top_seen, key=lambda x: -x[0]):
+                k = tuple(_key(o) for o in c)
+                if k not in keys:
+                    keys.add(k)
+                    pool.append((sc, c))
+            pool = sorted(pool, key=lambda x: -x[0])[: config.SEARCH_SOFTMAX_POOL]
+            top = pool[0][0]
+            weights = [math.exp((sc - top) / config.SEARCH_SOFTMAX_T) for sc, _ in pool]
+            pick = self.rng.choices(range(len(pool)), weights=weights)[0]
+            best_score, best = pool[pick]
+            self.trace["mixed_pick_not_best"] += int(pick != 0)
         improved_any = self.improved_any
         if config.SEARCH_ROLLOUT and self.turn % 2 == 0:
             # Pool: distinct ascent results plus the best distinct plans seen along the way.

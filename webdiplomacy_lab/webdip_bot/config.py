@@ -75,3 +75,6 @@ OPP_LIKELIHOOD = "competent"
 OPP_LEVEL1_SHARE = 1.0
 SEARCH_TRIPLES = 0  # joint move + two supports alternatives
 SEARCH_CONVOY_APPROX = 1  # evaluate convoys inside fastadj (approximation) instead of the package
+# Mixed strategy over the top plans: temperature (0 = always the best plan) and pool size.
+SEARCH_SOFTMAX_T = 0.0
+SEARCH_SOFTMAX_POOL = 4

@@ -94,6 +94,11 @@ PERSONALITIES = {
                       "SEARCH_POS_WEIGHT": 2.0},
         "motto": "The Thousand: Kissinger's foresight with a red shirt's appetite for the attack.",
     },
+    "rasputin": {
+        "base": "search",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "SEARCH_SOFTMAX_T": 2.0},
+        "motto": "Unkillable, unreadable: Kissinger's mind, but rolls the dice among its best plans.",
+    },
 }
 
 
