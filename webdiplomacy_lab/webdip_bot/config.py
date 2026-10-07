@@ -58,3 +58,6 @@ SEARCH_BUILD_CANDIDATES = 12
 # Opponent sophistication: 0 = DumbBot samples; 1 = each DumbBot sample improved by one pass
 # of that power's own best response (iterated best response, one level).
 OPP_MODEL_LEVEL = 0
+# Static evaluation of a search outcome: "projected" (centres held if it were autumn) or
+# "learned" (valuefn.py ridge model: predicted centres two years ahead).
+SEARCH_EVAL = "projected"

@@ -58,6 +58,11 @@ PERSONALITIES = {
         "overrides": {"OPP_MODEL_LEVEL": 1},
         "motto": "Assumes you are clever too: best-responds to opponents who best-respond.",
     },
+    "kutuzov": {
+        "base": "search",
+        "overrides": {"SEARCH_EVAL": "learned", "SEARCH_RESTARTS": 1},
+        "motto": "Patience and time: judges positions by where they lead two years on (learned).",
+    },
 }
 
 

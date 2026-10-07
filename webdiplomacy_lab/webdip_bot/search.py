@@ -16,11 +16,19 @@ import time
 
 import diplomacy
 
-from webdip_bot import config, fastadj
+from webdip_bot import config, fastadj, valuefn
 from webdip_bot.dipmap import COUNTRY, POWER, DipMap
 from webdip_bot.dumbbot import Board, DumbBot
 
 _MAPS = {}
+_GRAPHS = {}
+
+
+def _graph(variant):
+    key = variant["variantID"]
+    if key not in _GRAPHS:
+        _GRAPHS[key] = valuefn.Graph(variant)
+    return _GRAPHS[key]
 _GAME = None
 
 
@@ -484,11 +492,19 @@ class SearchBot:
             if country == me:
                 my_nodes.append((utype, raw["toTerrID"] if mv else u["terrID"]))
         counts = {}
+        projected = {}
         for t, owner in self.b.owner.items():
             holder = occupied.get(t, owner)
+            projected[t] = holder
             if holder:
                 counts[holder] = counts.get(holder, 0) + 1
         sc = counts.get(me, 0)
+        if config.SEARCH_EVAL == "learned":
+            final_units = []
+            for (country, prov, utype), o, mv, dl, u, raw in zip(fu, fo, moved, dislodged, units, orders):
+                if not dl:
+                    final_units.append((country, o[1] if mv else prov, utype, raw["toTerrID"] if mv else u["terrID"]))
+            sc = valuefn.predict(_graph(self.variant), final_units, projected, me)
         if config.SEARCH_OBJECTIVE == "share":
             total = sum(v * v for v in counts.values()) or 1
             sc = 34.0 * sc * sc / total
