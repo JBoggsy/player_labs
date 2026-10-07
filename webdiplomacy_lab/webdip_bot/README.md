@@ -1,28 +1,48 @@
-# webdip_bot — DumbBot on webDiplomacy
+# webdip_bot — webDiplomacy players
 
-The launcher's child process (`python -m webdip_bot.bot`) in an image built `FROM` the
-published webdiplomacy 0.7.7 player image (pinned by digest in the `Dockerfile`).
+One image holds every agent. The launcher's child process is `python -m webdip_bot.bot`,
+and it plays the personality named by `WEBDIP_POLICY`. That is baked at build time with
+`docker build --build-arg POLICY=<name>`; the default is `machiavelli`. The image is built
+`FROM` the published webdiplomacy 0.7.7 player image (pinned by digest) and adds the
+`diplomacy` package (AGPL-3.0) as a fallback adjudicator.
 
-- `dumbbot.py`: DumbBot's algorithm over webDip's `variant.json` graph. It follows
-  the MIT-licensed Python port in
-  [diplomacy/research](https://github.com/diplomacy/research/blob/master/diplomacy_research/players/rulesets/dumbbot_ruleset.py)
-  (Paquette, 2019). Steps:
-  1. Province values from power sizes (`n² + 4n + 16`).
-  2. Ten-step proximity spreading.
-  3. Strength/competition adjustments.
-  4. Randomized descent over ranked destinations, with the move/support/defer rules.
-  5. Wasted holds converted to supports.
-  6. Value-ranked retreats, builds and disbands.
-- `config.py`: every weight. Defaults are the original values. Deliberate deviation
-  from the port: `NEUTRAL_SIZE_MODE = "uno"` sizes unowned centres as one pseudo-power
-  (DAIDE's UNO owner) instead of giving them zero value.
-- `bot.py`: phase loop. Reads context and public files, chooses, saves with Ready,
-  diffs the saved orders, and prints one `decision` JSON line per phase:
-  `{turn, phase, country, units, centers, compute_ms, trace, rejected, difference}`.
-  `trace` counts activations (`Move`, `Support move`, `Support hold`, `Hold`,
-  `deferred`, `alternative_picked`, `wasted_hold_to_support`,
-  `deferral_cycle_broken`, `illegal_fallback_hold`, builds/retreats). Exceptions are
-  logged with a traceback, and the bot keeps playing.
+## Modules
 
-Every movement order is checked against the bundled `LegalOrders` generator. An order
-that is not legal becomes a Hold and counts as `illegal_fallback_hold`. No convoys yet.
+| Module | What it is |
+| --- | --- |
+| `bot.py` | Phase loop. Reads context and public files, chooses, saves with Ready, diffs saved orders, and prints one `decision` JSON line per phase (`trace` holds activation counters, plus `rejected` and `compute_ms`). `policy_class()` resolves `name[:KEY=VAL,...]` through personalities and config overrides. |
+| `dumbbot.py` | DumbBot (David Norman's heuristic) on webDip's map graph, after the MIT port in diplomacy/research. Used for retreats, builds, seeds and opponent models. |
+| `search.py` | **SearchBot.** Samples opponents (DumbBot, or uniform-random per an adaptive per-power belief), seeds our plans from DumbBot samples, and runs coordinate ascent over single-unit orders plus joint move+support and convoy alternatives. Scores each candidate by the mean over opponent samples of an adjudicated outcome. Optional: build search, spring rollout, level-1 opponents, learned-evaluation blend, risk aversion, share objective. |
+| `fastadj.py` | Kruijswijk guess-and-check adjudicator (Hold, Move, Support), about 100x faster than the package. `check_fastadj.py` verified it: 0 mismatches over 10,416 real positions with random orders. Convoy turns fall back to the `diplomacy` package. |
+| `nash.py` | **NashBot.** Regret matching over candidate plans for all seven powers (SearchBot-paper style), then a best response to the opponents' average strategies. |
+| `valuefn.py` | Learned position evaluation (ridge regression, fitted by `tools/value_fit.py`, weights in `value_weights.json`). Used as a drop-in evaluation it is exploited by the search (Kutuzov scored 0.33), so it survives only as a blend gene. |
+| `personalities.py` | The roster: base policy + config overrides + motto. |
+| `field/` | Frozen arena opponents: `dumbbot_v1` (Calhamer) and `random_legal` (equivalent to the league filler). |
+| `arena.py` | Local-only dispatcher: picks this seat's policy by slot from argv. |
+| `config.py` | Every weight and switch, with defaults. |
+
+## Personalities
+
+| Name | Base | Style |
+| --- | --- | --- |
+| random | random_legal | uniform-random legal orders (the platform's filler) |
+| calhamer | frozen DumbBot v1 | classic yardstick |
+| machiavelli | search | the champion line (`webdip-dumbbot` v4/v5) |
+| bismarck | search | attack-heavy weights, shrugs off losses |
+| metternich | search | defensive, share objective |
+| talleyrand | search | maximizes SC² share |
+| napoleon | search | spring moves re-ranked by a simulated autumn |
+| kissinger | search | level-1 opponents (they best-respond too) |
+| kutuzov | search | learned evaluation (negative result) |
+| blucher | search | bred by `tools/evolve.py` (g2-0ed5) |
+| nash | nash | regret-matching equilibrium |
+
+## Opponent belief (important)
+
+`OPP_LIKELIHOOD = "competent"` (the default since v5) classifies each opponent as
+competent or uniform-random. It looks at whether that power's past orders are
+*sensible*: holds, plain moves, and supports or convoys of its own units count as
+sensible, while supports or convoys of other powers' units mark random play. The old
+rule (match DumbBot samples or be called random) labelled strong search opponents as
+random. That cost about 0.1 score in the local A/B and was visible in hosted
+telemetry (`opp_random_samples`).

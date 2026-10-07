@@ -48,12 +48,24 @@ bodies and creation responses go under `experiments/<experiment>/` (committed).
 
 ## Player
 
-[`webdip_bot/`](webdip_bot/README.md): SearchBot (best response to sampled DumbBot
-opponents, adjudicated with the `diplomacy` package) on top of a DumbBot port. Policy
-lineage name on the platform: `webdip-dumbbot` (v1 = DumbBot, v2+ = SearchBot). Build:
-`docker buildx build --platform linux/amd64 --load -t webdip-bot:<tag>
-webdiplomacy_lab/webdip_bot`. Upload as a player identity (James
-Botts by default) using the isolated-credential recipe below.
+[`webdip_bot/`](webdip_bot/README.md) holds every agent in one image: DumbBot, SearchBot
+(the champion line, with the fast adjudicator), NashBot, and the personality roster.
+Platform policies:
+- `webdip-dumbbot` is the champion lineage: v1 DumbBot, v2–v3 search, v4 fastadj search,
+  v5 with the opponent-belief fix.
+- `webdip-<personality>` policies are the league fillers. The league filler roster is
+  curated through the filler-policies API (see the gameplay doc).
+
+Build: `docker buildx build --platform linux/amd64 --load --build-arg POLICY=<name> -t
+<tag> webdiplomacy_lab/webdip_bot`.
+
+Self-play tooling:
+- `wd.py tourney` runs mixed populations; `--fixed 'a;b'` gives league-sims and in-game A/Bs.
+- `wd.py ratings` gives the power-adjusted leaderboard.
+- `tools/evolve.py` runs continuous evolutionary self-play, with the champion as the anchor.
+- `tools/value_fit.py` fits the learned evaluation.
+- `tools/stop_run.sh` stops a run and its containers.
+- The overnight runbook is [`LOOP.md`](LOOP.md).
 
 ## Identity hygiene
 
