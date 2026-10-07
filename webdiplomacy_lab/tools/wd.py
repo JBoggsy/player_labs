@@ -227,7 +227,8 @@ def cmd_tourney(args):
 
     manifest = _manifest()
     _require_image(args.image)
-    agents = args.agents.split(",")
+    # ';' separates agents when any agent carries comma-separated config overrides.
+    agents = args.agents.split(";") if ";" in args.agents else args.agents.split(",")
     rng = _random.Random()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
