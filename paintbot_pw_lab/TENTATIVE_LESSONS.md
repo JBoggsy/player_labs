@@ -1,3 +1,17 @@
+# Current submitted parent: v29
+
+The orchestrator submitted v29 (`e42b7834-1`) as
+`sub_08157a74-7eb8-4d98-8f1e-ca6f3d508cf2`. I35: Richard+0.030296
+[-0.023487,+0.084079], xolod+0.019978[+0.011562,+0.028393],0episode failures.
+The human explicitly overrode the +0.02 xolod point gate as rounding. Preserve the
+frozen failed automated decision; this was not an automatic pass.
+
+V29's original map guard checked only heartCount=10, so it did not guarantee fallback
+on unknown ten-heart maps. The guarded child checks exact public geometry. No BASIC
+map identity exists; an unseen map matching every checked field is indistinguishable.
+I34 dodge's Richard+0.023650[-0.031768,+0.079068] remains inconclusive; rebase and test
+against v29 before retaining it. Do not pool the old controls or sum cross-cohort gains.
+
 # Supported findings and remaining hypotheses
 
 Current synthesis after i31, on rules 49 / 0.3.123–0.3.124. I32 did not confirm v22: weighted +0.013810 [-0.015552,+0.043172]. VERDICT-32 now

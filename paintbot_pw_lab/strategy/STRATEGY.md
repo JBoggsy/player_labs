@@ -370,12 +370,24 @@ Reading aid (the compiler receives component fields, not this introduction):
   Best_cost remains the HP-weighted ranking score; do not treat it as a physical distance.
   After an actual shootAt request with hasSpray, increment spray_distance_shots_total if
   the former best_cost test would have rejected it. This counter starts at zero and persists.
+  In plan_leg, after the original random sign and leg duration are drawn and tx/ty to the
+  visible threat are computed, choose a spacing sign before computing the perpendicular.
+  Only do this when map_known of `K.opening_signature` = 1 AND tx*tx + ty*ty <= spacing_enemy_sq. Find the nearest visible
+  same-parity teammate other than self among IDs0 through15 with squared distance
+  strictly below spacing_ally_sq. Ascending IDs and strict comparison choose the lower
+  ID on a distance tie. If found, set dx=selfX-playerX(ally), dy=selfY-playerY(ally),
+  cross=dy*tx-dx*ty. Set sign=-1 if cross<0 or if cross=0 and selfId>ally, else sign=1.
+  Increment spacing_changed_total if sign differs from the originally selected zig, then
+  replace zig by sign. Without an eligible ally keep zig. Preserve both random calls,
+  leg duration, forward-goal blend, speed normalization and capture-ring clamp. This
+  only changes lateral dodge planning; it does not change target selection or gun timing.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
-- Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
+- Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`, `K.opening_signature`
 - Code: skills/motor/skill.bas
 - Outputs:
   - opening_ticks_total -- cumulative ticks controlled by the coordinated central opening
+  - spacing_changed_total -- planned dodge legs whose lateral sign differs due to a nearby visible ally
   - root -- the result of the last sk_motor__isqrt call
   - threw -- 1 on a commanded or forced grenade release tick, else 0
   - release_charge -- observed charge on this release decision
@@ -388,6 +400,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - spray_distance_shots_total -- actual spray requests enabled by the physical-distance range check
   - cover_capture_ticks_total -- cover-capability ticks spent holding an already-started capture
 - Params:
+  - spacing_enemy_sq = 2560000 square cm -- spacing only inside 16 m of the visible threat
+  - spacing_ally_sq = 360000 square cm -- look for a visible teammate inside 6 m
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
   - lead_ticks = 6 ticks -- base.bas value, the gun windup
   - drift_ticks = 5 ticks -- base.bas value, our own drift to cancel
@@ -620,7 +634,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
   On a send, copy route_class, classified_tick and map_known from `K.opening_signature` into same-named outputs.
   Also copy opening_ticks_total and
-  tracking_updates_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
+  spacing_changed_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
 - Uses: `K.contacts`, `K.opening_signature`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
@@ -629,10 +643,10 @@ Reading aid (the compiler receives component fields, not this introduction):
   - route_class -- 0 pending, 1 outer-route signature, 2 default
   - classified_tick -- exact tick when the classifier latched
   - opening_ticks_total -- cumulative adaptive opening calls
-  - tracking_updates_total -- safe aim/need changes through this status snapshot
+  - spacing_changed_total -- dodge directions changed by teammate spacing through this snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
   - map_known -- whether exact Heartwick public geometry matched
-- Log: route_class, classified_tick, opening_ticks_total, tracking_updates_total, cover_capture_ticks_total, map_known
+- Log: route_class, classified_tick, opening_ticks_total, spacing_changed_total, cover_capture_ticks_total, map_known
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

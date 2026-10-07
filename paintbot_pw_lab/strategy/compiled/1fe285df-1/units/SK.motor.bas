@@ -76,37 +76,6 @@ SUB sk_motor__plan_leg(sk_motor_min, sk_motor_max)
   sk_motor__leg_ticks = sk_motor_min + sk_motor__rng MOD (sk_motor_max - sk_motor_min + 1)
   sk_motor__tx = sk_motor__threat_x - selfX
   sk_motor__ty = sk_motor__threat_y - selfY
-  ' Choose the lateral leg away from a nearby observed ally in grenade-range contact.
-  sk_motor__spacing_nearest = -1
-  sk_motor__spacing_best_sq = sk_motor__spacing_ally_sq
-  IF k_opening_signature__map_known = 1 AND sk_motor__tx * sk_motor__tx + sk_motor__ty * sk_motor__ty <= sk_motor__spacing_enemy_sq THEN
-    sk_motor__spacing_i = 0
-    WHILE sk_motor__spacing_i < 16
-      IF sk_motor__spacing_i <> selfId AND sk_motor__spacing_i MOD 2 = selfTeam AND visible(sk_motor__spacing_i) THEN
-        sk_motor__spacing_dx = selfX - playerX(sk_motor__spacing_i)
-        sk_motor__spacing_dy = selfY - playerY(sk_motor__spacing_i)
-        sk_motor__spacing_d2 = sk_motor__spacing_dx * sk_motor__spacing_dx + sk_motor__spacing_dy * sk_motor__spacing_dy
-        IF sk_motor__spacing_d2 < sk_motor__spacing_best_sq THEN
-          sk_motor__spacing_nearest = sk_motor__spacing_i
-          sk_motor__spacing_best_sq = sk_motor__spacing_d2
-        END IF
-      END IF
-      sk_motor__spacing_i = sk_motor__spacing_i + 1
-    WEND
-    IF sk_motor__spacing_nearest >= 0 THEN
-      sk_motor__spacing_dx = selfX - playerX(sk_motor__spacing_nearest)
-      sk_motor__spacing_dy = selfY - playerY(sk_motor__spacing_nearest)
-      sk_motor__spacing_cross = sk_motor__spacing_dy * sk_motor__tx - sk_motor__spacing_dx * sk_motor__ty
-      sk_motor__spacing_sign = 1
-      IF sk_motor__spacing_cross < 0 OR (sk_motor__spacing_cross = 0 AND selfId > sk_motor__spacing_nearest) THEN
-        sk_motor__spacing_sign = -1
-      END IF
-      IF sk_motor__spacing_sign <> sk_motor__zig THEN
-        sk_motor__spacing_changed_total = sk_motor__spacing_changed_total + 1
-      END IF
-      sk_motor__zig = sk_motor__spacing_sign
-    END IF
-  END IF
   sk_motor__isqrt(sk_motor__tx * sk_motor__tx + sk_motor__ty * sk_motor__ty)
   sk_motor__leg_x = 0
   sk_motor__leg_y = 0

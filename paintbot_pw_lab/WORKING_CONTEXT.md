@@ -18,7 +18,9 @@ No optimizer submission, account floor10000, finite workers and>=120s API pacing
 Player James Botts: `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`.
 League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 
-Current source will become the guarded v29 child. The submitted v29 artifact is immutable.
+Current source is the dodge rebase on guarded v29 (i37).
+Guard-only child build `1fe285df-1` passed and uploaded as v30; not submitted.
+The submitted v29 artifact is immutable and retains its original heart-count-only guard.
 V28 dodge remains recoverable at `4f0e5d4e-1`; do not substitute its v10 parent.
 
 ## Final robust-bundle result
