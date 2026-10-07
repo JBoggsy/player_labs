@@ -1,0 +1,54 @@
+{
+ "private": true,
+ "target": {
+  "league_id": "league_428e91e5-ee25-4f9c-be5e-a4fc4f993f17",
+  "variant_id": "classic-gunboat"
+ },
+ "roster": [
+  {
+   "player": {
+    "policy_ref": "83d91e1f-a01c-448b-8e9c-c4f640fcd251"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "2f27f55a-6b0e-4af5-af2b-58aee9e3c83f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "39a7f008-692b-4247-95b0-78dc19bdc200"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "ad8e2baa-ba15-4da2-8a3c-207297de48b6"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "67b98a36-df5a-401d-aa52-12d118cd3a97"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "266670b8-4fa2-45cb-bc78-6c43b4daf007"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "4247912e-737b-4731-948d-99c7cd2d8194"
+   },
+   "slot": -1
+  }
+ ],
+ "num_episodes": 14,
+ "episode_player_llm_spend_limit_usd": 0,
+ "notes": "webdip lab: v5 (competent-likelihood fix) vs same 6 fillers as v4 check"
+}
