@@ -328,14 +328,21 @@ SUB sk_motor__gun()
       WEND
     END IF
     IF hasSpray = 0 OR k_contacts__best_cost < sk_motor__spray_range_sq THEN
-      IF sk_motor__clear AND sk_motor__gun_wait = 0 THEN
-        shootAt(sk_motor__tx, sk_motor__ty)
-        sk_motor__gun_wait = sk_motor__gun_wait_light
-        IF armorHp > 0 OR trenchId >= 0 OR carrying THEN
-          sk_motor__gun_wait = sk_motor__gun_wait_heavy
+      IF sk_motor__clear THEN
+        ' The engine owns readiness; repeat the safe trigger without delaying cooldown relief.
+        IF sk_motor__gun_wait > 0 THEN
+          sk_motor__repeat_trigger_total = sk_motor__repeat_trigger_total + 1
         END IF
-        IF hasSpray THEN
+        shootAt(sk_motor__tx, sk_motor__ty)
+        ' Keep the former timer only to count requests that it would have suppressed.
+        IF sk_motor__gun_wait = 0 THEN
           sk_motor__gun_wait = sk_motor__gun_wait_light
+          IF armorHp > 0 OR trenchId >= 0 OR carrying THEN
+            sk_motor__gun_wait = sk_motor__gun_wait_heavy
+          END IF
+          IF hasSpray THEN
+            sk_motor__gun_wait = sk_motor__gun_wait_light
+          END IF
         END IF
       ELSE
         lookAt(sk_motor__tx, sk_motor__ty)

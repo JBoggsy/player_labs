@@ -294,6 +294,11 @@ Reading aid (the compiler receives component fields, not this introduction):
   charge logic. Never release merely because visibility or eligibility disappeared.
   This is charge continuity with safe target tracking, not a guarantee that teammates cannot
   enter the eventual blast.
+  When the existing target, teammate-line and spray-range checks permit firing, call shootAt
+  every tick. Let the engine enforce gun windup, gun cooldown and spray recovery. Keep the
+  former gun_wait timer only for activation tracing. Increment repeat_trigger_total when
+  firing is requested while that timer is positive. Reset the timer to its original light
+  or heavy value only when it reaches zero; it no longer gates shooting.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
@@ -308,6 +313,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- cumulative ticks where continuity prevents the old early release
   - forced_total -- cumulative releases forced by becoming disarmed during a charge
   - tracking_updates_total -- cumulative armed charging ticks with a changed safe aim or charge requirement
+  - repeat_trigger_total -- safe trigger requests made while the former firing timer is positive
 - Params:
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
   - lead_ticks = 6 ticks -- base.bas value, the gun windup
@@ -316,7 +322,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - gun_wait_heavy = 73 ticks -- base.bas value, cooldown with armor, in a trench, or carrying
   - spray_range_sq = 640000 -- base.bas value, the spray gun shoots only below this target cost
 - Checks:
-  - Acted properly: a shot is ordered only when the gun wait is zero, the teammate line is clear, and the spray range condition holds. Reads: replay
+  - Acted properly: a shot is ordered only when the teammate line is clear and the spray range condition holds; engine cooldown determines acceptance. Reads: replay
   - Acted: committed grenade charge continues until its locked need unless equipment is lost or disarm forces release. Reads: replay
   - Result: grenade teammate and self damage per episode, with enemy damage retained. Reads: replay
   - Result: hit rate per shot at range. Reads: replay
@@ -488,7 +494,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
   On a send, copy starts_total, blocked_total, continued_total, forced_total and
-  tracking_updates_total from `SK.motor` into same-named outputs for periodic telemetry.
+  tracking_updates_total and repeat_trigger_total from `SK.motor` into same-named outputs for periodic telemetry.
 - Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
@@ -499,7 +505,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
-- Log: starts_total, blocked_total, continued_total, forced_total, tracking_updates_total
+  - repeat_trigger_total -- safe requests during the former firing timer through this snapshot
+- Log: starts_total, blocked_total, continued_total, forced_total, tracking_updates_total, repeat_trigger_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

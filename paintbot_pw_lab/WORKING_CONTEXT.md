@@ -27,8 +27,8 @@ retaining continuity on lost eligibility. Counter tracking_updates_total supplie
 Build21b9c416-1 passed G1–G5 and is uploaded as jb-pw-opt:v6
 (912ada85-9d70-4c23-b624-c11c32c1016a). Local39/56 vs v3,53/56 upstream,526 tracking
 updates across22/32 recorded seats. Grenade enemyHP563→814, teammate69→127,self6→9
-in matched24 local games. Fresh240-game A/B creation is running,192 Richard plus48 xolod;
-Richard alone is primary. Projected120 new credits on384 previous; previews in request
+in matched24 local games. Fresh240-game A/B is running,192 Richard plus48 xolod;
+Richard alone is primary. Actual previews120 new credits on384 previous; request
 manifest are authoritative. REPORT-6.md records evidence and limits.
 See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
 posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
@@ -38,8 +38,11 @@ Rank-9 rating archaeology is explicitly dropped by VERDICT-0.
 Standing pipeline rule (orchestrator): while a hosted batch runs, diagnose and prepare the
 next single-change candidate locally on the current candidate; compile and screen vs v3,
 the parent candidate and upstream. Hold its upload until the running A/B decides its parent.
-The previous v5 pipeline child is parked after negative local screens. With its parent not
-retained, current work returns to v3 for the Richard-directed countermeasure.
+The previous v5 pipeline child is parked after negative local screens. Working source is now
+an unuploaded child of v6: issue safe trigger requests every eligible tick and let engine
+cooldown/windup enforce firing cadence, with repeat_trigger_total activation. The uploaded
+v6 build remains immutable. Compile and local screens determine viability; upload waits for
+its parent Richard A/B. REPORT-7.md records source evidence and measurement limits.
 
 The pipeline remains strategy-as-source: edit `strategy/STRATEGY.md` or authored skills,
 commit inputs, then run `pw.py strategy compile`. Compiled builds are immutable. A compiler
