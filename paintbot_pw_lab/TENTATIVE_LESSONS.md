@@ -1,141 +1,34 @@
-# Supported findings and remaining hypotheses
+# Paintbot PW open hypotheses
 
-## Current submitted parent: v29
+Supported findings, the champion lineage and refuted levers live in
+[best_practices.md](best_practices.md). This file keeps only unresolved, testable ideas with
+the evidence needed to decide them. Current champion and identities are in
+[WORKING_CONTEXT.md](WORKING_CONTEXT.md).
 
-The orchestrator submitted v29 (`e42b7834-1`) as
-`sub_08157a74-7eb8-4d98-8f1e-ca6f3d508cf2`. I35: Richard+0.030296
-[-0.023487,+0.084079], xolod+0.019978[+0.011562,+0.028393],0episode failures.
-The human explicitly overrode the +0.02 xolod point gate as rounding. Preserve the
-frozen failed automated decision; this was not an automatic pass.
+## Untested structural ideas against Richard
 
-V29's original map guard checked only heartCount=10, so it did not guarantee fallback
-on unknown ten-heart maps. The guarded child checks exact public geometry. No BASIC
-map identity exists; an unseen map matching every checked field is indistinguishable.
-I34 dodge was inconclusive; its i37 rebase vs v29 is rejected: Richard-0.037619
-[-0.093054,+0.017817], xolod+0.007471[-0.004326,+0.019268],0episode failures.
-Do not inherit dodge or pool the old controls. I38 conditional capture staffing also fails: Richard+0.028544[-0.026064,+0.083151],
-xolod-0.000275[-0.014716,+0.014166],0episode failures. V29 remains parent.
+v29 scores about 0.70 against Richard (295/400 wins). A +0.10 gain would have to recover about a
+third of the remaining headroom; no existing evidence supports that size of effect for any idea
+below. Each needs a cheap falsification test first (REPORT-40 in the campaign archive).
 
-## Evidence scope
+- **Dynamic capture pairs plus a reserve.** Losses start with an earlier first death (median 25 s
+  in losses vs 38 s in wins, in a 24-game v29 sample) and usually in the forward squad (9/12 losses
+  vs 5/11 wins). Differs from the refuted refuse-and-counter plan: it must not concede the first
+  central fight. Evidence needed: a hosted A/B of 400 Richard games per arm.
+- **Interception of Richard's repeated routes.** His opening capture route separated him from xolod
+  in 20/20 held-out games, so it is predictable. Evidence needed: whether pre-positioning on the
+  route converts into kills before his first capture.
+- **Staggered weapon roles** (grenadiers vs gunners). Loss/win damage totals differ by weapon, but
+  totals depend on survival time and do not show causality.
 
-Current synthesis through i35, on rules49 / 0.3.124. I32 did not confirm v22: weighted
-+0.013810[-0.015552,+0.043172]. The Richard campaign continues on submitted v29;
-see WORKING_CONTEXT for active work.
-The orchestrator owns field monitoring. Existing findings do not prove the new hypotheses.
-Exact identities and champion lineage are in [WORKING_CONTEXT.md](WORKING_CONTEXT.md).
-`REPORT-N` references below are local `tmp/collab/optimizer/REPORT-N.md` evidence.
+## Conditional reserve
 
-## What the retained changes bought
+- **v22 (frontier pairs + direct capture).** +0.060 [+0.009, +0.111] against Richard, −0.013 against
+  xolod. A fresh comparison is worth running only if Richard becomes a clear majority of our league
+  pairings; at 57% it was +0.014 weighted, not significant.
 
-- **Complete safe grenade charges before optimizing aim.** V3 preserves charge through
-  target loss and blocks disarmed starts. Its field improvement versus v2 was directional,
-  +0.0262 [-0.0151, +0.0675], not significant. It was retained under the earlier explicit
-  operational gate. Local reductions in self/friendly grenade damage explain the mechanism,
-  not proof of field superiority (REPORT-2).
-- **Track geometry during a committed throw.** In 28 selected v3 losses, grenade enemy-HP
-  deficit accounted for 399 HP while the overall damage deficit was 362 HP; median
-  landing-to-aim error was 208 cm versus Richard's 51 cm. V6's live safe aim/charge updates
-  improved Richard score +0.1976 [+0.0724, +0.3227] over v3 (REPORT-6). Selected losses
-  locate a mechanism; the fresh A/B, not those conditioned counts, estimates the benefit.
-- **Avoid undoing our own capture.** Own capture progress cleared idle eligibility and sent
-  cover cogs back outside the ring. Keeping them in the ring eliminated the diagnosed
-  cover-post reset pattern locally (263 to 0 in matched recordings), and v8 beat v6 against
-  Richard by +0.1331 [+0.0099, +0.2562] (REPORT-10). More total captures alone is misleading
-  when match duration differs; use fixed-time ownership and explicit reset causes.
-- **Use geometry for weapon reach, ranking cost for target choice.** HP-weighted contact
-  cost incorrectly suppressed in-range spray. V10 changes the two spray distance gates only.
-  Its independent confirmation gained +0.0981 [+0.0173, +0.1790] against Richard over v8;
-  xolod was inconclusive (REPORT-18). Do not generalize this success to every decision that
-  uses the same ranking cost: resupply/retreat have different tradeoffs.
+## Unproven older levers
 
-## Dead levers for this campaign, with limits
-
-“Dead” means no supported reason to replace v10 from these studies, not proof that every
-implementation or future opponent would fail. Intervals are nominal, generally normal
-approximations; many candidates/opponents were examined.
-
-| Lever | Supported conclusion |
-| --- | --- |
-| Wider gun teammate corridor, 95 to 195 cm | Local ordinary-gun friendly damage fell, but hosted gains were inconclusive on v3 (+0.0072 [-0.0053, +0.0197], REPORT-3) and v8 versus Richard (+0.0079 [-0.1177, +0.1335], REPORT-16). Avoided damage trades against offense. |
-| Spray teammate cone veto | Richard -0.0037 [-0.1233, +0.1159] on v8 (REPORT-15). Its nominal positive xolod secondary result is not an independently confirmed v10 improvement. |
-| Early neutral-capture resupply deferral | No supported Richard gain in hosted i13. Earlier local-only parked route/resupply ideas were never field-refuted; current rules prohibit ranking candidates by local self-play. |
-| Restrict retreat eligibility to nearby foes | Harmful against Richard: -0.0630 [-0.1164, -0.0096], 480/arm (REPORT-17). Distant contacts still carry useful retreat information under this policy. |
-| Local regrouping, four frontier pairs, supported focus attack | Individual studies and v10 rebases did not demonstrate incremental benefit (REPORT-19,21–25). Do not convert loss-corpus correlations about teammate proximity into a causal prediction. |
-| Spray plus wider gun corridor | Beat v8 +0.0945 [+0.0166, +0.1724] (REPORT-20), but control lacked v10 spray fix. This does not establish any added corridor gain over v10. |
-| Direct capture staffing | Alone +0.0322 [-0.0380, +0.1024] vs Richard (REPORT-26); unsupported. With frontier pairs, v22 improved Richard +0.0599 [+0.0091, +0.1106] but regressed xolod -0.0132 [-0.0261, -0.0004] (REPORT-27). Conditional reserve, not champion. |
-| Full-speed neutral approach | Xolod -0.0096 [-0.0230, +0.0038] despite about 4.9 s lower mean win duration (REPORT-28). Faster is not necessarily better rated margin. |
-| Post-capture pursuit | Xolod +0.0039 [-0.0098, +0.0177], 200/arm (REPORT-29); no supported gain. Excluded from v26. |
-| Nearby glory collection | Finist +0.0143 [+0.0054, +0.0232] in i30, but xolod +0.0015 [-0.0054, +0.0084] and Richard +0.1615 [-0.0063, +0.3294] remain inconclusive. Inactive-finist speed/award gain is not active-combat strength. |
-| Robust frontier/direct-capture/glory bundle v26 | I31 did not reproduce a significant gain: xolod +0.000372 [-0.005255, +0.006000]; finist +0.003725 [-0.002304, +0.009754]; Richard +0.019763 [-0.051979, +0.091504]. Individual positives are not additive; rejected. |
-
-## Margin ceiling and changing pairings
-
-Current recorded league metric is margin scale **600**, not the retired scale-1000 Elo
-metric. Score outcome is `clamp(0.5 + glory_margin/1200, 0, 1)`; +10 uncapped winning
-glory changes it by 0.00833. Winner glory combines countdown and awards; losers/draws get
-zero. A 520–0 win rates 0.9333. Glory above 600 is clamped for a zero-scoring opponent.
-Thus raw mean glory and mean rated score need not move together (i28 directly observed this).
-
-V10 wins essentially all sampled xolod games, leaving mainly time/award margin to improve.
-Pursuit, glory detours and the larger bundle produced only tiny, uncertain xolod effects.
-This supports diminishing returns for tested changes near the observed ~0.93 level;
-it does not prove ~0.95 is a hard cap or rule out a new mechanism.
-
-OpenSkill ordinal is `mu - 3*sigma`. New champion versions widen sigma to at least 6,
-so small gains must justify a temporary rating cost. Source verification is metta
-`bb174d5ffb`, `rankings/openskill.py` and `ladders/updater.py`; canonical explanation and
-settings evidence are in [mechanics.md](docs/mechanics.md). Team matchmaking favours
-rating neighbours (`elo_softmax`, temperature 100), so use observed pairing frequencies
-for the immediate objective and broad field guards for robustness. Richard dominated the
-v6 bracket; xolod/finist dominated later observed rounds. Neither mix is permanent. The latest handoff check, rounds 888–893, has Richard 4/7
-and xolod 3/7; this clears the one-third Richard trigger for recommending a fresh v22 A/B,
-not for submitting v22. Exact local evidence: `tmp/collab/optimizer/standby-pairing-mix.json`.
-
-## Evidence and resumption rules
-
-- Distinguish zero failed episodes, sampled healthy seats, and missing optional health
-  artifacts. I31 had all 1,200 scores but only 16 candidate episodes with seat-status checks.
-- Preserve fixed cohorts, fresh controls, both sides, exact policy/seat identities and one
-  observation per game. Do not pool discovery and confirmation or stop on an attractive CI.
-- Read actual replay actions before assigning weight to frozen leaders. Latest i31 scout:
-  finist 0/3, zhar 0/6 and relh 0/4 active games; xolod 5/5 and Richard 2/2 active. These
-  small dated samples are port-detection evidence, not permanent opponent properties.
-- M3 comms, disguise handling and older route/resupply variants remain unproven, not queued.
-  A uniform may be acquired by crossing its location; avoiding pickup targets alone cannot
-  prevent it. Use current source/trace evidence before reviving these hypotheses.
-- On an orchestrator wake-up, verify release and recent pairings before choosing a parent.
-  V22 merits a fresh comparison if Richard's share grows materially; no old reserve result
-  authorizes submission. No agent watch/polling continues during standby.
-
-## Current plateau review (VERDICT-39)
-
-V33 dry combat movement did not clear its gate: Richard+0.016600
-[-0.038049,+0.071249], xolod+0.004696[-0.007212,+0.016603]. V29 remains parent.
-Event-triggered refusal/counterattack is now refuted by i41 below. Remaining untested
-structural hypotheses are dynamic capture pairs plus reserve, held-out route
-interception, and staggered weapon roles.
-None has evidence supporting an expected+0.10 causal gain. REPORT-40 gives local
-falsification criteria. V22 already contains direct capture, overlapping v32; adding
-positive effect estimates across parents is invalid. No bundle test justified now.
-Hosted work is held until verified balance>=14000; keep the exact map guard in
-every eventual build.
-
-## Refuted lever: refuse the first central fight
-
-I41/v34 is rejected. Against fresh v29 controls, Richard delta is -0.067460
-(95% CI [-0.123897,-0.011024],400games per arm): a significant regression.
-Xolod delta is -0.007792 [-0.019625,+0.004042],100games per arm. All1000games
-completed with zero failed episodes. V29 remains champion and parent.
-
-Operational lesson: refusing the first central fight hands Richard a lasting lead;
-do not inherit this staging/counter plan or retry it as a minor threshold change.
-This is the orchestrator's mechanism interpretation of the refuted intervention.
-The randomized comparison establishes harm from the whole plan; it does not isolate
-territory concession from staging geometry, release timing or missing triggers.
-Do not generalize it to every possible defensive policy. Reopening the idea requires
-new replay evidence for a materially different mechanism, not its plausible narrative.
-
-The single-cohort exception is exhausted. Hosted cohorts stay paused until verified
-balance>=14000; latest orchestrator-reported balance11809 (not a fresh API read).
-Explicit STAND DOWN now supersedes credit-based resumption: no further local or
-hosted work until fresh authorization. Every future build retains the map guard. No submission.
+- M3 communications, disguise handling and the older route/resupply variants were never shown to help
+  on 0.3.123+. A uniform can be acquired by crossing its location, so avoiding pickup targets alone does
+  not prevent disguise. Re-check current source and traces before reviving any of them.

@@ -30,7 +30,7 @@ Paths are relative to the repo root. `sim.nim` and `mechanics.nim` are under `ex
 > `league_ae677105-0ab8-4561-81ec-c9cf6735821c` uses OpenSkill with
 > `margin_scale: 600`, `round_scoring_rule: mean`, `new_version_sigma: 6.0`.
 > Matchmaking is `team_n` / `elo_softmax`, temperature 100, favouring rating neighbours.
-> Settings evidence: `tmp/collab/optimizer/league.json`; source verification below.
+> Settings evidence: `league.json` in the 2026-10-07 campaign archive (`~/coding/personal_labs/paintbot_pw_archives/2026-10-07-optimizer-campaign.tar.zst`); source verification below.
 > The later Elo subsection describes the retired league only.
 
 > **Currency of this section.** Rules verified 2026-09-30 against paintbot-pw `118e1619` (tag
@@ -65,7 +65,7 @@ Observed pairings change as ratings move. Rounds 849–852 paired all four of ou
 with Richard (v6 went 3–1). Rounds 871–876 paired seven with xolod (five) and finist (two).
 The latest six completed rounds checked at optimizer handoff, 888–893, paired v10 with
 Richard four times and xolod three times; no other opponents. All seven episode rows were
-retrieved and exact policy/seat identities checked (`tmp/collab/optimizer/standby-six-rounds.json`).
+retrieved and exact policy/seat identities checked (`standby-six-rounds.json` in the 2026-10-07 campaign archive).
 These samples are not guaranteed future frequencies. The latest 57.1% Richard share supports
 re-evaluating reserve v22 with fresh controls and an xolod guard, not immediate submission.
 The orchestrator owns subsequent field checks. Frozen finist/zhar/relh activity must be

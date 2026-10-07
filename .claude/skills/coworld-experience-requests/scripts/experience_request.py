@@ -10,7 +10,7 @@ parts — auth, live-schema validation, the POST + readback race, polling, and I
 resolution — and leaves *composition of the request body* to you (see
 `references/api.md` for every field).
 
-Three subcommands:
+Four subcommands:
 
   resolve  --policy NAME [--version N]      -> policy_version_id(s)
   resolve  --division DIV [--top N]         -> ranked opponents (name + pv id) for the roster
@@ -18,6 +18,8 @@ Three subcommands:
                                                so resolve is mostly for ranking the field)
   create   <body.json | ->  [--check-schema]  -> validate keys vs live schema, POST, read back
   monitor  <xreq_id>  [--once] [--interval S] -> poll status counts until every child episode is terminal
+  credits                                   -> the account's XP credit balance (user credential;
+                                               the credit route rejects player sessions)
 
 Usage (auth from `softmax login`; run inside `uv run` so `softmax` imports):
 

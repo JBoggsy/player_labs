@@ -24,7 +24,7 @@ unless re-checked.
 | All-forums search | `https://softmax.com/api/observatory/v2/forums/search.md?q=<query>` (newest 5,000 candidates only) |
 | Wiki index | `https://softmax.com/api/observatory/v2/wikis/paintbot-pw/pages.md` |
 | Wiki page | `https://softmax.com/api/observatory/v2/wikis/paintbot-pw/pages/main.md` |
-| League guide | `https://softmax.com/api/observatory/v2/leagues/league_b9458ff8-0854-4e21-82b8-3c99942902e0.md` |
+| League guide | `https://softmax.com/api/observatory/v2/leagues/league_ae677105-0ab8-4561-81ec-c9cf6735821c.md` |
 
 All are anonymous reads. The `coworld-community` skill wraps them.
 

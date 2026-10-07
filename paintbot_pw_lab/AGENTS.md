@@ -61,7 +61,9 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
    request options and credit budget.
 6. [docs/evidence-pipeline.md](docs/evidence-pipeline.md) — artifacts, the replay format and
    hash-checked re-simulation; [docs/tools/README.md](docs/tools/README.md) — the tools built on it.
-7. [TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md) — untested hypotheses to turn into A/Bs.
+7. [best_practices.md](best_practices.md) — supported Paintbot PW findings: release checks, what the
+   ladder rewards, evaluation design, the champion lineage and refuted levers.
+8. [TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md) — untested hypotheses to turn into A/Bs.
 
 ## Files
 
@@ -77,7 +79,7 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 | `strategy/` | The policy source (layout: strategy-file-format design §4.1). **Load-bearing: `STRATEGY.md` is the source of truth; compiled BASIC is never edited by hand.** [`compiler/`](strategy/compiler/) contains the M0 runtime and agent instructions; [`pw.py strategy`](docs/tools/pw_strategy.md) compiles committed sources. `STRATEGY.md` and `skills/motor/skill.bas` contain the most recently built candidate, which can differ from the champion; check `WORKING_CONTEXT.md` for exact identities. M3 is inactive and recoverable from `2184fc64`; [`compiled/b41ef1fc-1/report.md`](strategy/compiled/b41ef1fc-1/report.md) records passing gates and identical baseline play. [`comms.md`](strategy/comms.md) defines comms v1 and its acceptance status. |
 | `docs/designs/` | Design documents. [`2026-09-29-tooling-plan.html`](docs/designs/2026-09-29-tooling-plan.html) is the tools-and-skills plan, now implemented (brief: `.tooling-plan-brief.md`). [`2026-09-30-strategy-file-format.md`](docs/designs/2026-09-30-strategy-file-format.md) (rendered: `.html`) is the **accepted** format for the load-bearing strategy file (2026-09-30). [`2026-09-30-strategy-compilation.md`](docs/designs/2026-09-30-strategy-compilation.md) (rendered: `.html`) is the **accepted** compile process: deterministic Python around one LLM step, unit files, versioning, report, gates. |
 | `tools/` | The instruments: `pw.py` (dispatcher, catalog, doctor), `pw_cli.py` (shared CLI contract), `release.env` / `pw_release.py` (engine pin), Nim `pw_trace` / `pw_map`, Python readers, metrics, visuals, A/B, local harness, scouting, miner, win probability, tuning; `tests/`. Build products go to gitignored `tools/bin/` and `tools/.cache/`. |
-| `.claude/skills/` | The seven lab skills listed above. |
+| `.claude/skills/` | The eight lab skills listed above. |
 | `reference/base.bas`, `reference/jev.bas` | Frozen official teams starters at 0.3.89 (preserved across engine-pin migration), from `coworld/paintbot/players/` (the files the manifest's `player[]` hashes name). For Bassy compilation use `reference/base-bassy-28030de6.bas`, copied verbatim from upstream `examples/paintbot/players/base.bas` at `28030de6`; frozen pre-Bassy starters fail on 0.3.123. Keep reference files distinct from candidates. |
 | `reference/intent_telemetry.bas`, `reference/wire_intent_base.py` | The intent-line module for our policies, and a script that wires it into `base.bas` for audits. |
 | `reference/heartland/` | FFA-kin starters for the separate Heartland coworld; they do not compile in the teams game. |
