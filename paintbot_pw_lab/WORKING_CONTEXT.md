@@ -149,3 +149,12 @@ Eight copies of our policy face eight copies of one pinned real opponent, matchi
 No hosted self-play. Budget 0.5 credits per episode and ledger estimates from request previews;
 the ordinary player session gets 403 from the credit endpoint. Task 0 spent zero XP credits.
 Heartland memberships and the orchestrator's stopgap are outside this optimizer's scope.
+
+## Current pipeline source
+
+Working source adds an unuploaded resupply gate on v7: noncritical resupply cannot start
+when the selected enemy is actually within12m, even if its HP-weighted target score exceeds
+the old distance threshold. Critical healing and all original outside-range tests remain.
+Counter near_fight_blocked_total records changed eligibility. REPORT-8.md records29 sampled
+close-enemy resupply decisions across12seats in four v7 games. Compile and screen locally;
+hold upload until v7 A/B decides parent.

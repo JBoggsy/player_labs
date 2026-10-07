@@ -255,7 +255,14 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Spec: Set `on = 1` when `nearest >= 0` of `K.pickups` and
   `(best < 0 OR best_cost > fight_clear_sq OR critical = 1)` with best and best_cost of
   `K.contacts`, and critical of `K.pickups`. Else set `on = 0`.
+  After that original test, if on = 1 AND critical = 0 AND best >= 0, set
+  dx = playerX(best) - selfX and dy = playerY(best) - selfY. If
+  dx * dx + dy * dy <= fight_clear_sq, set on = 0 and increment near_fight_blocked_total.
+  This cumulative counter starts at zero and persists for the match. It counts eligibility
+  rejections, not capability changes. Critical resupply bypasses this added distance check.
 - Uses: `K.pickups`, `K.contacts`
+- Outputs:
+  - near_fight_blocked_total -- original resupply eligibility rejected by actual close-enemy distance
 - Params:
   - fight_clear_sq = 1440000 -- base.bas value, cost above which the target does not hold us
 - Checks:
@@ -493,20 +500,21 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy starts_total, blocked_total, continued_total, forced_total and
-  tracking_updates_total and repeat_trigger_total from `SK.motor` into same-named outputs for periodic telemetry.
-- Uses: `K.contacts`, `SK.motor`, `P.shout`
+  On a send, copy blocked_total, continued_total, forced_total, tracking_updates_total and
+  repeat_trigger_total from `SK.motor` into same-named outputs for periodic telemetry.
+  Also copy near_fight_blocked_total from `S.supply_worth` into its same-named output.
+- Uses: `K.contacts`, `SK.motor`, `S.supply_worth`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
 - Outputs:
-  - starts_total -- committed starts through this status snapshot
   - blocked_total -- disarmed start blocks through this status snapshot
   - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - repeat_trigger_total -- safe requests during the former firing timer through this snapshot
-- Log: starts_total, blocked_total, continued_total, forced_total, tracking_updates_total, repeat_trigger_total
+  - near_fight_blocked_total -- close-enemy resupply rejections through this status snapshot
+- Log: blocked_total, continued_total, forced_total, tracking_updates_total, repeat_trigger_total, near_fight_blocked_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay
