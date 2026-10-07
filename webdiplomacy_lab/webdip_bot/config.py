@@ -67,3 +67,6 @@ SEARCH_RISK = 0.0  # 0 = mean over opponent samples; 1 = worst case
 NASH_CANDIDATES = 6
 NASH_ITERS = 60
 NASH_EVAL_SAMPLES = 24
+# Opponent-belief likelihood: "competent" (sensible orders count as competent) or "dumbbot"
+# (only DumbBot-matching orders do; mislabels strong non-DumbBot players as random).
+OPP_LIKELIHOOD = "competent"

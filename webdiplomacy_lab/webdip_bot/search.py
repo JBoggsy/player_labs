@@ -81,7 +81,16 @@ class SearchBot:
             samples = unit["samples"]
             matches = sum(1 for x in samples if tuple(x) == sig)
             n_legal = max(unit["n_legal"], 1)
-            p_dumb = 0.9 * matches / len(samples) + 0.1 / n_legal
+            if config.OPP_LIKELIHOOD == "competent":
+                # Competent = DumbBot-like OR any sensible order (hold, plain move, support/convoy
+                # of the player's own unit). Uniform-random players often support/convoy other
+                # powers' units; strong non-DumbBot players almost never do.
+                n_sensible = max(unit.get("n_sensible", n_legal), 1)
+                own = unit.get("own_provinces", [])
+                sensible = o["type"] in ("Hold", "Move") or (o.get("fromTerrID") or o.get("toTerrID")) in own
+                p_dumb = 0.5 * matches / len(samples) + (0.5 / n_sensible if sensible else 0.02 / n_legal)
+            else:
+                p_dumb = 0.9 * matches / len(samples) + 0.1 / n_legal
             p_rand = 1.0 / n_legal
             c = str(o["countryID"])
             lo = self.memory["logodds"].get(c, config.OPP_PRIOR_LOGODDS) + math.log(p_dumb / p_rand)
@@ -151,6 +160,8 @@ class SearchBot:
             "units": {
                 str(u["terrID"]): {
                     "n_legal": len(legal[u["id"]]),
+                    "n_sensible": _n_sensible(legal[u["id"]], {b.province(x["terrID"]) for x in theirs[c]}),
+                    "own_provinces": sorted({b.province(x["terrID"]) for x in theirs[c]}),
                     "samples": [[d[k]["type"], d[k]["toTerrID"] or 0, d[k]["fromTerrID"] or 0] for d in dumb_samples[c]],
                 }
                 for c in models
@@ -563,6 +574,19 @@ class SearchBot:
 def order_destroy(b, u):
     p = b.province(u["terrID"])
     return {"type": "Destroy", "terrID": p, "toTerrID": p, "fromTerrID": 0, "viaConvoy": "No"}
+
+
+def _n_sensible(orders, own_provinces):
+    """Count holds/plain moves plus supports/convoys that involve one of the player's own units."""
+    n = 0
+    for o in orders:
+        if o["type"] == "Hold" or (o["type"] == "Move" and o.get("viaConvoy") != "Yes"):
+            n += 1
+        elif o["type"] in ("Support hold", "Support move", "Convoy") and (
+            (o.get("fromTerrID") or o.get("toTerrID")) in own_provinces
+        ):
+            n += 1
+    return n
 
 
 def _key(o):

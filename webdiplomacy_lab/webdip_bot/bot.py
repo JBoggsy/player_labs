@@ -89,7 +89,12 @@ def play_phase(api, context, seed, policy, cls, state):
     latest = api.context()["game"]
     if (latest["turn"], latest["phase"]) != (game["turn"], game["phase"]):
         return True  # Phase advanced already; our saved orders were adjudicated.
-    difference = order_difference(requested, saved, len(slots)) if requested else {"missing": [], "unexpected": []}
+    try:
+        difference = order_difference(requested, saved, len(slots)) if requested else {"missing": [], "unexpected": []}
+    except (TypeError, ValueError, KeyError):
+        # Upstream can echo a saved build/destroy with a null territory; the orders are saved,
+        # only the comparison fails. Record it instead of losing the decision log.
+        difference = {"missing": [], "unexpected": [], "diff_error": True}
     emit(
         policy,
         event="decision",

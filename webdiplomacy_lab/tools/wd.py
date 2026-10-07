@@ -235,8 +235,10 @@ def cmd_tourney(args):
 
     def one(_):
         if args.fixed:
-            others = rng.sample(agents, 6) if len(agents) >= 6 else [rng.choice(agents) for _ in range(6)]
-            seating = [args.fixed] + others
+            fixed = args.fixed.split(";")
+            k = 7 - len(fixed)
+            others = rng.sample(agents, k) if len(agents) >= k else [rng.choice(agents) for _ in range(k)]
+            seating = fixed + others
             rng.shuffle(seating)
         else:
             seating = rng.sample(agents, 7) if len(agents) >= 7 else [rng.choice(agents) for _ in range(7)]
@@ -411,7 +413,7 @@ def main():
     lo.set_defaults(func=cmd_local)
     tr = sub.add_parser("tourney", help="mixed-population local self-play")
     tr.add_argument("--agents", required=True, help="comma-separated personality/policy names")
-    tr.add_argument("--fixed", help="league-sim: seat this agent in every game; the other 6 come from --agents")
+    tr.add_argument("--fixed", help="league-sim: seat these agents (';'-separated) in every game; the rest come from --agents")
     tr.add_argument("--image", default="webdip-bot:dev")
     tr.add_argument("--variant", default="classic-gunboat")
     tr.add_argument("--games", type=int, default=12)
