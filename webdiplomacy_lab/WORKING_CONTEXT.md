@@ -15,8 +15,12 @@ chosen by James).**
 - Baseline: `webdiplomacy-random:v1` (bundled random bot, James Botts, current league
   champion). Hosted: `experiments/baseline-random-v1/`.
 - Candidate: `webdip-dumbbot:v1` (policy version `aabe87ad-9bdd-4ddc-bcef-8fd090bfc634`,
-  James Botts). Hosted against six random fillers: `experiments/dumbbot-v1-vs-random/`.
-  **Not submitted.** League submission needs James's go-ahead.
+  James Botts). Hosted against six random fillers (`experiments/dumbbot-v1-vs-random/`,
+  28 episodes, 23 with results; the 5 gaps completed but their downloads were rate-limited):
+  mean score 0.91 vs field par 0.02, solo 18/23, 0 rejected orders, max 17 ms per
+  decision. The 5 non-solos were England (3) and Turkey (2), corner powers that stalled
+  at 10–14 centres; the bot issues no convoys. **Not submitted.** League submission needs
+  James's go-ahead.
 
 ## Constraints and open questions
 
