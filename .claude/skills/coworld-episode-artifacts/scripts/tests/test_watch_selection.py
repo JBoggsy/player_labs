@@ -185,3 +185,34 @@ def test_absent_artifacts_remain_optional() -> None:
         )
         assert client.get_bytes_or_none('/artifact') is None
         assert client.get_text_or_none('/artifact') is None
+
+
+def test_watch_resumes_partial_episode_without_redownloading_files(tmp_path: Path) -> None:
+    import httpx
+    import json
+    from fetch_artifacts import Client, fetch_episode
+
+    episode = tmp_path / 'episode'
+    (episode / 'logs').mkdir(parents=True)
+    (episode / 'results.json').write_text('{}')
+    (episode / 'replay.json').write_bytes(b'recorded replay')
+    (episode / 'logs/policy_agent_0.log').write_text('kept log')
+    requested = []
+
+    def respond(request):
+        requested.append(request.url.path)
+        if request.url.path.endswith('/policy-artifacts'):
+            return httpx.Response(200, json=[{'position':i,'policy_version_id':'pv','has_log':True,'has_artifact':False} for i in (0,2)])
+        if request.url.path.endswith('/policy-logs/2'):
+            return httpx.Response(200, text='remaining log')
+        return httpx.Response(404)
+
+    with Client('https://example.invalid','test') as client:
+        client._http.close()
+        client._http = httpx.Client(base_url='https://example.invalid', transport=httpx.MockTransport(respond))
+        result = fetch_episode(client,_ref('ereq_resumed','completed'),episode,
+                               want_replay=True,want_results=True,want_logs=True,resume=True)
+    assert result['complete']
+    assert not any(path.endswith(('/artifacts/results','/artifacts/replay','/policy-logs/0')) for path in requested)
+    assert (episode/'logs/policy_agent_0.log').read_text() == 'kept log'
+    assert json.loads((episode/'policy_logs_checked.json').read_text())[1]['position'] == 2

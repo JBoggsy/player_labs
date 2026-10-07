@@ -321,12 +321,12 @@ def episode_is_complete(out_dir: Path, want_replay: bool, want_logs: bool,
 
 def fetch_episode(client: Client, ref: EpisodeRef, out_dir: Path, *,
                   want_replay: bool, want_results: bool, want_logs: bool,
-                  want_artifacts: bool = True) -> dict[str, Any]:
+                  want_artifacts: bool = True, resume: bool = False) -> dict[str, Any]:
     """Contain one episode's transport/parse failure so bounded retries can progress."""
     try:
         return _fetch_episode(client, ref, out_dir, want_replay=want_replay,
                               want_results=want_results, want_logs=want_logs,
-                              want_artifacts=want_artifacts)
+                              want_artifacts=want_artifacts, resume=resume)
     except (httpx.HTTPError, json.JSONDecodeError, OSError, ValueError, KeyError, TypeError) as exc:
         # A throttled download is not missing evidence. Let the watcher back off
         # without spending this episode's bounded artifact retry allowance.
@@ -345,6 +345,7 @@ def _fetch_episode(
     want_results: bool,
     want_logs: bool,
     want_artifacts: bool = True,
+    resume: bool = False,
 ) -> dict[str, Any]:
     """Fetch available artifacts; only complete listings get durable markers.
 
@@ -368,6 +369,9 @@ def _fetch_episode(
     for wanted, kind, filename in ((want_results, "results", "results.json"),
                                    (want_replay, "replay", "replay.json")):
         if not wanted:
+            continue
+        if resume and (out_dir / filename).exists():
+            summary[kind] = True
             continue
         content = client.get_bytes_or_none(f"{base}/artifacts/{kind}")
         if content is None:
@@ -404,12 +408,15 @@ def _fetch_episode(
                     if not row[flag]:
                         continue
                     position, version = row["position"], row["policy_version_id"]
+                    destination = out_dir / folder / template.format(position)
+                    if resume and destination.exists():
+                        summary[key].append(position)
+                        continue
                     content = client.get_bytes_or_none(f"{base}/{version}/{kind}/{position}")
                     if content is None:
                         complete = False
                         summary["errors"].append(f"{kind} seat {position}: unavailable")
                         continue
-                    destination = out_dir / folder / template.format(position)
                     destination.parent.mkdir(exist_ok=True)
                     destination.write_bytes(content)
                     summary[key].append(position)
@@ -568,6 +575,7 @@ def watch_loop(
                     client, ref, ep_dir,
                     want_replay=want_replay, want_results=want_results, want_logs=want_logs,
                     want_artifacts=want_artifacts,
+                    resume=True,
                 )
                 for err in s["errors"]:
                     log(f"      ! {err}")
