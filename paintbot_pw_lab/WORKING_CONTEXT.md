@@ -13,13 +13,13 @@ Candidate `jb-pw-opt:v3` (73e01dfb-128b-44c6-ac0c-8276f82be78e), build `2a539036
 is uploaded with passing G1–G5. Matched24 local games reduce grenade teammate HP173→69
 and self HP188→6, with enemy HP481→563. It wins37/56 directly against v2 locally.
 Hosted fresh A/B is complete: v3 won72/72 versus v2's69/72; score_outcome .939028 versus
-.912836 (margin600). No failed episodes;31 candidate episode status files verified clean at
-recommendation. VERDICT-2 operational gate met; SUBMIT CANDIDATE emitted to orchestrator.
-Remaining player-status reads continue. Iteration3 source3d21c018 widens only the gun
+.912836 (margin600). No failed episodes; all72 candidate episode status files (576 seats) verified clean. VERDICT-2 operational gate met; SUBMIT CANDIDATE emitted to orchestrator.
+The iteration2 score/status collection is complete. Iteration3 source3d21c018 widens only the gun
 teammate corridor95→195cm; build3d21c018-1 passes G1–G5 at60/64 telemetry events.
 Local iteration3 results are mixed:27/56 vs v3, ordinary gun FF109→51HP, enemy gun
 HP1097→947, overall enemy HP1819→1823 on matched24 games. Uploaded experiment jb-pw-opt:v4
-(8512e63c-3a9a-455e-96d2-3e69b3be4dd6); fresh field A/B creating under DESIGN-3.md.
+(8512e63c-3a9a-455e-96d2-3e69b3be4dd6); all12 fresh field A/B requests created under DESIGN-3.md (144 episodes,72 credits).
+Results retrieval is throttled; a sequential120s queue continues. Total committed spend288.
 V3 remains retained/recommended. One sequential results/status-only collector serves both.
 See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
 posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
