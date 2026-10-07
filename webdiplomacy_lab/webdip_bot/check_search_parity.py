@@ -78,14 +78,19 @@ def record_scores():
     digest = hashlib.sha256()
     counts = Counter()
     names = ("_score_fast", "_score", "_evaluate", "_diplomacy_adjust", "_spring_value", "_rollout",
-             "_improve_for", "_dumb_share", "_update_beliefs")
+             "_improve_for", "_dumb_share", "_update_beliefs", "_ascend", "_remember", "_joint_alternatives")
     originals = {name: getattr(SearchBot, name) for name in names}
 
     def wrap(name, method):
         def recorded(bot, *args, **kwargs):
             result = method(bot, *args, **kwargs)
             counts[name] += 1
-            feed(digest, (name, result))
+            if name == "_joint_alternatives":
+                feed(digest, (name, [[list(joint.items()) for joint in options] for options in result]))
+            else:
+                feed(digest, (name, result))
+            if name == "_remember":
+                feed(digest, args)
             if name == "_update_beliefs":
                 feed(digest, bot.memory)
             return result
@@ -217,6 +222,7 @@ def decision(variant, case, policy, overrides, history, step, defaults):
         "trace": {k: v for k, v in bot.trace.items() if not k.endswith("_ms")},
         "memory": bot.memory, "opponents": getattr(bot, "opponents", None),
         "fast_samples": getattr(bot, "fast_samples", None), "clock_calls": clock.calls,
+        "top_seen": getattr(bot, "top_seen", None),
         "config": after,
     })
 
