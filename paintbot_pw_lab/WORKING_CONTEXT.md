@@ -2,24 +2,20 @@
 
 ## Current objective and boundary
 
-**VERDICT-32: new campaign, beat Richard.** I32 is complete and rejected: weighted
-+0.013810 [-0.015552,+0.043172]; Richard +0.024746 [-0.026599,+0.076090]. V10 stays.
-Richard is primary; xolod is a guard. Study current public/participant losses, build one
-large-effect counter, and evaluate the pipelined second idea in parallel, as explicitly authorized.
-No private opponent diagnostics or optimizer league submission. Finite workers only.
+**VERDICT-34: opponent-adaptive opening.** V10 remains champion. I33 v27 has a
+partial Richard regression and xolod gain; i34 v28 is still running. Let both finish.
+I35 defaults to v10 and applies v27's central opening only after a public capture-route
+signature at tick 360 (15s). The switch expires at tick 720 as in v27.
+Outcome-independent i32 replay sample: 12 discovery and 20 held-out games per opponent,
+balanced sides. Held-out confusion: Richard20/20 default, xolod18/20 switched; 95%
+overall. Small-sample uncertainty remains. All64 replays hash-verified on0.3.124.
+REPORT-35 owns the frozen rule and its limits. No private metadata or opponent logs.
 
-I33: coordinated central opening on exact v10. Nineteen hash-verified current replays
-(12 i32 losses,4 win comparators,3 league losses) identify separated opening squads and
-repeated early forward-squad deaths. REPORT-33.md records the short model, contrary
-evidence and exact counts. New30s opening sends both squads to the central hearts with
-dry-bank cover, preserving emergency retreat/critical supply and all combat mechanics.
-Opening activation is counted; benefit is unproven. I33 source is preserved at9d572cfd; current working source is the independent i34 child.
-
-Authorized fresh comparison:400Richard+200xolod games per arm,balanced sides,
-1200games/~600credits. Gate Richard>=+.05 with lower95%CI>0, xolod lower95%CI>=-.02,
-complete cohort and no operational failures. Target a large+.10 Richard effect; this is
-an ambition, not a supported forecast. No pooling i32. Account floor10000; pre-build
-balance14910.60263. Pipelined i34: visible teammate spacing during central fights.
+Authorized i35 comparison:400Richard+300xolod per arm,1400games/~700credits,
+fresh v10 controls. Choose the direct gate from VERDICT-34: Richard lower95%CI>=-.03;
+xolod delta>=+.02 and lower95%CI>0; complete cohort with no operational failures.
+No post-hoc weighted alternative. Latest explicit size overrides the older approximate
+600-credit iteration limit; account floor10000 remains. Finite workers,120s pacing.
 
 Champion: `jb-pw-opt:v10`, UUID `8c4947c7-0679-4826-a653-9de20c62ffa3`, immutable
 build [`7faadaa4-1`](strategy/compiled/7faadaa4-1/report.md), source `7faadaa4`.
@@ -27,17 +23,9 @@ Submitted by the orchestrator as `sub_1616ba24-8791-47aa-9f13-51931d9a42db`.
 Player James Botts: `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`.
 League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 
-Current strategy source: i34 teammate-aware dodge directions on champion source `7faadaa4`.
-I33 is immutable build `9d572cfd-1`, uploaded v27 UUID
-`f5878480-79cc-4321-8953-f370e4bf7d28`; its fixed hosted cohort is queued.
-I34 is a separate locally prepared child, build `4f0e5d4e-1`, not a change to that cohort.
-Its compiler gates passed; full-game activation counted 127 changed directions across
-20/32 seat recordings, with 19,644 valid telemetry lines and zero validation failures.
-I34 is uploaded as `jb-pw-opt:v28`, UUID `d3287a85-af4c-4817-92cc-18b0aa21b0e2`.
-Its own fresh 400 Richard + 200 xolod games per arm are queued alongside i33,
-with the same gate and finite workers. Local activation does not establish field performance.
-Rejected v26 is recoverable at `c11410ab` / build `c11410ab-1`; never use it as the
-champion. All policy edits go through committed strategy/skill sources and the compiler.
+Current strategy source: i35 adaptive opening, v10 default plus gated v27 opening.
+V27 immutable build `9d572cfd-1`; v28 build `4f0e5d4e-1` is an independent v10 child.
+Neither is the champion. Source edits are committed before compilation.
 
 ## Final robust-bundle result
 
