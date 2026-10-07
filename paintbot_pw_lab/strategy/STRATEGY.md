@@ -479,10 +479,20 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-- Uses: `K.contacts`, `P.shout`
+  On a send, copy release_charge, release_need, starts_total, blocked_total, continued_total
+  and forced_total from `SK.motor` into same-named outputs for periodic telemetry.
+- Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
+- Outputs:
+  - release_charge -- latest grenade decision charge
+  - release_need -- latest committed charge requirement
+  - starts_total -- committed starts through this status snapshot
+  - blocked_total -- disarmed start blocks through this status snapshot
+  - continued_total -- rescued charging ticks through this status snapshot
+  - forced_total -- disarmed forced releases through this status snapshot
+- Log: release_charge, release_need, starts_total, blocked_total, continued_total, forced_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay
@@ -493,20 +503,11 @@ Reading aid (the compiler receives component fields, not this introduction):
 ### COM.grenade_out
 - Summary: Call out a grenade when the charge is ready.
 - Spec: In `__send`, when threw of `SK.motor` is 1, shout "Grenade out!" and set sent to 1. Else
-  set sent to 0. On a send, copy release_charge, release_need, starts_total, blocked_total,
-  continued_total and forced_total from `SK.motor` into same-named outputs for telemetry.
+  set sent to 0.
 - Uses: `SK.motor`, `P.shout`
 - Content: a warning. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("Grenade out!"))`
 - Send when: threw of `SK.motor` is 1
-- Outputs:
-  - release_charge -- charge at the throw decision
-  - release_need -- locked charge requirement
-  - starts_total -- committed starts through this throw
-  - blocked_total -- disarmed start blocks through this throw
-  - continued_total -- rescued charging ticks through this throw
-  - forced_total -- disarmed forced releases through this throw
-- Log: release_charge, release_need, starts_total, blocked_total, continued_total, forced_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay with each full charge. Reads: replay
