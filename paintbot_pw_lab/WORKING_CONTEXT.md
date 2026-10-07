@@ -80,6 +80,10 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
 - baseline: `jb-pw-opt:v1`, version `bac0d7d0-60f3-4c76-a1e6-aa947f9958ed`, build `2898e485-1`.
+- candidate: `jb-pw-opt:v2`, version `61662d47-c26e-4873-ac13-333f70d6b341`, build
+  `32ed3f70-1` (real gun range plus spawn-HP supply thresholds). Working source matches it.
+  Support/follow experiments are retained in builds `28ad2e2a-1` and `faf2ea88-1`, but local
+  selection favored the HP build. Hosted A/B against deployed `jb-pw-base:v2` is pending.
 - opponents: refresh the current leaderboard plus recent public 0.3.123 episodes every iteration;
   keep real opponents with shots or kills above zero in scout. Current round-834 sample:
   `xolod:v14`, `paintbot-pw-basic-v22:v1`, `daveey-pw-league-smoke-l17c-s41u150-hc:v1`.
