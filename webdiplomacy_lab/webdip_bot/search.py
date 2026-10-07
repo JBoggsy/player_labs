@@ -461,18 +461,20 @@ class SearchBot:
 
     def _evaluate(self, ours):
         mu, mo = fast_orders(self.mine_units, ours, self.parent)
-        total = 0.0
+        values = []
         mine_dip = None
         for k, (units, fu, fo, raw) in enumerate(self.fast_samples):
             if mo is not None and fo is not None and config.SEARCH_FAST_ADJ:
-                total += self._score_fast(mu + fu, mo + fo, self.mine_units + units, ours + raw)
+                values.append(self._score_fast(mu + fu, mo + fo, self.mine_units + units, ours + raw))
                 self.sims += 1
             else:
                 if mine_dip is None:
                     mine_dip = [self._dip(o) for o in ours]
-                total += self._score(self._adjudicate(mine_dip, self.opponents[k]))
+                values.append(self._score(self._adjudicate(mine_dip, self.opponents[k])))
                 self.trace["search_package_sims"] += 1
-        return total / len(self.fast_samples)
+        mean = sum(values) / len(values)
+        # Risk aversion: pull the mean toward the worst opponent sample.
+        return mean - config.SEARCH_RISK * (mean - min(values))
 
     def _score_fast(self, fu, fo, units, orders, country=None, value=None, vmax=None):
         """Static evaluation of an adjudicated outcome from `country`'s side (default: us)."""
@@ -504,7 +506,9 @@ class SearchBot:
             for (country, prov, utype), o, mv, dl, u, raw in zip(fu, fo, moved, dislodged, units, orders):
                 if not dl:
                     final_units.append((country, o[1] if mv else prov, utype, raw["toTerrID"] if mv else u["terrID"]))
-            sc = valuefn.predict(_graph(self.variant), final_units, projected, me)
+            predicted = valuefn.predict(_graph(self.variant), final_units, projected, me)
+            w = config.SEARCH_LEARNED_WEIGHT
+            sc = (1 - w) * sc + w * predicted
         if config.SEARCH_OBJECTIVE == "share":
             total = sum(v * v for v in counts.values()) or 1
             sc = 34.0 * sc * sc / total

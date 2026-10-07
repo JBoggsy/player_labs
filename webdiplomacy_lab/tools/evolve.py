@@ -49,6 +49,9 @@ SPACE = {
     "SEARCH_OBJECTIVE": ("choice", ["sc", "share"]),
     "SEARCH_BUILDS": ("choice", [0, 1]),
     "OPP_MODEL_LEVEL": ("choice", [0, 0, 0, 1]),
+    "SEARCH_RISK": ("float", 0.0, 1.0),
+    "SEARCH_EVAL": ("choice", ["projected", "projected", "learned"]),
+    "SEARCH_LEARNED_WEIGHT": ("float", 0.0, 1.0),
 }
 
 SEEDS = {
@@ -132,6 +135,7 @@ def main():
     ap.add_argument("--parallel", type=int, default=3)
     ap.add_argument("--state", default=str(LAB / "experiments" / "evolve_state.json"))
     args = ap.parse_args()
+    wd._require_image(args.image)
     state_path = Path(args.state)
     rng = random.Random()
     if state_path.exists():

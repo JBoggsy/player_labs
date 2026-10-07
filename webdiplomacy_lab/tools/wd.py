@@ -226,6 +226,7 @@ def cmd_tourney(args):
     from concurrent.futures import ThreadPoolExecutor
 
     manifest = _manifest()
+    _require_image(args.image)
     agents = args.agents.split(",")
     rng = _random.Random()
     out = Path(args.out)
@@ -289,6 +290,12 @@ def cmd_ratings(args):
         for r in board:
             print(f"| {r['agent']} | {r['n']} | {r['adj']:+.3f} | {r['se']} | {r['score']:.3f} | {r['solo']} | {r['centers']} |")
     return 0
+
+
+def _require_image(image):
+    """Fail fast if a candidate image is missing (another session's prune deletes tags)."""
+    if subprocess.call(["docker", "image", "inspect", image], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL):
+        raise SystemExit(f"image {image} is missing locally; rebuild it (docker images get pruned by other sessions)")
 
 
 def _manifest():
@@ -365,6 +372,7 @@ def cmd_arena(args):
     if manifest is None:
         print("run: uv run coworld download webdiplomacy -o webdiplomacy_lab/coworld_pkg", file=sys.stderr)
         return 2
+    _require_image(args.image)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     py = "/opt/.venv/bin/python"

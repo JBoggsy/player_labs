@@ -61,3 +61,5 @@ OPP_MODEL_LEVEL = 0
 # Static evaluation of a search outcome: "projected" (centres held if it were autumn) or
 # "learned" (valuefn.py ridge model: predicted centres two years ahead).
 SEARCH_EVAL = "projected"
+SEARCH_LEARNED_WEIGHT = 1.0  # with SEARCH_EVAL="learned": blend of predicted vs projected centres
+SEARCH_RISK = 0.0  # 0 = mean over opponent samples; 1 = worst case
