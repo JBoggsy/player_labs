@@ -16,7 +16,7 @@ import time
 
 import diplomacy
 
-from webdip_bot import config
+from webdip_bot import config, fastadj
 from webdip_bot.dipmap import COUNTRY, POWER, DipMap
 from webdip_bot.dumbbot import DumbBot
 
@@ -104,6 +104,7 @@ class SearchBot:
         # legal per power according to the adaptive belief.
         self._update_beliefs()
         opponents = []
+        raw_samples = []
         models = {}
         theirs = {}
         for c in {int(u["countryID"]) for u in b.units} - {self.country}:
@@ -113,6 +114,7 @@ class SearchBot:
         dumb_samples = {c: [] for c in models}
         for _ in range(config.SEARCH_OPPONENT_SAMPLES):
             sample = {}
+            raw = []
             for c, model in models.items():
                 d = model.choose([{"unitID": u["id"]} for u in theirs[c]])
                 dumb_samples[c].append(d)
@@ -122,7 +124,9 @@ class SearchBot:
                     chosen = [self.rng.choice(legal[u["id"]]) for u in theirs[c]]
                     self.trace["opp_random_samples"] += 1
                 sample[POWER[c]] = [self._dip(o) for o in chosen]
+                raw.extend(zip(theirs[c], chosen))
             opponents.append(sample)
+            raw_samples.append(raw)
         self.memory["pending"] = {
             "turn": self.turn,
             "units": {
@@ -139,6 +143,7 @@ class SearchBot:
             self.trace["opp_dumb_share_x100"] = round(100 * sum(shares) / len(shares))
         self.opponents = opponents
         self.sims = 0
+        self._prepare_fast(mine, raw_samples)
 
         # 2. Seeds from DumbBot for our own power (separate instance: keeps self.trace clean).
         seeder = DumbBot(self.variant, self.board, self.country, self.phase, self.turn, self.rng, board_model=b)
@@ -232,12 +237,57 @@ class SearchBot:
     def _dip(self, o):
         return self.dm.order(o, self.unit_at)
 
+    def _prepare_fast(self, mine, raw_samples):
+        """Province-level arrays for fastadj: our units first, then each sample's others."""
+        parent = {t: self.b.province(t) for t in self.b.terr}
+        self.parent = parent
+        self.mine_units = mine
+        self.fast_samples = []
+        for raw in raw_samples:
+            units = [u for u, _ in raw]
+            fu, fo = fast_orders(units, [o for _, o in raw], parent)
+            self.fast_samples.append((units, fu, fo, [o for _, o in raw]))
+        self.vmax = max(self.dumb.value.values()) or 1.0
+
     def _evaluate(self, ours):
-        mine = [self._dip(o) for o in ours]
+        mu, mo = fast_orders(self.mine_units, ours, self.parent)
         total = 0.0
-        for sample in self.opponents:
-            total += self._score(self._adjudicate(mine, sample))
-        return total / len(self.opponents)
+        mine_dip = None
+        for k, (units, fu, fo, raw) in enumerate(self.fast_samples):
+            if mo is not None and fo is not None and config.SEARCH_FAST_ADJ:
+                total += self._score_fast(mu + fu, mo + fo, self.mine_units + units, ours + raw)
+                self.sims += 1
+            else:
+                if mine_dip is None:
+                    mine_dip = [self._dip(o) for o in ours]
+                total += self._score(self._adjudicate(mine_dip, self.opponents[k]))
+                self.trace["search_package_sims"] += 1
+        return total / len(self.fast_samples)
+
+    def _score_fast(self, fu, fo, units, orders):
+        moved, dislodged = fastadj.adjudicate(fu, fo)
+        occupied = {}
+        my_nodes = []
+        lost = 0
+        for (country, prov, utype), o, mv, dl, u, raw in zip(fu, fo, moved, dislodged, units, orders):
+            if dl:
+                lost += country == self.country
+                continue
+            where = o[1] if mv else prov
+            occupied[where] = country
+            if country == self.country:
+                my_nodes.append((utype, raw["toTerrID"] if mv else u["terrID"]))
+        counts = {}
+        for t, owner in self.b.owner.items():
+            holder = occupied.get(t, owner)
+            if holder:
+                counts[holder] = counts.get(holder, 0) + 1
+        sc = counts.get(self.country, 0)
+        if config.SEARCH_OBJECTIVE == "share":
+            total = sum(v * v for v in counts.values()) or 1
+            sc = 34.0 * sc * sc / total
+        pos = sum(self.dumb.value.get(n, 0.0) for n in my_nodes) / self.vmax
+        return config.SEARCH_SC_WEIGHT * sc + config.SEARCH_POS_WEIGHT * pos - config.SEARCH_DISLODGED_WEIGHT * lost
 
     def _adjudicate(self, mine, sample):
         self.sims += 1
@@ -286,3 +336,26 @@ class SearchBot:
 
 def _same(a, b):
     return (a["type"], a["terrID"], a["toTerrID"], a["fromTerrID"]) == (b["type"], b["terrID"], b["toTerrID"], b["fromTerrID"])
+
+
+def fast_orders(units, orders, parent):
+    """webDip units + parallel movement orders -> fastadj (units, order tuples), province level.
+
+    Returns None for the orders if any is a Convoy / convoyed move (caller falls back)."""
+    fu, fo = [], []
+    for u, o in zip(units, orders):
+        fu.append((int(u["countryID"]), parent[u["terrID"]], u["type"]))
+        kind = o["type"]
+        if kind == "Move":
+            if o.get("viaConvoy") in ("Yes", True):
+                return fu, None
+            fo.append(("M", parent[o["toTerrID"]]))
+        elif kind == "Support hold":
+            fo.append(("SH", parent[o["toTerrID"]]))
+        elif kind == "Support move":
+            fo.append(("SM", parent[o["fromTerrID"]], parent[o["toTerrID"]]))
+        elif kind == "Convoy":
+            return fu, None
+        else:
+            fo.append(("H",))
+    return fu, fo

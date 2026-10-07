@@ -39,7 +39,7 @@ Single entry point: `uv run python webdiplomacy_lab/tools/wd.py`.
 | `wd.py metrics DIR... --policy NAME:vN [--json]` | Per-power score/final SCs/survival/solo vs field par, coverage, telemetry (rejections, exceptions, activation counters). Exit 2 = no target seats |
 | `wd.py seats DIR... [--policy NAME:vN]` | One JSON row per seat (SC trajectory by year, adjudicated order stats, our log summary) |
 | `wd.py local --image IMG --episodes N` | Local all-seat episodes (needs `coworld_pkg/` from `coworld download`) |
-| `wd.py arena --candidate POLICY[:K=V,...] [--field dumbbot_v1] --image TAG --episodes N --parallel P --out DIR` | **Local screening**: slot 0 = candidate, slots 1-6 = field, fresh seed per game. Read with `metrics DIR --slot 0`; parity is 1/7 = 0.143. Use a **distinct image tag per experiment**: rebuilding a tag mid-run silently switches later games to the new code |
+| `wd.py arena --candidate POLICY[:K=V,...] [--field dumbbot_v1] --image TAG --episodes N --parallel P --out DIR` | **Local screening**: slot 0 = candidate, slots 1-6 = field, fresh seed per game. Read with `metrics DIR --slot 0`; parity is 1/7 = 0.143. Use a **distinct image tag per experiment**: rebuilding a tag mid-run silently switches later games to the new code. Killing an arena (`pkill -f <out dir>`) leaves its game/player containers running: remove them with `docker ps --format '{{.Names}}' \| grep <run id> \| xargs docker rm -f` |
 | `tools/compare.py BASE CAND --baseline A:vN --candidate B:vM` | `coworld-ab` adapter (groups: all + each power) |
 | `tools/features.py` | `coworld-hypothesis-miner` adapter over `wd.py seats` rows |
 

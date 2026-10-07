@@ -27,9 +27,9 @@ ALTERNATIVE_DIFF_MODIFIER = 5
 PLAY_ALTERNATIVE = 0.5
 
 # --- SearchBot (search.py) ---
-SEARCH_OPPONENT_SAMPLES = 6
-SEARCH_SEEDS = 6
-SEARCH_PASSES = 3
+SEARCH_OPPONENT_SAMPLES = 16
+SEARCH_SEEDS = 12
+SEARCH_PASSES = 6
 # Wall-clock search budget per movement phase. Hosted phases are 1 minute and pods get
 # ~0.25 CPU, so the hosted default is generous; the local arena passes 8 s via env.
 SEARCH_TIME_BUDGET_S = float(__import__("os").environ.get("WEBDIP_SEARCH_BUDGET_S", "20"))
@@ -45,3 +45,4 @@ OPP_PRIOR_LOGODDS = 0.0
 OPP_LOGODDS_CLIP = 8.0
 # Search objective: "sc" (our projected centres) or "share" (projected SC^2 share x34).
 SEARCH_OBJECTIVE = "sc"
+SEARCH_FAST_ADJ = 1  # use fastadj (no-convoy turns); package fallback otherwise
