@@ -11,13 +11,12 @@ would own if this were an autumn), plus a small positional term from DumbBot's n
 values, minus dislodged units.
 """
 
-import math
 import time
 
 from webdip_bot import config, fastadj
-from webdip_bot.dipmap import POWER
 from webdip_bot.dumbbot import Board, DumbBot
 from webdip_bot.evaluation import evaluator
+from webdip_bot.opponent_model import opponent_model
 
 # These imports also preserve the search-module API used by Nash and diagnostics.
 from webdip_bot.search_orders import _key, _same, adjudicate, dipmap, fast_orders, order_destroy
@@ -33,6 +32,7 @@ class SearchBot:
         self.api = self.context = None
         self.memory = {}
         self.evaluator = evaluator(self)
+        self.opponent_model = opponent_model(self)
 
     def observe(self, api, context, state):
         """Called by bot.py each phase; `state` persists across the whole game."""
@@ -40,69 +40,14 @@ class SearchBot:
         self.memory = state.setdefault("search", {"logodds": {}, "pending": None})
 
     def _update_beliefs(self):
-        """Score each opponent's last movement orders: DumbBot-like vs uniform-random legal.
-
-        `pending` holds last movement phase's DumbBot samples per unit. The log-odds per
-        power accumulate log(P_dumbbot(order) / P_random(order)); the opponent sample mix
-        uses sigmoid(log-odds) as the DumbBot share.
-        """
-        pending = self.memory.get("pending")
-        if not pending or self.api is None:
-            return
-        self.memory["pending"] = None
-        ref = (self.context.get("files") or {}).get("history")
-        if not ref:
-            return
-        history = self.api.file(ref)
-        entry = next((ph for ph in history.get("phases", []) if ph["turn"] == pending["turn"] and ph["phase"] == "Diplomacy"), None)
-        if entry is None:
-            return
-        # Hostility toward us: decayed count of each power's moves into our provinces and
-        # supports of such moves (implicit diplomacy in no-press play).
-        ours = set(pending.get("our_provinces", []))
-        hostility = self.memory.setdefault("hostility", {})
-        for c in list(hostility):
-            hostility[c] *= config.DIPLO_DECAY
-        parent = {t: self.b.province(t) for t in self.b.terr}
-        for o in entry.get("orders") or []:
-            c = str(o["countryID"])
-            if int(c) == self.country or not o.get("toTerrID"):
-                continue
-            target = parent.get(o["toTerrID"], o["toTerrID"])
-            if (o["type"] == "Move" or o["type"] == "Support move") and target in ours:
-                hostility[c] = hostility.get(c, 0.0) + 1.0
-        for o in entry.get("orders") or []:
-            key = str(o["terrID"])
-            unit = pending["units"].get(key)
-            if unit is None or int(o["countryID"]) == self.country:
-                continue
-            sig = (o["type"], o["toTerrID"] or 0, o["fromTerrID"] or 0)
-            samples = unit["samples"]
-            matches = sum(1 for x in samples if tuple(x) == sig)
-            n_legal = max(unit["n_legal"], 1)
-            if config.OPP_LIKELIHOOD == "competent":
-                # Competent = DumbBot-like OR any sensible order (hold, plain move, support/convoy
-                # of the player's own unit). Uniform-random players often support/convoy other
-                # powers' units; strong non-DumbBot players almost never do.
-                n_sensible = max(unit.get("n_sensible", n_legal), 1)
-                own = unit.get("own_provinces", [])
-                sensible = o["type"] in ("Hold", "Move") or (o.get("fromTerrID") or o.get("toTerrID")) in own
-                p_dumb = 0.5 * matches / len(samples) + (0.5 / n_sensible if sensible else 0.02 / n_legal)
-            else:
-                p_dumb = 0.9 * matches / len(samples) + 0.1 / n_legal
-            p_rand = 1.0 / n_legal
-            c = str(o["countryID"])
-            lo = self.memory["logodds"].get(c, config.OPP_PRIOR_LOGODDS) + math.log(p_dumb / p_rand)
-            self.memory["logodds"][c] = max(-config.OPP_LOGODDS_CLIP, min(config.OPP_LOGODDS_CLIP, lo))
+        return self.opponent_model.update_beliefs()
 
     def _dumb_share(self, c):
-        if config.OPP_MODEL != "adaptive":
-            return 1.0
-        lo = self.memory.get("logodds", {}).get(str(c), config.OPP_PRIOR_LOGODDS)
-        return 1.0 / (1.0 + math.exp(-lo))
+        return self.opponent_model.dumb_share(c)
 
     def choose(self, slots):
         self.evaluator = evaluator(self)
+        self.opponent_model = opponent_model(self)
         if self.phase == "Builds" and slots and config.SEARCH_BUILDS:
             return self._search_adjustments(slots)
         if self.phase != "Diplomacy" or not slots:
@@ -119,70 +64,7 @@ class SearchBot:
         by_id = {u["id"]: u for u in b.all_units}
         mine = [by_id[s["unitID"]] for s in slots]
 
-        # 1. Opponent samples (each a {power: [order strings]}), DumbBot or uniform-random
-        # legal per power according to the adaptive belief.
-        self._update_beliefs()
-        opponents = []
-        raw_samples = []
-        models = {}
-        theirs = {}
-        for c in {int(u["countryID"]) for u in b.units} - {self.country}:
-            models[c] = DumbBot(self.variant, self.board, c, self.phase, self.turn, self.rng, board_model=b)
-            theirs[c] = [u for u in b.units if int(u["countryID"]) == c]
-        legal = {u["id"]: b.legal.movement(u) for us in theirs.values() for u in us}
-        dumb_samples = {c: [] for c in models}
-        n_samples = config.SEARCH_OPPONENT_SAMPLES
-        for _ in range(n_samples):
-            for c, model in models.items():
-                dumb_samples[c].append(model.choose([{"unitID": u["id"]} for u in theirs[c]]))
-        if config.OPP_MODEL_LEVEL >= 1:
-            self.parent = {t: self.b.province(t) for t in self.b.terr}
-            own_model = DumbBot(self.variant, self.board, self.country, self.phase, self.turn, self.rng, board_model=b)
-            our_dumb = [own_model.choose(slots) for _ in range(n_samples)]
-        level1 = None
-        if config.OPP_MODEL_LEVEL >= 2:
-            # Level 2: every opponent best-responds to level-1 versions of the others.
-            level1 = {c: [self._improve_for(c, models[c], theirs[c], dumb_samples[c][j], j, models, theirs,
-                                            dumb_samples, mine, our_dumb, legal) for j in range(n_samples)]
-                      for c in models}
-            self.trace["opp_level2_phases"] += 1
-        for j in range(n_samples):
-            sample = {}
-            raw = []
-            for c, model in models.items():
-                d = dumb_samples[c][j]
-                if self.rng.random() < self._dumb_share(c):
-                    chosen = d
-                    if level1 is not None:
-                        chosen = self._improve_for(c, models[c], theirs[c], level1[c][j], j, models, theirs, level1, mine, our_dumb, legal)
-                    elif config.OPP_MODEL_LEVEL >= 1 and self.rng.random() < config.OPP_LEVEL1_SHARE:
-                        chosen = self._improve_for(c, models[c], theirs[c], d, j, models, theirs, dumb_samples, mine, our_dumb, legal)
-                else:
-                    chosen = [self.rng.choice(legal[u["id"]]) for u in theirs[c]]
-                    self.trace["opp_random_samples"] += 1
-                sample[POWER[c]] = [self._dip(o) for o in chosen]
-                raw.extend(zip(theirs[c], chosen))
-            opponents.append(sample)
-            raw_samples.append(raw)
-        ours = {b.province(u["terrID"]) for u in b.units if int(u["countryID"]) == self.country}
-        ours |= {t for t, o in b.owner.items() if o == self.country}
-        self.memory["pending"] = {
-            "turn": self.turn,
-            "our_provinces": sorted(ours),
-            "units": {
-                str(u["terrID"]): {
-                    "n_legal": len(legal[u["id"]]),
-                    "n_sensible": _n_sensible(legal[u["id"]], {b.province(x["terrID"]) for x in theirs[c]}),
-                    "own_provinces": sorted({b.province(x["terrID"]) for x in theirs[c]}),
-                    "samples": [[d[k]["type"], d[k]["toTerrID"] or 0, d[k]["fromTerrID"] or 0] for d in dumb_samples[c]],
-                }
-                for c in models
-                for k, u in enumerate(theirs[c])
-            },
-        }
-        shares = [self._dumb_share(c) for c in models]
-        if shares:
-            self.trace["opp_dumb_share_x100"] = round(100 * sum(shares) / len(shares))
+        opponents, raw_samples = self.opponent_model.sample(slots, mine)
         self.opponents = opponents
         self.sims = 0
         self._prepare_fast(mine, raw_samples)
@@ -322,41 +204,7 @@ class SearchBot:
                 setattr(config, k, v)
 
     def _improve_for(self, c, model, units_c, base, j, models, theirs, dumb_samples, mine, our_dumb, legal):
-        """Level-1 opponent: one pass of single-unit best response for power c, against
-        DumbBot plans for everyone else (two context samples), scored from c's side."""
-        n = len(our_dumb)
-        contexts = []
-        for k in (j, (j + 1) % n):
-            ctx = list(zip(mine, our_dumb[k]))
-            for other, us in theirs.items():
-                if other != c:
-                    ctx.extend(zip(us, dumb_samples[other][k]))
-            contexts.append(([u for u, _ in ctx], [o for _, o in ctx]))
-        vmax = max(model.value.values()) or 1.0
-
-        def value(orders_c):
-            total = 0.0
-            for cu, co in contexts:
-                fu, fo = fast_orders(units_c + cu, orders_c + co, self.parent)
-                if fo is None:
-                    return float("-inf")
-                total += self._score_fast(fu, fo, units_c + cu, orders_c + co, country=c, value=model.value, vmax=vmax)
-            return total / len(contexts)
-
-        best = list(base)
-        best_value = value(best)
-        idx = list(range(len(units_c)))
-        self.rng.shuffle(idx)
-        for i in idx:
-            for alt in legal[units_c[i]["id"]]:
-                if alt["type"] == "Convoy" or alt.get("viaConvoy") == "Yes" or _same(alt, best[i]):
-                    continue
-                cand = best[:i] + [alt] + best[i + 1:]
-                v = value(cand)
-                if v > best_value + 1e-9:
-                    best, best_value = cand, v
-                    self.trace["opp_level1_improvements"] += 1
-        return best
+        return self.opponent_model.improve_for(c, model, units_c, base, j, models, theirs, dumb_samples, mine, our_dumb, legal)
 
     def _diplomacy_adjust(self, projected, me):
         return self.evaluator.diplomacy_adjust(projected, me)
@@ -545,16 +393,3 @@ class SearchBot:
 
     def _score(self, g):
         return self.evaluator.score_package(g)
-
-
-def _n_sensible(orders, own_provinces):
-    """Count holds/plain moves plus supports/convoys that involve one of the player's own units."""
-    n = 0
-    for o in orders:
-        if o["type"] == "Hold" or (o["type"] == "Move" and o.get("viaConvoy") != "Yes"):
-            n += 1
-        elif o["type"] in ("Support hold", "Support move", "Convoy") and (
-            (o.get("fromTerrID") or o.get("toTerrID")) in own_provinces
-        ):
-            n += 1
-    return n

@@ -27,7 +27,8 @@ def exact(value):
     if isinstance(value, float):
         return {"float": value.hex()}
     if isinstance(value, dict):
-        return {str(k): exact(v) for k, v in value.items()}
+        assert all(isinstance(k, str) for k in value), "unexpected non-string record key"
+        return {k: exact(v) for k, v in value.items()}
     if isinstance(value, (tuple, list)):
         return [exact(v) for v in value]
     return value
@@ -76,7 +77,8 @@ def record_scores():
 
     digest = hashlib.sha256()
     counts = Counter()
-    names = ("_score_fast", "_score", "_evaluate", "_diplomacy_adjust", "_spring_value", "_rollout")
+    names = ("_score_fast", "_score", "_evaluate", "_diplomacy_adjust", "_spring_value", "_rollout",
+             "_improve_for", "_dumb_share", "_update_beliefs")
     originals = {name: getattr(SearchBot, name) for name in names}
 
     def wrap(name, method):
@@ -84,6 +86,8 @@ def record_scores():
             result = method(bot, *args, **kwargs)
             counts[name] += 1
             feed(digest, (name, result))
+            if name == "_update_beliefs":
+                feed(digest, bot.memory)
             return result
         return recorded
 
@@ -109,6 +113,9 @@ def scenarios(data, suite):
     small = {"SEARCH_OPPONENT_SAMPLES": 2, "SEARCH_SEEDS": 2, "SEARCH_PASSES": 1}
     modes = [
         ("level2", "kissinger2", {}),
+        ("level1-mixture", "kissinger", {"OPP_LEVEL1_SHARE": 0.5}),
+        ("level1-disabled", "kissinger", {"OPP_LEVEL1_SHARE": 0.0}),
+        ("fixed-dumbbot", "kissinger", {"OPP_MODEL": "dumbbot"}),
         ("mixed", "rasputin", {}),
         ("risk-share", "fabius", {"SEARCH_OBJECTIVE": "share"}),
         ("learned", "kutuzov", {"SEARCH_LEARNED_WEIGHT": 0.5}),
@@ -124,6 +131,7 @@ def scenarios(data, suite):
     for label, policy, overrides in modes:
         yield f"optional/{label}", policy, later, {**small, **overrides}, False, 0.0
     yield "optional/diplomacy-history", "castlereagh", later, small, True, 0.0
+    yield "optional/dumbbot-history", "castlereagh", later, {**small, "OPP_LIKELIHOOD": "dumbbot"}, True, 0.0
     build_seen = set()
     for case in (c for c in data["cases"] if c["kind"] == "builds"):
         # One build and one disband, selected below by unit/centre counts.
@@ -193,6 +201,7 @@ def decision(variant, case, policy, overrides, history, step, defaults):
             if history:
                 bot.choose(case["slots"])
                 api = History(bot)
+                bot.memory["hostility"] = {"2": 1.25, "7": 0.5}
                 state = {"search": bot.memory}
                 bot = cls(variant, _board(variant, case["units"], case["centers"]),
                           case["country"], case["phase"], case["turn"] + 1, rng)
