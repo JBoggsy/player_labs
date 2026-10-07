@@ -13,13 +13,15 @@ passed as cae2480d-1, uploaded v19. Both have fresh full-roster controls against
 Current i27 stacks v10 + four frontier pairs + direct capture staffing under VERDICT-26.
 I23 and i26 Richard effects were+.035183 and+.032175, respectively, both inconclusive.
 Use400 Richard episodes per arm plus the usual roster,984games/492estimatedcredits.
-Print SUBMIT CANDIDATE only if fixed Richard delta>=+.05 and95%CI excludes0.
+Print SUBMIT CANDIDATE only if fixed Richard delta>=+.05 and95%CI excludes0, with no guard regression. Guard regression means an opponent delta CI entirely below0; partial/unknown guards never pass.
 All i19-i26 cohorts completed584games each with0failures; full opponent tables in reports.
 I27 built9ed1e02e-1, uploaded v22 UUIDae54d4e0-1032-4d74-9767-69cd5d30cfa8;
 984-game cohort is admitted progressively, canonical finite workers restarted.
 Round870 field refresh: v10 rank1, engine0.3.123; xolod/Richard active, finist/zhar/relh
 still startup-only in30 verified public games. Opponent entrant versions unchanged.
-PROPOSAL-28 recommends full-speed uncontested neutral-heart approaches; proposed only.
+PROPOSAL-28 approved: current i28 source implements full-speed uncontested neutral-heart
+approaches on v10. Existing quiet gates preserved; neutral_rush_ticks_total counts actual
+suppressed commands. No i27 stack behavior included.
 Xolod sampled margin varied mainly with behind awards, so speed and score must be separated.
 I17 retreat eligibility regressed and is excluded from combinations.
 
