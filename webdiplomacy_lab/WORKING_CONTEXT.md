@@ -12,25 +12,30 @@ Submit the best one to the league and curate the league's filler roster.
 
 ## State (update every tick)
 
-- **League champion line:** `webdip-dumbbot:v6` = **Kissinger**, submitted 2026-10-07. It is
-  search with level-1 opponents (opponents assumed to best-respond to DumbBot plans) plus the
-  belief fix. Paired A/B against v5 Machiavelli: +0.135 ± 0.057. Hosted check
-  `xreq_c18ab6c3…` (14 episodes against the fixed fillers) is running.
-- Previously, `webdip-dumbbot:v5` was submitted on 2026-10-07. It is
-  Machiavelli: fastadj search, 1 restart, and the competent-vs-random opponent likelihood fix.
-  - v4 was the same without the fix. Hosted against the fillers it scored 0.137 vs par 0.18,
-    because the bug labelled search opponents as random.
-  - Hosted check `xreq_6c3fe219…` (14 episodes against 6 fillers) is running.
-- **League fillers (9, now including Kissinger):** Random, Calhamer, Machiavelli (v2), Bismarck, Metternich,
-  Talleyrand, Napoleon, Blücher. All except Random still use the OLD likelihood. Once v5 is
-  confirmed, re-upload them with the fix to strengthen the league field.
-- **Championship-1** (36 games): Machiavelli-r1 +0.058, Kissinger +0.030, Bismarck +0.029,
-  Blücher ≈0, Talleyrand <0, Nash −0.04, Calhamer −0.09.
-- **Negative results:** Kutuzov (learned evaluation, exploited by search), 3 restarts, and
-  Kissinger and Nash against the DumbBot field.
+- **Champion:** `webdip-dumbbot:v6` = Kissinger (level-1 opponents + competent-belief fix).
+  Hosted: 0.474 against the fillers (par +0.38) and 0.375 head to head with relh (relh 0.028).
+- **League fillers (11):** Random, Calhamer, Machiavelli v3, Bismarck v2, Metternich v2,
+  Talleyrand v2, Napoleon v2, Blücher v2, Kissinger v1, Fabius v1, Garibaldi v1.
+- **Settled (paired A/Bs against Kissinger, 36 games each):**
+
+  | Variant | Paired difference | Verdict |
+  | --- | --- | --- |
+  | Level-2 opponents | −0.11 | negative |
+  | 50% level-1 opponent mix | −0.10 | negative |
+  | Share objective | ≈ −0.05 | negative |
+  | 24 opponent samples | null | |
+  | Triples | −0.06 | negative |
+  | Spring rollout | −0.13 | negative |
+  | Build search (slow image) | +0.04 | null |
+
+  Full level-1 is the right opponent model, and adding search breadth or features to it so far hurts.
+- **Speed:** the convoy approximation in fastadj makes a decision about 9× faster (the package
+  fallback was ~95% of search time). It is about neutral on strength locally (ab-convoyapprox),
+  but valuable for hosted deadline safety. Ship it as v7 unless it turns negative.
 - **Running:**
-  - `evolve.py`: image v8a, anchor = champion, generation 15+.
-  - `ab-likelihood`: finishing.
+  - `ab-convoyapprox`
+  - `ab-builds-fast`: build search on the fast image.
+  - `evolve.py`: anchor Kissinger, generation 40+.
 
 ## Live competition
 
