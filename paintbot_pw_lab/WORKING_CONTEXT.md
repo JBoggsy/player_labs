@@ -14,15 +14,16 @@ is uploaded with passing G1–G5. Matched24 local games reduce grenade teammate 
 and self HP188→6, with enemy HP481→563. It wins37/56 directly against v2 locally.
 Hosted fresh A/B is complete: v3 won72/72 versus v2's69/72; score_outcome .939028 versus
 .912836 (margin600). No failed episodes; all72 candidate episode status files (576 seats) verified clean. Orchestrator reports jb-pw-opt:v3 submitted as `sub_f210fc05-12a0-4f0a-8a94-d0bd8b9b3c09`. The optimizer did not submit; league placement is not independently verified here.
-The iteration2 score/status collection is complete. Iteration3 source3d21c018 widens only the gun
-teammate corridor95→195cm; build3d21c018-1 passes G1–G5 at60/64 telemetry events.
-Local iteration3 results are mixed:27/56 vs v3, ordinary gun FF109→51HP, enemy gun
-HP1097→947, overall enemy HP1819→1823 on matched24 games. Uploaded experiment jb-pw-opt:v4
-(8512e63c-3a9a-455e-96d2-3e69b3be4dd6); all12 fresh field A/B requests created under DESIGN-3.md (144 episodes,72 credits).
-All144 scores retrieved: v4 .934618 vs fresh v3 .927396, delta+.007222
-95%CI[-.005270,.019714]. H1+.03 not supported; smaller gain inconclusive.
-Candidate seat status collection remains incomplete; sequential120s queue continues.
-Total committed spend288. V3 remains retained/submitted per orchestrator. One sequential results/status-only collector serves both.
+Iteration3 is closed by VERDICT-3: wider gun corridor reduced local FF but hosted gain
++.007222,95%CI[-.005270,.019714] is inconclusive. Keep it as an inactive lever for stronger
+fields. Optional candidate status checks continue without gating new work.
+Iteration4 removes sound-triggered sneaking near heart objectives, starting from v3.
+Existing24 local games show37,458 moving-sneak seat-ticks,7.34% of living time; the engine
+halves speed. First9 hosted v3 results show elapsed time is the largest score debit.
+The new public scout identifies active co-gas-paintbot-bassy-richard:v1, UUID
+f8b80a37-9dda-4d1c-98ea-adce5222a9a9, with2/2 wins including one over v3. It is the
+priority fresh A/B opponent. Proposed192 episodes/96 credits; committed spend remains288
+until creation. REPORT-4.md and DESIGN-4.md specify evidence, activation and limits.
 See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
 posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
 starter stopgap; do not replace that entrant or infer its identity from our upload.
@@ -100,13 +101,12 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
 - baseline: retained `jb-pw-opt:v3`, version `73e01dfb-128b-44c6-ac0c-8276f82be78e`, build `2a539036-1`.
-- candidate: `jb-pw-opt:v4`, version `8512e63c-3a9a-455e-96d2-3e69b3be4dd6`, build
-  `3d21c018-1` (gun teammate corridor95→195cm). Working source matches it. Hosted fixed
-  A/B does not demonstrate improvement; retain v3 and do not stack v4 into the next experiment.
+- candidate: iteration4 full-speed heart approach from v3; compile/upload pending. Working
+  source restores v3 motor behavior and adds quiet_skipped_total activation tracing.
 - opponents: refresh the current leaderboard plus recent public 0.3.123 episodes every iteration;
-  keep real opponents with shots or kills above zero in scout. Current round-834 sample:
-  `xolod:v14`, `paintbot-pw-basic-v22:v1`, `daveey-pw-league-smoke-l17c-s41u150-hc:v1`.
-  Exclude our own policies and inactive unported leaders. Evidence: `tmp/collab/optimizer/iteration1-scout/`.
+  keep real opponents with shots or kills above zero in scout. Current rounds842–840 scout:
+  `co-gas-paintbot-bassy-richard:v1` (new priority), `xolod:v14`, `daveey-pw-league-smoke-l17c-s41u150-hc:v1`.
+  Exclude our own policies and inactive unported leaders. Evidence: `tmp/collab/optimizer/iteration4-scout/`.
 - local benchmark: `reference/base-bassy-28030de6.bas`, 28 seeds × both sides with
   `pw.py local screen` for every candidate before credits; also screen against build
   `2898e485-1`. Local evidence is not field evidence.

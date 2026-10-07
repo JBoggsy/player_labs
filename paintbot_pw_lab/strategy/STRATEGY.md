@@ -289,11 +289,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   This is charge continuity, not a guarantee that teammates cannot enter the eventual blast.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
-  For guns (hasSpray = 0), widen the visible teammate corridor from previous_line_width to
-  teammate_line_width. Keep the original along-ray bounds and observed-parity test.
-  The added margin covers movement during windup; no future collision guarantee is made.
-  Preserve the previous width for spray. Increment gun_held_total once when the gun wait is
-  zero and only the widened corridor prevents the gun order. Keep aiming while holding fire.
+  Provide sk_motor__skip_quiet(), which increments persistent quiet_skipped_total by one.
+  The counter starts at zero and counts skipped quiet-approach opportunities, not saved time.
+  It never changes motor commands.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
@@ -305,15 +303,13 @@ Reading aid (the compiler receives component fields, not this introduction):
   - blocked_total -- cumulative otherwise eligible starts blocked while disarmed
   - continued_total -- cumulative ticks where continuity prevents the old early release
   - forced_total -- cumulative releases forced by becoming disarmed during a charge
-  - gun_held_total -- cumulative ready gun orders held only by the added teammate margin
+  - quiet_skipped_total -- cumulative ticks where a heart capability skips the old slowdown
 - Params:
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
   - lead_ticks = 6 ticks -- base.bas value, the gun windup
   - drift_ticks = 5 ticks -- base.bas value, our own drift to cancel
   - gun_wait_light = 25 ticks -- base.bas value, gun cooldown
   - gun_wait_heavy = 73 ticks -- base.bas value, cooldown with armor, in a trench, or carrying
-  - previous_line_width = 95 cm -- original teammate corridor, retained for spray and activation attribution
-  - teammate_line_width = 195 cm -- gun corridor including a movement margin for the windup
   - spray_range_sq = 640000 -- base.bas value, the spray gun shoots only below this target cost
 - Checks:
   - Acted properly: a shot is ordered only when the gun wait is zero, the teammate line is clear, and the spray range condition holds. Reads: replay
@@ -330,10 +326,10 @@ Reading aid (the compiler receives component fields, not this introduction):
   `goal_x = controlX(objective)` and `goal_y = controlY(objective)`, with objective of
   `K.squad_target`. Step 2: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when
   `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 3: call `sk_motor__act(goal_x, goal_y, hold)` of
-  `SK.motor`. Step 4 (quiet approach): call the host command `sneak(1)` when all of these hold. best
+  `SK.motor`. Step 4 (full-speed approach): call sk_motor__skip_quiet() of `SK.motor` when all of these hold. best
   of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
   (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of
-  `K.squad_target`. Step 5: set status to 0.
+  `K.squad_target`. Do not call sneak; retain full movement speed. Step 5: set status to 0.
 - Uses: `K.squad_target`, `K.contacts`, `SK.motor`
 - Params:
   - hold_sq = 8100 square cm -- base.bas value, within 90 cm of the post
@@ -358,10 +354,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   `goal_x = hx + (ax * 3 - ay * 2 * side) * post_radius \ root` and
   `goal_y = hy + (ay * 3 + ax * 2 * side) * post_radius \ root`. Step 3: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when
   `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 4: call
-  `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (quiet approach): call the host command
-  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
+  `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (full-speed approach): call sk_motor__skip_quiet() of `SK.motor` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
   (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of
-  `K.squad_target`. Step 6: set status to 0.
+  `K.squad_target`. Do not call sneak; retain full movement speed. Step 6: set status to 0.
 - Uses: `K.squad_target`, `K.contacts`, `SK.motor`
 - Params:
   - step_in_sq = 640000 square cm -- base.bas value, 8 m
@@ -487,7 +482,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy blocked_total, continued_total, forced_total and gun_held_total from `SK.motor` into same-named outputs for periodic telemetry.
+  On a send, copy blocked_total, continued_total and forced_total from `SK.motor` into same-named outputs for periodic telemetry. Also copy quiet_skipped_total from `SK.motor` into the same-named output.
 - Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
@@ -496,8 +491,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - blocked_total -- disarmed start blocks through this status snapshot
   - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
-  - gun_held_total -- ready gun orders withheld only by the wider corridor
-- Log: blocked_total, continued_total, forced_total, gun_held_total
+  - quiet_skipped_total -- cumulative heart-capability ticks where the old quiet approach would activate
+- Log: blocked_total, continued_total, forced_total, quiet_skipped_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay
