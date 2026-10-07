@@ -114,13 +114,17 @@ Heartland memberships and the orchestrator's stopgap are outside this optimizer'
 
 VERDICT-11: v8 SUBMITTED sub_a37b78a7-1125-4559-b6af-a501924da3e6, parent build5cee1447-1,
 UUID32f1b591-b444-4210-94a8-35521d7f90f1. Local outcomes are not performance signals or vetoes.
-All clean candidates proceed to hosted real-opponent A/B. Current iteration13 rebases the
-opening-supply gate on v8. Next: spray-distance correction and spray-safety on v8, independently;
-gun-corridor lever if credits allow. V7 platform-failed slots will be re-requested explicitly.
+All clean candidates proceed to hosted real-opponent A/B. Four independent v8 children:
+opening v9/build87324810-1, spray-distance v10/build7faadaa4-1,
+spray-safety v11/build5fa13fa0-1, gun-corridor v12/builda0d6a0f3-1.
+All passed G1–G5 and uploaded. Current source is gun-corridor; frozen parent remains v8.
+I13/i14 cohorts fully admitted; i15/i16 admissions resume automatically as pending slots free.
+V7's repaired240-game cohort is inconclusive, so no cadence combination is supported.
 New A/B allocations cover the whole top field under James's latest instruction, not only
 league neighbours. Default: 192 Richard episodes, 48 xolod, and 8 per named remaining opponent, with finist increased to16 after brief opening activity was
 verified. New cohorts total296 episodes / estimated148 credits; already-fixed i13 stays288/144.
 All cohorts are balanced by arm and side.
 Richard is the primary outcome; small opponent samples detect ports and large regressions,
-not precise competitiveness. Campaign previews total 764.5 after v7 repair; per iteration300/day1,400.
+not precise competitiveness. Campaign previews total1,056.5 after i13/i14; all four reserved cohorts total1,352.5.
+Per iteration300/day1,400.
 Reports/manifests own exact spend and identities.
