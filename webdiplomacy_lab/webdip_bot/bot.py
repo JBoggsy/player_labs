@@ -21,14 +21,28 @@ POLICY = "search"
 
 
 def policy_class(name):
-    """`name` or `name:KEY=VAL,KEY=VAL` (config overrides; used to screen variants locally)."""
-    if ":" in name:
-        name, overrides = name.split(":", 1)
-        from webdip_bot import config
+    """`name` or `name:KEY=VAL,KEY=VAL` (config overrides; used to screen variants locally).
 
-        for item in overrides.split(","):
+    `name` may be a personality (personalities.py: base policy + overrides) or a base policy.
+    Explicit overrides apply on top of a personality's own."""
+    from webdip_bot import config
+    from webdip_bot.personalities import resolve
+
+    overrides = {}
+    if ":" in name:
+        name, extra = name.split(":", 1)
+        for item in extra.split(","):
             key, value = item.split("=", 1)
-            setattr(config, key, type(getattr(config, key))(value) if not isinstance(getattr(config, key), list) else json.loads(value))
+            overrides[key] = value
+    persona = resolve(name)
+    if persona:
+        name, base_overrides = persona
+        overrides = {**base_overrides, **overrides}
+    for key, value in overrides.items():
+        current = getattr(config, key)
+        if isinstance(value, str) and not isinstance(current, str):
+            value = json.loads(value) if isinstance(current, list) else type(current)(value)
+        setattr(config, key, value)
     if name == "dumbbot":
         from webdip_bot.dumbbot import DumbBot
 
@@ -98,7 +112,10 @@ def main(policy=None):
         os.environ["WEBDIP_COUNTRY_ID"],
     )
     seed = int(os.environ.get("WEBDIP_SEED", "0"))
-    emit(policy, event="start", country=api.country_id, seed=seed)
+    from webdip_bot.personalities import PERSONALITIES
+
+    motto = PERSONALITIES.get(policy.split(":")[0], {}).get("motto")
+    emit(policy, event="start", country=api.country_id, seed=seed, motto=motto)
     previous = None
     state = {}
     while True:

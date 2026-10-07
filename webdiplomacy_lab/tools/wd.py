@@ -7,6 +7,9 @@
     uv run python webdiplomacy_lab/tools/wd.py arena --candidate POLICY [--field dumbbot_v1] \
         [--episodes N] [--parallel P] [--image IMG] --out DIR
     uv run python webdiplomacy_lab/tools/wd.py metrics DIR --slot 0          # local arena: candidate seat
+    uv run python webdiplomacy_lab/tools/wd.py versus ARM_A_DIR ARM_B_DIR     # A/B of arena arms
+    uv run python webdiplomacy_lab/tools/wd.py tourney --agents a,b,c --games N --image TAG --out DIR
+    uv run python webdiplomacy_lab/tools/wd.py ratings DIR... [--json]        # population leaderboard
 
 `metrics`: per-power results for the target policy's seats next to the FIELD PAR (mean
 of every non-target seat at that power in the same directories), plus coverage and our
@@ -173,6 +176,121 @@ def cmd_local(args):
 ARENA_ENV = ["WEBDIP_SEARCH_BUDGET_S=8"]
 
 
+def cmd_versus(args):
+    """Compare local arena arms (slot 0 = candidate in each dir). Prints JSON.
+
+    Power adjustment: each seat's score minus the mean score of ALL candidate seats at that
+    power pooled over the arms, so a lucky draw of strong powers does not masquerade as a
+    better policy."""
+    import math
+
+    arms = {}
+    for d in args.dirs:
+        seats, _ = load_dirs([Path(d)])
+        arms[d] = [s for s in seats if s.slot == 0]
+    pooled = defaultdict(list)
+    for seats in arms.values():
+        for s in seats:
+            pooled[s.power].append(s.score)
+    power_mean = {p: statistics.mean(v) for p, v in pooled.items()}
+
+    def summary(xs):
+        n = len(xs)
+        m = statistics.mean(xs) if xs else None
+        se = statistics.stdev(xs) / math.sqrt(n) if n > 1 else None
+        return {"n": n, "mean": round(m, 4) if m is not None else None, "se": round(se, 4) if se else None}
+
+    out = {"arms": {}}
+    for d, seats in arms.items():
+        raw = [s.score for s in seats]
+        adj = [s.score - power_mean[s.power] for s in seats]
+        out["arms"][d] = {"score": summary(raw), "power_adjusted": summary(adj),
+                          "solo_rate": round(statistics.mean([s.solo for s in seats]), 3) if seats else None}
+    if len(arms) == 2:
+        (da, a), (db, b) = arms.items()
+        xa = [s.score - power_mean[s.power] for s in a]
+        xb = [s.score - power_mean[s.power] for s in b]
+        va, vb = statistics.variance(xa) / len(xa), statistics.variance(xb) / len(xb)
+        t = (statistics.mean(xb) - statistics.mean(xa)) / math.sqrt(va + vb)
+        p = math.erfc(abs(t) / math.sqrt(2))  # normal approximation
+        out["diff_b_minus_a_power_adjusted"] = {"diff": round(statistics.mean(xb) - statistics.mean(xa), 4),
+                                                "se": round(math.sqrt(va + vb), 4), "z": round(t, 2), "p": round(p, 4)}
+    print(json.dumps(out, indent=1))
+    return 0
+
+
+def cmd_tourney(args):
+    """Mixed-population self-play: each game seats 7 agents drawn from --agents."""
+    import random as _random
+    import uuid
+    from concurrent.futures import ThreadPoolExecutor
+
+    manifest = _manifest()
+    agents = args.agents.split(",")
+    rng = _random.Random()
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    py = "/opt/.venv/bin/python"
+
+    def one(_):
+        seating = rng.sample(agents, 7) if len(agents) >= 7 else [rng.choice(agents) for _ in range(7)]
+        d = out / f"g-{uuid.uuid4().hex[:10]}"
+        d.mkdir()
+        (d / "seating.json").write_text(json.dumps(seating))
+        run = [py, "-m", "players.launcher", py, "-m", "webdip_bot.arena", *seating]
+        return _run_one(manifest, args.image, run, args.variant, d)
+
+    with ThreadPoolExecutor(args.parallel) as pool:
+        codes = list(pool.map(one, range(args.games)))
+    print(json.dumps({"out": str(out), "games": args.games, "failed": sum(c != 0 for c in codes)}))
+    return 0
+
+
+def cmd_ratings(args):
+    """Leaderboard over tourney dirs: per agent, power-adjusted mean score (score minus the
+    pooled mean score of every seat at that power), raw mean, solo rate, games."""
+    import math
+
+    rows = []
+    for root in args.dirs:
+        for d in sorted(Path(root).glob("g-*")):
+            sp = d / "seating.json"
+            if not sp.exists() or not (d / "results.json").exists():
+                continue
+            seating = json.loads(sp.read_text())
+            seats, _ = load_dirs([d])
+            for s in seats:
+                rows.append((seating[s.slot], s))
+    by_power = defaultdict(list)
+    for _, s in rows:
+        by_power[s.power].append(s.score)
+    pmean = {p: statistics.mean(v) for p, v in by_power.items()}
+    agg = defaultdict(list)
+    for agent, s in rows:
+        agg[agent].append(s)
+    board = []
+    for agent, ss in agg.items():
+        adj = [s.score - pmean[s.power] for s in ss]
+        n = len(ss)
+        board.append({
+            "agent": agent, "n": n,
+            "adj": round(statistics.mean(adj), 4),
+            "se": round(statistics.stdev(adj) / math.sqrt(n), 4) if n > 1 else None,
+            "score": round(statistics.mean(s.score for s in ss), 4),
+            "solo": round(statistics.mean(s.solo for s in ss), 3),
+            "centers": round(statistics.mean(s.final_centers or 0 for s in ss), 2),
+        })
+    board.sort(key=lambda r: -r["adj"])
+    if args.json:
+        print(json.dumps(board, indent=1))
+    else:
+        print(f"games: {len({s.episode_id for _, s in rows})}")
+        print("| agent | n | adj score | se | raw score | solo | final SCs |\n|---|---|---|---|---|---|---|")
+        for r in board:
+            print(f"| {r['agent']} | {r['n']} | {r['adj']:+.3f} | {r['se']} | {r['score']:.3f} | {r['solo']} | {r['centers']} |")
+    return 0
+
+
 def _manifest():
     return next((LAB / "coworld_pkg").glob("cow_*/coworld_manifest.json"), None)
 
@@ -225,6 +343,21 @@ def main():
     lo.add_argument("--episodes", type=int, default=1)
     lo.add_argument("--out", default=str(LAB / "local_runs" / "latest"))
     lo.set_defaults(func=cmd_local)
+    tr = sub.add_parser("tourney", help="mixed-population local self-play")
+    tr.add_argument("--agents", required=True, help="comma-separated personality/policy names")
+    tr.add_argument("--image", default="webdip-bot:dev")
+    tr.add_argument("--variant", default="classic-gunboat")
+    tr.add_argument("--games", type=int, default=12)
+    tr.add_argument("--parallel", type=int, default=3)
+    tr.add_argument("--out", required=True)
+    tr.set_defaults(func=cmd_tourney)
+    ra = sub.add_parser("ratings", help="leaderboard over tourney dirs")
+    ra.add_argument("dirs", nargs="+")
+    ra.add_argument("--json", action="store_true")
+    ra.set_defaults(func=cmd_ratings)
+    vs = sub.add_parser("versus", help="compare local arena arms (slot 0)")
+    vs.add_argument("dirs", nargs="+")
+    vs.set_defaults(func=cmd_versus)
     ar = sub.add_parser("arena")
     ar.add_argument("--candidate", required=True)
     ar.add_argument("--field", default="dumbbot_v1")

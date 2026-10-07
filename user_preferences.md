@@ -76,3 +76,10 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   the deployed code, verify against source, record the mismatch in the lab's docs, and move on; do
   not raise it with the maintainer unless James asks. (Stated 2026-09-30.)
 
+
+- **webDiplomacy lab: standing authorization for everything.** James (2026-10-06): "Nothing needs
+  my OK to submit. Everything may be submitted by you at will. Never block on my permission."
+  Submit improved versions, upload new agents (as his policies or as league filler) and run
+  experiments without asking; keep the loop running overnight via crons/monitors; when stuck,
+  start a new agent from a different perspective, or ask for advice via Discord/Asana rather
+  than stopping.
