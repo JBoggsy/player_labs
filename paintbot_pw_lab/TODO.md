@@ -10,6 +10,7 @@
   Normalize the output path in the recorder with a focused regression test when fixing it.
 - Complete iteration3 candidate seat-status coverage after shared API allowance recovers;
   all144 score outcomes are available, but v4 seat health is only partially verified.
+  Optional coverage must not block iteration4; VERDICT-3 closes iteration3 on its scores.
   Score gain+.007222 is inconclusive; retain v3. Grenade continuity hosted qualification
   is complete. Disguise retention remains a separate hypothesis; M3 comms stays inactive.
 - Audit partial-load accounting: a late seat I/O failure retains valid earlier-seat evidence

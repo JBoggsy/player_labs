@@ -22,8 +22,7 @@ Existing24 local games show37,458 moving-sneak seat-ticks,7.34% of living time; 
 halves speed. First9 hosted v3 results show elapsed time is the largest score debit.
 The new public scout identifies active co-gas-paintbot-bassy-richard:v1, UUID
 f8b80a37-9dda-4d1c-98ea-adce5222a9a9, with2/2 wins including one over v3. It is the
-priority fresh A/B opponent. Proposed192 episodes/96 credits; committed spend remains288
-until creation. REPORT-4.md and DESIGN-4.md specify evidence, activation and limits.
+priority fresh A/B opponent. All192 episodes created in16 requests for96 credits; committed spend384. REPORT-4.md and DESIGN-4.md specify evidence, activation and limits.
 See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
 posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
 starter stopgap; do not replace that entrant or infer its identity from our upload.
@@ -101,8 +100,9 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
 - baseline: retained `jb-pw-opt:v3`, version `73e01dfb-128b-44c6-ac0c-8276f82be78e`, build `2a539036-1`.
-- candidate: iteration4 full-speed heart approach from v3; compile/upload pending. Working
-  source restores v3 motor behavior and adds quiet_skipped_total activation tracing.
+- candidate: `jb-pw-opt:v5`, UUID`b143f701-3455-46b1-9dc2-8f9ac3d44ac9`, build`780bef24-1`.
+  Full-speed heart approach from v3;42/56 local wins vs v3,52/56 vs upstream. Hosted
+  A/B pending. Activation quiet_skipped_total6,403 across29/32 traced seats.
 - opponents: refresh the current leaderboard plus recent public 0.3.123 episodes every iteration;
   keep real opponents with shots or kills above zero in scout. Current rounds842–840 scout:
   `co-gas-paintbot-bassy-richard:v1` (new priority), `xolod:v14`, `daveey-pw-league-smoke-l17c-s41u150-hc:v1`.
