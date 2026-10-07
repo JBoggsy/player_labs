@@ -1,7 +1,8 @@
 # Supported findings and remaining hypotheses
 
-Current synthesis after i31, on rules 49 / 0.3.123–0.3.124. The orchestrator authorized one fresh v22/v10 comparison (i32), then standby;
-these findings do not authorize other experiments. The orchestrator owns field monitoring.
+Current synthesis after i31, on rules 49 / 0.3.123–0.3.124. I32 did not confirm v22: weighted +0.013810 [-0.015552,+0.043172]. VERDICT-32 now
+authorizes the Richard campaign and local pipelining; see WORKING_CONTEXT for active work.
+The orchestrator owns field monitoring. Existing findings do not prove the new hypotheses.
 Exact identities and champion lineage are in [WORKING_CONTEXT.md](WORKING_CONTEXT.md).
 `REPORT-N` references below are local `tmp/collab/optimizer/REPORT-N.md` evidence.
 

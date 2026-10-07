@@ -4,8 +4,8 @@ This file is the source of truth for our Paintbot PW policy. The compiled BASIC 
 product. Nobody edits compiled BASIC by hand. To change behavior, change this file or a
 `skill.bas` and recompile (docs/designs/2026-09-30-strategy-file-format.md).
 
-Thesis: counter Richard's early central fights with a coordinated central opening on v10.
-Emergency retreat, critical supply, and combat remain inherited. Each change has its source commit,
+Thesis: reduce shared grenade exposure by separating combat dodge directions on v10.
+The opening and all strategic decisions stay inherited. Each behavior change has its source commit,
 compiled build and local screen; hosted evaluation decides field strength.
 All strategy arithmetic is integer. Use Bassy integer division `\`, which truncates
 toward zero; never use fixed-point `/`. Boolean outputs specified as 0/1 must remain
@@ -271,17 +271,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   - Believed: the flag is logged with the decision. Reads: PWD.f
 - Status: specified (2026-10-05)
 
-### S.central_opening
-- Summary: Commit both squads to the central approaches during the opening.
-- Spec: Set on = 1 when worldTick <= opening_ticks AND heartCount() >= 2 AND
-  critical of `K.pickups` = 0. Else set on = 0.
-- Uses: `K.pickups`
-- Params:
-  - opening_ticks = 720 ticks -- thirty-second coordinated opening
-- Checks:
-  - Believed: the opening flag is recorded in the selected rule flags. Reads: PWD.f
-- Status: specified (2026-10-07)
-
 ## Skills
 
 ### SK.motor
@@ -305,8 +294,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   charge logic. Never release merely because visibility or eligibility disappeared.
   This is charge continuity with safe target tracking, not a guarantee that teammates cannot
   enter the eventual blast.
-  The helper sk_motor__central_opening(gx, gy, hold) increments opening_ticks_total,
-  then calls the unchanged sk_motor__act(gx, gy, hold). This is activation tracing only.
   The helper sk_motor__finish_cover_capture(gx, gy) increments cover_capture_ticks_total
   once, then calls sk_motor__act(gx, gy, 1). Only C.cover_heart calls this helper when it is
   already inside the objective capture ring and our team is capturing there. The forced
@@ -318,12 +305,23 @@ Reading aid (the compiler receives component fields, not this introduction):
   Best_cost remains the HP-weighted ranking score; do not treat it as a physical distance.
   After an actual shootAt request with hasSpray, increment spray_distance_shots_total if
   the former best_cost test would have rejected it. This counter starts at zero and persists.
+  In plan_leg, after the original random sign and leg duration are drawn and tx/ty to the
+  visible threat are computed, choose a spacing sign before computing the perpendicular.
+  Only do this when tx*tx + ty*ty <= spacing_enemy_sq. Find the nearest visible
+  same-parity teammate other than self among IDs0 through15 with squared distance
+  strictly below spacing_ally_sq. Ascending IDs and strict comparison choose the lower
+  ID on a distance tie. If found, set dx=selfX-playerX(ally), dy=selfY-playerY(ally),
+  cross=dy*tx-dx*ty. Set sign=-1 if cross<0 or if cross=0 and selfId>ally, else sign=1.
+  Increment spacing_changed_total if sign differs from the originally selected zig, then
+  replace zig by sign. Without an eligible ally keep zig. Preserve both random calls,
+  leg duration, forward-goal blend, speed normalization and capture-ring clamp. This
+  only changes lateral dodge planning; it does not change target selection or gun timing.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
-  - opening_ticks_total -- cumulative ticks controlled by the coordinated central opening
+  - spacing_changed_total -- planned dodge legs whose lateral sign differs due to a nearby visible ally
   - root -- the result of the last sk_motor__isqrt call
   - threw -- 1 on a commanded or forced grenade release tick, else 0
   - release_charge -- observed charge on this release decision
@@ -336,6 +334,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - spray_distance_shots_total -- actual spray requests enabled by the physical-distance range check
   - cover_capture_ticks_total -- cover-capability ticks spent holding an already-started capture
 - Params:
+  - spacing_enemy_sq = 2560000 square cm -- spacing only inside 16 m of the visible threat
+  - spacing_ally_sq = 360000 square cm -- look for a visible teammate inside 6 m
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
   - lead_ticks = 6 ticks -- base.bas value, the gun windup
   - drift_ticks = 5 ticks -- base.bas value, our own drift to cancel
@@ -350,51 +350,6 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ## Capabilities
-
-### C.central_opening
-- Summary: Two four-cog squads meet the opponent on the two central heart approaches.
-- Spec: `__start` does nothing. On each `__tick`, perform Steps 1 to 5.
-  Step 1. Set mid_x = (homeX + heartX) \ 2 and mid_y = (homeY + heartY) \ 2.
-  Find the two hearts nearest this midpoint. Set first = -1 and second = -1.
-  For pass = 0 then 1, set choice = -1 and choice_cost = 2147483647.
-  For j from 0 while j < heartCount() AND j < 64, skip j when j = first.
-  For every other j, set dx = (controlX(j) - mid_x) \ 8 and
-  dy = (controlY(j) - mid_y) \ 8. Set cost = dx * dx + dy * dy.
-  If cost < choice_cost, set choice = j and choice_cost = cost.
-  After pass 0 set first = choice. After pass 1 set second = choice.
-  Step 2. Set member = (selfId \ 2) MOD 8, squad = member \ 4, seat = member MOD 4.
-  Set objective = first when squad = selfTeam, else objective = second.
-  Set gx = controlX(objective) and gy = controlY(objective).
-  Step 3. Ring seats 0 and 1 keep the heart center. For cover seats 2 and 3, choose
-  a dry support point on the outer bank, using only public heart coordinates and waterAt.
-  Set outward = -1 when controlY(objective) < mid_y, else outward = 1.
-  Set back = 1 when homeX > mid_x, else back = -1.
-  Set offset = cover_back_cm for seat 2, or offset = 0 for seat 3.
-  Set gx = gx + back * offset and gy = gy + outward * bank_offset_cm.
-  Set tries = 0. While waterAt(gx, gy) AND tries < dry_steps,
-  add outward * dry_step_cm to gy and add 1 to tries.
-  If waterAt(gx, gy), reset gx = controlX(objective) and gy = controlY(objective).
-  Step 4. Set dx = gx - selfX and dy = gy - selfY. Set hold = 1 when
-  dx * dx + dy * dy <= hold_sq, else hold = 0.
-  Call sk_motor__central_opening(gx, gy, hold) of `SK.motor` exactly once.
-  Do not request sneak. Step 5. Set status = 0.
-- Uses: `SK.motor`
-- Params:
-  - cover_back_cm = 500 cm -- one support cog stays on our side of the bank
-  - bank_offset_cm = 600 cm -- initial outward displacement from the central heart
-  - dry_step_cm = 100 cm -- outward water-clearance step
-  - dry_steps = 8 -- bounded search for a dry bank position
-  - hold_sq = 14400 square cm -- hold within 120 cm of the assigned post
-- Done when: never
-- Checks:
-  - Acted: opening calls increment the motor opening counter. Reads: PWD.c, replay
-  - Result: central occupancy and first-death timing in the first thirty seconds. Reads: replay
-- Status: specified (2026-10-07)
-- Rationale: Richard reaches central fights before our outer squad joins. Commit both squads
-  to the two middle approaches without changing combat, emergency retreat or critical resupply.
-  Heartwick has the two home points and a north/south central pair. This opening is deliberately
-  map-specific; no opponent identity or private state is read. Cover posts use dry banks so
-  concentration does not send every cog into a capture-ring grenade cluster.
 
 ### C.take_heart
 - Summary: Stand in the capture ring of the squad target (squad seats 0 and 1).
@@ -532,16 +487,14 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ### ST.rules
-- Summary: Retreat beats the opening; critical resupply interrupts opening eligibility. Otherwise opening beats resupply and normal objectives.
+- Summary: Retreat beats resupply, resupply beats the squad target, the squad target beats the default goal.
 - Spec: Evaluate the rules below each tick. The highest priority rule whose condition holds wins.
 - Checks:
   - Acted properly: re-running selection from the logged flags gives the logged rule. Reads: PWD.r, PWD.f, PWP.n
 - Status: specified (2026-10-05)
 - Rationale: base.bas computes one goal and lets later blocks override it. The retreat block
-  comes last, then supply, then the squad target. The opening adds a bounded commitment
-  between retreat and noncritical supply for both squads.
+  comes last, then supply, then the squad target. These priorities give the same order.
 - `R.fall_back` [400]: WHEN `S.losing_fight` DO `C.fall_back`
-- `R.central_opening` [350]: WHEN `S.central_opening` DO `C.central_opening`
 - `R.resupply` [300]: WHEN `S.supply_worth` DO `C.resupply`
 - `R.take_heart` [200]: WHEN `S.has_target_heart` DO `C.take_heart` FOR squad=ring
 - `R.cover_heart` [200]: WHEN `S.has_target_heart` DO `C.cover_heart` FOR squad=cover
@@ -566,7 +519,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy blocked_total, continued_total, opening_ticks_total and
+  On a send, copy blocked_total, continued_total, spacing_changed_total and
   tracking_updates_total, cover_capture_ticks_total and spray_distance_shots_total from `SK.motor` into same-named outputs for periodic telemetry.
 - Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
@@ -575,11 +528,11 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Outputs:
   - blocked_total -- disarmed start blocks through this status snapshot
   - continued_total -- rescued charging ticks through this status snapshot
-  - opening_ticks_total -- disarmed forced releases through this status snapshot
+  - spacing_changed_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
   - spray_distance_shots_total -- actual newly enabled spray requests through this snapshot
-- Log: blocked_total, continued_total, opening_ticks_total, tracking_updates_total, cover_capture_ticks_total, spray_distance_shots_total
+- Log: blocked_total, continued_total, spacing_changed_total, tracking_updates_total, cover_capture_ticks_total, spray_distance_shots_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

@@ -13,7 +13,7 @@ I33: coordinated central opening on exact v10. Nineteen hash-verified current re
 repeated early forward-squad deaths. REPORT-33.md records the short model, contrary
 evidence and exact counts. New30s opening sends both squads to the central hearts with
 dry-bank cover, preserving emergency retreat/critical supply and all combat mechanics.
-Opening activation is counted; benefit is unproven. Source is now this v10 child, not v26.
+Opening activation is counted; benefit is unproven. I33 source is preserved at9d572cfd; current working source is the independent i34 child.
 
 Authorized fresh comparison:400Richard+200xolod games per arm,balanced sides,
 1200games/~600credits. Gate Richard>=+.05 with lower95%CI>0, xolod lower95%CI>=-.02,
@@ -27,7 +27,10 @@ Submitted by the orchestrator as `sub_1616ba24-8791-47aa-9f13-51931d9a42db`.
 Player James Botts: `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`.
 League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 
-Current strategy source: i33 central-opening counter on champion source `7faadaa4`.
+Current strategy source: i34 teammate-aware dodge directions on champion source `7faadaa4`.
+I33 is immutable build `9d572cfd-1`, uploaded v27 UUID
+`f5878480-79cc-4321-8953-f370e4bf7d28`; its fixed hosted cohort is queued.
+I34 is a separate locally prepared child, not a change to that cohort.
 Rejected v26 is recoverable at `c11410ab` / build `c11410ab-1`; never use it as the
 champion. All policy edits go through committed strategy/skill sources and the compiler.
 
@@ -94,7 +97,7 @@ Latest six-round check (888–893, all completed): **Richard 4/7 (57.1%), xolod 
 Richard games were in rounds 891–893, so the sample already shows a recent shift. This is
 above the orchestrator's one-third trigger. Recommend a fresh v22 vs v10 A/B, Richard-focused
 with a substantial xolod guard, before any submission. The seven-game mix is uncertain and
-the old effects may not replicate; this triggered the subsequently authorized i32 cohort above. Evidence:
+the old effects may not replicate; this triggered i32, whose final result was inconclusive; VERDICT-32 then opened the new Richard campaign. Evidence:
 `tmp/collab/optimizer/standby-six-rounds.json` and `standby-pairing-mix.json`.
 
 ## Environment and operational handoff
@@ -109,7 +112,7 @@ Coworld 0.1.57 and softmax-cli 0.26.38 were release-checked during i31; refresh 
 future CLI diagnosis. Broader neural/oracle references retain `PW_DOCS_SHA=118e1619`.
 M3 comms remains inactive and unqualified on current Bassy; see [comms.md](strategy/comms.md).
 
-I32 is complete; i33 is being prepared. Admission/results workers exit on terminal work;
+I32 is complete; i33 admission/results are active and i34 is being compiled locally. Admission/results workers exit on terminal work;
 field_watch.py is stopped by explicit handoff. Dashboard 8810 stays off. Do not poll
 terminal requests for optional artifacts. Future authorized polling/retries: at least
 120 seconds, bounded artifacts, finite exit. No hosted self-play. Local games establish
