@@ -50,9 +50,9 @@ refuses fewer).
 - **Unit:** one row per (episode, policy_key). The policy's 8 seats in a match are one
   sample. `policy_key` is the exact `policy_version_id` for hosted episodes and
   `local:<file name>` for local ones.
-- **Score** (`--score`, stored in the row): `elo` (default) is the ladder's Elo outcome score,
+- **Score** (`--score`, stored in the row): `elo` (default) is the historical Elo outcome score,
   `clamp(0.5 + (our glory − their glory)/2000, 0, 1)`, a legacy score which is not the current OpenSkill margin score. See
-  ([mechanics.md §1](../mechanics.md)). `win` is 1 / 0.5 / 0. The adapter reports both as
+  [mechanics.md §1](../mechanics.md). `win` is 1 / 0.5 / 0. The adapter reports both as
   **outcome points, 0-100** (`SCORE_SCALE`), because the engine emits no hypothesis whose
   swing is under 0.3 score units, which a 0-1 score could never reach.
 

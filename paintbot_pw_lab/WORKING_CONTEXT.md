@@ -116,40 +116,34 @@ Heartland memberships and the orchestrator's stopgap are outside this optimizer'
 ## Current pipeline source
 
 Parent remains submitted v8/build5cee1447-1, UUID32f1b591-b444-4210-94a8-35521d7f90f1.
-I13–i16 completed: opening v9, spray-distance v10, spray-safety v11 and gun-corridor v12
-all inconclusive on Richard. No supported combination. Reports13–16 own full estimates.
-Current source d68b2194: retreat count restricted to our gun reach. Buildd68b2194-2 passes
-G1–G5, uploaded v13 UUIDc6ca341d-3e72-408e-951d-b4d79066fd27. Activation178, zero validation
-failures. I17 admission:1192 games,596 estimated credits, all eight named opponents,
-Richard960/xolod160/finist32/others8; arm/side balanced. Local outcomes never rank or veto.
+I13–i16 completed inconclusively against Richard. V10 spray distance and v12 gun corridor
+have positive point estimates; VERDICT-17 authorizes testing their combination without
+requiring individual significance. No proven new winner or optimizer league submission.
+
+I17 v13/buildd68b2194-2: gun-range retreat eligibility, all1192 games admitted,596 previews.
+I18 unchanged v10 independent confirmation: resized before admission to584games/292credits,
+Richard200/arm, other opponents unchanged. Discovery plus confirmation440 estimated credits.
+I19 v14/build482cacdc-1: structural teammate regroup/local retreat, original v8 eligibility.
+Uploaded UUID3386f34a-2c42-43c3-b521-e06a37189540;136 regroup ticks,704 local retreat ticks,
+3811 valid telemetry lines,0 failures. REPORT-18 ranks three structural hypotheses.
+I20 v15/buildb9128d79-1: v10 spray distance plus v12 gun corridor on v8. Current source.
+Uploaded UUID58ba5750-7d7c-4416-8785-6e62fe3721d5;both counters exercised,0 validation failures.
+I19/i20 each584games/292credits, Richard200/arm, full roster; exact designs/manifests own IDs.
+New uploads passed G1–G5. No local performance conclusions or performance vetoes.
 
 ## Current operating limit
 
-No daily cap or midnight hold. Keep actual balance above10000; approximately600 per iteration.
-Use `uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py credits`
-with its user credential path. Verified pre-i17 balance18990.73681, cap20000, refill1428.57143/day.
-Record snapshots separately from previews; concurrent work and refills prevent attributing
-account net changes solely to one cohort. Evidence credit-observations.jsonl and REPORT-17.
-Dashboard8810 stopped. Poll at least120s apart and exit on completion/all terminal children.
-I13–i16 result queue and field watcher exited; new i17 queue has the same finite exit rule.
-I18 is a frozen independent confirmation of unchanged v10 against v8:888 games/444 credits,
-queued after i17 admissions. More basic/Rohit guards, no pooling with i14 discovery.
-Combined v10 discovery+confirmation estimate592 credits. DESIGN-18 owns final criteria.
-First i17 balance interval:18990.73681 to18986.91647, net−3.82034 while admitted previews150;
-this account-level movement is not measured cohort spend.
+No daily cap. Keep balance above10000; approximately600 per iteration. Live credits command:
+`uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py credits`.
+Latest manual snapshot18770.60182, cap20000, refill1428.57143/day. Record snapshots and account
+net movements separately from previews; concurrent work/refills prevent per-cohort attribution.
+All four current designs total1472 preview credits; new admissions conservatively reserve this
+amount plus the floor. Shared round-robin admission avoids waiting for another cohort's results.
+At least120s between API polling/retries; every worker exits on admission completion or cohort
+terminal status. Dashboard8810 stays stopped. New finite port check uses cached cohort metadata.
+Round857 opponent identities unchanged. Source release0.3.123/28030de6; project CLIcoworld0.1.57
+and softmax-cli0.26.38 match current releases. Clone main fetched/current; lab branch ahead
+contains authorized local experiments. No changes to the main metta checkout.
 
-## Active VERDICT-17 direction
-
-Prefer structural changes predicted to move Richard score by at least+.10; predictions
-are planning hypotheses, not gains inferred from the miner. REPORT-18 ranks regrouping,
-frontier assignment and focus fire. Iteration19 regrouping on v8 passed as482cacdc-1 and is uploading. Its source retains
-original retreat eligibility (v13 remains a separate child). Compile source through
-immutable pipeline; report runtime activation and then hosted200 Richard episodes/arm.
-I18 spray confirmation was resized before admission to584games/292credits, including
-200 Richard games/arm and unchanged other opponents. Old888/444 sizing is superseded.
-Test combinations when two changes have positive hosted point estimates, even when not
-individually significant. V10+v12 is queued as iteration20; not a proven combination.
-League submission remains the orchestrator's action after a supported submission candidate.
-
-Current source is iteration20: v10 spray distance plus v12 gun corridor, both on v8.
-Separate activation counters are retained. REPORT-20 and DESIGN-20 own evaluation details.
+Charter max_iterations20 reached in prepared candidates; finish i17–i20 evidence before any
+new iteration beyond that boundary. A supported result is a submission candidate for orchestrator.
