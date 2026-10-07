@@ -1,4 +1,6 @@
-# Current submitted parent: v29
+# Supported findings and remaining hypotheses
+
+## Current submitted parent: v29
 
 The orchestrator submitted v29 (`e42b7834-1`) as
 `sub_08157a74-7eb8-4d98-8f1e-ca6f3d508cf2`. I35: Richard+0.030296
@@ -12,10 +14,11 @@ map identity exists; an unseen map matching every checked field is indistinguish
 I34 dodge's Richard+0.023650[-0.031768,+0.079068] remains inconclusive; rebase and test
 against v29 before retaining it. Do not pool the old controls or sum cross-cohort gains.
 
-# Supported findings and remaining hypotheses
+## Evidence scope
 
-Current synthesis after i31, on rules 49 / 0.3.123–0.3.124. I32 did not confirm v22: weighted +0.013810 [-0.015552,+0.043172]. VERDICT-32 now
-authorizes the Richard campaign and local pipelining; see WORKING_CONTEXT for active work.
+Current synthesis through i35, on rules49 / 0.3.124. I32 did not confirm v22: weighted
++0.013810[-0.015552,+0.043172]. The Richard campaign continues on submitted v29;
+see WORKING_CONTEXT for active work.
 The orchestrator owns field monitoring. Existing findings do not prove the new hypotheses.
 Exact identities and champion lineage are in [WORKING_CONTEXT.md](WORKING_CONTEXT.md).
 `REPORT-N` references below are local `tmp/collab/optimizer/REPORT-N.md` evidence.

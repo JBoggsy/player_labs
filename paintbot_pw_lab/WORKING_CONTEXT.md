@@ -20,6 +20,11 @@ League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 
 Current source is the dodge rebase on guarded v29 (i37).
 Guard-only child build `1fe285df-1` passed and uploaded as v30; not submitted.
+Its26/26state-hash checks through800ticks match v29 on Heartwick and v10 on all12
+shipped alternate maps, both sides; compiler28-seed Heartwick play is identical.
+Dodge rebase i37 build `757ec5d2-1` passed and uploaded as v31, UUID
+`f56b16e7-c204-4335-ab29-487755205821`. Its fresh400Richard+200xolod per arm
+comparison vs v29 is queued; Richard delta>=+.05/CI>0, xolod lowerCI>=-.02.
 The submitted v29 artifact is immutable and retains its original heart-count-only guard.
 V28 dodge remains recoverable at `4f0e5d4e-1`; do not substitute its v10 parent.
 
@@ -101,7 +106,7 @@ Coworld 0.1.57 and softmax-cli 0.26.38 were release-checked during i31; refresh 
 future CLI diagnosis. Broader neural/oracle references retain `PW_DOCS_SHA=118e1619`.
 M3 comms remains inactive and unqualified on current Bassy; see [comms.md](strategy/comms.md).
 
-I32 is complete; i33/i34 are fully admitted and still running. I35 admission/results are active. Admission/results workers exit on terminal work;
+I32–i35 are complete; their workers exited. I37 admission/results are active. Admission/results workers exit on terminal work;
 field_watch.py is stopped by explicit handoff. Dashboard 8810 stays off. Do not poll
 terminal requests for optional artifacts. Future authorized polling/retries: at least
 120 seconds, bounded artifacts, finite exit. No hosted self-play. Local games establish
