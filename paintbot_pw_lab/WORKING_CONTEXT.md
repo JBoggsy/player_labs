@@ -8,8 +8,11 @@ sub_1616ba24-8791-47aa-9f13-51931d9a42db (orchestrator authorization).
 I18 Richard confirmation: +.0981375,95%CI[+.0172507,+.1790243],200/arm;
 xolod -.0062674,95%CI[-.0225313,+.0099966],48/arm. Finish remaining guards and
 report any regression. Existing i19-i22 v8-control cohorts remain immutable.
-I23 frontier pairs on v10 passed as a5c28ea4-1. Current i24 source rebases supported
-focus attack independently onto v10. Both get fresh full-roster controls against v10.
+I23 frontier pairs on v10 passed as a5c28ea4-1, uploaded v18. I24 focus attack on v10
+passed as cae2480d-1, uploaded v19. Both have fresh full-roster controls against v10.
+Current i25 source combines v10 spray distance with v14 local regrouping under the
+VERDICT-17 positive-point-estimate rule. I19 Richard+.003375 [-.076156,+.082906]
+is inconclusive; this combination is an interaction test, not a supported-winner claim.
 I17 retreat eligibility regressed and is excluded from combinations.
 
 No daily cap; balance floor10,000 and per-iteration approximately600 credits. Respect pending
