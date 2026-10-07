@@ -2,104 +2,110 @@
 
 ## Current objective and boundary
 
-VERDICT-30 supersedes continuous candidate pipelining. Build one robust bundle on v10:
-exact v22 frontier pairs/direct capture plus exact v25 glory-heart detours. Pursuit v24 is
-excluded: i29 was640/664 at source freeze, so its final xolod result was unavailable.
-I30 complete664/664 with0failures: xolod+.0015375[-.0053516,+.0084266], finist+.0143403
-[+.0054313,+.0232492], Richard+.1615278[-.0062956,+.3293512]. Richard remains inconclusive.
+**Standing by. v10 remains champion.** The orchestrator closed i31: v26 failed its
+registered gate. No new candidates, hosted cohorts, optimizer pollers or field watcher.
+The orchestrator owns the two-hourly field/engine cron and will wake this agent on change.
+Do not restart the previous continuous loop from old briefs or worker PID files.
 
-I31 tests the robust bundle against fresh v10 controls:300xolod,100finist,200Richard per arm,
-1200games/600estimatedcredits. Recommendation requires xolod lower95%CI>=-.005 AND a
-positive lower95%CI on finist or Richard. Complete fixed cohort and no operational failures.
-Do not submit; print SUBMIT CANDIDATE for the orchestrator only when this gate passes.
-After the bundle decision, enter watch mode: one cohort at a time, no new candidates unless
-the field changes. About every2h check engine doctor, leaders and recent public rounds for
-new opponent versions or resumed top-four activity. A change triggers a v10 evaluation,
-STATUS update and NEED ORCHESTRATOR. Watch does not authorize league or public writes.
+Champion: `jb-pw-opt:v10`, UUID `8c4947c7-0679-4826-a653-9de20c62ffa3`, immutable
+build [`7faadaa4-1`](strategy/compiled/7faadaa4-1/report.md), source `7faadaa4`.
+Submitted by the orchestrator as `sub_1616ba24-8791-47aa-9f13-51931d9a42db`.
+Player James Botts: `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`.
+League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 
-Uploaded bundle jb-pw-opt:v26 UUID4faf6330-9863-4b8e-b761-be4f65c2fa64, build c11410ab-1.
-See tmp/collab/optimizer/REPORT-31.md and frozen optimizer-i31/requests/manifest.json.
-Watch worker field_watch.py waits for the fixed decision, then checks every2h; its PID,
-watch-state.json and logs live beside REPORT-31. It never builds or submits a policy.
+**Working strategy source is the rejected v26 bundle, not champion v10.**
+`STRATEGY.md` and the authored motor are frozen at source `c11410ab`; build
+[`c11410ab-1`](strategy/compiled/c11410ab-1/report.md), uploaded UUID
+`4faf6330-9863-4b8e-b761-be4f65c2fa64`. Do not accidentally compile this as a v10 child.
+Recover champion inputs from `7faadaa4` if a future authorized experiment needs them;
+never edit generated BASIC. Upload provenance is in `strategy/compiled/uploads.jsonl`.
 
-## Loop charter
+## Final robust-bundle result
 
-- objective: evaluate the robust bundle for xolod non-regression and significant finist or Richard improvement, then watch the field.
-- policy_file: paintbot_pw_lab/strategy/STRATEGY.md
-- policy_name / player: jb-pw-opt on James Botts, ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce.
-- baseline: jb-pw-opt:v10, UUID8c4947c7-0679-4826-a653-9de20c62ffa3, build7faadaa4-1.
-- opponents: current bundle xolod:v14 primary300/arm, finist:v2 secondary100/arm, co-gas-paintbot-bassy-richard:v1 secondary200/arm. Watch mode surveys the whole leaderboard and top-four activity; evaluate v10 against changed opponents.
-- allowed_changes: the VERDICT-30 robust bundle, preserving source components and activation tracing. Afterwards no new candidates unless the field changes; report the change to the orchestrator.
-- credit_budget: no daily cap; keep actual account balance above10000, approximately600credits per iteration.
-- max_iterations: one remaining robust bundle, then watch mode under VERDICT-30.
-- submission_gate: xolod lower95%CI>=-.005 and finist or Richard lower95%CI>0, full fixed cohort and no operational failures. Only recommend; orchestrator submits.
+I31 tested v10 + v22 frontier pairs/direct capture + v25 glory collection, excluding
+v24 pursuit. All 1,200 games scored, zero episode failures; 600 creation-preview credits.
+Fresh controls, balanced sides, one game per observation, nominal normal 95% intervals.
 
-## Current environment and operating rules
+| Opponent | Games per arm | v26 minus v10 score | 95% CI |
+| --- | ---: | ---: | --- |
+| xolod:v14 | 300 | +0.000372 | [-0.005255, +0.006000] |
+| finist:v2 | 100 | +0.003725 | [-0.002304, +0.009754] |
+| Richard:v1 | 200 | +0.019763 | [-0.051979, +0.091504] |
 
-Freshness check found teams release0.3.124/7a29ed7a; release pin and tools updated.
-Diff from0.3.123/28030de6 adds training-map registration, without hosted rules/BASIC changes.
-Historical results retain their original game version; new cohorts use fresh v10 controls on0.3.124.
-Project coworld0.1.57 and softmax-cli0.26.38 match current PyPI releases. Source clone
-fast-forwarded to7a29ed7a; lab origin/main merged without conflicts, preserving local work.
-Latest credits15930.78275 before the robust bundle; previews and net account movements recorded
-separately because concurrent requests and refill prevent per-cohort spend attribution.
+Both gate conditions failed: xolod lower bound is below -0.005, and neither secondary
+opponent has a positive lower bound. This does not establish equivalence or universal
+harm; it establishes no supported replacement under the fixed design. Candidate health
+was checked in 16/600 episodes with zero bad seats; 584 optional status artifacts are
+unknown. Do not equate zero episode failures with complete seat verification.
 
-No hosted self-play: eight own seats against eight seats of one pinned real opponent.
-Local runs measure runtime, activation and mechanisms only; never rank or reject candidates.
-Canonical finite workers: tmp/collab/optimizer/admit_continuous.py and
-continuous_results_queue.py, driven by active-cohorts.json. Poll/retry at least120s apart;
-exit after all admissions/results terminal. Dashboard8810 stays stopped. Restart finite
-workers when adding a cohort only if they have exited. No optimizer league submission,
-public writing, git push or changes to the main metta checkout.
+Full evidence: `tmp/collab/optimizer/REPORT-31.md`, `i31-hosted-results.json`,
+`i31-submission-decision.json`, and `episode_data/optimizer-i31/requests/manifest.json`.
+These local evidence directories remain ignored by git; the final findings above are durable.
 
-## Foundation qualification (v1 reference)
+## Supported champion lineage
 
-- Release: `coworld-v0.3.123`, engine `28030de6`, simulation rules 49. Both tools and native
-  library rebuilt; 30 current public replays hash-verified. Live ranking settings: OpenSkill,
-  `margin_scale: 600`, `round_scoring_rule: mean`. Refresh live state before evaluation.
-- Policy: **`jb-pw-opt:v1`**, version **`bac0d7d0-60f3-4c76-a1e6-aa947f9958ed`**, James Botts
-  (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`). Uploaded with coworld 0.1.57; softmax-cli 0.26.38.
-- Build: [`2898e485-1`](strategy/compiled/2898e485-1/report.md), from committed foundation
-  strategy port. All G1–G5 passed first round; 33 artifact hashes verified. Upload provenance
-  is in `strategy/compiled/uploads.jsonl`. Hosted performance is not yet measured.
-- G2: 16 enabled seats. G3: sampled peak 10,241 instructions / 17,329 work units.
-  Static telemetry bound 313 bytes / 51 events. G4: 56 full matches, no bad seats, 22 wins /
-  34 losses; side-balanced local outcome 0.450357, 95% interval [0.384288, 0.516426].
-- G5: 3,477 lines from 16 candidate-seat recordings, all required fields and both message
-  types exercised, no failures. This is transport/coverage, not a semantic or competitive pass.
-- G4 reference is upstream's ported starter copied verbatim at `28030de6` into
-  `reference/base-bassy-28030de6.bas`. It also changes targeting range, HP/pickup handling,
-  and support behavior. Exact identity is therefore not claimed. The regression screen passed;
-  the wide interval does not establish statistical non-inferiority or equality.
+All deltas below use fresh hosted controls at margin scale 600. Different cohorts cannot
+be added into a cumulative causal estimate. See [TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md)
+for dead levers, limits and follow-up criteria.
 
-Bassy changed `/` to fixed-point division, comparisons to -1, and logical operators to bitwise.
-The foundation port preserves integer division using `\`, explicit 0/1 outputs, and legacy
-host calls still supported by Bassy. Source strategy/thresholds are unchanged. A release change
-now invalidates component reuse. Compiler unit validation rejects fixed-point `/` under the
-integer strategy contract. Existing runtime lib/main required no semantic edits. Inactive M3
-codec runtime and units have **not** been ported or requalified.
+| Retained version | Change and measured benefit | Evidence |
+| --- | --- | --- |
+| v3, build `2a539036-1` | Persistent grenade charge; block disarmed starts and preserve safe release. Versus v2, field score +0.026192 [-0.015124, +0.067509], 72/72 vs 69/72 wins. Retained under the then-authorized operational/point-estimate rule, not proven statistical superiority. | REPORT-2 |
+| v6, build `21b9c416-1` | Update committed grenade aim and required charge with eligible live targets; keep last safe point otherwise. Richard +0.197569 [+0.072426, +0.322713], 56/96 vs 36/96 wins. | REPORT-6 |
+| v8, build `5cee1447-1` | Finish cover-cog captures instead of leaving for an outside post when own capture starts. Richard +0.133064 [+0.009925, +0.256203], 65/96 vs 50/96 wins. | REPORT-10 |
+| v10, build `7faadaa4-1` | Use physical squared distance, not HP-weighted target ranking cost, for both spray range gates. Independent Richard confirmation +0.098137 [+0.017251, +0.179024], 152/200 vs 130/200 wins. Xolod -0.006267 [-0.022531, +0.009997]. | REPORT-14 discovery; REPORT-18 confirmation |
 
-M3 remains an inactive lever: source recoverable at `2184fc64`, immutable build `18e0aa1f-1`,
-protocol and limitations in [strategy/comms.md](strategy/comms.md). Its 0.3.115 hosted A/B was
-inconclusive. Do not substitute it for the current baseline.
+Reports are under `tmp/collab/optimizer/`. V8 is a research-lineage parent; v10 inherits
+these retained changes, not every intervening upload. The tiny i18 zhar result (4/arm,
+all wins) was explicitly judged noise by the orchestrator; no universal guard-gain claim.
 
-## Evidence limits and next experiment
+## Pairings and rating
 
-The current public scout (`episode_data/optimizer-task0/scout.json`) found near-total
-inactivity and zero shots for zhar, finist, relh and our old jb-pw-base. Xolod was active.
-Both the frozen starter and old foundation disabled all 16 seats in direct 0.3.123 diagnostics.
-Do not interpret old-runtime wins or wins against inactive opponents as current field strength.
-Re-resolve opponents before evaluation; the useful field may change as policies are ported.
-The scout report's historical margin-1000 Elo column is not the current ladder score.
+Canonical source-verified mechanics: [mechanics.md §1](docs/mechanics.md#1-the-one-thing-to-get-right-winning-glory-and-rank).
+Recorded league settings: OpenSkill, `margin_scale: 600`, `round_scoring_rule: mean`,
+`team_n` / `elo_softmax` matchmaking, temperature 100. MMR is player `mu - 3*sigma`;
+soft outcome is `clamp(0.5 + glory_margin/1200, 0, 1)`. Champion replacement widens sigma
+to at least 6; immediate ordinal cost is `3*max(0, 6-old_sigma)`, not a fixed five points.
+An experiment upload does not cause this submission penalty.
 
-The foundation still targets to 52.5 m despite ordinary gun reach about 21 m, retains old
-3-HP strategic thresholds despite 10 HP / one life, and can abandon grenade charges.
-These are separate candidate changes, not part of the Bassy port. Every new or re-gated
-behavior must include activation tracing. Report hypotheses to the orchestrator.
+Pairing frequency changes with ratings. Rounds 849–852 had four of our games, all vs
+Richard; rounds 871–876 had seven, five xolod and two finist (all wins). These are observed
+samples, not permanent opponent weights. A 520–0 win rates about 0.933, not 1.0.
+Xolod is near an observed margin ceiling for tested levers, not a proven mathematical
+ceiling. Faster wins alone do not guarantee more rated margin: awards and clamping matter.
 
-Five inherited compiler guesses remain open (four low, one medium); none is new to the port.
-Private motor state and several source check thresholds remain unlogged/unspecified, so G5
-cannot establish all five audit levels. Never promote an unmeasurable or unexercised check to
-pass. The 0.3.115 M2/M3 audit evidence does not requalify the audit engine at 0.3.123.
-`PW_DOCS_SHA` remains `118e1619` for unreverified neural/oracle references; current raw-BASIC
-facts have explicit currency blocks in mechanics, policy-surface and evidence docs.
+V22 is a conditional reserve: Richard +0.059869 [+0.009132, +0.110606] at 400/arm,
+but xolod -0.013229 [-0.026098, -0.000361] at 48/arm (REPORT-27). Reconsider only against
+a changed pairing mix with fresh controls, never submit solely from the old Richard result.
+
+Latest six-round check (888–893, all completed): **Richard 4/7 (57.1%), xolod 3/7
+(42.9%), no other opponents**; exact own v10 identity verified in all seven games. All four
+Richard games were in rounds 891–893, so the sample already shows a recent shift. This is
+above the orchestrator's one-third trigger. Recommend a fresh v22 vs v10 A/B, Richard-focused
+with a substantial xolod guard, before any submission. The seven-game mix is uncertain and
+the old effects may not replicate; no new cohort was queued. Evidence:
+`tmp/collab/optimizer/standby-six-rounds.json` and `standby-pairing-mix.json`.
+
+## Environment and operational handoff
+
+Tools and native library target `coworld-v0.3.124` / `7a29ed7a`, rules 49. The change
+from 0.3.123 is training-map infrastructure, with no hosted rules/BASIC/seat-view change.
+On this handoff, deployed-ref --write confirmed the existing pin; tools and native library
+were rebuilt. Quick v10 check: seed 7, both sides vs pinned upstream, two complete games,
+zero bad-seat matches, native/headless hashes match on both sides. This is runtime evidence
+only; no competitive requalification was needed. Evidence: `tmp/collab/optimizer/standby-*`.
+Coworld 0.1.57 and softmax-cli 0.26.38 were release-checked during i31; refresh before
+future CLI diagnosis. Broader neural/oracle references retain `PW_DOCS_SHA=118e1619`.
+M3 comms remains inactive and unqualified on current Bassy; see [comms.md](strategy/comms.md).
+
+No active optimizer cohort remains. Admission/results workers exit on terminal work;
+field_watch.py is stopped by explicit handoff. Dashboard 8810 stays off. Do not poll
+terminal requests for optional artifacts. Future authorized polling/retries: at least
+120 seconds, bounded artifacts, finite exit. No hosted self-play. Local games establish
+runtime/activation/mechanisms, never competitive superiority. No optimizer league
+submission, public writes or git push without authorization.
+
+Credits: no daily cap; preserve the 10,000 balance floor, roughly 600 per authorized
+iteration. I31 preview was 600; snapshots include refill and concurrent spending, so
+net account movement is not attributable i31 cost. Requests and previews stay in the
+frozen manifest; account observations in `tmp/collab/optimizer/credit-observations.jsonl`.

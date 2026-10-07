@@ -1,7 +1,11 @@
 # Paintbot PW mechanics (as deployed)
 
 > **Currency.** Active tools target `coworld-v0.3.124` / `7a29ed7a` (2026-10-07), rules 49.
-> The 0.3.123→0.3.124 diff adds training-map registration only; hosted simulation rules are unchanged.
+> The 0.3.123→0.3.124 diff adds training-map infrastructure (`maps.nim`, native environment,
+> cover/navigation/terrain array sizes); no rules, BASIC or seat-view behavior changed.
+> At optimizer handoff, deployed-ref confirmed the pin, tools/native were rebuilt, and v10
+> completed seed 7 on both sides with zero bad-seat matches and matching native/headless
+> hashes. No hosted requalification was needed for this infrastructure-only release.
 > The 0.3.115→0.3.123 diff preserves simulation rules; changes in `sim.nim` and
 > `mechanics.nim` add training damage/pickup telemetry. Earlier rules-49 changes below
 > were verified at `244dc62b`. BASIC execution changes materially: see policy-surface §2.
@@ -57,13 +61,15 @@ its immediate ordinal cost is `3*max(0, 6 - old_sigma)` before episode updates.
 Submit clear improvements and combine small wins into fewer submissions; uploads for
 experimentation do not themselves trigger this champion-version update.
 
-In rounds 849–852, all four observed league games for us were against Richard (v6 went 3–1).
-That is observed pairing frequency, not a guarantee of future opponents. The source-verified
-ladder explains why Richard matters to current MMR. James nevertheless requires broad hosted
-A/B coverage: Richard primary, xolod a substantial guard, and small samples for the remaining
-leaders, including frozen policies. Finist, zhar and relh had no-shot/zero-score or passive-score
-outcomes on 0.3.123 in this scout; replay activity must be rechecked to detect ports.
-
+Observed pairings change as ratings move. Rounds 849–852 paired all four of our games
+with Richard (v6 went 3–1). Rounds 871–876 paired seven with xolod (five) and finist (two).
+The latest six completed rounds checked at optimizer handoff, 888–893, paired v10 with
+Richard four times and xolod three times; no other opponents. All seven episode rows were
+retrieved and exact policy/seat identities checked (`tmp/collab/optimizer/standby-six-rounds.json`).
+These samples are not guaranteed future frequencies. The latest 57.1% Richard share supports
+re-evaluating reserve v22 with fresh controls and an xolod guard, not immediate submission.
+The orchestrator owns subsequent field checks. Frozen finist/zhar/relh activity must be
+rechecked before interpreting passive-opponent margin as active-combat strength.
 
 ### 1.1 Heart meter versus glory
 
