@@ -69,6 +69,8 @@ uv run python .claude/skills/coworld-experience-requests/scripts/xp_dashboard.py
 
 The dashboard stops polling once every watched request is terminal and its results are captured, keeps serving the final page for `--linger-minutes` (default 30), then exits; `--max-hours` (default 24) caps its lifetime. Every poller shares the per-user API budget, so never leave one running after its requests finish.
 
+Read the account's XP credit balance with `uv run python "$S" credits` (it uses the saved user credential; the credit route rejects player sessions with 403, so it works while a player is active).
+
 For a quick status view use `uv run python "$S" monitor xreq_... --once`. A parent `failed`/`cancelled` label is not proof every child stopped. Both monitoring and collection must inspect child completion. Terminal failures may legitimately lack results/replays; report them as coverage gaps.
 
 Use ordinary access. Honor API rate-limit response headers and bounded retries. Missing opponent diagnostics remain unavailable; never elevate to retrieve them for optimization. Link the request and evidence from the lab's experiment record, then report results and return the next strategic choice to the human.

@@ -19,7 +19,7 @@ Admission checks the estimate against balance **minus holds for active requests*
 
 Read the current balance/refill and choose a bounded batch. The public schema has no pre-create quote endpoint; `cost_preview` is returned only when creating the request, so save that response. Local schema checks are not cost quotes. Use the allowance for targeted competitive experiments, with existing evidence and local mechanism/self-play runs where appropriate. Preserve the user's no-hosted-XP-self-play preference. Do not introduce a new per-request permission gate within an already authorized experiment.
 
-The account-only endpoint is `GET /usage/me/credits` on the Observatory gateway (`https://softmax.com/api/observatory/usage/me/credits`). Use ordinary user authentication; it requires a user credential. Its `status` object includes `balance_credits`, `refill_credits`, `refill_cadence`, `max_balance_credits`, `next_refill_at`, `credits_per_usd` and `enforced`. Re-read it rather than treating this dated table as immutable.
+The account-only endpoint is `GET /usage/me/credits` on the Observatory gateway (`https://softmax.com/api/observatory/usage/me/credits`). Use ordinary user authentication; it requires a user credential and returns 403 for player-session credentials, which the other lab tools send. `uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py credits` reads it with the user credential saved by `softmax login`. Its `status` object includes `balance_credits`, `refill_credits`, `refill_cadence`, `max_balance_credits`, `next_refill_at`, `credits_per_usd` and `enforced`. Re-read it rather than treating this dated table as immutable.
 
 ## Evidence and correction
 
