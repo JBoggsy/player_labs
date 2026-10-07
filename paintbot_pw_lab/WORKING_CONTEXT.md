@@ -6,8 +6,8 @@ Continue the authorized optimizer loop on submitted jb-pw-opt:v10, build7faadaa4
 UUID8c4947c7-0679-4826-a653-9de20c62ffa3, submission
 sub_1616ba24-8791-47aa-9f13-51931d9a42db (orchestrator authorization).
 I18 Richard confirmation: +.0981375,95%CI[+.0172507,+.1790243],200/arm;
-xolod -.0062674,95%CI[-.0225313,+.0099966],48/arm. Finish remaining guards and
-report any regression. Existing i19-i22 v8-control cohorts remain immutable.
+xolod -.0062674,95%CI[-.0225313,+.0099966],48/arm. I18 now complete584/584,0failed; zhar has a nominal margin regression
+-.021875 [-.030849,-.012901],4/arm, both policies4/4wins. Other guards have no negative interval. Existing i19-i22 v8-control cohorts remain immutable.
 I23 frontier pairs on v10 passed as a5c28ea4-1, uploaded v18. I24 focus attack on v10
 passed as cae2480d-1, uploaded v19. Both have fresh full-roster controls against v10.
 Current i25 source combines v10 spray distance with v14 local regrouping under the
@@ -85,7 +85,7 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
 - baseline: submitted `jb-pw-opt:v10`, version `8c4947c7-0679-4826-a653-9de20c62ffa3`, build `7faadaa4-1`.
-- candidate: i23 frontier pairs on v10, followed by i24 supported focus attack on v10.
+- candidates: i23/v18 frontier pairs, i24/v19 supported focus attack, i25/v20 local regrouping; all use v10 controls.
 - opponents: every top-8 leaderboard entrant except us, plus all explicitly named targets:
   Richard (primary, heavy), xolod (substantial guard), and small matched samples against
   finist, zhar, relh, basic-v22, daveey/Alpha, and Rohit. Refresh exact versions every iteration.
@@ -136,13 +136,13 @@ New uploads passed G1–G5. No local performance conclusions or performance veto
 
 No daily cap. Keep balance above10000; approximately600 per iteration. Live credits command:
 `uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py credits`.
-Latest admission snapshot18442.10002, cap20000, refill1428.57143/day. Record snapshots and account
+Latest admission snapshot18052.74459, cap20000, refill1428.57143/day. Record snapshots and account
 net movements separately from previews; concurrent work/refills prevent per-cohort attribution.
 Admission conservatively reserves full previews for every incomplete queued design plus
 the floor; completed cohorts are excluded from that future reserve. Shared round-robin admission avoids waiting for another cohort's results.
 At least120s between API polling/retries; every worker exits on admission completion or cohort
 terminal status. Dashboard8810 stays stopped. New finite port check uses cached cohort metadata.
-Round859 opponent identities unchanged. Source release0.3.123/28030de6; project CLIcoworld0.1.57
+Round862 opponent identities unchanged; submitted v10 is live at rank5. Source release0.3.123/28030de6; project CLIcoworld0.1.57
 and softmax-cli0.26.38 match current releases. Clone main fetched/current; lab branch ahead
 contains authorized local experiments. No changes to the main metta checkout.
 
@@ -163,3 +163,12 @@ Current workers:admit_continuous.py and continuous_results_queue.py, driven by
 active-cohorts.json. They admit round-robin under capacity and poll at least120s apart.
 They exit after all registered admissions/results are terminal; restart when adding a cohort
 if the finite worker has already exited. Old per-cohort pipeline scripts are inactive.
+
+I23 frontier on v10: builda5c28ea4-1, v18 UUID60fc396e-9ac4-4dd3-8acb-340f7c4958c2.
+I24 focus on v10: buildcae2480d-1, v19 UUID3eb5e94a-c6c8-4927-93df-cefea2ab25ce.
+I25 regroup on v10: buildf2eefe3f-1, v20 UUIDffdedadd-e24c-4f94-9748-faa0347c469f.
+All passed compiler/runtime/activation checks and have immutable584-game v10-control designs.
+Existing i19-i22 studies retain their original v8 controls. I18 all32 requests admitted;
+zhar margin regression -.021875 [-.030849,-.012901],4/arm, both4/4wins, reported to orchestrator.
+Basic and Rohit guards flat; all584 i18 games complete,0failed. Completed cohorts are
+skipped by the finite shared results worker; i18 has priority until complete.
