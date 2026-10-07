@@ -255,19 +255,9 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Spec: Set `on = 1` when `nearest >= 0` of `K.pickups` and
   `(best < 0 OR best_cost > fight_clear_sq OR critical = 1)` with best and best_cost of
   `K.contacts`, and critical of `K.pickups`. Else set `on = 0`.
-  After that original test, if on = 1 AND critical of `K.pickups` = 0 AND
-  worldTick < opening_ticks AND seat of `K.squad_target` < 2 AND
-  objective of `K.squad_target` >= 0 AND controlOwner(objective) = -1, set on = 0
-  and increment opening_supply_blocked_total. Here objective is the output of
-  `K.squad_target`. The cumulative counter starts at zero and persists for the match.
-  It counts rejected resupply eligibility, not selected capabilities. Critical resupply
-  bypasses this opening check. Cover seats and all behavior after opening_ticks are unchanged.
-- Uses: `K.pickups`, `K.contacts`, `K.squad_target`
-- Outputs:
-  - opening_supply_blocked_total -- noncritical resupply rejections for opening neutral capturers
+- Uses: `K.pickups`, `K.contacts`
 - Params:
   - fight_clear_sq = 1440000 -- base.bas value, cost above which the target does not hold us
-  - opening_ticks = 480 ticks -- first twenty seconds prioritize neutral capture for ring seats
 - Checks:
   - Believed: the flag is logged with the decision. Reads: PWD.f
 - Status: specified (2026-10-05)
@@ -304,6 +294,13 @@ Reading aid (the compiler receives component fields, not this introduction):
   charge logic. Never release merely because visibility or eligibility disappeared.
   This is charge continuity with safe target tracking, not a guarantee that teammates cannot
   enter the eventual blast.
+  Before footwork, compute spray_distance_sq from self to the current best target's actual
+  playerX/playerY coordinates when best of `K.contacts` is nonnegative. Use this distance
+  instead of best_cost in both spray-range tests: footwork want_shot and the gun's firing
+  gate. Keep the existing strict spray_range_sq threshold and every other gate unchanged.
+  Best_cost remains the HP-weighted ranking score; do not treat it as a physical distance.
+  After an actual shootAt request with hasSpray, increment spray_distance_shots_total if
+  the former best_cost test would have rejected it. This counter starts at zero and persists.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
@@ -318,6 +315,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- cumulative ticks where continuity prevents the old early release
   - forced_total -- cumulative releases forced by becoming disarmed during a charge
   - tracking_updates_total -- cumulative armed charging ticks with a changed safe aim or charge requirement
+  - spray_distance_shots_total -- actual spray requests enabled by the physical-distance range check
 - Params:
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
   - lead_ticks = 6 ticks -- base.bas value, the gun windup
@@ -498,9 +496,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
   On a send, copy starts_total, blocked_total, continued_total, forced_total and
-  tracking_updates_total from `SK.motor` into same-named outputs for periodic telemetry.
-  Also copy opening_supply_blocked_total from `S.supply_worth` into its same-named output.
-- Uses: `K.contacts`, `SK.motor`, `S.supply_worth`, `P.shout`
+  tracking_updates_total and spray_distance_shots_total from `SK.motor` into same-named outputs
+  for periodic telemetry.
+- Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
@@ -510,8 +508,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
-  - opening_supply_blocked_total -- opening supply rejections through this snapshot
-- Log: starts_total, blocked_total, continued_total, forced_total, tracking_updates_total, opening_supply_blocked_total
+  - spray_distance_shots_total -- actual newly enabled spray requests through this snapshot
+- Log: starts_total, blocked_total, continued_total, forced_total, tracking_updates_total, spray_distance_shots_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

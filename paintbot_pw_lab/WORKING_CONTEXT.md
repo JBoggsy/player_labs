@@ -148,11 +148,12 @@ Heartland memberships and the orchestrator's stopgap are outside this optimizer'
 
 ## Current pipeline source
 
-Iteration11 starts from submitted v6 and only defers noncritical resupply for designated
-ring capturers pursuing a neutral heart in the first20 seconds. Opening pickup detours
-collapse the intended two-squad split: all224 v3 seats at1s target a pickup across28 losses.
-V6 local ring seats spend57.86% of first10s at exact pickup goals. Build c85230af-1 passes
-G1–G5; local26/56 vs v6,21/56 vs v8,49/56 upstream. Matched24 first capture16.67→9.17s
-and30s ownership2.625→4.167, but full-game improvement is not supported. REPORT-11.md
-records activation and limits. Hold upload until v7/v8 decide; no automatic combination. V8 capture build5cee1447-1 and v7 cadence remain immutable independent experiments.
+Iteration11 opening candidate c85230af-1 is PARKED by orchestrator; see REPORT-11.md/TODO.
+Iteration12 starts from submitted v6 and replaces HP-weighted best_cost with actual squared
+distance in both spray range gates. Current range640000 and all other motor behavior stay
+unchanged. Counter spray_distance_shots_total counts actual newly enabled requests.
+Eight v6 losses: sprayHP35 vs Richard92;26 sampled close-target rejections in6 games.
+REPORT-12.md ranks remaining mechanisms and explains why SPSA is not appropriate to the
+misdefined input. Compile/local screen first; v7/v8 hosted comparisons continue independently.
+Public rounds849–850 show unchanged zhar55/finist2/relh56/Aaron2+60/RichardBassy1.
 V6 remains submitted baseline sub_9d9511f9-264c-4ed5-b0f8-026d924377b4. Campaign744credits.

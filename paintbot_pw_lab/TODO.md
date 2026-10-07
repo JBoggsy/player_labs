@@ -25,3 +25,7 @@
 
 - Before reactivating M3, port its inactive codec runtime and regenerate its units for Bassy.
   Only the foundation baseline is qualified on 0.3.123; use a separate source-directed change.
+
+- Opening candidate c85230af-1 is parked by orchestrator: first capture16.67→9.17s locally,
+  but26/56 wins vs v6 and21/56 vs v8. Do not upload/combine automatically; REPORT-11.md
+  records the pickup-priority mechanism and negative full-game screen.
