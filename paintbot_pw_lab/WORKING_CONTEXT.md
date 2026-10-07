@@ -24,6 +24,8 @@ Player James Botts: `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`.
 League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 
 Current strategy source: i35 adaptive opening, v10 default plus gated v27 opening.
+Build `e42b7834-1` passed; uploaded `jb-pw-opt:v29`, UUID
+`cf05fa48-71e3-408c-96cf-ed1ce74409ea`; independent 1400-game cohort queued.
 V27 immutable build `9d572cfd-1`; v28 build `4f0e5d4e-1` is an independent v10 child.
 Neither is the champion. Source edits are committed before compilation.
 
@@ -105,7 +107,7 @@ Coworld 0.1.57 and softmax-cli 0.26.38 were release-checked during i31; refresh 
 future CLI diagnosis. Broader neural/oracle references retain `PW_DOCS_SHA=118e1619`.
 M3 comms remains inactive and unqualified on current Bassy; see [comms.md](strategy/comms.md).
 
-I32 is complete; i33 admission/results are active and i34 is uploaded with an independent hosted cohort queued. Admission/results workers exit on terminal work;
+I32 is complete; i33/i34 are fully admitted and still running. I35 admission/results are active. Admission/results workers exit on terminal work;
 field_watch.py is stopped by explicit handoff. Dashboard 8810 stays off. Do not poll
 terminal requests for optional artifacts. Future authorized polling/retries: at least
 120 seconds, bounded artifacts, finite exit. No hosted self-play. Local games establish
