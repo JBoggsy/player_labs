@@ -157,6 +157,10 @@ Working source now starts from submitted v6/source21b9c416 and adds only a spray
 teammate veto. Rules49 spray is much wider than the original95cm gun corridor. Counter
 spray_hold_total counts otherwise ready trigger opportunities newly withheld. V7 firing
 cadence and iteration8 resupply gate are absent. REPORT-9.md records evidence and limits.
-Compile/screen locally; hold upload until v7 A/B decides. Iteration7 all240 episodes requested
+Build51fe35f4-1 passes G1–G5;27/56 vs v6,53/56 upstream,23/24 recorded. Spray teammate
+HP45→24, enemy121→129; no score gain demonstrated. Counter9 across2/32seats with24872
+valid lines. Hold upload until v7 A/B decides. Iteration7 currently has artifact-transport
+failures in both arms and an inconclusive partial Richard interval; do not promote v7.
+Iteration7 all240 episodes requested
 for120credits; cumulative committed624. Streaming continues in current_results_queue.py.
 V6 is orchestrator-submitted as sub_9d9511f9-264c-4ed5-b0f8-026d924377b4 and is baseline.
