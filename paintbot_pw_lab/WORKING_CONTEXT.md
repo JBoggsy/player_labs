@@ -6,13 +6,13 @@ Continue the authorized optimizer loop on submitted jb-pw-opt:v10, build7faadaa4
 UUID8c4947c7-0679-4826-a653-9de20c62ffa3, submission
 sub_1616ba24-8791-47aa-9f13-51931d9a42db (orchestrator authorization).
 I18 Richard confirmation: +.0981375,95%CI[+.0172507,+.1790243],200/arm;
-xolod -.0062674,95%CI[-.0225313,+.0099966],48/arm. I18 now complete584/584,0failed; zhar has a nominal margin regression
+xolod -.0062674,95%CI[-.0225313,+.0099966],48/arm. I18 now complete584/584,0failed; orchestrator treats the tiny zhar sample as noise, no action; measured margin delta
 -.021875 [-.030849,-.012901],4/arm, both policies4/4wins. Other guards have no negative interval. Existing i19-i22 v8-control cohorts remain immutable.
 I23 frontier pairs on v10 passed as a5c28ea4-1, uploaded v18. I24 focus attack on v10
 passed as cae2480d-1, uploaded v19. Both have fresh full-roster controls against v10.
-Current i25 source combines v10 spray distance with v14 local regrouping under the
-VERDICT-17 positive-point-estimate rule. I19 Richard+.003375 [-.076156,+.082906]
-is inconclusive; this combination is an interaction test, not a supported-winner claim.
+Current i26 source directly staffs heart rings with cover-role cogs on v10. REPORT-26
+owns opportunity measurements, low-confidence+.10 planning hypothesis and crowding risk.
+I25 regroup combination is uploaded v20 and queued; it is not a supported winner.
 I17 retreat eligibility regressed and is excluded from combinations.
 
 No daily cap; balance floor10,000 and per-iteration approximately600 credits. Respect pending

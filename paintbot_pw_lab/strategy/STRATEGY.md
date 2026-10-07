@@ -298,9 +298,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   once, then calls sk_motor__act(gx, gy, 1). Only C.cover_heart calls this helper when it is
   already inside the objective capture ring and our team is capturing there. The forced
   holding flag uses the existing motor ring-preserving footwork. No other motor logic changes.
-  The helper sk_motor__regroup(gx, gy, has_buddy) increments regroup_ticks_total when
-  has_buddy = 1, otherwise local_retreat_ticks_total, then calls sk_motor__act(gx, gy, 0).
-  These cumulative counters start at zero and persist for the match. Only C.fall_back calls it.
   Before footwork, compute spray_distance_sq from self to the current best target's actual
   playerX/playerY coordinates when best of `K.contacts` is nonnegative. Use this distance
   instead of best_cost in both spray-range tests: footwork want_shot and the gun's firing
@@ -308,13 +305,14 @@ Reading aid (the compiler receives component fields, not this introduction):
   Best_cost remains the HP-weighted ranking score; do not treat it as a physical distance.
   After an actual shootAt request with hasSpray, increment spray_distance_shots_total if
   the former best_cost test would have rejected it. This counter starts at zero and persists.
+  The helper sk_motor__direct_capture(gx, gy, hold) increments direct_capture_ticks_total
+  once then calls sk_motor__act(gx, gy, hold). Only C.cover_heart calls this helper.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
-  - regroup_ticks_total -- fallback ticks steering behind a visible teammate
-  - local_retreat_ticks_total -- fallback ticks steering locally without a teammate anchor
+  - direct_capture_ticks_total -- cover-role ticks directly staffing the capture ring
   - root -- the result of the last sk_motor__isqrt call
   - threw -- 1 on a commanded or forced grenade release tick, else 0
   - release_charge -- observed charge on this release decision
@@ -363,43 +361,28 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ### C.cover_heart
-- Summary: Cover the squad target from outside the ring, and step in when nobody captures it
-  (squad seats 2 and 3).
-- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set
-  `hx = controlX(objective)`, `hy = controlY(objective)`, with objective of `K.squad_target`.
-  Set `goal_x = hx` and `goal_y = hy`. Step 2: set `dx = hx - selfX` and `dy = hy - selfY`.
-  Set finish_capture = 1 when objective >= 0 AND controlCaptureTeam(objective) = selfTeam
-  AND dx * dx + dy * dy <= capture_sq. Else set finish_capture = 0.
-  If finish_capture = 0 AND
-  (`dx * dx + dy * dy > step_in_sq OR idle_capture < idle_limit`), with idle_capture of
-  `K.squad_target`, compute the cover post. Set `side = 1`, or `side = -1` when seat of
-  `K.squad_target` is 3. Set `ax = post_x - hx` and `ay = post_y - hy`. If `selfTeam = 0`, add
-  `post_shift` to ax. Else subtract `post_shift` from ax. Call `sk_motor__isqrt(ax * ax + ay * ay)`
-  of `SK.motor`. If root of `SK.motor` is more than 0, set
-  `goal_x = hx + (ax * 3 - ay * 2 * side) * post_radius \ root` and
-  `goal_y = hy + (ay * 3 + ax * 2 * side) * post_radius \ root`. Step 3: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when
-  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 4: if finish_capture = 1,
-  call sk_motor__finish_cover_capture(hx, hy). Else call
-  `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (quiet approach): call the host command
-  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
-  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of
-  `K.squad_target`. Step 6: set status to 0.
+- Summary: Cover-role cogs directly occupy the target capture ring instead of waiting at outside posts.
+- Spec: `__start` does nothing. On every `__tick`, read objective from `K.squad_target`.
+  Set hx = controlX(objective) and hy = controlY(objective).
+  Set dx = hx - selfX and dy = hy - selfY. Set hold = 0.
+  When dx * dx + dy * dy < hold_sq, set hold = 1.
+  Call sk_motor__direct_capture(hx, hy, hold) of `SK.motor` once.
+  After the motor call, issue sneak(1) when best of `K.contacts` < 0 AND soundCount() > 0
+  AND dx * dx + dy * dy < quiet_sq. Set status = 0.
+  This changes only the four cover cogs' heart capability. Preserve original target allocation,
+  retreat and resupply priorities, and all aiming, firing and grenade behavior.
 - Uses: `K.squad_target`, `K.contacts`, `SK.motor`
 - Params:
-  - capture_sq = 19600 square cm -- engine capture radius140cm squared
-  - step_in_sq = 640000 square cm -- base.bas value, 8 m
-  - idle_limit = 96 ticks -- base.bas value, four seconds without our team capturing
-  - post_x = 3200 cm -- base.bas value, x of the point the post faces away from
-  - post_y = 2000 cm -- base.bas value, y of the point the post faces away from
-  - post_shift = 1200 cm -- base.bas value, team offset of that point
-  - post_radius = 90 -- base.bas value, post distance scale
-  - hold_sq = 8100 square cm -- base.bas value, within 90 cm of the post
-  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective
+  - hold_sq = 8100 square cm -- use ring-capturer holding distance90cm
+  - quiet_sq = 810000 square cm -- preserve quiet approach within9m
 - Done when: never
 - Checks:
-  - Acted: the rule selects this capability when the squad has a target. Reads: PWD.r, PWD.c
-  - Acted properly: a cover cog stays near its post while a teammate captures. Reads: `K.squad_target`.idle_capture, replay
-- Status: specified (2026-10-05)
+  - Acted: cover-role heart capability always requests the heart center. Reads: replay
+  - Result: empty-ring time near cover cogs falls and team captures rise. Reads: replay
+- Status: specified (2026-10-06)
+- Rationale: Four cover cogs previously walked to posts outside the ring. Direct staffing can
+  preserve capture progress after a ring cog dies or diverting supply removes it. More bodies
+  in the ring do not imply faster capture; crowding may increase grenade or friendly-fire losses.
 
 ### C.default_goal
 - Summary: With no squad target, go for the thief, home, or the heart.
@@ -440,38 +423,29 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ### C.fall_back
-- Summary: Regroup behind a nearby teammate, or make a short local retreat and reassess.
-- Spec: `__start` does nothing. On every `__tick`, do these steps in order.
-  Step 1: read cx = foe_cx and cy = foe_cy from `K.contacts`. Set buddy = -1 and
-  buddy_cost = 2147483647. For i = 0 to 15, consider only i <> selfId with visible(i)
-  and i MOD 2 = selfTeam. Let dx = playerX(i) - selfX, dy = playerY(i) - selfY and
-  d2 = dx * dx + dy * dy. When d2 > buddy_min_sq AND d2 <= buddy_max_sq AND
-  d2 < buddy_cost, set buddy = i and buddy_cost = d2. Lowest seat wins exact ties.
-  Step 2: when buddy >= 0, set anchor_x = playerX(buddy), anchor_y = playerY(buddy)
-  and has_buddy = 1. Otherwise set anchor_x = selfX, anchor_y = selfY and has_buddy = 0.
-  Set dx = anchor_x - cx and dy = anchor_y - cy. Set scale to the larger of ABS(dx)
-  and ABS(dy). If scale = 0, replace dx with homeX - selfX and dy with homeY - selfY,
-  and recompute scale. When scale > 0, set goal_x = anchor_x + dx * retreat_step \ scale
-  and goal_y = anchor_y + dy * retreat_step \ scale. Otherwise set goal_x = anchor_x
-  and goal_y = anchor_y. This places the goal behind the teammate relative to the visible
-  enemy centroid; without a teammate it retreats at most retreat_step on each axis.
-  Step 3: call sk_motor__regroup(goal_x, goal_y, has_buddy) of `SK.motor`, then set status = 0.
-  The motor still aims, dodges, fires and finishes grenades normally. Do not change retreat
-  eligibility, squad objectives, supply gates or capture behavior. Recompute each tick;
-  do not retain a stale teammate location. No quiet-approach override in this capability.
-- Uses: `K.contacts`, `SK.motor`
+- Summary: Head for the heart that is far from the enemies and near us.
+- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set
+  `cx = foe_cx` and `cy = foe_cy` of `K.contacts`. Set `away = -1` and
+  `away_score = -2147483647`. For `j = 0` while `j < heartCount() AND j < 64`, set `ex = (controlX(j) - cx) \ 16`,
+  `ey = (controlY(j) - cy) \ 16`, `mx = (controlX(j) - selfX) \ 16`,
+  `my = (controlY(j) - selfY) \ 16`, and `score = ex * ex + ey * ey - (mx * mx + my * my) \ 2`.
+  If `score > away_score`, set `away = j` and `away_score = score`. Step 2: if `away >= 0`, the
+  goal is `(controlX(away), controlY(away))`. Else the goal is our own position. Step 3: call
+  `sk_motor__act(goal_x, goal_y, 0)` of `SK.motor`. Step 4 (quiet approach): call the host command
+  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`.
+  objective of `K.squad_target` is 0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
+  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 5:
+  set status to 0.
+- Uses: `K.contacts`, `K.squad_target`, `SK.motor`
 - Params:
-  - buddy_min_sq = 90000 square cm -- do not chase a teammate already within 3 m
-  - buddy_max_sq = 6760000 square cm -- seek support within 26 m
-  - retreat_step = 600 cm -- offset behind the anchor, bounded per axis
+  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective
 - Done when: never
 - Checks:
-  - Acted: fallback goals follow the visible teammate anchor or local retreat construction. Reads: replay
-  - Result: isolated deaths per minute decrease and owned hearts at 60 seconds increase. Reads: replay
-- Status: specified (2026-10-06)
-- Rationale: Distant-heart retreat destinations can disperse the squad and concede territory.
-  A nearby teammate is not guaranteed safe: joining one can move toward a fight or cluster
-  us under grenades. This structural regrouping hypothesis needs hosted evaluation.
+  - Acted: the rule selects this capability when we are losing the fight. Reads: PWD.r, PWD.c
+  - Result: we survive the activation. Reads: PWE.e, replay
+- Status: specified (2026-10-05)
+- Rationale: `S.losing_fight` needs a heart, so away is never -1 here. A losing fight also means a
+  visible target, so Step 4 never fires. Both stay for a literal match with base.bas.
 
 ## Strategy
 
@@ -519,20 +493,20 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy regroup_ticks_total, local_retreat_ticks_total, spray_distance_shots_total, forced_total and
-  tracking_updates_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
+  On a send, copy direct_capture_ticks_total, continued_total, forced_total and
+  tracking_updates_total, cover_capture_ticks_total and spray_distance_shots_total from `SK.motor` into same-named outputs for periodic telemetry.
 - Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
 - Outputs:
-  - regroup_ticks_total -- teammate regroup ticks through this status snapshot
-  - local_retreat_ticks_total -- local retreat ticks through this status snapshot
-  - spray_distance_shots_total -- newly enabled spray requests through this status snapshot
+  - direct_capture_ticks_total -- direct cover capture ticks through this status snapshot
+  - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
-- Log: regroup_ticks_total, local_retreat_ticks_total, spray_distance_shots_total, forced_total, tracking_updates_total, cover_capture_ticks_total
+  - spray_distance_shots_total -- actual newly enabled spray requests through this snapshot
+- Log: direct_capture_ticks_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total, spray_distance_shots_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay
