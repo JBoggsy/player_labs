@@ -305,7 +305,6 @@ SUB sk_motor__gun()
     END IF
     ' Hold fire when a visible teammate (by observed slot parity) stands in the line.
     sk_motor__clear = 1
-    sk_motor__spray_clear = 1
     sk_motor__sx = sk_motor__tx - selfX
     sk_motor__sy = sk_motor__ty - selfY
     sk_motor__isqrt(sk_motor__sx * sk_motor__sx + sk_motor__sy * sk_motor__sy)
@@ -324,23 +323,11 @@ SUB sk_motor__gun()
           IF sk_motor__along > 0 AND sk_motor__along < sk_motor__reach AND sk_motor__across < 95 THEN
             sk_motor__clear = 0
           END IF
-          ' Rules 49 spray cone includes the victim body radius and extends beyond the aim point.
-          IF hasSpray AND sk_motor__along > 0 AND sk_motor__along <= 905 THEN
-            IF sk_motor__across <= sk_motor__along * 4 \ 5 + 55 THEN
-              sk_motor__spray_clear = 0
-            END IF
-          END IF
         END IF
         sk_motor__i = sk_motor__i + 1
       WEND
     END IF
     IF hasSpray = 0 OR k_contacts__best_cost < sk_motor__spray_range_sq THEN
-      IF hasSpray AND sk_motor__clear AND sk_motor__spray_clear = 0 THEN
-        sk_motor__clear = 0
-        IF sk_motor__gun_wait = 0 THEN
-          sk_motor__spray_hold_total = sk_motor__spray_hold_total + 1
-        END IF
-      END IF
       IF sk_motor__clear AND sk_motor__gun_wait = 0 THEN
         shootAt(sk_motor__tx, sk_motor__ty)
         sk_motor__gun_wait = sk_motor__gun_wait_light
@@ -461,4 +448,10 @@ SUB sk_motor__act(sk_motor_gx, sk_motor_gy, sk_motor_hold)
   sk_motor__dry_route()
   sk_motor__gun()
   sk_motor__grenade()
+END SUB
+
+' A cover cog already capturing stays inside the ring until ownership or the objective changes.
+SUB sk_motor__finish_cover_capture(sk_motor_capture_x, sk_motor_capture_y)
+  sk_motor__cover_capture_ticks_total = sk_motor__cover_capture_ticks_total + 1
+  sk_motor__act(sk_motor_capture_x, sk_motor_capture_y, 1)
 END SUB

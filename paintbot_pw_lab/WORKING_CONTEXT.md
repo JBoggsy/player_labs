@@ -152,15 +152,12 @@ Heartland memberships and the orchestrator's stopgap are outside this optimizer'
 
 ## Current pipeline source
 
-Iteration8 resupply child98c3a918-1 is parked:27/56 vs v7,46/56 upstream versus parent53/56.
-Working source now starts from submitted v6/source21b9c416 and adds only a spray-cone
-teammate veto. Rules49 spray is much wider than the original95cm gun corridor. Counter
-spray_hold_total counts otherwise ready trigger opportunities newly withheld. V7 firing
-cadence and iteration8 resupply gate are absent. REPORT-9.md records evidence and limits.
-Build51fe35f4-1 passes G1–G5;27/56 vs v6,53/56 upstream,23/24 recorded. Spray teammate
-HP45→24, enemy121→129; no score gain demonstrated. Counter9 across2/32seats with24872
-valid lines. Hold upload until v7 A/B decides. Iteration7 currently has artifact-transport
-failures in both arms and an inconclusive partial Richard interval; do not promote v7.
-Iteration7 all240 episodes requested
-for120credits; cumulative committed624. Streaming continues in current_results_queue.py.
-V6 is orchestrator-submitted as sub_9d9511f9-264c-4ed5-b0f8-026d924377b4 and is baseline.
+Orchestrator redirects the next candidate to Richard's territory advantage. Working source
+starts from submitted v6/source21b9c416 and changes only C.cover_heart: once inside a ring
+and our team is capturing, finish that capture instead of returning to the cover post.
+Source bug: capturing resets idle_capture, which previously reactivated the post branch.
+146/160 one-tick resets and214/391 total v3 resets in28 Richard losses have the cover-post
+exit pattern. Counter cover_capture_ticks_total records actual held-cover motor calls.
+REPORT-10.md contains opening/split/recapture analysis and limits. Compile/screen locally;
+hold upload until v7 decides. Spray guard51fe35f4-1 and resupply98c3a918-1 are not included.
+V6 remains submitted baseline sub_9d9511f9-264c-4ed5-b0f8-026d924377b4. Campaign624 credits.

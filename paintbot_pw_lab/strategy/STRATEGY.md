@@ -294,13 +294,10 @@ Reading aid (the compiler receives component fields, not this introduction):
   charge logic. Never release merely because visibility or eligibility disappeared.
   This is charge continuity with safe target tracking, not a guarantee that teammates cannot
   enter the eventual blast.
-  When a spray can is held, add a spray-cone teammate veto to the original gun-line check.
-  Use the same selected aim and visible observed-teammate loop. Set spray_clear to 1 first.
-  For each teammate, if along > 0 AND along <= 905 AND across <= along * 4 \ 5 + 55,
-  set spray_clear to 0. This is rules49 spray reach850 plus body radius55, with cone slope4/5.
-  When the original spray-range test permits firing and clear = 1 but spray_clear = 0,
-  set clear to 0. Also increment spray_hold_total if gun_wait = 0 on that tick.
-  Keep the original gun corridor, private gun timer, all aim calculations and grenade tracking.
+  The helper sk_motor__finish_cover_capture(gx, gy) increments cover_capture_ticks_total
+  once, then calls sk_motor__act(gx, gy, 1). Only C.cover_heart calls this helper when it is
+  already inside the objective capture ring and our team is capturing there. The forced
+  holding flag uses the existing motor ring-preserving footwork. No other motor logic changes.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
@@ -315,7 +312,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- cumulative ticks where continuity prevents the old early release
   - forced_total -- cumulative releases forced by becoming disarmed during a charge
   - tracking_updates_total -- cumulative armed charging ticks with a changed safe aim or charge requirement
-  - spray_hold_total -- otherwise ready spray trigger requests withheld by the added teammate cone
+  - cover_capture_ticks_total -- cover-capability ticks spent holding an already-started capture
 - Params:
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
   - lead_ticks = 6 ticks -- base.bas value, the gun windup
@@ -357,21 +354,26 @@ Reading aid (the compiler receives component fields, not this introduction):
   (squad seats 2 and 3).
 - Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set
   `hx = controlX(objective)`, `hy = controlY(objective)`, with objective of `K.squad_target`.
-  Set `goal_x = hx` and `goal_y = hy`. Step 2: set `dx = hx - selfX` and `dy = hy - selfY`. If
-  `dx * dx + dy * dy > step_in_sq OR idle_capture < idle_limit`, with idle_capture of
+  Set `goal_x = hx` and `goal_y = hy`. Step 2: set `dx = hx - selfX` and `dy = hy - selfY`.
+  Set finish_capture = 1 when objective >= 0 AND controlCaptureTeam(objective) = selfTeam
+  AND dx * dx + dy * dy <= capture_sq. Else set finish_capture = 0.
+  If finish_capture = 0 AND
+  (`dx * dx + dy * dy > step_in_sq OR idle_capture < idle_limit`), with idle_capture of
   `K.squad_target`, compute the cover post. Set `side = 1`, or `side = -1` when seat of
   `K.squad_target` is 3. Set `ax = post_x - hx` and `ay = post_y - hy`. If `selfTeam = 0`, add
   `post_shift` to ax. Else subtract `post_shift` from ax. Call `sk_motor__isqrt(ax * ax + ay * ay)`
   of `SK.motor`. If root of `SK.motor` is more than 0, set
   `goal_x = hx + (ax * 3 - ay * 2 * side) * post_radius \ root` and
   `goal_y = hy + (ay * 3 + ax * 2 * side) * post_radius \ root`. Step 3: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when
-  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 4: call
+  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 4: if finish_capture = 1,
+  call sk_motor__finish_cover_capture(hx, hy). Else call
   `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (quiet approach): call the host command
   `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
   (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of
   `K.squad_target`. Step 6: set status to 0.
 - Uses: `K.squad_target`, `K.contacts`, `SK.motor`
 - Params:
+  - capture_sq = 19600 square cm -- engine capture radius140cm squared
   - step_in_sq = 640000 square cm -- base.bas value, 8 m
   - idle_limit = 96 ticks -- base.bas value, four seconds without our team capturing
   - post_x = 3200 cm -- base.bas value, x of the point the post faces away from
@@ -496,7 +498,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
   On a send, copy starts_total, blocked_total, continued_total, forced_total and
-  tracking_updates_total and spray_hold_total from `SK.motor` into same-named outputs for periodic telemetry.
+  tracking_updates_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
 - Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
@@ -507,8 +509,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
-  - spray_hold_total -- additional ready spray requests withheld through this status snapshot
-- Log: starts_total, blocked_total, continued_total, forced_total, tracking_updates_total, spray_hold_total
+  - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
+- Log: starts_total, blocked_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay
