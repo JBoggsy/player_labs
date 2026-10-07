@@ -72,6 +72,20 @@ class SearchBot:
         entry = next((ph for ph in history.get("phases", []) if ph["turn"] == pending["turn"] and ph["phase"] == "Diplomacy"), None)
         if entry is None:
             return
+        # Hostility toward us: decayed count of each power's moves into our provinces and
+        # supports of such moves (implicit diplomacy in no-press play).
+        ours = set(pending.get("our_provinces", []))
+        hostility = self.memory.setdefault("hostility", {})
+        for c in list(hostility):
+            hostility[c] *= config.DIPLO_DECAY
+        parent = {t: self.b.province(t) for t in self.b.terr}
+        for o in entry.get("orders") or []:
+            c = str(o["countryID"])
+            if int(c) == self.country or not o.get("toTerrID"):
+                continue
+            target = parent.get(o["toTerrID"], o["toTerrID"])
+            if (o["type"] == "Move" or o["type"] == "Support move") and target in ours:
+                hostility[c] = hostility.get(c, 0.0) + 1.0
         for o in entry.get("orders") or []:
             key = str(o["terrID"])
             unit = pending["units"].get(key)
@@ -164,8 +178,11 @@ class SearchBot:
                 raw.extend(zip(theirs[c], chosen))
             opponents.append(sample)
             raw_samples.append(raw)
+        ours = {b.province(u["terrID"]) for u in b.units if int(u["countryID"]) == self.country}
+        ours |= {t for t, o in b.owner.items() if o == self.country}
         self.memory["pending"] = {
             "turn": self.turn,
+            "our_provinces": sorted(ours),
             "units": {
                 str(u["terrID"]): {
                     "n_legal": len(legal[u["id"]]),
@@ -354,6 +371,26 @@ class SearchBot:
                     best, best_value = cand, v
                     self.trace["opp_level1_improvements"] += 1
         return best
+
+    def _diplomacy_adjust(self, projected, me):
+        """Implicit diplomacy: centres taken from a power count more if it has been hostile to
+        us (grudge) and less if it has left us alone (peace), until DIPLO_STAB_YEAR."""
+        hostility = self.memory.get("hostility", {})
+        year = 1901 + self.turn // 2
+        adj = 0.0
+        for t, holder in projected.items():
+            if holder != me:
+                continue
+            prev = self.b.owner.get(t)
+            if not prev or prev == me:
+                continue
+            h = hostility.get(str(prev), 0.0)
+            if h >= config.DIPLO_HOSTILE:
+                adj += config.DIPLO_GRUDGE
+            elif year < config.DIPLO_STAB_YEAR:
+                adj -= config.DIPLO_PEACE
+        self.trace["diplo_evals"] += 1
+        return adj
 
     def _remember(self, score, cand):
         """Keep the best few plans evaluated during the ascent (rollout re-rank pool)."""
@@ -570,6 +607,8 @@ class SearchBot:
             if holder:
                 counts[holder] = counts.get(holder, 0) + 1
         sc = counts.get(me, 0)
+        if config.DIPLO and me == self.country:
+            sc += self._diplomacy_adjust(projected, me)
         if config.SEARCH_EVAL == "learned":
             final_units = []
             for (country, prov, utype), o, mv, dl, u, raw in zip(fu, fo, moved, dislodged, units, orders):

@@ -99,6 +99,11 @@ PERSONALITIES = {
         "overrides": {"OPP_MODEL_LEVEL": 1, "SEARCH_SOFTMAX_T": 2.0},
         "motto": "Unkillable, unreadable: Kissinger's mind, but rolls the dice among its best plans.",
     },
+    "castlereagh": {
+        "base": "search",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "DIPLO": 1},
+        "motto": "Congress of Vienna: keeps the peace with quiet neighbours, never forgets an attack, stabs on schedule.",
+    },
 }
 
 

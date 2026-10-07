@@ -78,3 +78,10 @@ SEARCH_CONVOY_APPROX = 1  # evaluate convoys inside fastadj (approximation) inst
 # Mixed strategy over the top plans: temperature (0 = always the best plan) and pool size.
 SEARCH_SOFTMAX_T = 0.0
 SEARCH_SOFTMAX_POOL = 4
+# Implicit diplomacy (no-press): hostility memory from public history.
+DIPLO = 0
+DIPLO_DECAY = 0.7      # per movement phase
+DIPLO_HOSTILE = 1.0    # decayed attacks at/above this = hostile
+DIPLO_GRUDGE = 0.5     # extra centre-value for taking a hostile power's centre
+DIPLO_PEACE = 0.6      # centre-value discount for taking a peaceful power's centre
+DIPLO_STAB_YEAR = 1905 # peace discount applies before this year
