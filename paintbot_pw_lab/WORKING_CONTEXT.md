@@ -15,16 +15,17 @@ build6121c0a2-1. Its664-game cohort is queued;213pursuit ticks in6of32 targeted 
 I29 diagnosis and design are in tmp/collab/optimizer/REPORT-29.md. Eight selected v10-xolod
 wins finish on the heart meter with2–5 enemies alive. All hearts are owned well before
 completion. Investigate post-capture pursuit without changing earlier capture decisions.
-I30 working source is an independent v10 child for short visible glory-heart detours,
-while i29 runs. REPORT-30 records mechanism, visibility bounds and unknown opportunity rate.
+I30/v25 is an independent v10 child for short visible glory-heart detours,
+build66386cde-1, UUID98763b00-5e58-4957-917d-13f55244ca8e. Its664-game cohort is queued
+while i29 runs.149actual detour ticks in8of32targeted recordings, no validation failures.
+REPORT-30 records mechanism, visibility bounds and unknown opportunity rate.
 No unsupported causal time-saving estimate or optimizer league submission.
 
 ## Loop charter
 
 - objective: improve mean score_outcome against xolod:v14 at margin_scale600; secondary median win time and our glory. Finist is the secondary opponent, Richard the strength guard.
 - policy_file: paintbot_pw_lab/strategy/STRATEGY.md
-- policy_name: jb-pw-opt
-- player: James Botts, ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce.
+- policy_name / player: jb-pw-opt on James Botts, ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce.
 - baseline: jb-pw-opt:v10, UUID8c4947c7-0679-4826-a653-9de20c62ffa3, build7faadaa4-1.
 - opponents: xolod:v14 primary, at least200episodes/arm; finist:v2 secondary48/arm; co-gas-paintbot-bassy-richard:v1 guard48/arm; small matched guards against zhar:v55, relh-paintbot-pw:v56, paintbot-pw-basic-v22:v1, daveey-pw-league-smoke-l17c-s41u150-hc:v1, paintbot-heartwick-starter:v2. Refresh identities before admission; flag frozen leaders that resume acting.
 - allowed_changes: one attributable strategy or authored skill change with activation tracing; compile committed inputs, never hand-edit generated BASIC. VERDICT-28 authorizes proposing and building the largest diagnosed time-saving change.
