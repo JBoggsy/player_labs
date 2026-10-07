@@ -2,7 +2,7 @@
 
 import time
 
-from webdip_bot import config
+from webdip_bot import config, search_lookahead
 from webdip_bot.dumbbot import DumbBot
 from webdip_bot.search_orders import _key, _same
 
@@ -11,13 +11,13 @@ def choose_movement(bot, slots, mine, started):
     seeds = seed_plans(bot, slots)
 
     # 3. Coordinate ascent over each unit's legal orders, from the best few seeds.
-    bot.joints = bot._joint_alternatives(mine)
+    bot.joints = joint_alternatives(bot, mine)
     bot.top_seen = []
     bot.improved_any = 0
     finals = []
     seen = set()
     for score, cand in seeds[: config.SEARCH_RESTARTS]:
-        score, cand = bot._ascend(cand, score, started)
+        score, cand = ascend(bot, cand, score, started)
         key = tuple(_key(o) for o in cand)
         if key not in seen:
             seen.add(key)
@@ -37,7 +37,7 @@ def choose_movement(bot, slots, mine, started):
                 pool.append((sc, c))
         pool.sort(key=lambda x: -x[0])
         if len(pool) > 1:
-            best = bot._rollout_rerank(pool, mine, started)
+            best = search_lookahead.rollout_rerank(bot, pool, mine, started)
     bot.trace["search_improvements"] += improved_any
     bot.trace["search_sims"] += bot.sims
     bot.trace["search_score"] = round(best_score, 1)
@@ -51,7 +51,7 @@ def seed_plans(bot, slots):
     seeds = []
     for _ in range(config.SEARCH_SEEDS):
         cand = seeder.choose(slots)
-        seeds.append((bot._evaluate(cand), cand))
+        seeds.append((bot.evaluator.evaluate(cand), cand))
     seeds.sort(key=lambda x: -x[0])
     bot.trace["search_seed_score"] = round(seeds[0][0], 1)
     return seeds
@@ -101,8 +101,8 @@ def ascend(bot, best, best_score, started):
                 if all(_same(o, best[k]) for k, o in joint.items()):
                     continue
                 cand = [joint.get(k, o) for k, o in enumerate(best)]
-                s = bot._evaluate(cand)
-                bot._remember(s, cand)
+                s = bot.evaluator.evaluate(cand)
+                remember(bot, s, cand)
                 if s > best_score + 1e-9:
                     best, best_score, changed = cand, s, True
                     bot.improved_any += 1

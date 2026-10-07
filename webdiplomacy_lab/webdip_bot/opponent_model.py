@@ -31,6 +31,12 @@ class OpponentModel:
         entry = next((ph for ph in history.get("phases", []) if ph["turn"] == pending["turn"] and ph["phase"] == "Diplomacy"), None)
         if entry is None:
             return
+        self.update_hostility(pending, entry)
+        self.update_type_beliefs(pending, entry)
+
+    def update_hostility(self, pending, entry):
+        """Decay hostility, then tally moves/supports into our previous provinces."""
+        bot = self.bot
         # Hostility toward us: decayed count of each power's moves into our provinces and
         # supports of such moves (implicit diplomacy in no-press play).
         ours = set(pending.get("our_provinces", []))
@@ -45,6 +51,10 @@ class OpponentModel:
             target = parent.get(o["toTerrID"], o["toTerrID"])
             if (o["type"] == "Move" or o["type"] == "Support move") and target in ours:
                 hostility[c] = hostility.get(c, 0.0) + 1.0
+
+    def update_type_beliefs(self, pending, entry):
+        """Accumulate competent/random log-odds from the previous movement orders."""
+        bot = self.bot
         for o in entry.get("orders") or []:
             key = str(o["terrID"])
             unit = pending["units"].get(key)
@@ -96,7 +106,7 @@ class OpponentModel:
                 fu, fo = fast_orders(units_c + cu, orders_c + co, bot.parent)
                 if fo is None:
                     return float("-inf")
-                total += bot._score_fast(fu, fo, units_c + cu, orders_c + co, country=c, value=model.value, vmax=vmax)
+                total += bot.evaluator.score_fast(fu, fo, units_c + cu, orders_c + co, country=c, value=model.value, vmax=vmax)
             return total / len(contexts)
 
         best = list(base)
@@ -120,7 +130,7 @@ class OpponentModel:
         b = bot.b
         # 1. Opponent samples (each a {power: [order strings]}), DumbBot or uniform-random
         # legal per power according to the adaptive belief.
-        bot._update_beliefs()
+        self.update_beliefs()
         opponents = []
         raw_samples = []
         models = {}
@@ -141,7 +151,7 @@ class OpponentModel:
         level1 = None
         if config.OPP_MODEL_LEVEL >= 2:
             # Level 2: every opponent best-responds to level-1 versions of the others.
-            level1 = {c: [bot._improve_for(c, models[c], theirs[c], dumb_samples[c][j], j, models, theirs,
+            level1 = {c: [self.improve_for(c, models[c], theirs[c], dumb_samples[c][j], j, models, theirs,
                                             dumb_samples, mine, our_dumb, legal) for j in range(n_samples)]
                       for c in models}
             bot.trace["opp_level2_phases"] += 1
@@ -150,16 +160,16 @@ class OpponentModel:
             raw = []
             for c, model in models.items():
                 d = dumb_samples[c][j]
-                if bot.rng.random() < bot._dumb_share(c):
+                if bot.rng.random() < self.dumb_share(c):
                     chosen = d
                     if level1 is not None:
-                        chosen = bot._improve_for(c, models[c], theirs[c], level1[c][j], j, models, theirs, level1, mine, our_dumb, legal)
+                        chosen = self.improve_for(c, models[c], theirs[c], level1[c][j], j, models, theirs, level1, mine, our_dumb, legal)
                     elif config.OPP_MODEL_LEVEL >= 1 and bot.rng.random() < config.OPP_LEVEL1_SHARE:
-                        chosen = bot._improve_for(c, models[c], theirs[c], d, j, models, theirs, dumb_samples, mine, our_dumb, legal)
+                        chosen = self.improve_for(c, models[c], theirs[c], d, j, models, theirs, dumb_samples, mine, our_dumb, legal)
                 else:
                     chosen = [bot.rng.choice(legal[u["id"]]) for u in theirs[c]]
                     bot.trace["opp_random_samples"] += 1
-                sample[POWER[c]] = [bot._dip(o) for o in chosen]
+                sample[POWER[c]] = [bot.dm.order(o, bot.unit_at) for o in chosen]
                 raw.extend(zip(theirs[c], chosen))
             opponents.append(sample)
             raw_samples.append(raw)
@@ -179,7 +189,7 @@ class OpponentModel:
                 for k, u in enumerate(theirs[c])
             },
         }
-        shares = [bot._dumb_share(c) for c in models]
+        shares = [self.dumb_share(c) for c in models]
         if shares:
             bot.trace["opp_dumb_share_x100"] = round(100 * sum(shares) / len(shares))
         return opponents, raw_samples

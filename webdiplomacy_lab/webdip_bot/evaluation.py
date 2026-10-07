@@ -6,7 +6,7 @@ terms individually and does not apply learned blending or diplomacy adjustments.
 
 from webdip_bot import config, fastadj, valuefn
 from webdip_bot.dipmap import POWER
-from webdip_bot.search_orders import fast_orders
+from webdip_bot.search_orders import adjudicate, fast_orders
 
 _GRAPHS = {}
 
@@ -29,12 +29,12 @@ class PositionEvaluator:
         mine_dip = None
         for k, (units, fu, fo, raw) in enumerate(bot.fast_samples):
             if mo is not None and fo is not None and config.SEARCH_FAST_ADJ:
-                values.append(bot._score_fast(mu + fu, mo + fo, bot.mine_units + units, ours + raw))
+                values.append(self.score_fast(mu + fu, mo + fo, bot.mine_units + units, ours + raw))
                 bot.sims += 1
             else:
                 if mine_dip is None:
-                    mine_dip = [bot._dip(o) for o in ours]
-                values.append(bot._score(bot._adjudicate(mine_dip, bot.opponents[k])))
+                    mine_dip = [bot.dm.order(o, bot.unit_at) for o in ours]
+                values.append(self.score_package(adjudicate(bot, mine_dip, bot.opponents[k])))
                 bot.trace["search_package_sims"] += 1
         mean = sum(values) / len(values)
         # Risk aversion: pull the mean toward the worst opponent sample.
@@ -67,7 +67,7 @@ class PositionEvaluator:
                 counts[holder] = counts.get(holder, 0) + 1
         sc = counts.get(me, 0)
         if config.DIPLO and me == bot.country:
-            sc += bot._diplomacy_adjust(projected, me)
+            sc += self.diplomacy_adjust(projected, me)
         sc = self.center_value(sc, fu, fo, moved, dislodged, units, orders, projected, me)
         if config.SEARCH_OBJECTIVE == "share":
             total = sum(v * v for v in counts.values()) or 1

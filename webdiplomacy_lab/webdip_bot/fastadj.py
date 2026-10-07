@@ -2,9 +2,9 @@
 
 Implements Lucas Kruijswijk's "guess and check" resolution (the DATC reference design,
 https://webdiplomacy.net/doc/DATC_v3_0.html section 5) restricted to Hold / Move /
-Support hold / Support move. Callers fall back to the `diplomacy` package when any
-order is a Convoy or a convoyed move. Differentially tested against the package by
-`webdiplomacy_lab/tools/check_fastadj.py`.
+Support hold / Support move. search_orders.fast_orders approximates convoys by default;
+with SEARCH_CONVOY_APPROX=0 it signals package fallback instead. Differentially tested
+against the package by `webdip_bot.check_fastadj` (excluding convoy orders).
 
 Inputs are province-level: `units` is a list of (country, province, unit_type) and
 `orders` a parallel list of tuples:

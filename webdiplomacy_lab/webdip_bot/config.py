@@ -1,4 +1,4 @@
-"""Tunable DumbBot weights. Defaults are the original DumbBot / MIT-port values."""
+"""Live tunables for DumbBot, search components and Nash; policy overrides use these names."""
 
 PROXIMITY_DEPTHS = 10
 
@@ -26,12 +26,12 @@ BUILD_DEFENSE_WEIGHT = 1000
 ALTERNATIVE_DIFF_MODIFIER = 5
 PLAY_ALTERNATIVE = 0.5
 
-# --- SearchBot (search.py) ---
+# --- SearchBot components (ownership and extension points: README.md) ---
 SEARCH_OPPONENT_SAMPLES = 16
 SEARCH_SEEDS = 12
 SEARCH_PASSES = 6
-# Wall-clock search budget per movement phase. Hosted phases are 1 minute and pods get
-# ~0.25 CPU, so the hosted default is generous; the local arena passes 8 s via env.
+# Shared wall-clock budget for movement, lookahead and Nash search.
+# WEBDIP_SEARCH_BUDGET_S supplies the default at import; policy overrides can replace it.
 SEARCH_TIME_BUDGET_S = float(__import__("os").environ.get("WEBDIP_SEARCH_BUDGET_S", "20"))
 SEARCH_SC_WEIGHT = 10.0
 SEARCH_POS_WEIGHT = 1.0
@@ -45,7 +45,7 @@ OPP_PRIOR_LOGODDS = 0.0
 OPP_LOGODDS_CLIP = 8.0
 # Search objective: "sc" (our projected centres) or "share" (projected SC^2 share x34).
 SEARCH_OBJECTIVE = "sc"
-SEARCH_FAST_ADJ = 1  # use fastadj (no-convoy turns); package fallback otherwise
+SEARCH_FAST_ADJ = 1  # evaluation.py: fastadj after conversion; 0 forces package scoring
 SEARCH_RESTARTS = 1  # championship-1: restarts=3 versions lost to 1 (optimizer's curse)
 # Spring re-ranking of the top ascent results by a simulated DumbBot autumn (0 = off).
 SEARCH_ROLLOUT = 0
@@ -56,7 +56,7 @@ SEARCH_ROLLOUT_STATIC_WEIGHT = 0.5
 SEARCH_BUILDS = 0
 SEARCH_BUILD_CANDIDATES = 12
 # Opponent sophistication: 0 = DumbBot samples; 1 = each DumbBot sample improved by one pass
-# of that power's own best response (iterated best response, one level).
+# of that power's own best response; 2 = best response to level-1 plans.
 OPP_MODEL_LEVEL = 0
 # Static evaluation of a search outcome: "projected" (centres held if it were autumn) or
 # "learned" (valuefn.py ridge model: predicted centres two years ahead).

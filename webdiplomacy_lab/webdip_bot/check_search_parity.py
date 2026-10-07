@@ -79,7 +79,30 @@ def record_scores():
     counts = Counter()
     names = ("_score_fast", "_score", "_evaluate", "_diplomacy_adjust", "_spring_value", "_rollout",
              "_improve_for", "_dumb_share", "_update_beliefs", "_ascend", "_remember", "_joint_alternatives")
-    originals = {name: getattr(SearchBot, name) for name in names}
+    if hasattr(SearchBot, "_score_fast"):
+        targets = {name: (SearchBot, name) for name in names}
+        component_owners = ()
+    else:
+        from webdip_bot.evaluation import PositionEvaluator
+        from webdip_bot.opponent_model import OpponentModel
+        from webdip_bot import search_lookahead, search_moves
+
+        targets = {
+            "_score_fast": (PositionEvaluator, "score_fast"),
+            "_score": (PositionEvaluator, "score_package"),
+            "_evaluate": (PositionEvaluator, "evaluate"),
+            "_diplomacy_adjust": (PositionEvaluator, "diplomacy_adjust"),
+            "_spring_value": (search_lookahead, "spring_value"),
+            "_rollout": (search_lookahead, "rollout"),
+            "_improve_for": (OpponentModel, "improve_for"),
+            "_dumb_share": (OpponentModel, "dumb_share"),
+            "_update_beliefs": (OpponentModel, "update_beliefs"),
+            "_ascend": (search_moves, "ascend"),
+            "_remember": (search_moves, "remember"),
+            "_joint_alternatives": (search_moves, "joint_alternatives"),
+        }
+        component_owners = (PositionEvaluator, OpponentModel)
+    originals = {name: getattr(owner, attr) for name, (owner, attr) in targets.items()}
 
     def wrap(name, method):
         def recorded(bot, *args, **kwargs):
@@ -92,17 +115,20 @@ def record_scores():
             if name == "_remember":
                 feed(digest, args)
             if name == "_update_beliefs":
-                feed(digest, bot.memory)
+                context = bot.bot if isinstance(bot, component_owners) else bot
+                feed(digest, context.memory)
             return result
         return recorded
 
     try:
         for name, method in originals.items():
-            setattr(SearchBot, name, wrap(name, method))
+            owner, attr = targets[name]
+            setattr(owner, attr, wrap(name, method))
         yield digest, counts
     finally:
         for name, method in originals.items():
-            setattr(SearchBot, name, method)
+            owner, attr = targets[name]
+            setattr(owner, attr, method)
 
 
 def scenarios(data, suite):
@@ -135,6 +161,11 @@ def scenarios(data, suite):
     ]
     for label, policy, overrides in modes:
         yield f"optional/{label}", policy, later, {**small, **overrides}, False, 0.0
+    from webdip_bot.personalities import PERSONALITIES
+
+    for policy in PERSONALITIES:
+        yield f"personality/{policy}", policy, early, {**small, "NASH_CANDIDATES": 2, "NASH_ITERS": 2,
+                                                     "NASH_EVAL_SAMPLES": 2}, False, 0.0
     yield "optional/diplomacy-history", "castlereagh", later, small, True, 0.0
     yield "optional/dumbbot-history", "castlereagh", later, {**small, "OPP_LIKELIHOOD": "dumbbot"}, True, 0.0
     build_seen = set()
