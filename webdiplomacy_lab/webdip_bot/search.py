@@ -195,6 +195,7 @@ class SearchBot:
 
         # 3. Coordinate ascent over each unit's legal orders, from the best few seeds.
         self.joints = self._joint_alternatives(mine)
+        self.top_seen = []
         self.improved_any = 0
         finals = []
         seen = set()
@@ -207,8 +208,17 @@ class SearchBot:
         finals.sort(key=lambda x: -x[0])
         best_score, best = finals[0]
         improved_any = self.improved_any
-        if config.SEARCH_ROLLOUT and self.turn % 2 == 0 and len(finals) > 1:
-            best = self._rollout_rerank(finals, mine, started)
+        if config.SEARCH_ROLLOUT and self.turn % 2 == 0:
+            # Pool: distinct ascent results plus the best distinct plans seen along the way.
+            pool, keys = list(finals), {tuple(_key(o) for o in c) for _, c in finals}
+            for sc, c in sorted(self.top_seen, key=lambda x: -x[0]):
+                k = tuple(_key(o) for o in c)
+                if k not in keys:
+                    keys.add(k)
+                    pool.append((sc, c))
+            pool.sort(key=lambda x: -x[0])
+            if len(pool) > 1:
+                best = self._rollout_rerank(pool, mine, started)
         self.trace["search_improvements"] += improved_any
         self.trace["search_sims"] += self.sims
         self.trace["search_score"] = round(best_score, 1)
@@ -328,6 +338,16 @@ class SearchBot:
                     self.trace["opp_level1_improvements"] += 1
         return best
 
+    def _remember(self, score, cand):
+        """Keep the best few plans evaluated during the ascent (rollout re-rank pool)."""
+        top = self.__dict__.setdefault("top_seen", [])
+        if len(top) < config.SEARCH_ROLLOUT_POOL * 2:
+            top.append((score, cand))
+        else:
+            worst = min(range(len(top)), key=lambda i: top[i][0])
+            if score > top[worst][0]:
+                top[worst] = (score, cand)
+
     def _ascend(self, best, best_score, started):
         for _ in range(config.SEARCH_PASSES):
             changed = False
@@ -342,6 +362,7 @@ class SearchBot:
                         continue
                     cand = [joint.get(k, o) for k, o in enumerate(best)]
                     s = self._evaluate(cand)
+                    self._remember(s, cand)
                     if s > best_score + 1e-9:
                         best, best_score, changed = cand, s, True
                         self.improved_any += 1
