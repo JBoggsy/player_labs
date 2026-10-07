@@ -1,0 +1,71 @@
+"""SearchBot decision state, phase dispatch and component selection.
+
+Movement uses opponent_model, search_moves and evaluation; optional build search
+and spring rollout live in search_lookahead. Retreats and default builds use DumbBot.
+"""
+
+import time
+
+from webdip_bot import config, search_lookahead, search_moves
+from webdip_bot.dumbbot import DumbBot
+from webdip_bot.evaluation import evaluator
+from webdip_bot.opponent_model import opponent_model
+
+# These imports also preserve the search-module API used by Nash and diagnostics.
+from webdip_bot.search_orders import _key, dipmap, fast_orders
+
+
+class SearchBot:
+    def __init__(self, variant, board, country, phase, turn, rng):
+        self.variant, self.board, self.country, self.phase, self.turn, self.rng = (
+            variant, board, country, phase, turn, rng)
+        self.dumb = DumbBot(variant, board, country, phase, turn, rng)
+        self.b = self.dumb.b
+        self.trace = self.dumb.trace
+        self.api = self.context = None
+        self.memory = {}
+        self.evaluator = evaluator(self)
+        self.opponent_model = opponent_model(self)
+
+    def observe(self, api, context, state):
+        """Called by bot.py each phase; `state` persists across the whole game."""
+        self.api, self.context = api, context
+        self.memory = state.setdefault("search", {"logodds": {}, "pending": None})
+
+    def choose(self, slots):
+        self.evaluator = evaluator(self)
+        self.opponent_model = opponent_model(self)
+        if self.phase == "Builds" and slots and config.SEARCH_BUILDS:
+            return search_lookahead.search_adjustments(self, slots)
+        if self.phase != "Diplomacy" or not slots:
+            return self.dumb.choose(slots)
+        started = time.monotonic()
+        b = self.b
+        dm = dipmap(self.variant)
+        self.unit_at = {}
+        for u in b.units:
+            self.unit_at[u["terrID"]] = u
+            self.unit_at[b.province(u["terrID"])] = u
+        self.state = dm.state(b.all_units, b.owner, self.turn)
+        self.dm = dm
+        by_id = {u["id"]: u for u in b.all_units}
+        mine = [by_id[s["unitID"]] for s in slots]
+
+        opponents, raw_samples = self.opponent_model.sample(slots, mine)
+        self.opponents = opponents
+        self.sims = 0
+        self._prepare_fast(mine, raw_samples)
+
+        return search_moves.choose_movement(self, slots, mine, started)
+
+    def _prepare_fast(self, mine, raw_samples):
+        """Province-level arrays for fastadj: our units first, then each sample's others."""
+        parent = {t: self.b.province(t) for t in self.b.terr}
+        self.parent = parent
+        self.mine_units = mine
+        self.fast_samples = []
+        for raw in raw_samples:
+            units = [u for u, _ in raw]
+            fu, fo = fast_orders(units, [o for _, o in raw], parent)
+            self.fast_samples.append((units, fu, fo, [o for _, o in raw]))
+        self.vmax = max(self.dumb.value.values()) or 1.0

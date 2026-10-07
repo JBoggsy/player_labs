@@ -1,0 +1,54 @@
+{
+ "private": true,
+ "target": {
+  "league_id": "league_428e91e5-ee25-4f9c-be5e-a4fc4f993f17",
+  "variant_id": "classic-gunboat"
+ },
+ "roster": [
+  {
+   "player": {
+    "policy_ref": "8d5475bc-a212-4d66-8fd4-cf548e44d03d"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  }
+ ],
+ "num_episodes": 28,
+ "episode_player_llm_spend_limit_usd": 0,
+ "notes": "webdip lab: v3 (search+pairs+convoys+adaptive opp) vs 6 random filler"
+}

@@ -7,7 +7,7 @@ This page records platform contracts, not permission to act. The lab's [workflow
 1. Read the [official documentation index](https://docs.softmax.com/llms.txt), [API overview](https://docs.softmax.com/api-reference/overview), [rate limits](https://docs.softmax.com/guides/rate-limits).
 2. Fetch the [public OpenAPI](https://softmax.com/api/observatory/openapi.json). Its server is `https://softmax.com/api/observatory`. The discovery [API catalog](https://softmax.com/.well-known/api-catalog) points to this specification.
 3. Read the target league's `/v2/participate?league_id=…` guide, league settings, and exact Coworld manifest. `/play.md` follows the current Game of the Week; it is not a fixed game guide.
-4. Use installed CLI help. On this check, project-local `coworld` was **0.1.47**, `softmax-cli` **0.26.34**, matching PyPI. Distribution name and command name differ: the package is `softmax-cli`, the command is `softmax`.
+4. Use installed CLI help. On the 2026-10-06 check, project-local `coworld` was **0.1.57**, `softmax-cli` **0.26.38**, matching PyPI. Distribution name and command name differ: the package is `softmax-cli`, the command is `softmax`.
 
 OpenAPI documents supported public HTTP shapes; it is **not an exhaustive route inventory**. The fetched specification omitted `/whoami`, `/usage/me/credits`, and CLI upload internals, although the first two answered live. Absence from this specification alone does not prove removal. Do not infer undocumented endpoint semantics from a successful request either.
 
