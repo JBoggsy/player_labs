@@ -8,11 +8,10 @@
   correct execution from a raw outcome or G5 coverage.
 - `pw_intent record --out RELATIVE_PATH` raises from `Path.as_uri`; an absolute `--out` works.
   Normalize the output path in the recorder with a focused regression test when fixing it.
-- Next human-led edit-loop decision after M3: address false grenade warnings (charging while
-  disarmed; early release/changed aim) and disguised teammates reported as enemies. M3's
-  A/B is inconclusive, so retain the baseline as the competitive reference. See
-  `docs/designs/2026-10-05-m3-qualification.md`. Do not silently retune the baseline or
-  infer receiver effectiveness from successful decoding.
+- Complete hosted qualification of grenade continuity (candidate2a539036-1 / jb-pw-opt:v3)
+  after shared API allowance recovers. Local short throws fell73→0 across matched24 games;
+  this does not establish field strength. Disguised teammates and ordinary gun friendly fire
+  remain separate hypotheses. M3 comms stays inactive; no receiver-effectiveness inference.
 - Audit partial-load accounting: a late seat I/O failure retains valid earlier-seat evidence
   with `input_failures` and exit 1, but the episode summary can be absent. Preserve those
   verified rows while exposing an explicit partial episode summary in a future refinement.

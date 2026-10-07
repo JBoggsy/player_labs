@@ -8,7 +8,11 @@ as `jb-pw-opt:v2` (61662d47-c26e-4873-ac13-333f70d6b341), build `32ed3f70-1`.
 Its hosted confirmation is still downloading under shared API throttling. Iteration 2
 uses 24 recorded local games (seeds101–112, both sides) to select grenade charge continuity:
 173 teammate grenade HP exceeds gun129 and spray46; short throws account for98 teammate
-and154 self HP. Strategy source now specifies committed charging with per-throw telemetry.
+and154 self HP. Strategy source now specifies committed charging with periodic activation telemetry.
+Candidate `jb-pw-opt:v3` (73e01dfb-128b-44c6-ac0c-8276f82be78e), build `2a539036-1`,
+is uploaded with passing G1–G5. Matched24 local games reduce grenade teammate HP173→69
+and self HP188→6, with enemy HP481→563. It wins37/56 directly against v2 locally.
+Hosted A/B is preregistered but deferred for shared API allowance recovery.
 See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
 posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
 starter stopgap; do not replace that entrant or infer its identity from our upload.
@@ -20,7 +24,7 @@ infrastructure change may edit runtime templates, generators and contracts; coor
 changes at committed build boundaries with parallel compiler work. The maintainer entry point
 is [docs/strategy-compiler-maintainers.md](docs/strategy-compiler-maintainers.md).
 
-## Active baseline and qualification
+## Foundation qualification (v1 reference)
 
 - Release: `coworld-v0.3.123`, engine `28030de6`, simulation rules 49. Both tools and native
   library rebuilt; 30 current public replays hash-verified. Live ranking settings: OpenSkill,
