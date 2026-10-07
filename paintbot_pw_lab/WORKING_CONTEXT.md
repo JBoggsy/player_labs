@@ -148,14 +148,10 @@ Heartland memberships and the orchestrator's stopgap are outside this optimizer'
 
 ## Current pipeline source
 
-Orchestrator redirects the next candidate to Richard's territory advantage. Working source
-starts from submitted v6/source21b9c416 and changes only C.cover_heart: once inside a ring
-and our team is capturing, finish that capture instead of returning to the cover post.
-Source bug: capturing resets idle_capture, which previously reactivated the post branch.
-146/160 one-tick resets and214/391 total v3 resets in28 Richard losses have the cover-post
-exit pattern. Counter cover_capture_ticks_total records actual held-cover motor calls.
-REPORT-10.md contains opening/split/recapture analysis and limits. Build5cee1447-1 passes
-G1–G5; local38/56 vs v6,44/56 vs v3,54/56 upstream. Matched24 replays eliminate263
-cover-post resets; mean owned hearts30s2.625→3.417. Activation1,224 ticks across11/32 seats.
-Uploaded as jb-pw-opt:v8; independent A/B against v6 authorized alongside v7. Spray guard51fe35f4-1 and resupply98c3a918-1 are not included.
-V6 remains submitted baseline sub_9d9511f9-264c-4ed5-b0f8-026d924377b4. Campaign744 credits committed; iteration10 actual previews120.
+Iteration11 starts from submitted v6 and only defers noncritical resupply for designated
+ring capturers pursuing a neutral heart in the first20 seconds. Opening pickup detours
+collapse the intended two-squad split: all224 v3 seats at1s target a pickup across28 losses.
+V6 local ring seats spend57.86% of first10s at exact pickup goals. REPORT-11.md records
+assignment/route evidence and limits. Compile and screen vs v6/v8; hold upload until v7/v8
+decide. V8 capture build5cee1447-1 and v7 cadence remain immutable independent experiments.
+V6 remains submitted baseline sub_9d9511f9-264c-4ed5-b0f8-026d924377b4. Campaign744credits.
