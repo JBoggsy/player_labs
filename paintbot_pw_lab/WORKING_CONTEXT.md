@@ -2,32 +2,24 @@
 
 ## Current objective and boundary
 
-**VERDICT-34: opponent-adaptive opening.** V10 remains champion. I33 v27 has a
-partial Richard regression and xolod gain; i34 v28 is still running. Let both finish.
-I35 defaults to v10 and applies v27's central opening only after a public capture-route
-signature at tick 360 (15s). The switch expires at tick 720 as in v27.
-Outcome-independent i32 replay sample: 12 discovery and 20 held-out games per opponent,
-balanced sides. Held-out confusion: Richard20/20 default, xolod18/20 switched; 95%
-overall. Small-sample uncertainty remains. All64 replays hash-verified on0.3.124.
-REPORT-35 owns the frozen rule and its limits. No private metadata or opponent logs.
+**V29 is champion and parent**, submitted by the orchestrator as
+`sub_08157a74-7eb8-4d98-8f1e-ca6f3d508cf2`. I35 xolod+0.019978
+[+0.011562,+0.028393], Richard+0.030296[-0.023487,+0.084079], zero episode failures.
+The orchestrator explicitly overrode the +0.02 point threshold as rounding;
+the frozen automated decision remains a fail. REPORT-35 records both distinctly.
 
-Authorized i35 comparison:400Richard+300xolod per arm,1400games/~700credits,
-fresh v10 controls. Choose the direct gate from VERDICT-34: Richard lower95%CI>=-.03;
-xolod delta>=+.02 and lower95%CI>0; complete cohort with no operational failures.
-No post-hoc weighted alternative. Latest explicit size overrides the older approximate
-600-credit iteration limit; account floor10000 remains. Finite workers,120s pacing.
+Champion: `jb-pw-opt:v29`, UUID `cf05fa48-71e3-408c-96cf-ed1ce74409ea`,
+build `e42b7834-1`, source `e42b7834`. V10 is the historical fallback behavior.
+Current task: guard v29's map-specific classifier using exact public geometry,
+then continue Richard-focused improvement on v29, considering the independent dodge
+rebase. I34 dodge +0.023650[-0.031768,+0.079068] vs Richard is inconclusive, not a winner.
+No optimizer submission, account floor10000, finite workers and>=120s API pacing.
 
-Champion: `jb-pw-opt:v10`, UUID `8c4947c7-0679-4826-a653-9de20c62ffa3`, immutable
-build [`7faadaa4-1`](strategy/compiled/7faadaa4-1/report.md), source `7faadaa4`.
-Submitted by the orchestrator as `sub_1616ba24-8791-47aa-9f13-51931d9a42db`.
 Player James Botts: `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`.
 League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 
-Current strategy source: i35 adaptive opening, v10 default plus gated v27 opening.
-Build `e42b7834-1` passed; uploaded `jb-pw-opt:v29`, UUID
-`cf05fa48-71e3-408c-96cf-ed1ce74409ea`; independent 1400-game cohort queued.
-V27 immutable build `9d572cfd-1`; v28 build `4f0e5d4e-1` is an independent v10 child.
-Neither is the champion. Source edits are committed before compilation.
+Current source will become the guarded v29 child. The submitted v29 artifact is immutable.
+V28 dodge remains recoverable at `4f0e5d4e-1`; do not substitute its v10 parent.
 
 ## Final robust-bundle result
 

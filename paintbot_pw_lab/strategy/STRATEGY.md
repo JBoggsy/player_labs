@@ -54,9 +54,32 @@ Reading aid (the compiler receives component fields, not this introduction):
 ### K.opening_signature
 - Summary: Classify the public opening route at fifteen seconds.
 - Spec: In `__init`, set route_class = 0 and classified_tick = 0.
+  Set map_known = 1. If heartCount() <> 10 OR pickupCount() <> 22 OR trenchCount() <> 6, set map_known = 0.
+  If mapMinX() <> -4800, set map_known = 0.
+  If mapMinY() <> -2800, set map_known = 0.
+  If mapMaxX() <> 11200, set map_known = 0.
+  If mapMaxY() <> 6800, set map_known = 0.
+  If controlX(0) <> 960 OR controlY(0) <> 2000, set map_known = 0.
+  If controlX(1) <> 5440 OR controlY(1) <> 2000, set map_known = 0.
+  If controlX(2) <> -3060 OR controlY(2) <> 440, set map_known = 0.
+  If controlX(3) <> 9460 OR controlY(3) <> 3560, set map_known = 0.
+  If controlX(4) <> 880 OR controlY(4) <> -1720, set map_known = 0.
+  If controlX(5) <> 5520 OR controlY(5) <> 5720, set map_known = 0.
+  If controlX(6) <> -3000 OR controlY(6) <> 3500, set map_known = 0.
+  If controlX(7) <> 9400 OR controlY(7) <> 500, set map_known = 0.
+  If controlX(8) <> 3200 OR controlY(8) <> 1250, set map_known = 0.
+  If controlX(9) <> 3200 OR controlY(9) <> 2750, set map_known = 0.
+  If trenchX(0) <> 1950 OR trenchY(0) <> 650 OR trenchW(0) <> 280 OR trenchH(0) <> 280, set map_known = 0.
+  If trenchX(1) <> 4450 OR trenchY(1) <> 3350 OR trenchW(1) <> 280 OR trenchH(1) <> 280, set map_known = 0.
+  If trenchX(2) <> 2600 OR trenchY(2) <> 2050 OR trenchW(2) <> 280 OR trenchH(2) <> 280, set map_known = 0.
+  If trenchX(3) <> 3800 OR trenchY(3) <> 1950 OR trenchW(3) <> 280 OR trenchH(3) <> 280, set map_known = 0.
+  If trenchX(4) <> 900 OR trenchY(4) <> 2850 OR trenchW(4) <> 280 OR trenchH(4) <> 280, set map_known = 0.
+  If trenchX(5) <> 5500 OR trenchY(5) <> 1150 OR trenchW(5) <> 280 OR trenchH(5) <> 280, set map_known = 0.
+  If selfTeam = 0 AND (homeX <> 960 OR homeY <> 2000), set map_known = 0.
+  If selfTeam = 1 AND (homeX <> 5440 OR homeY <> 2000), set map_known = 0.
   In `__update`, when route_class = 0 AND worldTick >= classify_tick,
   set route_class = 2 and classified_tick = worldTick.
-  Only when worldTick = classify_tick AND heartCount() = 10, evaluate the signature.
+  Only when worldTick = classify_tick AND map_known = 1, evaluate the signature.
   Set outer = 7 - selfTeam and central = 8 + selfTeam and enemy = 1 - selfTeam.
   Set outer_claim = 1 when controlOwner(outer) = enemy OR
   (controlCaptureTeam(outer) = enemy AND controlCaptureTicks(outer) > 0), else 0.
@@ -64,9 +87,10 @@ Reading aid (the compiler receives component fields, not this introduction):
   (controlCaptureTeam(central) = enemy AND controlCaptureTicks(central) > 0), else 0.
   If outer_claim = 1 AND central_claim = 0, set route_class = 1.
   Once route_class is nonzero, preserve both outputs for the rest of the episode.
-- Sources: `worldTick`, `selfTeam`, `heartCount`, `controlOwner`, `controlCaptureTeam`, `controlCaptureTicks`
-- Memory: route_class and classified_tick persist across ticks. Never reset after classification.
+- Sources: `worldTick`, `selfTeam`, `heartCount`, `controlOwner`, `controlCaptureTeam`, `controlCaptureTicks`, `pickupCount`, `trenchCount`, `mapMinX`, `mapMinY`, `mapMaxX`, `mapMaxY`, `controlX`, `controlY`, `trenchX`, `trenchY`, `trenchW`, `trenchH`, `homeX`, `homeY`
+- Memory: map_known, route_class and classified_tick persist across ticks. Never reset after classification.
 - Outputs:
+  - map_known -- exact public Heartwick layout match, 0 defaults to v10
   - route_class -- 0 pending, 1 outer-route signature, 2 default behavior
   - classified_tick -- tick of the single classification, or zero before classification
 - Params:
@@ -75,7 +99,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - True: classification matches the public capture state at tick 360. Reads: replay
 - Status: specified (2026-10-07)
 - Rationale: Heartwick outer hearts 7/6 distinguish xolod-like routes from central hearts
-  8/9 in the discovery sample. All capture fields are public. Unknown maps and missed
+  8/9 in the discovery sample. All capture fields are public. Unrecognized public geometry and missed
   classification ticks retain the champion behavior. This does not read opponent identity.
 
 ### K.self_motion
@@ -594,9 +618,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy route_class and classified_tick from `K.opening_signature` into same-named outputs.
+  On a send, copy route_class, classified_tick and map_known from `K.opening_signature` into same-named outputs.
   Also copy opening_ticks_total and
-  tracking_updates_total, cover_capture_ticks_total and spray_distance_shots_total from `SK.motor` into same-named outputs for periodic telemetry.
+  tracking_updates_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
 - Uses: `K.contacts`, `K.opening_signature`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
@@ -607,8 +631,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - opening_ticks_total -- cumulative adaptive opening calls
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
-  - spray_distance_shots_total -- actual newly enabled spray requests through this snapshot
-- Log: route_class, classified_tick, opening_ticks_total, tracking_updates_total, cover_capture_ticks_total, spray_distance_shots_total
+  - map_known -- whether exact Heartwick public geometry matched
+- Log: route_class, classified_tick, opening_ticks_total, tracking_updates_total, cover_capture_ticks_total, map_known
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay
