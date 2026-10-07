@@ -193,6 +193,12 @@ docker run --rm --platform linux/amd64 -v "$PWD/webdiplomacy_lab/local_runs:/run
 ```
 
 The replay directory must already exist; it is read-only input. Profile a decision
-with `-m webdip_bot.profile_search /runs kissinger` using the same mount. Performance
+with `-m webdip_bot.profile_search /runs kissinger` using the same mount.
+For a frozen golden position, use
+`-m webdip_bot.profile_search /lab/webdip_bot/tests/golden.json kissinger --case 56`
+with the `/lab` mount above. Add `--no-profile --warmup 1` for unprofiled timings.
+The JSON record includes fixture hash, config, runtime, full-decision/choose times,
+behavior digest and (when enabled) per-function profile data. Reject budget-hit
+runs and require equal behavior digests before comparing timings. Performance
 comparisons need matched fixtures and interleaved baseline/candidate runs under
 concurrent load; correctness-check runtimes alone are not speedup evidence.
