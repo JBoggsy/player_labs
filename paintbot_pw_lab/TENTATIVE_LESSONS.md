@@ -11,8 +11,9 @@ frozen failed automated decision; this was not an automatic pass.
 V29's original map guard checked only heartCount=10, so it did not guarantee fallback
 on unknown ten-heart maps. The guarded child checks exact public geometry. No BASIC
 map identity exists; an unseen map matching every checked field is indistinguishable.
-I34 dodge's Richard+0.023650[-0.031768,+0.079068] remains inconclusive; rebase and test
-against v29 before retaining it. Do not pool the old controls or sum cross-cohort gains.
+I34 dodge was inconclusive; its i37 rebase vs v29 is rejected: Richard-0.037619
+[-0.093054,+0.017817], xolod+0.007471[-0.004326,+0.019268],0episode failures.
+Do not inherit dodge or pool the old controls. I38 capture staffing is still running.
 
 ## Evidence scope
 

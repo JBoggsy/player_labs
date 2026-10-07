@@ -18,11 +18,11 @@ No optimizer submission, account floor10000, finite workers and>=120s API pacing
 Player James Botts: `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`.
 League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 
-Current source is i38 conditional direct-capture staffing, independently on guarded v29.
-Build `725f9cb0-1` passed and uploaded v32, UUID
-`5cf630d1-5cda-4e23-9d56-98fd52560b63`. Its own fresh400Richard+200xolod per arm
-cohort is queued alongside i37 with the same Richard-primary gate.
-I37 dodge is immutable build757ec5d2-1/v31 and its hosted cohort uses v29 controls.
+Current source: i39 terrain-aware combat leg selection on guarded v29, independent
+of rejected v31 dodge and still-running v32 direct capture. REPORT-39 records the
+24-game replay mechanism sample from i37's400-game v29 baseline, contrary evidence,
+implementation and fresh1200-game A/B design. Water-only explanations are unsupported;
+the code-path gap is that short combat movement bypasses the long-range dry router.
 Guard-only child build `1fe285df-1` passed and uploaded as v30; not submitted. **Do not submit v30 alone.**
 Standing orchestrator rule: retain the geometry guard in v31/v32 and every future
 candidate, and ship it only with the next real gameplay improvement. The current
@@ -116,7 +116,7 @@ Coworld 0.1.57 and softmax-cli 0.26.38 were release-checked during i31; refresh 
 future CLI diagnosis. Broader neural/oracle references retain `PW_DOCS_SHA=118e1619`.
 M3 comms remains inactive and unqualified on current Bassy; see [comms.md](strategy/comms.md).
 
-I32–i35 are complete; their workers exited. I37/i38 admission/results are active. Admission/results workers exit on terminal work;
+I32–i35 are complete; their workers exited. I37 complete/rejected; i38 results remain active. I39 is being built. Admission/results workers exit on terminal work;
 field_watch.py is stopped by explicit handoff. Dashboard 8810 stays off. Do not poll
 terminal requests for optional artifacts. Future authorized polling/retries: at least
 120 seconds, bounded artifacts, finite exit. No hosted self-play. Local games establish
