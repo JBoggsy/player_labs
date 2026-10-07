@@ -31,10 +31,18 @@ Submit the best one to the league and curate the league's filler roster.
   | v4a fastadj | 0.756 | 15 |
   | v4b rollout + restarts | 0.549 | 23 |
 
+- **Population and arena findings, 2026-10-07:**
+  - Restarts=3 hurts. Machiavelli with 1 restart scored 0.636 over 30 games, against about 0.55 for the 3-restart versions.
+  - Bismarck tops the mixed population but scores only 0.48 against the DumbBot field.
+  - Kissinger scores 0.38 against the DumbBot field.
+- **Evolution loop** (`tools/evolve.py`, state in `experiments/evolve_state.json`): generation 0
+  elites are Talleyrand, Bismarck-share and Bismarck. The Calhamer anchor scores −0.10.
 - **Running:**
-  - `tourney-pop1`: all 7 personalities, 28 games.
-  - `arena-v5a-builds-vs-dumb`: machiavelli with build search.
-  - `arena-v5b-kissinger-vs-dumb`: level-1 opponent model.
+  - `evolve.py`: continuous generations, 2 games in parallel.
+  - `arena-v4a-rerun-vs-dumb`: 30 games, to calibrate noise against v5c with 1 restart.
+- **Next promotion candidate:** a fastadj search with 1 restart, probably with the share objective.
+  It is far cheaper per phase on hosted pods than v3, which uses the package adjudicator and
+  took about 21 s per phase. Decide after the v4a rerun and 2–3 more generations.
 
 ## Known hazards
 
