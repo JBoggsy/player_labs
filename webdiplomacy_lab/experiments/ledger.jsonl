@@ -5,3 +5,4 @@
 {"date":"2026-10-06","run":"arena-v4a-vs-dumb","question":"fastadj + 16 opp samples/12 seeds","image":"webdip-bot:v4a","games":15,"result":{"slot0_score":0.756},"verdict":"best so far; partial batch"}
 {"date":"2026-10-06","run":"arena-v4b-rollout-vs-dumb","question":"restarts + spring rollout re-rank","image":"webdip-bot:v4b","games":23,"result":{"slot0_score":0.549},"verdict":"negative vs v4a (confounded with restarts)"}
 {"date":"2026-10-07","run":"filler-validation-pop1 (hosted)","question":"personality fillers work hosted","games":3,"result":"stuck: platform artifact_transport_error / k8s proxy SSL errors","verdict":"retry when infra healthy; fillers unchanged"}
+{"date":"2026-10-07","run":"filler-validation-pop1 (hosted)","question":"personality fillers work hosted","games":3,"result":"completed after platform retries; 0 rejections; 1 disband IndexError (fixed); hosted search compute 21-25s/phase","verdict":"league fillers set to 7 personalities"}

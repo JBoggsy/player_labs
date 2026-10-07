@@ -292,6 +292,8 @@ class DumbBot:
             ranked = sorted(own, key=lambda u: self.value.get(b.node(u), 0))
             chosen = []
             for _ in slots:
+                if not ranked:
+                    break  # more removal slots than units (power being eliminated)
                 u = self.pick(ranked, lambda u: -self.value.get(b.node(u), 0))
                 ranked.remove(u)
                 p = b.province(u["terrID"])

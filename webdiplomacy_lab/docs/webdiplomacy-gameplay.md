@@ -55,9 +55,12 @@ play after 5910 s.
 `webDiplomacy` league (`league_428e91e5-ee25-4f9c-be5e-a4fc4f993f17`):
 platform ladder, **one `classic-gunboat` episode per day** (`round_interval_minutes:
 1440`), balanced rotation, one player per user, ranked by **mean score**
-(`algorithm: score`, `round_scoring_rule: mean`). Empty seats are filled with the
-bundled random bot (filler policy version `272d637a…`, named
-`coworld-smoke/cow_c04cc127…`). Read the live settings with
+(`algorithm: score`, `round_scoring_rule: mean`). Empty seats are filled from the league's **filler roster**. The lab curates it through
+`POST /v2/leagues/{id}/filler-policies`; our account passes the owner/commissioner gate,
+and `display_name` hides the uploading player. Since 2026-10-07 the roster is the lab's
+personality agents (Random, Calhamer, Machiavelli, Bismarck, Metternich, Talleyrand,
+Napoleon; see `webdip_bot/personalities.py`). Read the current roster with `GET` on the
+same route. Read the live settings with
 `uv run coworld leagues league_428e91e5-ee25-4f9c-be5e-a4fc4f993f17 --json`
 before relying on these.
 

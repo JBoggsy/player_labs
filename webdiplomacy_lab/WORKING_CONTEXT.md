@@ -17,9 +17,10 @@ Submit the best one to the league and curate the league's filler roster.
   The v1 champion scores 0.91.
 - **Personalities uploaded (v1, James Botts):** calhamer, machiavelli, bismarck,
   metternich, talleyrand, napoleon. Version UUIDs are in
-  `experiments/personality_versions.txt`. Hosted filler validation runs as
-  `xreq_6ed8198a…`. League fillers are not changed yet; the filler is still the random
-  bot only.
+  `experiments/personality_versions.txt`. Hosted validation (`xreq_6ed8198a…`) passed:
+  0 rejections; one disband IndexError, now fixed in source. **League fillers set on
+  2026-10-07** to Random, Calhamer, Machiavelli, Bismarck, Metternich, Talleyrand and
+  Napoleon. Hosted evaluations should now use this roster as opponents.
 - **Local evidence against six DumbBot v1** (slot-0 score; parity 0.143):
 
   | Version | Score | Games |
