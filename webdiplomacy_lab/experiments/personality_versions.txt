@@ -1,0 +1,6 @@
+calhamer 2f27f55a-6b0e-4af5-af2b-58aee9e3c83f
+machiavelli b4d8ef07-0376-47f2-aa15-475d3d10eee5
+bismarck ad8e2baa-ba15-4da2-8a3c-207297de48b6
+metternich 67b98a36-df5a-401d-aa52-12d118cd3a97
+talleyrand 266670b8-4fa2-45cb-bc78-6c43b4daf007
+napoleon 312b0a45-f31e-4fbd-9106-daaafcb36782

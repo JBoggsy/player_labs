@@ -1,0 +1,54 @@
+{
+ "private": true,
+ "target": {
+  "league_id": "league_428e91e5-ee25-4f9c-be5e-a4fc4f993f17",
+  "variant_id": "classic-gunboat"
+ },
+ "roster": [
+  {
+   "player": {
+    "policy_ref": "8d5475bc-a212-4d66-8fd4-cf548e44d03d"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "2f27f55a-6b0e-4af5-af2b-58aee9e3c83f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "ad8e2baa-ba15-4da2-8a3c-207297de48b6"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "67b98a36-df5a-401d-aa52-12d118cd3a97"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "266670b8-4fa2-45cb-bc78-6c43b4daf007"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "312b0a45-f31e-4fbd-9106-daaafcb36782"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  }
+ ],
+ "num_episodes": 3,
+ "episode_player_llm_spend_limit_usd": 0,
+ "notes": "webdip lab: hosted validation of personality fillers before league filler change"
+}

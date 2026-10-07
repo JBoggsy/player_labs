@@ -86,6 +86,8 @@ class SearchBot:
         return 1.0 / (1.0 + math.exp(-lo))
 
     def choose(self, slots):
+        if self.phase == "Builds" and slots and config.SEARCH_BUILDS:
+            return self._search_adjustments(slots)
         if self.phase != "Diplomacy" or not slots:
             return self.dumb.choose(slots)
         started = time.monotonic()
@@ -175,6 +177,82 @@ class SearchBot:
         self.trace["search_score"] = round(best_score, 1)
         self.trace["search_ms"] = round((time.monotonic() - started) * 1000)
         return [self.dumb._legal_or_hold(u, o) for u, o in zip(mine, best)]
+
+    def _search_adjustments(self, slots):
+        """Winter: pick builds/disbands by a quick search of the following spring.
+
+        Candidates: DumbBot's own choice plus alternatives (other unit types / sites for
+        builds, other unit subsets for disbands), capped at SEARCH_BUILD_CANDIDATES. Each is
+        applied to a hypothetical board and scored by a reduced SearchBot run for spring.
+        """
+        import itertools
+
+        started = time.monotonic()
+        b = self.b
+        own = [u for u in b.units if int(u["countryID"]) == self.country]
+        default = self.dumb.choose(slots)
+        if b.centers[self.country] < len(own):
+            k = len(own) - b.centers[self.country]
+            k = min(k, len(slots))
+            ranked = sorted(own, key=lambda u: self.dumb.value.get(b.node(u), 0))[: k + 3]
+            candidates = [[order_destroy(b, u) for u in combo] for combo in itertools.combinations(ranked, k)]
+        else:
+            options = b.legal.builds(self.country)
+            sites = {}
+            for o in options:
+                sites.setdefault(b.province(o["toTerrID"]), []).append(o)
+            k = min(len(slots), len(sites))
+            candidates = []
+            for chosen_sites in itertools.combinations(sorted(sites), k):
+                for combo in itertools.product(*(sites[x] for x in chosen_sites)):
+                    candidates.append(list(combo))
+            if not candidates:
+                return default
+        candidates = [default] + [c for c in candidates if c != default]
+        candidates = candidates[: config.SEARCH_BUILD_CANDIDATES]
+        best, best_value = default, None
+        for cand in candidates:
+            if time.monotonic() - started > config.SEARCH_TIME_BUDGET_S:
+                self.trace["build_budget_hit"] += 1
+                break
+            value = self._spring_value(cand)
+            if best_value is None or value > best_value:
+                best, best_value = cand, value
+        if best is not default:
+            self.trace["build_search_changed"] += 1
+        self.trace["build_candidates"] += len(candidates)
+        # Fill remaining build slots with Wait exactly as DumbBot does.
+        if len(best) < len(slots) and best and best[0]["type"] != "Destroy":
+            best = best + [{"type": "Wait", "terrID": 0, "toTerrID": 0, "fromTerrID": 0, "viaConvoy": "No"}]
+        return best
+
+    def _spring_value(self, adjustments):
+        """Static value of the spring after applying `adjustments` (reduced search)."""
+        units = [dict(u) for u in self.board["units"] if not u["retreating"]]
+        next_id = -1
+        for o in adjustments:
+            if o["type"] == "Destroy":
+                units = [u for u in units if self.b.province(u["terrID"]) != o["toTerrID"]]
+            elif o["type"] in ("Build Army", "Build Fleet"):
+                units.append({"id": next_id, "countryID": self.country, "terrID": o["toTerrID"],
+                              "type": "Army" if o["type"] == "Build Army" else "Fleet", "retreating": False})
+                next_id -= 1
+        unit_at = {self.b.province(u["terrID"]): u["id"] for u in units}
+        terrs = [dict(t, unitID=unit_at.get(t["terrID"])) for t in self.board["territories"]]
+        board = {**self.board, "units": units, "territories": terrs}
+        saved = {k: getattr(config, k) for k in ("SEARCH_OPPONENT_SAMPLES", "SEARCH_SEEDS", "SEARCH_PASSES",
+                                                 "SEARCH_RESTARTS", "SEARCH_ROLLOUT", "SEARCH_BUILDS")}
+        config.SEARCH_OPPONENT_SAMPLES, config.SEARCH_SEEDS, config.SEARCH_PASSES = 6, 4, 1
+        config.SEARCH_RESTARTS, config.SEARCH_ROLLOUT, config.SEARCH_BUILDS = 1, 0, 0
+        try:
+            bot = SearchBot(self.variant, board, self.country, "Diplomacy", self.turn + 1, self.rng)
+            bot.memory = {"logodds": self.memory.get("logodds", {}), "pending": None}
+            mine = [{"unitID": u["id"]} for u in units if int(u["countryID"]) == self.country]
+            bot.choose(mine)
+            return bot.trace["search_score"]
+        finally:
+            for k, v in saved.items():
+                setattr(config, k, v)
 
     def _ascend(self, best, best_score, started):
         for _ in range(config.SEARCH_PASSES):
@@ -410,6 +488,11 @@ class SearchBot:
             node = ("Army" if u[0] == "A" else "Fleet", self.dm.terr[u[2:]])
             pos += self.dumb.value.get(node, 0.0) / vmax
         return config.SEARCH_SC_WEIGHT * sc + config.SEARCH_POS_WEIGHT * pos - config.SEARCH_DISLODGED_WEIGHT * dislodged
+
+
+def order_destroy(b, u):
+    p = b.province(u["terrID"])
+    return {"type": "Destroy", "terrID": p, "toTerrID": p, "fromTerrID": 0, "viaConvoy": "No"}
 
 
 def _key(o):

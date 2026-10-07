@@ -292,7 +292,24 @@ def cmd_ratings(args):
 
 
 def _manifest():
-    return next((LAB / "coworld_pkg").glob("cow_*/coworld_manifest.json"), None)
+    manifest = next((LAB / "coworld_pkg").glob("cow_*/coworld_manifest.json"), None)
+    if manifest is not None:
+        _ensure_images(manifest.parent / "coworld_images.json")
+    return manifest
+
+
+def _ensure_images(images_json):
+    """Re-pull + re-tag downloaded game/player images if something pruned them.
+
+    Other sessions on this machine prune Docker images to free disk; a missing
+    `...:downloaded` tag makes every local episode fail instantly."""
+    for img in json.loads(images_json.read_text())["images"]:
+        local = img["local_image"]
+        if subprocess.call(["docker", "image", "inspect", local], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL):
+            print(f"restoring pruned image {local}", file=sys.stderr)
+            subprocess.check_call(["docker", "pull", "--platform", "linux/amd64", img["public_image_uri"]],
+                                  stdout=subprocess.DEVNULL)
+            subprocess.check_call(["docker", "tag", img["public_image_uri"], local])
 
 
 def _run_one(manifest, image, run, variant, out):
@@ -301,7 +318,28 @@ def _run_one(manifest, image, run, variant, out):
     cmd += [f"--run={token}" for token in run]
     cmd += [f"--secret-env={kv}" for kv in ARENA_ENV]
     env = {**__import__("os").environ, "DOCKER_DEFAULT_PLATFORM": "linux/amd64"}
-    return subprocess.call(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    code = subprocess.call(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    slim_replay(Path(out))
+    return code
+
+
+def slim_replay(episode_dir):
+    """Shrink a local replay ~20x: drop map PNGs everywhere, and the cumulative `history`
+    and static `variant` from every frame but the last (lab tools read only the last
+    frame's history/variant). The disk on this machine runs near full."""
+    path = episode_dir / "replay"
+    if not path.exists():
+        return
+    try:
+        frames = json.loads(path.read_text())
+    except ValueError:
+        return
+    for f in frames:
+        f.pop("map", None)
+    for f in frames[:-1]:
+        f.pop("history", None)
+        f.pop("variant", None)
+    path.write_text(json.dumps(frames))
 
 
 def cmd_arena(args):
@@ -355,6 +393,9 @@ def main():
     ra.add_argument("dirs", nargs="+")
     ra.add_argument("--json", action="store_true")
     ra.set_defaults(func=cmd_ratings)
+    sl = sub.add_parser("slim", help="strip map PNGs from local replays under DIRs")
+    sl.add_argument("dirs", nargs="+")
+    sl.set_defaults(func=lambda a: [slim_replay(p.parent) for d in a.dirs for p in Path(d).rglob("replay")] and 0)
     vs = sub.add_parser("versus", help="compare local arena arms (slot 0)")
     vs.add_argument("dirs", nargs="+")
     vs.set_defaults(func=cmd_versus)

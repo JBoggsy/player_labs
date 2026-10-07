@@ -52,3 +52,6 @@ SEARCH_ROLLOUT = 0
 SEARCH_ROLLOUT_POOL = 3
 SEARCH_ROLLOUT_SAMPLES = 8
 SEARCH_ROLLOUT_STATIC_WEIGHT = 0.5
+# Winter builds/disbands chosen by a reduced search of the following spring (0 = DumbBot).
+SEARCH_BUILDS = 0
+SEARCH_BUILD_CANDIDATES = 12
