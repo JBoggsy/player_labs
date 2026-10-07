@@ -16,3 +16,5 @@ webdip-dumbbot-v6 fbe910d8-b021-487b-9c15-143ae4c99804
 webdip-kissinger-v1 4270db3d-e865-46c3-89ae-a91207311d67
 fabius-v1 0c321704-1792-4342-a982-e823d6109972
 garibaldi-v1 46c68335-a486-460a-8a5b-39c60fe37727
+webdip-dumbbot-v7 071d963e-d513-46ce-a215-053c9bf1b331
+webdip-kissinger-v2 580d73eb-6a20-4762-8529-eef9655bfd83

@@ -1,0 +1,54 @@
+{
+ "private": true,
+ "target": {
+  "league_id": "league_428e91e5-ee25-4f9c-be5e-a4fc4f993f17",
+  "variant_id": "classic-gunboat"
+ },
+ "roster": [
+  {
+   "player": {
+    "policy_ref": "071d963e-d513-46ce-a215-053c9bf1b331"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "15563512-ca62-4f8a-a7c8-f1d14e4e1f9d"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "a1a3c8dc-e375-4741-9a3a-51539c6ca327"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "e7f7300a-2ea8-47c0-91ec-58cb3396d627"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "0c321704-1792-4342-a982-e823d6109972"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "46c68335-a486-460a-8a5b-39c60fe37727"
+   },
+   "slot": -1
+  }
+ ],
+ "num_episodes": 14,
+ "episode_player_llm_spend_limit_usd": 0,
+ "notes": "webdip lab: v7 (kissinger+convoy approx) vs relh + Random + Machiavelli/Metternich/Fabius/Garibaldi fillers; timing incl. random-filler convoys"
+}
