@@ -236,6 +236,32 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Rationale: Step 2 repeats the carrier test of `K.contacts` because a Knowledge component cannot
   use another Knowledge component. The result is the same as base.bas's `thief < 0` guard.
 
+### K.nearby_glory
+- Summary: The nearest visible glory heart within a short detour, assigned to its nearest visible teammate.
+- Spec: In `__update`, set nearest = -1, goal_x = 0, goal_y = 0 and best_d2 = reach_sq.
+  Loop j = 0 while j < gloryHeartCount() AND j < 64. Read ttl = gloryHeartTicksLeft(j).
+  Only when ttl >= min_ttl: read x = gloryHeartX(j) and y = gloryHeartY(j).
+  This lifetime query is negative for invisible hearts, so do not reject negative map coordinates.
+  Set dx = x - selfX, dy = y - selfY, d2 = dx * dx + dy * dy.
+  Only when d2 < best_d2: set assigned = 1. Loop i = 0 to 15. For i <> selfId AND
+  i MOD 2 = selfTeam AND visible(i), compute ally_d2 from playerX(i),playerY(i) to x,y.
+  If ally_d2 < d2 OR (ally_d2 = d2 AND i < selfId), set assigned = 0.
+  After the ally loop, if assigned = 1 set nearest = j, goal_x = x, goal_y = y and best_d2 = d2.
+  Strict comparisons preserve the lowest glory-heart index on equal distance.
+  Recompute on every tick; do not retain an index or coordinates across visibility loss.
+- Sources: `gloryHeartCount`, `gloryHeartTicksLeft`, `gloryHeartX`, `gloryHeartY`, `selfId`,
+  `selfTeam`, `selfX`, `selfY`, `visible`, `playerX`, `playerY`
+- Outputs:
+  - nearest -- selected visible glory-heart index, or -1
+  - goal_x -- selected heart x, or0
+  - goal_y -- selected heart y, or0
+- Params:
+  - reach_sq = 360000 square cm -- a detour target strictly within6m
+  - min_ttl = 120 ticks -- at least5seconds remain before expiry
+- Checks:
+  - True: a selected target is visible and within6m, with no closer visible teammate. Reads: replay
+- Status: specified (2026-10-07)
+
 ## Situations
 
 ### S.losing_fight
@@ -270,6 +296,20 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Checks:
   - Believed: the flag is logged with the decision. Reads: PWD.f
 - Status: specified (2026-10-05)
+
+### S.glory_worth
+- Summary: A nearby assigned glory heart is worth a short safe detour without abandoning a capture.
+- Spec: In `__eval`, set on = 0. If nearest of `K.nearby_glory` >= 0 AND foes_seen of
+  `K.contacts` = 0 AND critical of `K.pickups` = 0 AND carrying = 0, set on = 1.
+  Then loop j = 0 while j < heartCount() AND j < 64. If controlCaptureTeam(j) = selfTeam,
+  compute squared distance from self to controlX(j),controlY(j). If that distance <= capture_sq,
+  set on = 0. Always output explicit0or1. The situation does not outrank retreat or resupply.
+- Uses: `K.nearby_glory`, `K.contacts`, `K.pickups`
+- Params:
+  - capture_sq = 19600 square cm -- do not leave an active140cm capture ring
+- Checks:
+  - Acted properly: no glory detour starts with a visible enemy or while occupying our active capture. Reads: PWD.f, replay
+- Status: specified (2026-10-07)
 
 ## Skills
 
@@ -307,13 +347,13 @@ Reading aid (the compiler receives component fields, not this introduction):
   the former best_cost test would have rejected it. This counter starts at zero and persists.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
-  The helper sk_motor__cleanup(gx, gy, hold) increments cleanup_ticks_total once, then
-  calls sk_motor__act(gx, gy, hold). Only the default-goal capability calls it for visible
-  post-capture pursuit. The cumulative counter starts at zero and persists for the match.
+  The helper sk_motor__collect_glory(gx, gy) increments glory_detour_ticks_total once,
+  then calls sk_motor__act(gx, gy, 0). Only C.collect_glory calls it. The counter starts
+  at zero and persists for the match. It counts actual detour capability ticks.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
-  - cleanup_ticks_total -- actual default-goal ticks pursuing a visible enemy after all hearts are owned
+  - glory_detour_ticks_total -- actual short glory-heart detour ticks
   - root -- the result of the last sk_motor__isqrt call
   - threw -- 1 on a commanded or forced grenade release tick, else 0
   - release_charge -- observed charge on this release decision
@@ -401,44 +441,25 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ### C.default_goal
-- Summary: After all hearts are owned, pursue visible enemies instead of only their home.
-- Spec: `__start` does nothing. `__tick` does these steps in order.
-  Step 1 preserves the original fallback. With thief of `K.contacts`: if `carrying`, then
-  the goal is the position of thief when `ownHeartStolen AND thief >= 0`, else `(homeX, homeY)`.
-  If not carrying, the goal is the position of thief when `thief >= 0`, else `(heartX, heartY)`.
-  The position of a seat is `(playerX(seat), playerY(seat))`.
-  Step 2 sets pursuit = 0 and hold = 0. Only when carrying = 0 AND thief < 0 AND
-  heart_count of `K.squad_target` > 0 AND objective of `K.squad_target` < 0:
-  set target = best of `K.contacts`. If target < 0, scan i = 0 to 15, using only
-  i <> selfId AND i MOD 2 <> selfTeam AND visible(i). Choose the smallest squared
-  distance from self to playerX(i),playerY(i), with strict less-than preserving the lower
-  seat on a tie. This scan has no gun-range cutoff: the goal is to approach a visible enemy
-  that the firing selector cannot yet reach. Do not read coordinates of an invisible seat.
-  If target >= 0: set pursuit = 1; set goal_x = playerX(target), goal_y = playerY(target).
-  Set d2 to squared distance from self to this goal. Set stop_sq = gun_stop_sq, or
-  stop_sq = spray_stop_sq when hasSpray. If d2 <= stop_sq, set goal_x = selfX,
-  goal_y = selfY and hold = 1. This keeps the selected enemy in practical firing range.
-  Step 3: if pursuit = 1 call sk_motor__cleanup(goal_x, goal_y, hold) of `SK.motor`.
-  Otherwise call sk_motor__act(goal_x, goal_y, 0). The helper only counts activation and
-  calls the unchanged motor. No enemy memory, privileged coordinates or opponent identity.
-  Step 4 preserves quiet approach: call `sneak(1)` when best of `K.contacts` < 0 AND
-  soundCount() > 0 AND objective of `K.squad_target` >= 0. Inside that guard, call sneak(1)
-  only if squared distance to that objective is below quiet_sq. Step 5: set status to 0.
+- Summary: With no squad target, go for the thief, home, or the heart.
+- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: with thief of
+  `K.contacts`: if `carrying`, then the goal is the position of thief when
+  `ownHeartStolen AND thief >= 0`, else `(homeX, homeY)`. If not carrying, the goal is the
+  position of thief when `thief >= 0`, else `(heartX, heartY)`. The position of a seat is
+  `(playerX(seat), playerY(seat))`. Step 2: call `sk_motor__act(goal_x, goal_y, 0)` of
+  `SK.motor`. Step 3 (quiet approach): call the host command `sneak(1)` when all of these
+  hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is
+  0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
+  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 4: set status to 0.
 - Uses: `K.contacts`, `K.squad_target`, `SK.motor`
 - Params:
-  - gun_stop_sq = 2890000 square cm -- approach within17m for an ordinary gun
-  - spray_stop_sq = 360000 square cm -- approach within6m for a spray gun
-  - quiet_sq = 810000 square cm -- original9m quiet-approach condition
+  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective
 - Done when: never
 - Checks:
-  - Acted: pursuit activation is counted by cleanup_ticks_total. Reads: PWE.e, replay
-  - Acted properly: pursuit only replaces the default goal after all hearts are owned; fallback, supply and heart rules retain priority. Reads: PWD.r, replay
-  - Result: time from all hearts owned to elimination or meter victory, and winning glory. Reads: replay
-- Status: specified (2026-10-07)
-- Rationale: The original legacy heartX/heartY goal is the enemy home in current teams rules.
-  Selected v10-xolod wins waited about48s after owning all hearts, with2–5 enemies alive
-  at meter victory. Visible survivors away from that fixed point are a pursuit opportunity.
-  Winning sooner is a hypothesis; lost territory, survival and glory awards remain measured.
+  - Acted: the rule selects this capability when no other rule holds. Reads: PWD.r, PWD.c
+- Status: specified (2026-10-05)
+- Rationale: The rule selects this capability only when objective is -1. Step 3 never fires then.
+  It stays for a literal match with base.bas.
 
 ### C.resupply
 - Summary: Walk to the remembered supply.
@@ -482,6 +503,19 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Rationale: `S.losing_fight` needs a heart, so away is never -1 here. A losing fight also means a
   visible target, so Step 4 never fires. Both stay for a literal match with base.bas.
 
+### C.collect_glory
+- Summary: Walk to the nearby assigned visible glory heart.
+- Spec: `__start` does nothing. `__tick` calls sk_motor__collect_glory(goal_x, goal_y)
+  of `SK.motor`, using goal_x and goal_y of `K.nearby_glory`. Set status = 0.
+  Eligibility is recomputed every tick, so visibility loss, disappearance or danger
+  immediately returns control to existing rules. No quiet-approach command is added.
+- Uses: `K.nearby_glory`, `SK.motor`
+- Done when: never
+- Checks:
+  - Acted: the glory rule selects this capability only when the situation holds. Reads: PWD.r, PWD.c
+  - Result: glory-heart awards and total score versus detour time. Reads: replay
+- Status: specified (2026-10-07)
+
 ## Strategy
 
 ### ST.roles
@@ -496,15 +530,16 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ### ST.rules
-- Summary: Retreat beats resupply, resupply beats the squad target, the squad target beats the default goal.
+- Summary: Retreat beats resupply, resupply beats a safe nearby glory heart, then the squad target and default goal.
 - Spec: Evaluate the rules below each tick. The highest priority rule whose condition holds wins.
 - Checks:
   - Acted properly: re-running selection from the logged flags gives the logged rule. Reads: PWD.r, PWD.f, PWP.n
 - Status: specified (2026-10-05)
 - Rationale: base.bas computes one goal and lets later blocks override it. The retreat block
-  comes last, then supply, then the squad target. These priorities give the same order.
+  comes last, then supply, then the squad target. The original priorities retain their order; a safe short glory detour is inserted below resupply.
 - `R.fall_back` [400]: WHEN `S.losing_fight` DO `C.fall_back`
 - `R.resupply` [300]: WHEN `S.supply_worth` DO `C.resupply`
+- `R.collect_glory` [250]: WHEN `S.glory_worth` DO `C.collect_glory`
 - `R.take_heart` [200]: WHEN `S.has_target_heart` DO `C.take_heart` FOR squad=ring
 - `R.cover_heart` [200]: WHEN `S.has_target_heart` DO `C.cover_heart` FOR squad=cover
 - `R.default_goal` [100]: ALWAYS DO `C.default_goal`
@@ -528,20 +563,20 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy cleanup_ticks_total, continued_total, forced_total and
+  On a send, copy glory_detour_ticks_total, continued_total, forced_total and
   tracking_updates_total, cover_capture_ticks_total and spray_distance_shots_total from `SK.motor` into same-named outputs for periodic telemetry.
 - Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
 - Outputs:
-  - cleanup_ticks_total -- post-capture pursuit ticks through this status snapshot
+  - glory_detour_ticks_total -- short glory detour ticks through this status snapshot
   - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
   - spray_distance_shots_total -- actual newly enabled spray requests through this snapshot
-- Log: cleanup_ticks_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total, spray_distance_shots_total
+- Log: glory_detour_ticks_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total, spray_distance_shots_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

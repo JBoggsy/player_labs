@@ -15,6 +15,8 @@ build6121c0a2-1. Its664-game cohort is queued;213pursuit ticks in6of32 targeted 
 I29 diagnosis and design are in tmp/collab/optimizer/REPORT-29.md. Eight selected v10-xolod
 wins finish on the heart meter with2–5 enemies alive. All hearts are owned well before
 completion. Investigate post-capture pursuit without changing earlier capture decisions.
+I30 working source is an independent v10 child for short visible glory-heart detours,
+while i29 runs. REPORT-30 records mechanism, visibility bounds and unknown opportunity rate.
 No unsupported causal time-saving estimate or optimizer league submission.
 
 ## Loop charter
