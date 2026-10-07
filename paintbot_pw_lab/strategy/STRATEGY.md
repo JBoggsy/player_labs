@@ -134,10 +134,11 @@ Reading aid (the compiler receives component fields, not this introduction):
   disagree after one of them marks a heart as stalled.
 
 ### K.contacts
-- Summary: The visible enemy we fight, the visible enemy carrier, and the local fight balance.
+- Summary: The visible enemy we fight, the visible enemy carrier, the local fight balance, and the teammate to follow while disarmed.
 - Spec: In `__update`, on every tick, do Steps 1 to 4 in order.
   Step 1. Set `best = -1`, `best_cost = 2147483647`, `thief = -1`, `foes_near = 0`,
-  `friends_near = 1` (we count ourselves), `foe_sum_x = 0`, `foe_sum_y = 0`, `foes_seen = 0`.
+  `friends_near = 1` (we count ourselves), `foe_sum_x = 0`, `foe_sum_y = 0`, `foes_seen = 0`,
+  `mate = -1`, `mate_d2 = 2147483647`, `mate_x = 0`, `mate_y = 0`, `follow_needed = 0`.
   Step 2. For `i = 0` to 15, use seat i only when `i <> selfId AND visible(i)`. Set
   `dx = playerX(i) - selfX`, `dy = playerY(i) - selfY`, `d2 = dx * dx + dy * dy`.
   For an enemy seat (`i MOD 2 <> selfTeam`, not playerTeam): set `cost = d2 - (3 - playerHp(i)) * hp_weight`. If `playerCarrying(i)`,
@@ -150,6 +151,11 @@ Reading aid (the compiler receives component fields, not this introduction):
   `foes_seen`, add `playerX(i)` to `foe_sum_x` and `playerY(i)` to `foe_sum_y`. If
   `d2 < near_foe_sq`, add 1 to `foes_near`.
   For a teammate seat (`i MOD 2 = selfTeam`): if `d2 < near_friend_sq`, add 1 to `friends_near`.
+  If `d2 < mate_d2`, set `mate = i`, `mate_d2 = d2`, `mate_x = playerX(i)` and
+  `mate_y = playerY(i)`. After this seat loop, set `follow_needed = 1` when
+  `(mistingTicks() > 0 OR radarTicks() > 0) AND carrying = 0 AND mate >= 0 AND mate_d2 > follow_sq`.
+  Otherwise leave follow_needed at 0. Increment `follow_eligible_total` once per tick
+  with follow_needed = 1. This counts eligible ticks, not action selections.
   Step 3. Set `best_vx = 0` and `best_vy = 0`. If `best >= 0 AND seen_tick(best) = worldTick - 1`,
   set `best_vx = playerX(best) - old_x(best)` and `best_vy = playerY(best) - old_y(best)`.
   The memory arrays start at 0, so on tick 1 this test compares with 0. Keep that.
@@ -158,8 +164,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   Also set `foe_cx = foe_sum_x \ foes_seen` and `foe_cy = foe_sum_y \ foes_seen` when
   `foes_seen > 0`. Else set both to 0.
 - Sources: `selfId`, `selfTeam`, `selfX`, `selfY`, `worldTick`, `visible`, `playerX`, `playerY`,
-  `playerHp`, `playerCarrying`, `gunRange`
-- Memory: range_rejected_total persists for the whole match, initialized to 0.
+  `playerHp`, `playerCarrying`, `gunRange`, `mistingTicks`, `radarTicks`, `carrying`
+- Memory: range_rejected_total and follow_eligible_total persist for the whole match, initialized to 0.
   Also, old_x, old_y and seen_tick (16 cells each, private arrays) persist for the whole match.
   Step 3 reads them before Step 4 overwrites them. That is the same as base.bas, which aims
   first and updates old positions after aiming.
@@ -175,8 +181,13 @@ Reading aid (the compiler receives component fields, not this introduction):
   - foe_cx -- mean x of visible enemy seats, or 0
   - foe_cy -- mean y of visible enemy seats, or 0
   - range_rejected_total -- cumulative visible enemy observations excluded by the real gun range but within the former range
-- Log: best, foes_near, friends_near, range_rejected_total every 24 ticks
+  - mate_x -- x of the nearest visible teammate, or 0
+  - mate_y -- y of the nearest visible teammate, or 0
+  - follow_needed -- 1 when disarmed, not carrying and a visible teammate is farther than 3 m, else 0
+  - follow_eligible_total -- cumulative ticks meeting the disarmed-follow condition
+- Log: best, foes_near, friends_near, range_rejected_total, follow_eligible_total every 24 ticks
 - Params:
+  - follow_sq = 90000 square cm -- upstream follow threshold, strictly farther than 3 m
   - hp_weight = 160000 -- base.bas value, cost bonus per missing hit point
   - carrier_bonus = 2500000 -- base.bas value, cost bonus of a heart carrier
   - former_range_sq = 27562500 square cm -- former 52.5 m cap, used only for activation tracing
@@ -276,6 +287,14 @@ Reading aid (the compiler receives component fields, not this introduction):
   - Believed: the flag is logged with the decision. Reads: PWD.f
 - Status: specified (2026-10-05)
 - Rationale: `K.pickups` already applies the carrying and carrier guards.
+
+### S.follow_team
+- Summary: A disarmed support cog has a visible teammate farther than 3 m.
+- Spec: Set on to follow_needed of `K.contacts`, which is explicitly 0 or 1.
+- Uses: `K.contacts`
+- Checks:
+  - Believed: the flag is logged with the decision. Reads: PWD.f
+- Status: specified (2026-10-06)
 
 ### S.has_target_heart
 - Summary: Our squad has a target heart.
@@ -389,6 +408,22 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Rationale: The rule selects this capability only when objective is -1. Step 3 never fires then.
   It stays for a literal match with base.bas.
 
+### C.follow_team
+- Summary: While misting or carrying radar, walk beside the nearest visible teammate.
+- Spec: `__start` does nothing. In `__tick`, call `sk_motor__act(mate_x, mate_y, 0)`
+  of `SK.motor`, using mate_x and mate_y of `K.contacts`.
+  Then apply the same quiet approach as the other capabilities: call `sneak(1)` when all these hold.
+  best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target`
+  is 0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
+  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Set status to 0.
+- Uses: `K.contacts`, `K.squad_target`, `SK.motor`
+- Params:
+  - quiet_sq = 810000 square cm -- same quiet approach as upstream
+- Done when: never
+- Checks:
+  - Acted: disarmed following is selected below retreat and resupply but above territory goals. Reads: PWD.r, PWD.c, PWE.e
+- Status: specified (2026-10-06)
+
 ### C.resupply
 - Summary: Walk to the remembered supply.
 - Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: call
@@ -445,15 +480,16 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ### ST.rules
-- Summary: Retreat beats resupply, resupply beats the squad target, the squad target beats the default goal.
+- Summary: Retreat beats resupply, resupply beats disarmed following, following beats the squad target, and the squad target beats the default goal.
 - Spec: Evaluate the rules below each tick. The highest priority rule whose condition holds wins.
 - Checks:
   - Acted properly: re-running selection from the logged flags gives the logged rule. Reads: PWD.r, PWD.f, PWP.n
 - Status: specified (2026-10-05)
 - Rationale: base.bas computes one goal and lets later blocks override it. The retreat block
-  comes last, then supply, then the squad target. These priorities give the same order.
+  comes last, then supply, then disarmed following, then the squad target. These priorities give the same order.
 - `R.fall_back` [400]: WHEN `S.losing_fight` DO `C.fall_back`
 - `R.resupply` [300]: WHEN `S.supply_worth` DO `C.resupply`
+- `R.follow_team` [250]: WHEN `S.follow_team` DO `C.follow_team`
 - `R.take_heart` [200]: WHEN `S.has_target_heart` DO `C.take_heart` FOR squad=ring
 - `R.cover_heart` [200]: WHEN `S.has_target_heart` DO `C.cover_heart` FOR squad=cover
 - `R.default_goal` [100]: ALWAYS DO `C.default_goal`
