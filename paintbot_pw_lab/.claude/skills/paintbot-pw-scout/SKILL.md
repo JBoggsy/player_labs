@@ -91,9 +91,12 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
   descriptive.
 - **Do not pool rules versions.** The report warns when coworld versions or tape rules
   are mixed. Split the directories and report each on its own.
-- **The Elo outcome score is the ladder's number**: `clamp(0.5 + (our glory − their glory)/2000, 0, 1)`, and the
-  loser's glory is settled to 0. A 0.77 is a normal win and 0.83 a big one. A zero-glory
-  win counts as a draw.
+- **Scout score columns are historical, not the current ladder metric.** The report currently
+  emits legacy `elo_outcome` with denominator2000. The verified current OpenSkill soft outcome
+  uses `clamp(0.5 + (our glory - their glory)/1200, 0, 1)` for margin_scale600. Recheck live
+  settings and use `score_outcome` for current A/B decisions. A zero-score result does not
+  identify a draw: use the authoritative outcome. Do not infer current performance from the
+  scout report's historical Elo columns.
 - **Ember frame.** Heart and pickup names are mirrored for Azure sides, so `h0` = own
   home. Quote positions from the legend line and do not mix them with raw engine indices.
   Shout slot hints use **raw** indices, because that is what the policy sends.

@@ -15,7 +15,12 @@ I23 and i26 Richard effects were+.035183 and+.032175, respectively, both inconcl
 Use400 Richard episodes per arm plus the usual roster,984games/492estimatedcredits.
 Print SUBMIT CANDIDATE only if fixed Richard delta>=+.05 and95%CI excludes0.
 All i19-i26 cohorts completed584games each with0failures; full opponent tables in reports.
-Refresh public field and propose one xolod time-to-win improvement after queuing the stack.
+I27 built9ed1e02e-1, uploaded v22 UUIDae54d4e0-1032-4d74-9767-69cd5d30cfa8;
+984-game cohort is admitted progressively, canonical finite workers restarted.
+Round870 field refresh: v10 rank1, engine0.3.123; xolod/Richard active, finist/zhar/relh
+still startup-only in30 verified public games. Opponent entrant versions unchanged.
+PROPOSAL-28 recommends full-speed uncontested neutral-heart approaches; proposed only.
+Xolod sampled margin varied mainly with behind awards, so speed and score must be separated.
 I17 retreat eligibility regressed and is excluded from combinations.
 
 No daily cap; balance floor10,000 and per-iteration approximately600 credits. Respect pending
@@ -88,7 +93,7 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
 - baseline: submitted `jb-pw-opt:v10`, version `8c4947c7-0679-4826-a653-9de20c62ffa3`, build `7faadaa4-1`.
-- candidates: i23/v18 frontier pairs, i24/v19 supported focus attack, i25/v20 regrouping, i26/v21 direct capture; all use v10 controls.
+- candidate: i27/v22 frontier-pair plus direct-capture stack versus v10; prior i19-i26 complete.
 - opponents: every top-8 leaderboard entrant except us, plus all explicitly named targets:
   Richard (primary, heavy), xolod (substantial guard), and small matched samples against
   finist, zhar, relh, basic-v22, daveey/Alpha, and Rohit. Refresh exact versions every iteration.
