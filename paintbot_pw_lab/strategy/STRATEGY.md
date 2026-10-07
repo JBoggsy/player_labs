@@ -370,24 +370,15 @@ Reading aid (the compiler receives component fields, not this introduction):
   Best_cost remains the HP-weighted ranking score; do not treat it as a physical distance.
   After an actual shootAt request with hasSpray, increment spray_distance_shots_total if
   the former best_cost test would have rejected it. This counter starts at zero and persists.
-  In plan_leg, after the original random sign and leg duration are drawn and tx/ty to the
-  visible threat are computed, choose a spacing sign before computing the perpendicular.
-  Only do this when map_known of `K.opening_signature` = 1 AND tx*tx + ty*ty <= spacing_enemy_sq. Find the nearest visible
-  same-parity teammate other than self among IDs0 through15 with squared distance
-  strictly below spacing_ally_sq. Ascending IDs and strict comparison choose the lower
-  ID on a distance tie. If found, set dx=selfX-playerX(ally), dy=selfY-playerY(ally),
-  cross=dy*tx-dx*ty. Set sign=-1 if cross<0 or if cross=0 and selfId>ally, else sign=1.
-  Increment spacing_changed_total if sign differs from the originally selected zig, then
-  replace zig by sign. Without an eligible ally keep zig. Preserve both random calls,
-  leg duration, forward-goal blend, speed normalization and capture-ring clamp. This
-  only changes lateral dodge planning; it does not change target selection or gun timing.
+  The helper sk_motor__direct_capture(gx, gy, hold) increments direct_capture_ticks_total
+  once, then calls the unchanged sk_motor__act(gx, gy, hold). This is activation tracing.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
-- Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`, `K.opening_signature`
+- Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
   - opening_ticks_total -- cumulative ticks controlled by the coordinated central opening
-  - spacing_changed_total -- planned dodge legs whose lateral sign differs due to a nearby visible ally
+  - direct_capture_ticks_total -- cover-role ticks sent directly to the ring under the default route class
   - root -- the result of the last sk_motor__isqrt call
   - threw -- 1 on a commanded or forced grenade release tick, else 0
   - release_charge -- observed charge on this release decision
@@ -400,8 +391,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   - spray_distance_shots_total -- actual spray requests enabled by the physical-distance range check
   - cover_capture_ticks_total -- cover-capability ticks spent holding an already-started capture
 - Params:
-  - spacing_enemy_sq = 2560000 square cm -- spacing only inside 16 m of the visible threat
-  - spacing_ally_sq = 360000 square cm -- look for a visible teammate inside 6 m
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
   - lead_ticks = 6 ticks -- base.bas value, the gun windup
   - drift_ticks = 5 ticks -- base.bas value, our own drift to cancel
@@ -485,7 +474,14 @@ Reading aid (the compiler receives component fields, not this introduction):
 ### C.cover_heart
 - Summary: Cover the squad target from outside the ring, and step in when nobody captures it
   (squad seats 2 and 3).
-- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set
+- Spec: `__start` does nothing. In `__tick`, first check map_known = 1 AND route_class = 2
+  from `K.opening_signature`. If true, execute only the following direct-capture branch.
+  Read objective from `K.squad_target`. Set hx = controlX(objective), hy = controlY(objective).
+  Set dx = hx - selfX, dy = hy - selfY and hold = 0. Set hold = 1 when
+  dx * dx + dy * dy < hold_sq. Call sk_motor__direct_capture(hx, hy, hold) of `SK.motor`.
+  Issue sneak(1) when best of `K.contacts` < 0 AND soundCount() > 0 AND
+  dx * dx + dy * dy < quiet_sq. Set status = 0. Skip the legacy branch this tick.
+  Otherwise execute the unchanged legacy branch in the following steps. Step 1: set
   `hx = controlX(objective)`, `hy = controlY(objective)`, with objective of `K.squad_target`.
   Set `goal_x = hx` and `goal_y = hy`. Step 2: set `dx = hx - selfX` and `dy = hy - selfY`.
   Set finish_capture = 1 when objective >= 0 AND controlCaptureTeam(objective) = selfTeam
@@ -504,7 +500,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
   (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of
   `K.squad_target`. Step 6: set status to 0.
-- Uses: `K.squad_target`, `K.contacts`, `SK.motor`
+- Uses: `K.squad_target`, `K.contacts`, `K.opening_signature`, `SK.motor`
 - Params:
   - capture_sq = 19600 square cm -- engine capture radius140cm squared
   - step_in_sq = 640000 square cm -- base.bas value, 8 m
@@ -518,7 +514,7 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Done when: never
 - Checks:
   - Acted: the rule selects this capability when the squad has a target. Reads: PWD.r, PWD.c
-  - Acted properly: a cover cog stays near its post while a teammate captures. Reads: `K.squad_target`.idle_capture, replay
+  - Acted properly: outside the direct-capture branch, a cover cog stays near its post while a teammate captures. Reads: `K.squad_target`.idle_capture, replay
 - Status: specified (2026-10-05)
 
 ### C.default_goal
@@ -634,7 +630,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
   On a send, copy route_class, classified_tick and map_known from `K.opening_signature` into same-named outputs.
   Also copy opening_ticks_total and
-  spacing_changed_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
+  direct_capture_ticks_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
 - Uses: `K.contacts`, `K.opening_signature`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
@@ -643,10 +639,10 @@ Reading aid (the compiler receives component fields, not this introduction):
   - route_class -- 0 pending, 1 outer-route signature, 2 default
   - classified_tick -- exact tick when the classifier latched
   - opening_ticks_total -- cumulative adaptive opening calls
-  - spacing_changed_total -- dodge directions changed by teammate spacing through this snapshot
+  - direct_capture_ticks_total -- direct capture staffing ticks through this snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
   - map_known -- whether exact Heartwick public geometry matched
-- Log: route_class, classified_tick, opening_ticks_total, spacing_changed_total, cover_capture_ticks_total, map_known
+- Log: route_class, classified_tick, opening_ticks_total, direct_capture_ticks_total, cover_capture_ticks_total, map_known
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

@@ -18,7 +18,8 @@ No optimizer submission, account floor10000, finite workers and>=120s API pacing
 Player James Botts: `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`.
 League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 
-Current source is the dodge rebase on guarded v29 (i37).
+Current source is i38 conditional direct-capture staffing, independently on guarded v29.
+I37 dodge is immutable build757ec5d2-1/v31 and its hosted cohort uses v29 controls.
 Guard-only child build `1fe285df-1` passed and uploaded as v30; not submitted.
 Its26/26state-hash checks through800ticks match v29 on Heartwick and v10 on all12
 shipped alternate maps, both sides; compiler28-seed Heartwick play is identical.
