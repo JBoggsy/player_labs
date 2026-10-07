@@ -12,12 +12,16 @@ Submit the best one to the league and curate the league's filler roster.
 
 ## State (update every tick)
 
-- **League champion line:** `webdip-dumbbot:v5` was submitted on 2026-10-07. It is
+- **League champion line:** `webdip-dumbbot:v6` = **Kissinger**, submitted 2026-10-07. It is
+  search with level-1 opponents (opponents assumed to best-respond to DumbBot plans) plus the
+  belief fix. Paired A/B against v5 Machiavelli: +0.135 ± 0.057. Hosted check
+  `xreq_c18ab6c3…` (14 episodes against the fixed fillers) is running.
+- Previously, `webdip-dumbbot:v5` was submitted on 2026-10-07. It is
   Machiavelli: fastadj search, 1 restart, and the competent-vs-random opponent likelihood fix.
   - v4 was the same without the fix. Hosted against the fillers it scored 0.137 vs par 0.18,
     because the bug labelled search opponents as random.
   - Hosted check `xreq_6c3fe219…` (14 episodes against 6 fillers) is running.
-- **League fillers (8):** Random, Calhamer, Machiavelli (v2), Bismarck, Metternich,
+- **League fillers (9, now including Kissinger):** Random, Calhamer, Machiavelli (v2), Bismarck, Metternich,
   Talleyrand, Napoleon, Blücher. All except Random still use the OLD likelihood. Once v5 is
   confirmed, re-upload them with the fix to strengthen the league field.
 - **Championship-1** (36 games): Machiavelli-r1 +0.058, Kissinger +0.030, Bismarck +0.029,

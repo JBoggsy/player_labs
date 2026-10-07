@@ -1,0 +1,54 @@
+{
+ "private": true,
+ "target": {
+  "league_id": "league_428e91e5-ee25-4f9c-be5e-a4fc4f993f17",
+  "variant_id": "classic-gunboat"
+ },
+ "roster": [
+  {
+   "player": {
+    "policy_ref": "fbe910d8-b021-487b-9c15-143ae4c99804"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "a1a3c8dc-e375-4741-9a3a-51539c6ca327"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "fe45834c-7cc1-4826-994b-724408f4a21d"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "e7f7300a-2ea8-47c0-91ec-58cb3396d627"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "907306fb-30bd-4894-a789-c7e74a23c706"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "31844f07-a361-4b07-8a08-9124e7d5cc83"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "2f27f55a-6b0e-4af5-af2b-58aee9e3c83f"
+   },
+   "slot": -1
+  }
+ ],
+ "num_episodes": 14,
+ "episode_player_llm_spend_limit_usd": 0,
+ "notes": "webdip lab: v6 Kissinger vs fixed fillers (mach v3, bismarck v2, metternich v2, talleyrand v2, napoleon v2, calhamer)"
+}

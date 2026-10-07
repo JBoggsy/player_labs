@@ -12,3 +12,5 @@ metternich-v2 e7f7300a-2ea8-47c0-91ec-58cb3396d627
 talleyrand-v2 907306fb-30bd-4894-a789-c7e74a23c706
 napoleon-v2 31844f07-a361-4b07-8a08-9124e7d5cc83
 blucher-v2 2427e40f-d0fe-40f8-b619-4358f8a4c697
+webdip-dumbbot-v6 fbe910d8-b021-487b-9c15-143ae4c99804
+webdip-kissinger-v1 4270db3d-e865-46c3-89ae-a91207311d67
