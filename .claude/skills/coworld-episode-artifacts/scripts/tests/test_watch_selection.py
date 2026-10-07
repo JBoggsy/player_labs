@@ -151,3 +151,37 @@ def test_watch_loop_survives_transient_network_errors(tmp_path: Path) -> None:
     )
     assert rc == 0
     assert client.calls > 1  # first pass errored, loop retried and finished
+
+
+def test_throttled_artifacts_reach_watch_backoff(tmp_path: Path) -> None:
+    import httpx
+    import pytest
+    from fetch_artifacts import Client, fetch_episode
+
+    with Client('https://example.invalid', 'test') as client:
+        client._http.close()
+        client._http = httpx.Client(
+            base_url='https://example.invalid',
+            transport=httpx.MockTransport(lambda request: httpx.Response(429)),
+        )
+        for fetch in (client.get_bytes_or_none, client.get_text_or_none):
+            with pytest.raises(httpx.HTTPStatusError) as caught:
+                fetch('/artifact')
+            assert caught.value.response.status_code == 429
+        with pytest.raises(httpx.HTTPStatusError):
+            fetch_episode(client, _ref('ereq_throttled', 'completed'), tmp_path / 'episode',
+                          want_replay=True, want_results=True, want_logs=True)
+
+
+def test_absent_artifacts_remain_optional() -> None:
+    import httpx
+    from fetch_artifacts import Client
+
+    with Client('https://example.invalid', 'test') as client:
+        client._http.close()
+        client._http = httpx.Client(
+            base_url='https://example.invalid',
+            transport=httpx.MockTransport(lambda request: httpx.Response(404)),
+        )
+        assert client.get_bytes_or_none('/artifact') is None
+        assert client.get_text_or_none('/artifact') is None

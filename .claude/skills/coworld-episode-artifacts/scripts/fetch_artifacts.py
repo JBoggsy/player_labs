@@ -100,12 +100,16 @@ class Client:
         """GET bytes; return None (not raise) on a 4xx so one missing artifact
         does not abort the episode."""
         r = self._http.get(path)
+        if r.status_code == 429:
+            r.raise_for_status()
         if r.status_code >= 400:
             return None
         return r.content
 
     def get_text_or_none(self, path: str) -> str | None:
         r = self._http.get(path)
+        if r.status_code == 429:
+            r.raise_for_status()
         if r.status_code >= 400:
             return None
         return r.text
@@ -324,6 +328,10 @@ def fetch_episode(client: Client, ref: EpisodeRef, out_dir: Path, *,
                               want_results=want_results, want_logs=want_logs,
                               want_artifacts=want_artifacts)
     except (httpx.HTTPError, json.JSONDecodeError, OSError, ValueError, KeyError, TypeError) as exc:
+        # A throttled download is not missing evidence. Let the watcher back off
+        # without spending this episode's bounded artifact retry allowance.
+        if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 429:
+            raise
         return {"ref_id": ref.ref_id, "dir": out_dir.name, "complete": False,
                 "errors": [f"{type(exc).__name__}: {exc}"]}
 
