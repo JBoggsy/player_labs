@@ -2,24 +2,20 @@
 
 ## Current objective and boundary
 
-VERDICT-28 changes the objective to top-bracket margin against xolod:v14. Keep submitted
-jb-pw-opt:v10, UUID8c4947c7-0679-4826-a653-9de20c62ffa3, build7faadaa4-1 as parent.
-Orchestrator reports rounds871–876 paired us with xolod five times and finist twice, all wins.
-V22 remains a Richard reserve, not submitted: Richard+.060 but xolod-.01323
-95%CI[-.02610,-.00036]. V23 neutral rush rejected: xolod-.009583[-.022956,+.003789],
-48/arm, both48wins. Mean win time130.341s baseline vs125.445s candidate; faster did not
-improve score. Median129.438s vs127.083s. Old cohorts i19–i28 are complete.
+VERDICT-30 supersedes continuous candidate pipelining. Build one robust bundle on v10:
+exact v22 frontier pairs/direct capture plus exact v25 glory-heart detours. Pursuit v24 is
+excluded: i29 was640/664 at source freeze, so its final xolod result was unavailable.
+I30 complete664/664 with0failures: xolod+.0015375[-.0053516,+.0084266], finist+.0143403
+[+.0054313,+.0232492], Richard+.1615278[-.0062956,+.3293512]. Richard remains inconclusive.
 
-I29/v24 post-capture pursuit is uploaded as UUIDfebf78e0-a9d8-4f62-995e-549c9f91e41d,
-build6121c0a2-1. Its664-game cohort is queued;213pursuit ticks in6of32 targeted recordings.
-I29 diagnosis and design are in tmp/collab/optimizer/REPORT-29.md. Eight selected v10-xolod
-wins finish on the heart meter with2–5 enemies alive. All hearts are owned well before
-completion. Investigate post-capture pursuit without changing earlier capture decisions.
-I30/v25 is an independent v10 child for short visible glory-heart detours,
-build66386cde-1, UUID98763b00-5e58-4957-917d-13f55244ca8e. Its664-game cohort is queued
-while i29 runs.149actual detour ticks in8of32targeted recordings, no validation failures.
-REPORT-30 records mechanism, visibility bounds and unknown opportunity rate.
-No unsupported causal time-saving estimate or optimizer league submission.
+I31 tests the robust bundle against fresh v10 controls:300xolod,100finist,200Richard per arm,
+1200games/600estimatedcredits. Recommendation requires xolod lower95%CI>=-.005 AND a
+positive lower95%CI on finist or Richard. Complete fixed cohort and no operational failures.
+Do not submit; print SUBMIT CANDIDATE for the orchestrator only when this gate passes.
+After the bundle decision, enter watch mode: one cohort at a time, no new candidates unless
+the field changes. About every2h check engine doctor, leaders and recent public rounds for
+new opponent versions or resumed top-four activity. A change triggers a v10 evaluation,
+STATUS update and NEED ORCHESTRATOR. Watch does not authorize league or public writes.
 
 ## Loop charter
 
@@ -27,11 +23,11 @@ No unsupported causal time-saving estimate or optimizer league submission.
 - policy_file: paintbot_pw_lab/strategy/STRATEGY.md
 - policy_name / player: jb-pw-opt on James Botts, ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce.
 - baseline: jb-pw-opt:v10, UUID8c4947c7-0679-4826-a653-9de20c62ffa3, build7faadaa4-1.
-- opponents: xolod:v14 primary, at least200episodes/arm; finist:v2 secondary48/arm; co-gas-paintbot-bassy-richard:v1 guard48/arm; small matched guards against zhar:v55, relh-paintbot-pw:v56, paintbot-pw-basic-v22:v1, daveey-pw-league-smoke-l17c-s41u150-hc:v1, paintbot-heartwick-starter:v2. Refresh identities before admission; flag frozen leaders that resume acting.
-- allowed_changes: one attributable strategy or authored skill change with activation tracing; compile committed inputs, never hand-edit generated BASIC. VERDICT-28 authorizes proposing and building the largest diagnosed time-saving change.
+- opponents: current bundle xolod:v14 primary300/arm, finist:v2 secondary100/arm, co-gas-paintbot-bassy-richard:v1 secondary200/arm. Watch mode surveys the whole leaderboard and top-four activity; evaluate v10 against changed opponents.
+- allowed_changes: the VERDICT-30 robust bundle, preserving source components and activation tracing. Afterwards no new candidates unless the field changes; report the change to the orchestrator.
 - credit_budget: no daily cap; keep actual account balance above10000, approximately600credits per iteration.
-- max_iterations: none (continuous, stopped by orchestrator).
-- submission_gate: xolod delta>=+.02 with95%CI lower bound>0; no finist regression (CI entirely below0 blocks); Richard point delta>=-.05. Report Richard CI explicitly: this guard is not proof of noninferiority. Other small guards remain regression sentinels. All fixed games complete, no episode failures or verified bad candidate seats. Only recommend; orchestrator submits.
+- max_iterations: one remaining robust bundle, then watch mode under VERDICT-30.
+- submission_gate: xolod lower95%CI>=-.005 and finist or Richard lower95%CI>0, full fixed cohort and no operational failures. Only recommend; orchestrator submits.
 
 ## Current environment and operating rules
 

@@ -465,6 +465,12 @@ SUB sk_motor__finish_cover_capture(sk_motor_capture_x, sk_motor_capture_y)
   sk_motor__act(sk_motor_capture_x, sk_motor_capture_y, 1)
 END SUB
 
+' Cover cogs join the ring; retain the parent motor without changing combat gates.
+SUB sk_motor__direct_capture(sk_motor_gx, sk_motor_gy, sk_motor_hold)
+  sk_motor__direct_capture_ticks_total = sk_motor__direct_capture_ticks_total + 1
+  sk_motor__act(sk_motor_gx, sk_motor_gy, sk_motor_hold)
+END SUB
+
 ' Count actual glory-heart detour ticks selected by C.collect_glory.
 SUB sk_motor__collect_glory(sk_motor_gx, sk_motor_gy)
   sk_motor__glory_detour_ticks_total = sk_motor__glory_detour_ticks_total + 1
