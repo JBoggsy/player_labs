@@ -19,7 +19,7 @@ Authorized fresh comparison:400Richard+200xolod games per arm,balanced sides,
 1200games/~600credits. Gate Richard>=+.05 with lower95%CI>0, xolod lower95%CI>=-.02,
 complete cohort and no operational failures. Target a large+.10 Richard effect; this is
 an ambition, not a supported forecast. No pooling i32. Account floor10000; pre-build
-balance14910.60263. Next pipeline idea: visible teammate spacing during central fights.
+balance14910.60263. Pipelined i34: visible teammate spacing during central fights.
 
 Champion: `jb-pw-opt:v10`, UUID `8c4947c7-0679-4826-a653-9de20c62ffa3`, immutable
 build [`7faadaa4-1`](strategy/compiled/7faadaa4-1/report.md), source `7faadaa4`.
@@ -30,7 +30,10 @@ League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 Current strategy source: i34 teammate-aware dodge directions on champion source `7faadaa4`.
 I33 is immutable build `9d572cfd-1`, uploaded v27 UUID
 `f5878480-79cc-4321-8953-f370e4bf7d28`; its fixed hosted cohort is queued.
-I34 is a separate locally prepared child, not a change to that cohort.
+I34 is a separate locally prepared child, build `4f0e5d4e-1`, not a change to that cohort.
+Its compiler gates passed; full-game activation counted 127 changed directions across
+20/32 seat recordings, with 19,644 valid telemetry lines and zero validation failures.
+I34 is not uploaded; local activation does not establish field performance.
 Rejected v26 is recoverable at `c11410ab` / build `c11410ab-1`; never use it as the
 champion. All policy edits go through committed strategy/skill sources and the compiler.
 
@@ -112,7 +115,7 @@ Coworld 0.1.57 and softmax-cli 0.26.38 were release-checked during i31; refresh 
 future CLI diagnosis. Broader neural/oracle references retain `PW_DOCS_SHA=118e1619`.
 M3 comms remains inactive and unqualified on current Bassy; see [comms.md](strategy/comms.md).
 
-I32 is complete; i33 admission/results are active and i34 is being compiled locally. Admission/results workers exit on terminal work;
+I32 is complete; i33 admission/results are active and i34 is compiled and ready locally. Admission/results workers exit on terminal work;
 field_watch.py is stopped by explicit handoff. Dashboard 8810 stays off. Do not poll
 terminal requests for optional artifacts. Future authorized polling/retries: at least
 120 seconds, bounded artifacts, finite exit. No hosted self-play. Local games establish
