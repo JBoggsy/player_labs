@@ -143,6 +143,7 @@ def test_watch_loop_survives_transient_network_errors(tmp_path: Path) -> None:
 
     args = argparse.Namespace(
         xreq="xreq_test", out=tmp_path, num=10, interval=0.0, max_attempts=3,
+        max_idle_hours=2.0, max_hours=24.0,
     )
     client = FlakyClient()
     rc = watch_loop(
@@ -151,3 +152,33 @@ def test_watch_loop_survives_transient_network_errors(tmp_path: Path) -> None:
     )
     assert rc == 0
     assert client.calls > 1  # first pass errored, loop retried and finished
+
+
+def test_watch_loop_exits_when_request_never_progresses(tmp_path: Path) -> None:
+    # Regression: a watcher on a request that never drained polled the shared
+    # per-user API budget for 19 days. No progress for --max-idle-hours must exit.
+    import argparse
+
+    from fetch_artifacts import watch_loop
+
+    class StuckClient:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def get_json(self, path: str, **params: object) -> object:
+            self.calls += 1
+            if path.endswith("/episodes"):
+                return []
+            return {"episode_count": 4, "running_count": 4}
+
+    args = argparse.Namespace(
+        xreq="xreq_stuck", out=tmp_path, num=10, interval=0.0, max_attempts=3,
+        max_idle_hours=0.0, max_hours=24.0,
+    )
+    client = StuckClient()
+    rc = watch_loop(
+        client, args, "https://example.test",
+        want_replay=True, want_results=True, want_logs=True, want_artifacts=True,
+    )
+    assert rc == 1
+    assert client.calls <= 4  # one poll pass, then the idle limit stops it
