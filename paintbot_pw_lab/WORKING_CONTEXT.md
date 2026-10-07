@@ -10,7 +10,8 @@ xolod -.0062674,95%CI[-.0225313,+.0099966],48/arm. I18 now complete584/584,0fail
 -.021875 [-.030849,-.012901],4/arm, both policies4/4wins. Other guards have no negative interval. Existing i19-i22 v8-control cohorts remain immutable.
 I23 frontier pairs on v10 passed as a5c28ea4-1, uploaded v18. I24 focus attack on v10
 passed as cae2480d-1, uploaded v19. Both have fresh full-roster controls against v10.
-Current i26 source directly staffs heart rings with cover-role cogs on v10. REPORT-26
+Current i26 source directly staffs heart rings with cover-role cogs on v10. Build7723f557-1
+passed and uploaded v21 UUIDe00624c5-deef-4bd1-93c1-20d2225459b0, queued versusv10. REPORT-26
 owns opportunity measurements, low-confidence+.10 planning hypothesis and crowding risk.
 I25 regroup combination is uploaded v20 and queued; it is not a supported winner.
 I17 retreat eligibility regressed and is excluded from combinations.
@@ -85,7 +86,7 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
   from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
 - policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
 - baseline: submitted `jb-pw-opt:v10`, version `8c4947c7-0679-4826-a653-9de20c62ffa3`, build `7faadaa4-1`.
-- candidates: i23/v18 frontier pairs, i24/v19 supported focus attack, i25/v20 local regrouping; all use v10 controls.
+- candidates: i23/v18 frontier pairs, i24/v19 supported focus attack, i25/v20 regrouping, i26/v21 direct capture; all use v10 controls.
 - opponents: every top-8 leaderboard entrant except us, plus all explicitly named targets:
   Richard (primary, heavy), xolod (substantial guard), and small matched samples against
   finist, zhar, relh, basic-v22, daveey/Alpha, and Rohit. Refresh exact versions every iteration.
