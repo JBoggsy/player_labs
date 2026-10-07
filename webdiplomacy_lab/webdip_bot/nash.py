@@ -34,6 +34,10 @@ class NashBot(SearchBot):
         mine = [by_id[s["unitID"]] for s in slots]
         # Our strongest single plan from the regular search (best response to DumbBot samples).
         searched = super().choose(slots)
+        # The parent counted its chosen orders into the trace; drop those so the order-type
+        # counters reflect only what NashBot finally plays.
+        for o in searched:
+            self.trace[o["type"]] -= 1
         self.parent = {t: b.province(t) for t in b.terr}
 
         powers = sorted({int(u["countryID"]) for u in b.units})
