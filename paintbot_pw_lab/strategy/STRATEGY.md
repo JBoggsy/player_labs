@@ -5,8 +5,10 @@ product. Nobody edits compiled BASIC by hand. To change behavior, change this fi
 `skill.bas` and recompile (docs/designs/2026-09-30-strategy-file-format.md).
 
 Thesis: this version describes `reference/base.bas` exactly. Its build must play like
-`base.bas`. It does not improve any behavior. All arithmetic is int32. Division truncates
-toward zero. Write every expression in the order given here, because the order of truncation
+`base.bas`. It does not improve any behavior. All strategy arithmetic is int32. Use Bassy integer division `\`, which truncates
+toward zero; never use fixed-point `/`. Boolean outputs specified as 0/1 must remain
+0/1 (use explicit branches, because Bassy comparisons return -1). Legacy scalar host
+observations remain valid on Bassy. Do not change strategy thresholds or behavior. Write every expression in the order given here, because the order of truncation
 changes results.
 
 Reading aid (the compiler receives component fields, not this introduction):
@@ -80,14 +82,14 @@ Reading aid (the compiler receives component fields, not this introduction):
   `hx * hx + hy * hy > far_sq`, set `avoid_until(objective) = worldTick + avoid_ticks`. Then, on
   every tick where `worldTick MOD progress_period = 0`, set `progress_x = selfX` and
   `progress_y = selfY`.
-  Step 2 (squad). Set `member = (selfId / 2) MOD 8`, `squad = member / 4`, `seat = member MOD 4`.
+  Step 2 (squad). Set `member = (selfId \ 2) MOD 8`, `squad = member \ 4`, `seat = member MOD 4`.
   Step 3 (target). Set `objective = -1`. If `heartCount() > 0`, do the two passes below. Else
   skip to Step 4.
   Set `other = -1`. Run `pass = 0` then `pass = 1`. In each pass, set `ref_y = homeY - ref_offset`
   for pass 0, and `ref_y = homeY + ref_offset` for pass 1. Then, if `selfTeam = 1`, set
   `ref_y = mirror_y - ref_y`. Set `choice = -1` and `choice_cost = 2147483647`.
   For `j = 0` while `j < heartCount() AND j < 64`, skip j when `controlOwner(j) = selfTeam` or `j = other`. Else set
-  `dx = (controlX(j) - homeX) / 8`, `dy = (controlY(j) - ref_y) / 8`, and
+  `dx = (controlX(j) - homeX) \ 8`, `dy = (controlY(j) - ref_y) \ 8`, and
   `cost = dx * dx + dy * dy`. If `controlOwner(j) = -1`, subtract `neutral_bonus` from cost. If
   `pass = squad AND avoid_until(j) > worldTick`, add `avoid_penalty` to cost. If
   `cost < choice_cost`, set `choice = j` and `choice_cost = cost`. Strict less-than keeps the
@@ -147,7 +149,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   The memory arrays start at 0, so on tick 1 this test compares with 0. Keep that.
   Step 4. For every seat `i = 0` to 15, our own seat included, with `visible(i)`: set
   `old_x(i) = playerX(i)`, `old_y(i) = playerY(i)` and `seen_tick(i) = worldTick`.
-  Also set `foe_cx = foe_sum_x / foes_seen` and `foe_cy = foe_sum_y / foes_seen` when
+  Also set `foe_cx = foe_sum_x \ foes_seen` and `foe_cy = foe_sum_y \ foes_seen` when
   `foes_seen > 0`. Else set both to 0.
 - Sources: `selfId`, `selfTeam`, `selfX`, `selfY`, `worldTick`, `visible`, `playerX`, `playerY`,
   `playerHp`, `playerCarrying`
@@ -186,14 +188,14 @@ Reading aid (the compiler receives component fields, not this introduction):
   Step 2 (carrier). Set `carrier = 0`. For `i = 0` to 15, set `carrier = 1` when
   `i <> selfId AND visible(i) AND i MOD 2 <> selfTeam AND playerCarrying(i)`.
   Step 3 (choice). Set `nearest = -1`, `nearest_x = 0`, `nearest_y = 0`. Do the rest of this step
-  only when `NOT carrying AND carrier = 0`. Set `nearest_cost = reach_sq`. For `j = 0` while
+  only when `carrying = 0 AND carrier = 0`. Set `nearest_cost = reach_sq`. For `j = 0` while
   `j < pickupCount() AND j < 64`, use j only when
   `mem_tick(j) > 0 AND worldTick - mem_tick(j) < memory_ticks`. Set `kind = mem_kind(j)` and
-  `wanted = (kind = 0 AND NOT hasGrenade) OR (kind = 2 AND selfHp < 3) OR (kind = 3 AND armorHp < 3 AND selfHp = 3)`.
+  `wanted = (kind = 0 AND hasGrenade = 0) OR (kind = 2 AND selfHp < 3) OR (kind = 3 AND armorHp < 3 AND selfHp = 3)`.
   If wanted: set `dx = mem_x(j) - selfX`, `dy = mem_y(j) - selfY`, and
   `cost = dx * dx + dy * dy`. Then, if
-  `kind = 2 AND selfHp = 1`, set `cost = cost / 4`. Then, if
-  `cost < arrive_sq AND NOT pickupVisible(j)`, set `mem_tick(j) = 0` and do not use j. Else, if
+  `kind = 2 AND selfHp = 1`, set `cost = cost \ 4`. Then, if
+  `cost < arrive_sq AND pickupVisible(j) = 0`, set `mem_tick(j) = 0` and do not use j. Else, if
   `cost < nearest_cost`, set `nearest = j` and `nearest_cost = cost`.
   After the loop, if `nearest >= 0`, set `nearest_x = mem_x(nearest)` and
   `nearest_y = mem_y(nearest)`.
@@ -222,7 +224,7 @@ Reading aid (the compiler receives component fields, not this introduction):
 ### S.losing_fight
 - Summary: We see more near enemies than near friends, so we refuse the fight.
 - Spec: Set `on = 1` when
-  `foes_near - friends_near >= 1 AND NOT carrying AND heart_count > 0`, using the outputs of
+  `foes_near - friends_near >= 1 AND carrying = 0 AND heart_count > 0`, using the outputs of
   `K.contacts` and `K.squad_target`. Else set `on = 0`.
 - Uses: `K.contacts`, `K.squad_target`
 - Checks:
@@ -312,8 +314,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.squad_target` is 3. Set `ax = post_x - hx` and `ay = post_y - hy`. If `selfTeam = 0`, add
   `post_shift` to ax. Else subtract `post_shift` from ax. Call `sk_motor__isqrt(ax * ax + ay * ay)`
   of `SK.motor`. If root of `SK.motor` is more than 0, set
-  `goal_x = hx + (ax * 3 - ay * 2 * side) * post_radius / root` and
-  `goal_y = hy + (ay * 3 + ax * 2 * side) * post_radius / root`. Step 3: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when
+  `goal_x = hx + (ax * 3 - ay * 2 * side) * post_radius \ root` and
+  `goal_y = hy + (ay * 3 + ax * 2 * side) * post_radius \ root`. Step 3: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when
   `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 4: call
   `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (quiet approach): call the host command
   `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
@@ -377,9 +379,9 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Summary: Head for the heart that is far from the enemies and near us.
 - Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set
   `cx = foe_cx` and `cy = foe_cy` of `K.contacts`. Set `away = -1` and
-  `away_score = -2147483647`. For `j = 0` while `j < heartCount() AND j < 64`, set `ex = (controlX(j) - cx) / 16`,
-  `ey = (controlY(j) - cy) / 16`, `mx = (controlX(j) - selfX) / 16`,
-  `my = (controlY(j) - selfY) / 16`, and `score = ex * ex + ey * ey - (mx * mx + my * my) / 2`.
+  `away_score = -2147483647`. For `j = 0` while `j < heartCount() AND j < 64`, set `ex = (controlX(j) - cx) \ 16`,
+  `ey = (controlY(j) - cy) \ 16`, `mx = (controlX(j) - selfX) \ 16`,
+  `my = (controlY(j) - selfY) \ 16`, and `score = ex * ex + ey * ey - (mx * mx + my * my) \ 2`.
   If `score > away_score`, set `away = j` and `away_score = score`. Step 2: if `away >= 0`, the
   goal is `(controlX(away), controlY(away))`. Else the goal is our own position. Step 3: call
   `sk_motor__act(goal_x, goal_y, 0)` of `SK.motor`. Step 4 (quiet approach): call the host command
@@ -402,7 +404,7 @@ Reading aid (the compiler receives component fields, not this introduction):
 
 ### ST.roles
 - Summary: Two squads of four per team. Seats 0 and 1 of a squad take the ring, seats 2 and 3 cover.
-- Spec: The squad seat is `((selfId / 2) MOD 8) MOD 4`. Ring seats have squad seat 0 or 1.
+- Spec: The squad seat is `((selfId \ 2) MOD 8) MOD 4`. Ring seats have squad seat 0 or 1.
   Cover seats have squad seat 2 or 3.
 - Roles squad:
   - ring = seats 0,1,2,3,8,9,10,11

@@ -61,7 +61,7 @@ def source_files(source: Path) -> list[Path]:
         paths.append(comms)
     paths.extend(LAB.joinpath('tools').glob('strategy_*.py'))
     paths.extend([LAB / 'tools/pw_strategy.py', LAB / 'tools/pw_intent.py', LAB / 'tools/release.env',
-                  LAB / 'docs/policy-surface.md', LAB / 'reference/base.bas'])
+                  LAB / 'docs/policy-surface.md', LAB / 'reference/base-bassy-28030de6.bas'])
     paths.extend(LAB / 'tools' / name for name in ('pw_local.py', 'pw_release.py', 'pw_cli.py',
                                                    'pw_terrain.py', 'pw.py'))
     return sorted(set(paths))
@@ -183,6 +183,9 @@ def prepare(source: Path, *, agent=None, model=None, full=False, milestone=None,
                                  text=True, check=True, timeout=30).stdout.strip()
     old_map = read(prior / 'map.json').get('components', {}) if prior else {}
     current = component_map(strategy)
+    # A runtime release can change BASIC semantics without changing strategy text.
+    if prior and read(prior / "version.json").get("engine", {}).get("tag") != pw_release.current_tag():
+        full = True
     statuses = changes(current, old_map, full)
     # Interfaces are source-declared, so dependency invalidation is known before the LLM runs.
     for key, item in current.items():
@@ -293,7 +296,7 @@ def generate(order: dict, *, errors=None, timeout=900) -> None:
         shutil.copyfile(COMPILER / 'AGENT.md', root / 'AGENTS.md')
         shutil.copyfile(COMPILER / 'LESSONS.md', root / 'context/LESSONS.md')
         shutil.copyfile(LAB / 'docs/policy-surface.md', root / 'context/policy-surface.md')
-        shutil.copyfile(LAB / 'reference/base.bas', root / 'context/base.bas')
+        shutil.copyfile(LAB / 'reference/base-bassy-28030de6.bas', root / 'context/base.bas')
         prior = build_path(order['previous_build']) if order['previous_build'] else None
         previous_guesses = read(prior / 'report.json').get('guesses', []) if prior else []
         from strategy_basic import unit_contract

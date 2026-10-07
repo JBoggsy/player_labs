@@ -9,8 +9,8 @@ For Python interfaces, provenance, implementation limits and cross-game extracti
 it does not select a different game backend.
 
 The checked-in `strategy/STRATEGY.md` is restored to foundation build `3d0f8a4f-1`.
-M3 communications are inactive and recoverable from commit `2184fc64`. Bassy migration
-at 0.3.123 remains unresolved; the old foundation disables all 16 seats in a local diagnostic.
+M3 communications are inactive and recoverable from commit `2184fc64`. The compiler targets Bassy at 0.3.123 with integer division and explicit 0/1 flags.
+Use `--full` when rebuilding pre-Bassy units: their arithmetic cannot be reused unchanged.
 The frozen baseline [M1 build report](../../strategy/compiled/b41ef1fc-1/report.md) records passing G1–G5;
 the side-balanced 28-seed screen reports identical play, and all 16 candidate-seat recordings
 pass telemetry parsing and coverage on the original 0.3.89 release.
@@ -53,7 +53,9 @@ without repairs. Check the finalized `report.json.status`: the manual `verify` e
 currently reflects gate failures but can miss a finalization failure from unresolved guesses.
 `compile` propagates the finalized status correctly.
 
-`--milestone m1` is only for a faithful baseline build: it compares with `reference/base.bas`.
+`--milestone m1` compares against the verbatim upstream Bassy starter at `28030de6`,
+`reference/base-bassy-28030de6.bas`. That starter also changes targeting, HP handling and
+items, so exact play identity is not expected from a semantics-only foundation port.
 Do not use it for the current M3 behavior change. `--milestone m0` has no special gate override.
 `trace` reports component text/interface changes; it does not verify artifact hashes or
 all input drift (for example changed runtime or skill implementation bytes).
@@ -91,8 +93,9 @@ commitment and tables. Skills and runtime files are copied verbatim.
   units, 512 printed bytes and 64 print events per tick.
 - G4: full-length local screen on seeds 1–28, both sides. Bad seats always fail.
   Scores are advisory for behavior changes. No-behavior-change builds require the
-  interval's upper bound ≥ 0.5. M1 compares against `reference/base.bas` and requires
-  the interval to contain 0.5.
+  interval's upper bound ≥ 0.5. M1 compares against the pinned Bassy reference and requires the interval upper bound
+  to reach 0.5 (no demonstrated local regression); this is a screen, not statistical proof
+  of non-inferiority or competitive improvement.
 - G5: two bounded local recordings through `pw_intent`, with seat logs. V2 lines
   must parse and decode with this build's map. Every candidate seat must supply its
   unconditional declared fields and initial rule-priority snapshots. Legacy builds require

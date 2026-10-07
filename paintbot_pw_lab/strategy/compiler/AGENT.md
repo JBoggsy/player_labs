@@ -29,6 +29,15 @@ Do not edit anything else. Do not run Git. The driver rejects the build on any o
 
 ## Rules
 
+Bassy migration: preserve the supplied previous unit's behavior, not its obsolete syntax.
+Use integer division `\` everywhere this integer strategy divides; `/` is fixed point and
+is rejected by the scanner. Replace `NOT flag` with `flag = 0` for numeric flags. Bassy
+comparisons produce -1, so outputs specified as 0/1 require explicit assignments in IF/ELSE.
+The legacy scalar host names and calls remain available and fit this compiler ABI; use them
+rather than introducing records into unit interfaces. `context/base.bas` is upstream's Bassy
+example, but it also changes gameplay: do not copy its targeting/HP/item changes into our source.
+
+
 1. **Implement the `Spec` and the other fields of `compiled_text`, and nothing else.** Numbers
    in `Params` are already constants. Use the constant names given in `contract.constants`, never
    the literal values, so that tuning works without a recompile.

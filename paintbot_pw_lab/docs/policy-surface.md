@@ -60,8 +60,9 @@ policies generated for the former Polyworld BASIC runtime:
 | Execution | Bassy binds observations then calls `compileNative()`; decisions invalidate observation arrays, refresh scalars, reset the string pool and execute. |
 | Budgets | `bots.nim:37-50`: 128 KiB source, 50,000 instructions, 125,000 work units, 2 MiB memory, 512 globals, 4,096 array elements, call depth 16, 1,024 print bytes and 128 print events. Compiler G3 intentionally uses lower thresholds. |
 
-The current strategy compiler still describes the previous int32/truncating/logical-0/1
-contract. A version-pin update alone does not establish faithful compilation under Bassy.
+The strategy compiler preserves its int32/truncating/0-or-1 source contract using Bassy
+integer division and explicit flags. Pre-Bassy units require a full rebuild; they cannot be
+reused based on unchanged source text alone.
 Do not infer compatibility from the unchanged rules number (49) or a successful tool build.
 
 ## 3. Per-tick execution

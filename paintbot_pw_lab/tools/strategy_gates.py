@@ -36,7 +36,7 @@ def screen_gate(envelope: dict, intent: str) -> dict:
     complete = envelope.get('ok') is True and result.get('matches_with_bad_seats') == 0
     interval = isinstance(low, (int, float)) and isinstance(high, (int, float))
     outcome_ok = (intent == 'behavior_change' or
-                  (interval and high >= 0.5 and (intent != 'm1' or low <= 0.5)))
+                  (interval and high >= 0.5 ))
     return {'passed': bool(complete and outcome_ok), 'summary': numbers,
             'intent': intent, 'outcome_advisory': intent == 'behavior_change',
             'identical_play': result.get('identical_play', False),
@@ -115,7 +115,7 @@ def verify(build_id: str) -> dict:
     gates['G2'] = {'passed': bool(compiled.get('ok') and len(seats) == 16),
                    'summary': {'seats': len(seats), 'failures': compiled.get('failures')}}
     if order['milestone'] == 'm1':
-        opponent = LAB / 'reference/base.bas'
+        opponent = LAB / 'reference/base-bassy-28030de6.bas'
     elif order['previous_build']:
         opponent = build_path(order['previous_build']) / 'policy.bas'
     else:

@@ -1,8 +1,8 @@
 # Compiler lessons: BASIC pitfalls
 
 Read on every compile. Each entry is a rule plus its evidence. Add an entry only by a reviewed
-commit (a compiler can propose entries in `report_draft.json` `lessons`). Engine facts are at
-coworld-v0.3.89 (`118e1619`); the full dialect is in `policy-surface.md` §2-§4.
+commit (a compiler can propose entries in `report_draft.json` `lessons`). Engine arithmetic facts are at
+coworld-v0.3.123 (`28030de6`, Bassy `77629c03`); the full dialect is in `policy-surface.md` §2-§4.
 
 ## Syntax
 
@@ -37,10 +37,11 @@ coworld-v0.3.89 (`118e1619`); the full dialect is in `policy-surface.md` §2-§4
 
 ## Arithmetic
 
-- Values are int32: `+ - *` wrap on overflow, and `/` and `MOD` truncate toward 0. Squared
+- Values are int32: `+ - *` wrap on overflow, and `\` and `MOD` truncate toward 0. `/` produces fixed point and must not be used in this integer strategy. Squared
   distances over about 46,000 cm overflow, so scale down (base.bas divides by 8) before
   squaring.
-- `true` = 1 and `false` = 0. Comparisons and logical operators return 0 or 1.
+- Bassy `TRUE` and comparisons yield -1; FALSE is 0. Boolean operators are bitwise.
+  Use `flag = 0` instead of `NOT flag`; assign explicit 0/1 when the unit ABI requires it.
 
 ## Engine behavior to remember
 

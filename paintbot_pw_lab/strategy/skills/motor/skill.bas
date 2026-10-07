@@ -29,11 +29,11 @@ SUB sk_motor__isqrt(sk_motor_n)
     EXIT SUB
   END IF
   sk_motor__root = 23170
-  sk_motor__guess = (sk_motor__root + sk_motor_n / sk_motor__root) / 2
+  sk_motor__guess = (sk_motor__root + sk_motor_n \ sk_motor__root) \ 2
   sk_motor__iters = 0
   WHILE sk_motor__guess < sk_motor__root AND sk_motor__iters < 24
     sk_motor__root = sk_motor__guess
-    sk_motor__guess = (sk_motor__root + sk_motor_n / sk_motor__root) / 2
+    sk_motor__guess = (sk_motor__root + sk_motor_n \ sk_motor__root) \ 2
     sk_motor__iters = sk_motor__iters + 1
   WEND
 END SUB
@@ -43,7 +43,7 @@ SUB sk_motor__wet_line(sk_motor_ax, sk_motor_ay, sk_motor_bx, sk_motor_by)
   sk_motor__wet = 0
   sk_motor__s3 = 1
   WHILE sk_motor__s3 <= 10
-    IF waterAt(sk_motor_ax + (sk_motor_bx - sk_motor_ax) * sk_motor__s3 / 10, sk_motor_ay + (sk_motor_by - sk_motor_ay) * sk_motor__s3 / 10) THEN
+    IF waterAt(sk_motor_ax + (sk_motor_bx - sk_motor_ax) * sk_motor__s3 \ 10, sk_motor_ay + (sk_motor_by - sk_motor_ay) * sk_motor__s3 \ 10) THEN
       sk_motor__wet = sk_motor__wet + 1
     END IF
     sk_motor__s3 = sk_motor__s3 + 1
@@ -54,7 +54,7 @@ END SUB
 SUB sk_motor__leg_time(sk_motor_ax, sk_motor_ay, sk_motor_bx, sk_motor_by)
   sk_motor__wet_line(sk_motor_ax, sk_motor_ay, sk_motor_bx, sk_motor_by)
   sk_motor__isqrt((sk_motor_bx - sk_motor_ax) * (sk_motor_bx - sk_motor_ax) + (sk_motor_by - sk_motor_ay) * (sk_motor_by - sk_motor_ay))
-  sk_motor__leg_cost = sk_motor__root / 100 + sk_motor__root / 100 * sk_motor__wet * (sk_motor__wet_cost - 1) / 10
+  sk_motor__leg_cost = sk_motor__root \ 100 + sk_motor__root \ 100 * sk_motor__wet * (sk_motor__wet_cost - 1) \ 10
 END SUB
 
 ' Small linear congruential generator; every product stays far inside int32.
@@ -81,28 +81,28 @@ SUB sk_motor__plan_leg(sk_motor_min, sk_motor_max)
   sk_motor__leg_y = 0
   IF sk_motor__root > 0 THEN
     ' Perpendicular to the threat, scaled to 100.
-    sk_motor__leg_x = (0 - sk_motor__ty) * 100 * sk_motor__zig / sk_motor__root
-    sk_motor__leg_y = sk_motor__tx * 100 * sk_motor__zig / sk_motor__root
+    sk_motor__leg_x = (0 - sk_motor__ty) * 100 * sk_motor__zig \ sk_motor__root
+    sk_motor__leg_y = sk_motor__tx * 100 * sk_motor__zig \ sk_motor__root
   END IF
   IF sk_motor__holding = 0 THEN
     sk_motor__fx = sk_motor__goal_x - selfX
     sk_motor__fy = sk_motor__goal_y - selfY
     sk_motor__isqrt(sk_motor__fx * sk_motor__fx + sk_motor__fy * sk_motor__fy)
     IF sk_motor__root > 60 THEN
-      sk_motor__leg_x = sk_motor__leg_x * 3 / 4 + sk_motor__fx * 100 / sk_motor__root
-      sk_motor__leg_y = sk_motor__leg_y * 3 / 4 + sk_motor__fy * 100 / sk_motor__root
+      sk_motor__leg_x = sk_motor__leg_x * 3 \ 4 + sk_motor__fx * 100 \ sk_motor__root
+      sk_motor__leg_y = sk_motor__leg_y * 3 \ 4 + sk_motor__fy * 100 \ sk_motor__root
     END IF
   END IF
   sk_motor__isqrt(sk_motor__leg_x * sk_motor__leg_x + sk_motor__leg_y * sk_motor__leg_y)
   IF sk_motor__root > 0 THEN
-    sk_motor__leg_x = sk_motor__leg_x * 28 / sk_motor__root
-    sk_motor__leg_y = sk_motor__leg_y * 28 / sk_motor__root
+    sk_motor__leg_x = sk_motor__leg_x * 28 \ sk_motor__root
+    sk_motor__leg_y = sk_motor__leg_y * 28 \ sk_motor__root
   END IF
 END SUB
 
 ' Facing with nothing to shoot: sweep, then turn to speech and sound.
 SUB sk_motor__look_around()
-  sk_motor__scan = (worldTick / 24 + selfId) MOD 4
+  sk_motor__scan = (worldTick \ 24 + selfId) MOD 4
   sk_motor__look_x = sk_motor__goal_x
   sk_motor__look_y = sk_motor__goal_y
   IF sk_motor__holding OR sk_motor__scan = 1 THEN
@@ -247,12 +247,12 @@ SUB sk_motor__dry_route()
       IF sk_motor__wet > 0 THEN
         sk_motor__dr_best = sk_motor__leg_cost
         sk_motor__dr_best_k = -1
-        sk_motor__dr_mx = selfX + sk_motor__dr_dx / 2
-        sk_motor__dr_my = selfY + sk_motor__dr_dy / 2
+        sk_motor__dr_mx = selfX + sk_motor__dr_dx \ 2
+        sk_motor__dr_my = selfY + sk_motor__dr_dy \ 2
         sk_motor__dr_k = 0
         WHILE sk_motor__dr_k < 6
-          sk_motor__dr_cx = sk_motor__dr_mx - sk_motor__dr_dy * sk_motor__dr_f(sk_motor__dr_k) / 10
-          sk_motor__dr_cy = sk_motor__dr_my + sk_motor__dr_dx * sk_motor__dr_f(sk_motor__dr_k) / 10
+          sk_motor__dr_cx = sk_motor__dr_mx - sk_motor__dr_dy * sk_motor__dr_f(sk_motor__dr_k) \ 10
+          sk_motor__dr_cy = sk_motor__dr_my + sk_motor__dr_dx * sk_motor__dr_f(sk_motor__dr_k) \ 10
           IF sk_motor__dr_cx > mapMinX() + 200 AND sk_motor__dr_cx < mapMaxX() - 200 AND sk_motor__dr_cy > mapMinY() + 200 AND sk_motor__dr_cy < mapMaxY() - 200 THEN
             IF waterAt(sk_motor__dr_cx, sk_motor__dr_cy) = 0 THEN
               sk_motor__leg_time(selfX, selfY, sk_motor__dr_cx, sk_motor__dr_cy)
@@ -315,8 +315,8 @@ SUB sk_motor__gun()
         IF sk_motor__i <> selfId AND sk_motor__i MOD 2 = selfTeam AND visible(sk_motor__i) THEN
           sk_motor__ox = playerX(sk_motor__i) - selfX
           sk_motor__oy = playerY(sk_motor__i) - selfY
-          sk_motor__along = (sk_motor__ox * sk_motor__sx + sk_motor__oy * sk_motor__sy) / sk_motor__reach
-          sk_motor__across = (sk_motor__ox * sk_motor__sy - sk_motor__oy * sk_motor__sx) / sk_motor__reach
+          sk_motor__along = (sk_motor__ox * sk_motor__sx + sk_motor__oy * sk_motor__sy) \ sk_motor__reach
+          sk_motor__across = (sk_motor__ox * sk_motor__sy - sk_motor__oy * sk_motor__sx) \ sk_motor__reach
           IF sk_motor__across < 0 THEN
             sk_motor__across = 0 - sk_motor__across
           END IF
@@ -369,7 +369,7 @@ SUB sk_motor__grenade()
     WEND
     IF sk_motor__safe AND sk_motor__d2 > 160000 AND sk_motor__d2 < 1562500 THEN
       sk_motor__isqrt(sk_motor__d2)
-      sk_motor__need = (sk_motor__root - 150) * 24 / 1130 + 1
+      sk_motor__need = (sk_motor__root - 150) * 24 \ 1130 + 1
       IF sk_motor__need < 1 THEN
         sk_motor__need = 1
       END IF

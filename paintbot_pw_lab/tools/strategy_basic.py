@@ -31,7 +31,7 @@ from pathlib import Path
 import strategy_comms as sc
 import strategy_format as sf
 
-# ---------------------------------------------------------------- engine facts (coworld-v0.3.89)
+# ---------------------------------------------------------------- engine facts (coworld-v0.3.123, Bassy)
 
 KEYWORDS = {"and", "call", "dim", "else", "end", "exit", "false", "gosub", "goto", "if", "let", "mod",
             "not", "or", "print", "rem", "return", "stop", "sub", "then", "true", "wend", "while", "xor"}
@@ -39,7 +39,7 @@ KEYWORDS = {"and", "call", "dim", "else", "end", "exit", "false", "gosub", "goto
 HOST_DATA = {name.lower() for name in (
     "selfId", "selfTeam", "selfX", "selfY", "selfHp", "carrying", "homeX", "homeY", "heartX", "heartY",
     "worldTick", "ownHeartX", "ownHeartY", "ownHeartStolen", "hasGrenade", "hasSpray", "armorHp",
-    "livesLeft", "grenadeCharge", "trenchId")}
+    "livesLeft", "grenadeCharge", "trenchId", "worldSeats")}
 LIMITS = {"globals": 512, "array_cells": 4096, "arrays": 256, "source_bytes": 128 * 1024}
 PRINT_LIMITS = {"bytes": 512, "events": 64}  # half of the engine's 1,024 bytes / 128 events
 INT_BYTES = 11  # "-2147483648"
@@ -91,7 +91,7 @@ class BuildError(ValueError):
 # ---------------------------------------------------------------- BASIC scanner
 
 TOKEN_RE = re.compile(r'\s*(?:(?P<str>"[^"\n]*")|(?P<num>\d+)|(?P<id>[A-Za-z_][A-Za-z0-9_]*)'
-                      r"|(?P<op><>|<=|>=|[-+*/=<>(),;:])|(?P<bad>\S))")
+                      r"|(?P<op><>|<=|>=|[-+*/\\=<>(),;:])|(?P<bad>\S))")
 
 
 @dataclass
@@ -136,6 +136,8 @@ def scan_basic(text: str) -> Scan:
     params: set[str] = set()
     for number, raw in enumerate(text.splitlines(), start=1):
         tokens = _tokens(raw)
+        if ("op", "/") in tokens:
+            scan.problems.append((number, "use integer division \\; fixed-point / violates the strategy integer contract"))
         statements: list[list[tuple[str, str]]] = [[]]
         depth = 0
         for tok in tokens:
