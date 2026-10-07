@@ -16,6 +16,12 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   player's logs or artifacts only when ordinary non-elevated access permits it; never use elevated
   permissions to retrieve competitor evidence for optimization.
 
+- **Self-play is not a performance signal; only real opponents are.** Local screens against our
+  own versions or a reference port check that a build runs (no disabled seats, sane activation)
+  and explain mechanisms. They never decide whether a candidate is better, and a candidate is
+  never dropped or ranked on a local loss. Hosted results against other players' policies decide.
+  (Stated 2026-10-06.)
+
 - **Never spend XP requests on self-play**. Use local episodes for self-play; reserve hosted XP requests for real-opponent evaluation. XP uses a granted, replenishing credit allowance; see [credit accounting](docs/xp-credits.md).
 
 - **Every behavior change ships with activation tracing**. Whenever
@@ -80,3 +86,8 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   parent may each upload and run a separate A/B without waiting for one another. Combine
   supported winners afterwards and evaluate the combination. Campaign-specific budgets
   belong in the owning lab context. (Stated 2026-10-06.)
+
+- **Local self-play is not a performance signal.** Use local runs only for runtime health,
+  activation and mechanism diagnosis. Never drop, park or rank a candidate on a local loss.
+  Every candidate that compiles and runs cleanly goes to a hosted A/B against real opponents.
+  Prioritize by hosted mechanism evidence. (James via VERDICT-11, 2026-10-06.)

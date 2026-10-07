@@ -185,7 +185,7 @@ SUB sk_motor__footwork()
       sk_motor__stalled = 0
       sk_motor__leg_ticks = 0
     END IF
-    sk_motor__want_shot = sk_motor__gun_wait = 0 AND (hasSpray = 0 OR k_contacts__best_cost < sk_motor__spray_range_sq)
+    sk_motor__want_shot = sk_motor__gun_wait = 0 AND (hasSpray = 0 OR sk_motor__spray_distance_sq < sk_motor__spray_range_sq)
     IF worldTick >= sk_motor__path_until THEN
       IF sk_motor__leg_ticks <= 0 OR (sk_motor__want_shot AND sk_motor__leg_ticks < 6) THEN
         IF sk_motor__want_shot THEN
@@ -327,9 +327,12 @@ SUB sk_motor__gun()
         sk_motor__i = sk_motor__i + 1
       WEND
     END IF
-    IF hasSpray = 0 OR k_contacts__best_cost < sk_motor__spray_range_sq THEN
+    IF hasSpray = 0 OR sk_motor__spray_distance_sq < sk_motor__spray_range_sq THEN
       IF sk_motor__clear AND sk_motor__gun_wait = 0 THEN
         shootAt(sk_motor__tx, sk_motor__ty)
+        IF hasSpray AND k_contacts__best_cost >= sk_motor__spray_range_sq THEN
+          sk_motor__spray_distance_shots_total = sk_motor__spray_distance_shots_total + 1
+        END IF
         sk_motor__gun_wait = sk_motor__gun_wait_light
         IF armorHp > 0 OR trenchId >= 0 OR carrying THEN
           sk_motor__gun_wait = sk_motor__gun_wait_heavy
@@ -444,14 +447,14 @@ SUB sk_motor__act(sk_motor_gx, sk_motor_gy, sk_motor_hold)
   IF k_contacts__best < 0 THEN
     sk_motor__look_around()
   END IF
+  sk_motor__spray_distance_sq = 0
+  IF k_contacts__best >= 0 THEN
+    sk_motor__spray_dx = playerX(k_contacts__best) - selfX
+    sk_motor__spray_dy = playerY(k_contacts__best) - selfY
+    sk_motor__spray_distance_sq = sk_motor__spray_dx * sk_motor__spray_dx + sk_motor__spray_dy * sk_motor__spray_dy
+  END IF
   sk_motor__footwork()
   sk_motor__dry_route()
   sk_motor__gun()
   sk_motor__grenade()
-END SUB
-
-' A cover cog already capturing stays inside the ring until ownership or the objective changes.
-SUB sk_motor__finish_cover_capture(sk_motor_capture_x, sk_motor_capture_y)
-  sk_motor__cover_capture_ticks_total = sk_motor__cover_capture_ticks_total + 1
-  sk_motor__act(sk_motor_capture_x, sk_motor_capture_y, 1)
 END SUB

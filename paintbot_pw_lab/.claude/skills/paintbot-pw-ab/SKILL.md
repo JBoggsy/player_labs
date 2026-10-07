@@ -29,7 +29,7 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
    | Design | Use when | Cost |
    | --- | --- | --- |
    | `paired` (default) | "better against X": both arms vs the same opponent, same seeds, both sides | one request per (arm, opponent, side, seed): 15 seeds = 60 requests per opponent for 30 pairs |
-   | `h2h` | cheap screen of candidate vs baseline directly | **local only**: two of our own policies is self-play, and hosted XP self-play is forbidden (`user_preferences.md`); the composer refuses it. Run `pw.py local screen CAND.bas BASE.bas --seeds 1-20 --record DIR --record-seeds 1-20` (`--record` needs `--record-seeds`), then `pw.py compare compare DIR --design h2h --baseline local:BASE.bas --candidate local:CAND.bas`. Beating our old version does not prove beating the field |
+   | `h2h` | runtime or mechanism diagnosis only | **local only**: two of our own policies is self-play, and hosted XP self-play is forbidden (`user_preferences.md`); the composer refuses it. Run `pw.py local screen CAND.bas BASE.bas --seeds 1-20 --record DIR --record-seeds 1-20` (`--record` needs `--record-seeds`), then `pw.py compare compare DIR --design h2h --baseline local:BASE.bas --candidate local:CAND.bas`. Neither winning nor losing locally is a performance signal; never select or reject a candidate on this result |
    | `field` | closest to the ladder: both arms vs several leaders, unpaired | per (arm, opponent, side); also the cheap fallback for one opponent without seeds (4 requests) |
 
    Opponents: the current leaders as exact `name:vN` refs. `uv run python paintbot_pw_lab/tools/pw.py leaders --top 3 --json`
@@ -51,7 +51,7 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
 
    Check one body with `experience_request.py create BODY --check-schema` (read-only).
    Tell the human the design, request count, episode total and credit estimate (the plan
-   assumes ~0.3 credits per episode; league `episode.json` rows show `cost_usd` ≈ 0.02).
+   assumes0.5 credits per episode; creation cost_preview is authoritative).
 
 4. **Create.** Creating hosted experience requests is within the lab's authorization
    (`user_preferences.md`: create them without asking first when they answer the current
@@ -132,9 +132,9 @@ Run from the repo root (`personal_labs_paintbot_pw/`).
   episode of its request the same world, so with the same roster extra episodes replay one
   match: they cost credits and add no information (compare.py keeps one copy, `duplicate_game`).
   Use more seeds, not more episodes per seed (the composer's default `--episodes 1`).
-- **Head-to-head is not field evidence.** Confirm a h2h win with `paired` or `field` against
-  the leaders before submitting.
-- **Local arms are not evidence.** `pw.py local`/`paintbot-headless` recordings are for
+- **Head-to-head is not performance evidence.** Every clean candidate proceeds to hosted
+  `paired` or `field` evaluation against real opponents regardless of local wins or losses.
+- **Local arms are not performance evidence and cannot veto or rank candidates.** `pw.py local`/`paintbot-headless` recordings are for
   checking the tools and mechanisms ([`paintbot-pw-local`](../paintbot-pw-local/SKILL.md)).
 - **After an SPRT stop**, the secondary metrics' p-values are descriptive only.
 

@@ -136,9 +136,12 @@ then compile (use `--from BUILD_ID` to pin the accepted baseline for reuse):
 uv run python paintbot_pw_lab/tools/pw.py strategy compile --agent codex --json
 ```
 
-Read the immutable build report and G1–G5. G4 is the local screen; do not add another
-routine local gate. Local scores cannot establish field improvement. Failed gates need
-diagnosis; after repeated tool failure report to the orchestrator and wait for PROCEED.
+Read the immutable build report and G1–G5. Use normal behavior-change compilation, not
+`--milestone m1` (reserved for baseline reproduction). G4 checks runtime health; local scores
+are not a performance signal and must never veto, park, drop or rank a candidate. Local runs
+may check bad seats, activation and mechanisms only. Every candidate that compiles and runs
+cleanly proceeds to hosted A/B against real opponents, mostly the current target. Diagnose
+compile/runtime failures; after repeated tool failure report to the orchestrator.
 Include activation tracing in the source for every new or re-gated behavior.
 
 ## 6. Upload (enters no league)

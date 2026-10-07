@@ -26,6 +26,6 @@
 - Before reactivating M3, port its inactive codec runtime and regenerate its units for Bassy.
   Only the foundation baseline is qualified on 0.3.123; use a separate source-directed change.
 
-- Opening candidate c85230af-1 is parked by orchestrator: first capture16.67→9.17s locally,
-  but26/56 wins vs v6 and21/56 vs v8. Do not upload/combine automatically; REPORT-11.md
-  records the pickup-priority mechanism and negative full-game screen.
+- VERDICT-11 reactivates opening c85230af-1 and spray-safety51fe35f4-1 for independent
+  hosted A/Bs rebased on submitted v8. Local losses are not vetoes. Gun-corridor v4 follows
+  if credits allow. Record identities and outcomes in optimizer reports.

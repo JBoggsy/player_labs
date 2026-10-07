@@ -148,12 +148,11 @@ Heartland memberships and the orchestrator's stopgap are outside this optimizer'
 
 ## Current pipeline source
 
-Iteration11 opening candidate c85230af-1 is PARKED by orchestrator; see REPORT-11.md/TODO.
-Iteration12 starts from submitted v6 and replaces HP-weighted best_cost with actual squared
-distance in both spray range gates. Current range640000 and all other motor behavior stay
-unchanged. Counter spray_distance_shots_total counts actual newly enabled requests.
-Eight v6 losses: sprayHP35 vs Richard92;26 sampled close-target rejections in6 games.
-REPORT-12.md ranks remaining mechanisms and explains why SPSA is not appropriate to the
-misdefined input. Compile/local screen first; v7/v8 hosted comparisons continue independently.
-Public rounds849–850 show unchanged zhar55/finist2/relh56/Aaron2+60/RichardBassy1.
-V6 remains submitted baseline sub_9d9511f9-264c-4ed5-b0f8-026d924377b4. Campaign744credits.
+VERDICT-11: v8 SUBMITTED sub_a37b78a7-1125-4559-b6af-a501924da3e6, parent build5cee1447-1,
+UUID32f1b591-b444-4210-94a8-35521d7f90f1. Local outcomes are not performance signals or vetoes.
+All clean candidates proceed to hosted real-opponent A/B. Current iteration13 rebases the
+opening-supply gate on v8. Next: spray-distance correction and spray-safety on v8, independently;
+gun-corridor lever if credits allow. V7 platform-failed slots will be re-requested explicitly.
+New A/B allocations will follow recent league opponent frequencies with a Richard floor,
+including zhar/finist/relh only after replay activity verification. Campaign744 before repairs
+and new batches; per iteration300/day1,400. Reports/manifests own exact spend and identities.
