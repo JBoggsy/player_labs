@@ -4,7 +4,9 @@ One image holds every agent. The launcher's child process is `python -m webdip_b
 and it plays the personality named by `WEBDIP_POLICY`. That is baked at build time with
 `docker build --build-arg POLICY=<name>`; the default is `machiavelli`. The image is built
 `FROM` the published webdiplomacy 0.7.7 player image (pinned by digest) and adds the
-`diplomacy` package (AGPL-3.0) as a fallback adjudicator.
+`diplomacy` package (AGPL-3.0) as a fallback adjudicator. A separate pinned Nim
+builder compiles the native adjudicator; only its extension and license notices
+are copied into the runtime image.
 
 ## Modules
 
@@ -19,7 +21,9 @@ and it plays the personality named by `WEBDIP_POLICY`. That is baked at build ti
 | `evaluation.py` | Projected/learned evaluator registry, fast/package scoring, risk aggregation and diplomacy adjustment. Reads live config weights; SearchBot selects the evaluator when a decision starts. |
 | `search_orders.py` | Order keys/conversion, cached map adapter and package adjudication. `search.py` retains the imports used by NashBot and diagnostics. |
 | `check_search_parity.py` | Differential capture/compare against a baseline image: full orders, RNG, exact score digests, memory, traces and optional modes. See the module docstring for invocation. |
-| `fastadj.py` | Kruijswijk guess-and-check adjudicator for Hold/Move/Support. `check_fastadj.py` compares it with the package on non-convoy orders, tolerating package auto-disbands of dislodged units. Search approximates convoys by default; `SEARCH_CONVOY_APPROX=0` selects package fallback for convoy samples in ordinary evaluation. |
+| `fastadj.py` | Imports the native `adjudicate` entry point; retains `Adjudicator` as the Python test reference. Both implement Hold/Move/Support. `check_fastadj.py` compares production results with the package on non-convoy orders, tolerating package auto-disbands of dislodged units. |
+| `adjudicator_native.nim` | Native integer/boolean resolver and Nimpy boundary. Python owns order conversion, scoring and RNG. |
+| `check_native_adjudicator.py` | Exhaustive tiny-board and seeded larger-plan native/reference comparisons, including exact boolean results. |
 | `nash.py` | **NashBot.** Regret matching over candidate plans for all seven powers (SearchBot-paper style), then a best response to the opponents' average strategies. |
 | `valuefn.py` | Ridge-regression position evaluation, fitted by `tools/value_fit.py`, with weights in `value_weights.json`. `LearnedEvaluator` blends its prediction with projected centre value. |
 | `personalities.py` | The roster: base policy + config overrides + motto. |
@@ -202,3 +206,32 @@ behavior digest and (when enabled) per-function profile data. Reject budget-hit
 runs and require equal behavior digests before comparing timings. Performance
 comparisons need matched fixtures and interleaved baseline/candidate runs under
 concurrent load; correctness-check runtimes alone are not speedup evidence.
+
+
+## Native build and reference checks
+
+The Dockerfile pins the Nim 2.2.4 linux/amd64 builder by digest, Nimpy by commit and
+archive SHA-256, and the existing player runtime by digest. It compiles
+`adjudicator_native.nim` with `-d:release --app:lib --threads:on`, without unsafe
+math flags, then checks import and an empty-board result in the actual Python 3.12
+runtime. Nim and Nimpy license notices are included under `/opt/webdip_bot/licenses`.
+No global compiler install is required; use the Docker build command above.
+
+`fastadj.adjudicate` always calls the extension. A missing extension is an import
+error, not a silent switch to slower Python. Local host imports of search therefore
+need a compatible compiled extension; the supported test/run environment is the
+linux/amd64 image. `Adjudicator(units, orders).run()` is retained only as the explicit
+Python reference for verification. When changing resolution rules, update both
+implementations and compare them before accepting a change:
+
+```bash
+docker run --rm --platform linux/amd64 --entrypoint /opt/.venv/bin/python \
+  webdip-bot:refactor -m webdip_bot.check_native_adjudicator
+```
+
+This checks 174,089 tiny-board/seeded/empty inputs. Also run golden, exact search
+parity and the package comparison above. The native boundary accepts the same
+province-level unit/order tuples and returns two lists of Python bools. The resolver
+preserves dependency traversal and both guesses for cycles. All RNG operations,
+learned/diplomacy valuation and floating reductions stay in Python; the convoy
+approximation and package fallback rules are unchanged.
