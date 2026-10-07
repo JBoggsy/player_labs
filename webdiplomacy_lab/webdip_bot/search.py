@@ -14,29 +14,13 @@ values, minus dislodged units.
 import math
 import time
 
-import diplomacy
-
-from webdip_bot import config, fastadj, valuefn
-from webdip_bot.dipmap import COUNTRY, POWER, DipMap
+from webdip_bot import config, fastadj
+from webdip_bot.dipmap import POWER
 from webdip_bot.dumbbot import Board, DumbBot
+from webdip_bot.evaluation import evaluator
 
-_MAPS = {}
-_GRAPHS = {}
-
-
-def _graph(variant):
-    key = variant["variantID"]
-    if key not in _GRAPHS:
-        _GRAPHS[key] = valuefn.Graph(variant)
-    return _GRAPHS[key]
-_GAME = None
-
-
-def dipmap(variant):
-    key = variant["variantID"]
-    if key not in _MAPS:
-        _MAPS[key] = DipMap(variant["territories"])
-    return _MAPS[key]
+# These imports also preserve the search-module API used by Nash and diagnostics.
+from webdip_bot.search_orders import _key, _same, adjudicate, dipmap, fast_orders, order_destroy
 
 
 class SearchBot:
@@ -48,6 +32,7 @@ class SearchBot:
         self.trace = self.dumb.trace
         self.api = self.context = None
         self.memory = {}
+        self.evaluator = evaluator(self)
 
     def observe(self, api, context, state):
         """Called by bot.py each phase; `state` persists across the whole game."""
@@ -117,6 +102,7 @@ class SearchBot:
         return 1.0 / (1.0 + math.exp(-lo))
 
     def choose(self, slots):
+        self.evaluator = evaluator(self)
         if self.phase == "Builds" and slots and config.SEARCH_BUILDS:
             return self._search_adjustments(slots)
         if self.phase != "Diplomacy" or not slots:
@@ -373,24 +359,7 @@ class SearchBot:
         return best
 
     def _diplomacy_adjust(self, projected, me):
-        """Implicit diplomacy: centres taken from a power count more if it has been hostile to
-        us (grudge) and less if it has left us alone (peace), until DIPLO_STAB_YEAR."""
-        hostility = self.memory.get("hostility", {})
-        year = 1901 + self.turn // 2
-        adj = 0.0
-        for t, holder in projected.items():
-            if holder != me:
-                continue
-            prev = self.b.owner.get(t)
-            if not prev or prev == me:
-                continue
-            h = hostility.get(str(prev), 0.0)
-            if h >= config.DIPLO_HOSTILE:
-                adj += config.DIPLO_GRUDGE
-            elif year < config.DIPLO_STAB_YEAR:
-                adj -= config.DIPLO_PEACE
-        self.trace["diplo_evals"] += 1
-        return adj
+        return self.evaluator.diplomacy_adjust(projected, me)
 
     def _remember(self, score, cand):
         """Keep the best few plans evaluated during the ascent (rollout re-rank pool)."""
@@ -566,111 +535,16 @@ class SearchBot:
         self.vmax = max(self.dumb.value.values()) or 1.0
 
     def _evaluate(self, ours):
-        mu, mo = fast_orders(self.mine_units, ours, self.parent)
-        values = []
-        mine_dip = None
-        for k, (units, fu, fo, raw) in enumerate(self.fast_samples):
-            if mo is not None and fo is not None and config.SEARCH_FAST_ADJ:
-                values.append(self._score_fast(mu + fu, mo + fo, self.mine_units + units, ours + raw))
-                self.sims += 1
-            else:
-                if mine_dip is None:
-                    mine_dip = [self._dip(o) for o in ours]
-                values.append(self._score(self._adjudicate(mine_dip, self.opponents[k])))
-                self.trace["search_package_sims"] += 1
-        mean = sum(values) / len(values)
-        # Risk aversion: pull the mean toward the worst opponent sample.
-        return mean - config.SEARCH_RISK * (mean - min(values))
+        return self.evaluator.evaluate(ours)
 
     def _score_fast(self, fu, fo, units, orders, country=None, value=None, vmax=None):
-        """Static evaluation of an adjudicated outcome from `country`'s side (default: us)."""
-        me = self.country if country is None else country
-        value = self.dumb.value if value is None else value
-        vmax = self.vmax if vmax is None else vmax
-        moved, dislodged = fastadj.adjudicate(fu, fo)
-        occupied = {}
-        my_nodes = []
-        lost = 0
-        for (country, prov, utype), o, mv, dl, u, raw in zip(fu, fo, moved, dislodged, units, orders):
-            if dl:
-                lost += country == me
-                continue
-            where = o[1] if mv else prov
-            occupied[where] = country
-            if country == me:
-                my_nodes.append((utype, raw["toTerrID"] if mv else u["terrID"]))
-        counts = {}
-        projected = {}
-        for t, owner in self.b.owner.items():
-            holder = occupied.get(t, owner)
-            projected[t] = holder
-            if holder:
-                counts[holder] = counts.get(holder, 0) + 1
-        sc = counts.get(me, 0)
-        if config.DIPLO and me == self.country:
-            sc += self._diplomacy_adjust(projected, me)
-        if config.SEARCH_EVAL == "learned":
-            final_units = []
-            for (country, prov, utype), o, mv, dl, u, raw in zip(fu, fo, moved, dislodged, units, orders):
-                if not dl:
-                    final_units.append((country, o[1] if mv else prov, utype, raw["toTerrID"] if mv else u["terrID"]))
-            predicted = valuefn.predict(_graph(self.variant), final_units, projected, me)
-            w = config.SEARCH_LEARNED_WEIGHT
-            sc = (1 - w) * sc + w * predicted
-        if config.SEARCH_OBJECTIVE == "share":
-            total = sum(v * v for v in counts.values()) or 1
-            sc = 34.0 * sc * sc / total
-        pos = sum(value.get(n, 0.0) for n in my_nodes) / vmax
-        return config.SEARCH_SC_WEIGHT * sc + config.SEARCH_POS_WEIGHT * pos - config.SEARCH_DISLODGED_WEIGHT * lost
+        return self.evaluator.score_fast(fu, fo, units, orders, country, value, vmax)
 
     def _adjudicate(self, mine, sample):
-        self.sims += 1
-        global _GAME
-        if _GAME is None:
-            _GAME = diplomacy.Game()  # reused: set_state fully resets it, and it is ~1/3 cheaper
-        g = _GAME
-        g.set_state(self.state)
-        g.set_orders(POWER[self.country], mine)
-        for power, orders in sample.items():
-            g.set_orders(power, orders)
-        g.process()
-        return g
+        return adjudicate(self, mine, sample)
 
     def _score(self, g):
-        me = POWER[self.country]
-        units = g.get_state()["units"]
-        occupied = {}
-        mine, dislodged = [], 0
-        for power, us in units.items():
-            for u in us:
-                if u.startswith("*"):  # dislodged: does not hold the province
-                    dislodged += power == me
-                    continue
-                occupied[u[2:5]] = power
-                if power == me:
-                    mine.append(u)
-        counts = {}
-        for t, owner in self.b.owner.items():
-            occ = occupied.get(self.dm.loc[t])
-            holder = occ if occ is not None else (POWER[owner] if owner else None)
-            if holder:
-                counts[holder] = counts.get(holder, 0) + 1
-        sc = counts.get(me, 0)
-        if config.SEARCH_OBJECTIVE == "share":
-            # The league's draw score: SC^2 / sum SC^2, scaled to SC units (x34).
-            total = sum(v * v for v in counts.values()) or 1
-            sc = 34.0 * sc * sc / total
-        pos = 0.0
-        vmax = max(self.dumb.value.values()) or 1.0
-        for u in mine:
-            node = ("Army" if u[0] == "A" else "Fleet", self.dm.terr[u[2:]])
-            pos += self.dumb.value.get(node, 0.0) / vmax
-        return config.SEARCH_SC_WEIGHT * sc + config.SEARCH_POS_WEIGHT * pos - config.SEARCH_DISLODGED_WEIGHT * dislodged
-
-
-def order_destroy(b, u):
-    p = b.province(u["terrID"])
-    return {"type": "Destroy", "terrID": p, "toTerrID": p, "fromTerrID": 0, "viaConvoy": "No"}
+        return self.evaluator.score_package(g)
 
 
 def _n_sensible(orders, own_provinces):
@@ -684,55 +558,3 @@ def _n_sensible(orders, own_provinces):
         ):
             n += 1
     return n
-
-
-def _key(o):
-    return (o["type"], o["terrID"], o["toTerrID"], o["fromTerrID"])
-
-
-def _same(a, b):
-    return (a["type"], a["terrID"], a["toTerrID"], a["fromTerrID"]) == (b["type"], b["terrID"], b["toTerrID"], b["fromTerrID"])
-
-
-def fast_orders(units, orders, parent):
-    """webDip units + parallel movement orders -> fastadj (units, order tuples), province level.
-
-    Convoys (SEARCH_CONVOY_APPROX, default on): a convoying fleet holds; a convoyed army move
-    becomes a plain move when every fleet on its path is ordered to convoy exactly that move,
-    otherwise a hold. This ignores convoy disruption by dislodging a fleet, which is fine for
-    *evaluating* hypotheticals and keeps almost every simulation on the fast path (the
-    package fallback was ~95% of search time against convoy-happy random opponents).
-    With the approximation off, any convoy returns None (caller falls back to the package)."""
-    fu, fo = [], []
-    convoys = None
-    for u, o in zip(units, orders):
-        fu.append((int(u["countryID"]), parent[u["terrID"]], u["type"]))
-        kind = o["type"]
-        if kind == "Move":
-            if o.get("viaConvoy") in ("Yes", True):
-                if not config.SEARCH_CONVOY_APPROX:
-                    return fu, None
-                if convoys is None:
-                    convoys = {
-                        (parent[c["terrID"]], parent[c["fromTerrID"]], parent[c["toTerrID"]])
-                        for c in orders if c["type"] == "Convoy"
-                    }
-                src, dst = parent[o["terrID"]], parent[o["toTerrID"]]
-                path = (o.get("convoyPath") or [])[1:]
-                if path and all((parent[f], src, dst) in convoys for f in path):
-                    fo.append(("M", dst))
-                else:
-                    fo.append(("H",))
-                continue
-            fo.append(("M", parent[o["toTerrID"]]))
-        elif kind == "Support hold":
-            fo.append(("SH", parent[o["toTerrID"]]))
-        elif kind == "Support move":
-            fo.append(("SM", parent[o["fromTerrID"]], parent[o["toTerrID"]]))
-        elif kind == "Convoy":
-            if not config.SEARCH_CONVOY_APPROX:
-                return fu, None
-            fo.append(("H",))
-        else:
-            fo.append(("H",))
-    return fu, fo
