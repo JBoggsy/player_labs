@@ -4,8 +4,8 @@ This file is the source of truth for our Paintbot PW policy. The compiled BASIC 
 product. Nobody edits compiled BASIC by hand. To change behavior, change this file or a
 `skill.bas` and recompile (docs/designs/2026-09-30-strategy-file-format.md).
 
-Thesis: retain the foundation's squad play while closing the measured gap to upstream
-`reference/base-bassy-28030de6.bas`. Each behavior change has its own source commit,
+Thesis: counter Richard's early central fights with a coordinated central opening on v10.
+Emergency retreat, critical supply, and combat remain inherited. Each change has its source commit,
 compiled build and local screen; hosted evaluation decides field strength.
 All strategy arithmetic is integer. Use Bassy integer division `\`, which truncates
 toward zero; never use fixed-point `/`. Boolean outputs specified as 0/1 must remain
@@ -73,9 +73,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   selfX does not change during a tick, so storing it here gives the same values.
 
 ### K.squad_target
-- Summary: Four capturer/escort pairs choose distinct frontier hearts using visible pair anchors.
+- Summary: The heart that our squad of four attacks, derived from squad arithmetic, heart
+  ownership and our own avoid memory.
 - Spec: In `__update`, on every tick, do Steps 1 to 4 in order.
-  First save previous_objective = objective.
   Step 1 (stall memory). This step reads the value of `objective` from the previous tick. It is 0
   before the first assignment, not -1. When `worldTick MOD progress_period = 0`: set
   `px = selfX - progress_x` and `py = selfY - progress_y`. If
@@ -99,30 +99,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   At the end of each pass: if `pass = squad`, set `objective = choice`. Else, if `pass < squad`,
   set `other = choice`. After both passes: if `objective < 0 AND other >= 0`, set
   `objective = other`.
-  Step 3b (four-pair frontier allocation). Save legacy_objective = objective. This is only a
-  same-tick reference for activation and must not influence the new selection.
-  Set squad = member \ 2 and seat = (member MOD 2) * 2. There are four pairs; seat0 captures,
-  seat2 escorts using the existing cover capability. Initialize assigned(0) through assigned(3)
-  to -1. For pass = 0 through3 in order, set ref_x = homeX and
-  ref_y = homeY + (pass * 2 - 3) * pair_lane_offset. If selfTeam = 1, set
-  ref_y = mirror_y - ref_y. Let leader = pass * 4 + selfTeam and escort = leader + 2.
-  Use selfX,selfY as ref_x,ref_y if selfId = leader. Otherwise, if visible(leader), use
-  playerX(leader),playerY(leader). Otherwise use selfX,selfY if selfId = escort.
-  Otherwise, if visible(escort), use playerX(escort),playerY(escort). Otherwise retain the
-  home-lane anchor. Read no invisible player's position. Set choice = -1, choice_cost = 2147483647.
-  For each j from0 while j < heartCount() AND j <64, skip hearts already owned by selfTeam
-  or equal to any assigned(k) for k < pass. Compute dx = (controlX(j) - ref_x) \ 8,
-  dy = (controlY(j) - ref_y) \ 8 and cost = dx * dx + dy * dy. Subtract neutral_bonus
-  if controlOwner(j) = -1. Add avoid_penalty if pass = squad AND avoid_until(j) > worldTick.
-  Strictly lower cost wins, with lowest heart index on ties. After this pass set assigned(pass)
-  to choice. After all four passes, set objective = assigned(squad). If this is -1, set
-  objective to the first nonnegative assigned(k) in order0,1,2,3, or retain -1 if none exists.
-  Preserve an already-started capture: only when previous_objective >=0 AND
-  previous_objective < heartCount() AND previous_objective <64, read its state. If it is
-  not owned by selfTeam, controlCaptureTeam(previous_objective) = selfTeam, and our squared
-  distance to that heart <= capture_lock_sq, set objective = previous_objective.
-  Finally, when objective >=0 AND objective <> legacy_objective, increment frontier_changed_total.
-  The counter persists for the match and measures changed target decisions, not captures.
   Step 4 (idle capture). If `objective >= 0 AND seat >= 2`: if
   `controlCaptureTeam(objective) = selfTeam`, set `idle_capture = 0`. Else add 1 to
   `idle_capture`. In all other cases do not change `idle_capture`.
@@ -131,13 +107,11 @@ Reading aid (the compiler receives component fields, not this introduction):
   `controlX`, `controlY`, `controlOwner`, `controlCaptureTeam`
 - Memory: avoid_until (64 cells, a private array, ticks), progress_x, progress_y, objective and
   idle_capture persist for the whole match. Nothing resets them on death, respawn or a rule
-  change. All start at 0. Also assigned (4 cells, private scratch) and frontier_changed_total
-  are private; frontier_changed_total persists and starts at0.
+  change. All start at 0.
 - Outputs:
-  - frontier_changed_total -- target decisions changed by four-pair frontier allocation
   - objective -- the target heart index, or -1 when there is none
-  - squad -- pair index0 through3, from selfId
-  - seat -- 0 for the pair capturer or2 for its escort
+  - squad -- 0 or 1, from selfId
+  - seat -- 0 to 3, our place in the squad (2 and 3 cover)
   - idle_capture -- ticks in a row that our team was not capturing the objective (cover seats)
   - heart_count -- heartCount() on this tick
 - Log: objective, idle_capture every 24 ticks
@@ -146,9 +120,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - stall_sq = 40000 square cm -- base.bas value, less than 2 m of progress
   - far_sq = 160000 square cm -- base.bas value, more than 4 m from the heart
   - avoid_ticks = 360 ticks -- base.bas value, fifteen seconds
-  - pair_lane_offset = 1000 cm -- home fallback lanes for four pairs
-  - capture_lock_sq = 14400 square cm -- keep a started capture within1.2m
-  - ref_offset = 1500 cm -- legacy two-squad reference for activation only
+  - ref_offset = 1500 cm -- base.bas value, squad reference point above or below home
   - mirror_y = 4000 cm -- base.bas value, blue mirrors the reference y about this line
   - neutral_bonus = 20000 -- base.bas value, cost bonus of a neutral heart
   - avoid_penalty = 4000000 -- base.bas value, cost added to an avoided heart on our own pass
@@ -156,10 +128,10 @@ Reading aid (the compiler receives component fields, not this introduction):
   - Believed: objective is logged as a heart index or -1. Reads: `K.squad_target`.objective
   - True: the logged objective equals the replay re-computation using public heart state and this cog's reconstructed avoid memory. Reads: `K.squad_target`.objective, replay
 - Status: specified (2026-10-05)
-- Rationale: More independent capturers can reach distinct frontier hearts sooner. Visible pair
-  leaders anchor travel cost; unseen pairs use public home lanes. Different observations and
-  private avoid memory can still cause temporary disagreement, so this is not perfect consensus.
-  Splitting into smaller groups can lose fights; measure that against territorial gains.
+- Rationale: base.bas says the target is a pure function of public heart state. That is not
+  exactly true. Each cog applies its own avoid_until memory in its own pass. A squad 1 cog
+  predicts the squad 0 choice without squad 0's avoid memory. So two cogs of one squad can
+  disagree after one of them marks a heart as stalled.
 
 ### K.contacts
 - Summary: The visible enemy we fight, the visible enemy carrier, and the local fight balance.
@@ -264,32 +236,6 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Rationale: Step 2 repeats the carrier test of `K.contacts` because a Knowledge component cannot
   use another Knowledge component. The result is the same as base.bas's `thief < 0` guard.
 
-### K.nearby_glory
-- Summary: The nearest visible glory heart within a short detour, assigned to its nearest visible teammate.
-- Spec: In `__update`, set nearest = -1, goal_x = 0, goal_y = 0 and best_d2 = reach_sq.
-  Loop j = 0 while j < gloryHeartCount() AND j < 64. Read ttl = gloryHeartTicksLeft(j).
-  Only when ttl >= min_ttl: read x = gloryHeartX(j) and y = gloryHeartY(j).
-  This lifetime query is negative for invisible hearts, so do not reject negative map coordinates.
-  Set dx = x - selfX, dy = y - selfY, d2 = dx * dx + dy * dy.
-  Only when d2 < best_d2: set assigned = 1. Loop i = 0 to 15. For i <> selfId AND
-  i MOD 2 = selfTeam AND visible(i), compute ally_d2 from playerX(i),playerY(i) to x,y.
-  If ally_d2 < d2 OR (ally_d2 = d2 AND i < selfId), set assigned = 0.
-  After the ally loop, if assigned = 1 set nearest = j, goal_x = x, goal_y = y and best_d2 = d2.
-  Strict comparisons preserve the lowest glory-heart index on equal distance.
-  Recompute on every tick; do not retain an index or coordinates across visibility loss.
-- Sources: `gloryHeartCount`, `gloryHeartTicksLeft`, `gloryHeartX`, `gloryHeartY`, `selfId`,
-  `selfTeam`, `selfX`, `selfY`, `visible`, `playerX`, `playerY`
-- Outputs:
-  - nearest -- selected visible glory-heart index, or -1
-  - goal_x -- selected heart x, or0
-  - goal_y -- selected heart y, or0
-- Params:
-  - reach_sq = 360000 square cm -- a detour target strictly within6m
-  - min_ttl = 120 ticks -- at least5seconds remain before expiry
-- Checks:
-  - True: a selected target is visible and within6m, with no closer visible teammate. Reads: replay
-- Status: specified (2026-10-07)
-
 ## Situations
 
 ### S.losing_fight
@@ -325,18 +271,15 @@ Reading aid (the compiler receives component fields, not this introduction):
   - Believed: the flag is logged with the decision. Reads: PWD.f
 - Status: specified (2026-10-05)
 
-### S.glory_worth
-- Summary: A nearby assigned glory heart is worth a short safe detour without abandoning a capture.
-- Spec: In `__eval`, set on = 0. If nearest of `K.nearby_glory` >= 0 AND foes_seen of
-  `K.contacts` = 0 AND critical of `K.pickups` = 0 AND carrying = 0, set on = 1.
-  Then loop j = 0 while j < heartCount() AND j < 64. If controlCaptureTeam(j) = selfTeam,
-  compute squared distance from self to controlX(j),controlY(j). If that distance <= capture_sq,
-  set on = 0. Always output explicit0or1. The situation does not outrank retreat or resupply.
-- Uses: `K.nearby_glory`, `K.contacts`, `K.pickups`
+### S.central_opening
+- Summary: Commit both squads to the central approaches during the opening.
+- Spec: Set on = 1 when worldTick <= opening_ticks AND heartCount() >= 2 AND
+  critical of `K.pickups` = 0. Else set on = 0.
+- Uses: `K.pickups`
 - Params:
-  - capture_sq = 19600 square cm -- do not leave an active140cm capture ring
+  - opening_ticks = 720 ticks -- thirty-second coordinated opening
 - Checks:
-  - Acted properly: no glory detour starts with a visible enemy or while occupying our active capture. Reads: PWD.f, replay
+  - Believed: the opening flag is recorded in the selected rule flags. Reads: PWD.f
 - Status: specified (2026-10-07)
 
 ## Skills
@@ -362,6 +305,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   charge logic. Never release merely because visibility or eligibility disappeared.
   This is charge continuity with safe target tracking, not a guarantee that teammates cannot
   enter the eventual blast.
+  The helper sk_motor__central_opening(gx, gy, hold) increments opening_ticks_total,
+  then calls the unchanged sk_motor__act(gx, gy, hold). This is activation tracing only.
   The helper sk_motor__finish_cover_capture(gx, gy) increments cover_capture_ticks_total
   once, then calls sk_motor__act(gx, gy, 1). Only C.cover_heart calls this helper when it is
   already inside the objective capture ring and our team is capturing there. The forced
@@ -373,18 +318,12 @@ Reading aid (the compiler receives component fields, not this introduction):
   Best_cost remains the HP-weighted ranking score; do not treat it as a physical distance.
   After an actual shootAt request with hasSpray, increment spray_distance_shots_total if
   the former best_cost test would have rejected it. This counter starts at zero and persists.
-  The helper sk_motor__direct_capture(gx, gy, hold) increments direct_capture_ticks_total
-  once then calls sk_motor__act(gx, gy, hold). Only C.cover_heart calls this helper.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
-  The helper sk_motor__collect_glory(gx, gy) increments glory_detour_ticks_total once,
-  then calls sk_motor__act(gx, gy, 0). Only C.collect_glory calls it. The counter starts
-  at zero and persists for the match. It counts actual detour capability ticks.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
-  - glory_detour_ticks_total -- actual short glory-heart detour ticks
-  - direct_capture_ticks_total -- cover-role ticks directly staffing the capture ring
+  - opening_ticks_total -- cumulative ticks controlled by the coordinated central opening
   - root -- the result of the last sk_motor__isqrt call
   - threw -- 1 on a commanded or forced grenade release tick, else 0
   - release_charge -- observed charge on this release decision
@@ -412,6 +351,51 @@ Reading aid (the compiler receives component fields, not this introduction):
 
 ## Capabilities
 
+### C.central_opening
+- Summary: Two four-cog squads meet the opponent on the two central heart approaches.
+- Spec: `__start` does nothing. On each `__tick`, perform Steps 1 to 5.
+  Step 1. Set mid_x = (homeX + heartX) \ 2 and mid_y = (homeY + heartY) \ 2.
+  Find the two hearts nearest this midpoint. Set first = -1 and second = -1.
+  For pass = 0 then 1, set choice = -1 and choice_cost = 2147483647.
+  For j from 0 while j < heartCount() AND j < 64, skip j when j = first.
+  For every other j, set dx = (controlX(j) - mid_x) \ 8 and
+  dy = (controlY(j) - mid_y) \ 8. Set cost = dx * dx + dy * dy.
+  If cost < choice_cost, set choice = j and choice_cost = cost.
+  After pass 0 set first = choice. After pass 1 set second = choice.
+  Step 2. Set member = (selfId \ 2) MOD 8, squad = member \ 4, seat = member MOD 4.
+  Set objective = first when squad = selfTeam, else objective = second.
+  Set gx = controlX(objective) and gy = controlY(objective).
+  Step 3. Ring seats 0 and 1 keep the heart center. For cover seats 2 and 3, choose
+  a dry support point on the outer bank, using only public heart coordinates and waterAt.
+  Set outward = -1 when controlY(objective) < mid_y, else outward = 1.
+  Set back = 1 when homeX > mid_x, else back = -1.
+  Set offset = cover_back_cm for seat 2, or offset = 0 for seat 3.
+  Set gx = gx + back * offset and gy = gy + outward * bank_offset_cm.
+  Set tries = 0. While waterAt(gx, gy) AND tries < dry_steps,
+  add outward * dry_step_cm to gy and add 1 to tries.
+  If waterAt(gx, gy), reset gx = controlX(objective) and gy = controlY(objective).
+  Step 4. Set dx = gx - selfX and dy = gy - selfY. Set hold = 1 when
+  dx * dx + dy * dy <= hold_sq, else hold = 0.
+  Call sk_motor__central_opening(gx, gy, hold) of `SK.motor` exactly once.
+  Do not request sneak. Step 5. Set status = 0.
+- Uses: `SK.motor`
+- Params:
+  - cover_back_cm = 500 cm -- one support cog stays on our side of the bank
+  - bank_offset_cm = 600 cm -- initial outward displacement from the central heart
+  - dry_step_cm = 100 cm -- outward water-clearance step
+  - dry_steps = 8 -- bounded search for a dry bank position
+  - hold_sq = 14400 square cm -- hold within 120 cm of the assigned post
+- Done when: never
+- Checks:
+  - Acted: opening calls increment the motor opening counter. Reads: PWD.c, replay
+  - Result: central occupancy and first-death timing in the first thirty seconds. Reads: replay
+- Status: specified (2026-10-07)
+- Rationale: Richard reaches central fights before our outer squad joins. Commit both squads
+  to the two middle approaches without changing combat, emergency retreat or critical resupply.
+  Heartwick has the two home points and a north/south central pair. This opening is deliberately
+  map-specific; no opponent identity or private state is read. Cover posts use dry banks so
+  concentration does not send every cog into a capture-ring grenade cluster.
+
 ### C.take_heart
 - Summary: Stand in the capture ring of the squad target (squad seats 0 and 1).
 - Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set
@@ -433,28 +417,43 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ### C.cover_heart
-- Summary: Cover-role cogs directly occupy the target capture ring instead of waiting at outside posts.
-- Spec: `__start` does nothing. On every `__tick`, read objective from `K.squad_target`.
-  Set hx = controlX(objective) and hy = controlY(objective).
-  Set dx = hx - selfX and dy = hy - selfY. Set hold = 0.
-  When dx * dx + dy * dy < hold_sq, set hold = 1.
-  Call sk_motor__direct_capture(hx, hy, hold) of `SK.motor` once.
-  After the motor call, issue sneak(1) when best of `K.contacts` < 0 AND soundCount() > 0
-  AND dx * dx + dy * dy < quiet_sq. Set status = 0.
-  This changes only the four cover cogs' heart capability. Preserve original target allocation,
-  retreat and resupply priorities, and all aiming, firing and grenade behavior.
+- Summary: Cover the squad target from outside the ring, and step in when nobody captures it
+  (squad seats 2 and 3).
+- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set
+  `hx = controlX(objective)`, `hy = controlY(objective)`, with objective of `K.squad_target`.
+  Set `goal_x = hx` and `goal_y = hy`. Step 2: set `dx = hx - selfX` and `dy = hy - selfY`.
+  Set finish_capture = 1 when objective >= 0 AND controlCaptureTeam(objective) = selfTeam
+  AND dx * dx + dy * dy <= capture_sq. Else set finish_capture = 0.
+  If finish_capture = 0 AND
+  (`dx * dx + dy * dy > step_in_sq OR idle_capture < idle_limit`), with idle_capture of
+  `K.squad_target`, compute the cover post. Set `side = 1`, or `side = -1` when seat of
+  `K.squad_target` is 3. Set `ax = post_x - hx` and `ay = post_y - hy`. If `selfTeam = 0`, add
+  `post_shift` to ax. Else subtract `post_shift` from ax. Call `sk_motor__isqrt(ax * ax + ay * ay)`
+  of `SK.motor`. If root of `SK.motor` is more than 0, set
+  `goal_x = hx + (ax * 3 - ay * 2 * side) * post_radius \ root` and
+  `goal_y = hy + (ay * 3 + ax * 2 * side) * post_radius \ root`. Step 3: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when
+  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 4: if finish_capture = 1,
+  call sk_motor__finish_cover_capture(hx, hy). Else call
+  `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (quiet approach): call the host command
+  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
+  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of
+  `K.squad_target`. Step 6: set status to 0.
 - Uses: `K.squad_target`, `K.contacts`, `SK.motor`
 - Params:
-  - hold_sq = 8100 square cm -- use ring-capturer holding distance90cm
-  - quiet_sq = 810000 square cm -- preserve quiet approach within9m
+  - capture_sq = 19600 square cm -- engine capture radius140cm squared
+  - step_in_sq = 640000 square cm -- base.bas value, 8 m
+  - idle_limit = 96 ticks -- base.bas value, four seconds without our team capturing
+  - post_x = 3200 cm -- base.bas value, x of the point the post faces away from
+  - post_y = 2000 cm -- base.bas value, y of the point the post faces away from
+  - post_shift = 1200 cm -- base.bas value, team offset of that point
+  - post_radius = 90 -- base.bas value, post distance scale
+  - hold_sq = 8100 square cm -- base.bas value, within 90 cm of the post
+  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective
 - Done when: never
 - Checks:
-  - Acted: cover-role heart capability always requests the heart center. Reads: replay
-  - Result: empty-ring time near cover cogs falls and team captures rise. Reads: replay
-- Status: specified (2026-10-06)
-- Rationale: Four cover cogs previously walked to posts outside the ring. Direct staffing can
-  preserve capture progress after a ring cog dies or diverting supply removes it. More bodies
-  in the ring do not imply faster capture; crowding may increase grenade or friendly-fire losses.
+  - Acted: the rule selects this capability when the squad has a target. Reads: PWD.r, PWD.c
+  - Acted properly: a cover cog stays near its post while a teammate captures. Reads: `K.squad_target`.idle_capture, replay
+- Status: specified (2026-10-05)
 
 ### C.default_goal
 - Summary: With no squad target, go for the thief, home, or the heart.
@@ -519,43 +518,31 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Rationale: `S.losing_fight` needs a heart, so away is never -1 here. A losing fight also means a
   visible target, so Step 4 never fires. Both stay for a literal match with base.bas.
 
-### C.collect_glory
-- Summary: Walk to the nearby assigned visible glory heart.
-- Spec: `__start` does nothing. `__tick` calls sk_motor__collect_glory(goal_x, goal_y)
-  of `SK.motor`, using goal_x and goal_y of `K.nearby_glory`. Set status = 0.
-  Eligibility is recomputed every tick, so visibility loss, disappearance or danger
-  immediately returns control to existing rules. No quiet-approach command is added.
-- Uses: `K.nearby_glory`, `SK.motor`
-- Done when: never
-- Checks:
-  - Acted: the glory rule selects this capability only when the situation holds. Reads: PWD.r, PWD.c
-  - Result: glory-heart awards and total score versus detour time. Reads: replay
-- Status: specified (2026-10-07)
-
 ## Strategy
 
 ### ST.roles
-- Summary: Four pairs per team, each with one ring capturer and one escort.
-- Spec: Pair is ((selfId \ 2) MOD8) \ 2. Even team-member indices capture;
-  odd team-member indices escort. K.squad_target exposes seat0 for capturers and seat2 for escorts.
+- Summary: Two squads of four per team. Seats 0 and 1 of a squad take the ring, seats 2 and 3 cover.
+- Spec: The squad seat is `((selfId \ 2) MOD 8) MOD 4`. Ring seats have squad seat 0 or 1.
+  Cover seats have squad seat 2 or 3.
 - Roles squad:
-  - ring = seats 0,1,4,5,8,9,12,13
-  - cover = seats 2,3,6,7,10,11,14,15
+  - ring = seats 0,1,2,3,8,9,10,11
+  - cover = seats 4,5,6,7,12,13,14,15
 - Checks:
   - Acted: ring seats select only ring or shared rules. Reads: PWD.r
-- Status: specified (2026-10-06)
+- Status: specified (2026-10-05)
 
 ### ST.rules
-- Summary: Retreat beats resupply, resupply beats a safe nearby glory heart, then the squad target and default goal.
+- Summary: Retreat beats the opening; critical resupply interrupts opening eligibility. Otherwise opening beats resupply and normal objectives.
 - Spec: Evaluate the rules below each tick. The highest priority rule whose condition holds wins.
 - Checks:
   - Acted properly: re-running selection from the logged flags gives the logged rule. Reads: PWD.r, PWD.f, PWP.n
 - Status: specified (2026-10-05)
 - Rationale: base.bas computes one goal and lets later blocks override it. The retreat block
-  comes last, then supply, then the squad target. The original priorities retain their order; a safe short glory detour is inserted below resupply.
+  comes last, then supply, then the squad target. The opening adds a bounded commitment
+  between retreat and noncritical supply for both squads.
 - `R.fall_back` [400]: WHEN `S.losing_fight` DO `C.fall_back`
+- `R.central_opening` [350]: WHEN `S.central_opening` DO `C.central_opening`
 - `R.resupply` [300]: WHEN `S.supply_worth` DO `C.resupply`
-- `R.collect_glory` [250]: WHEN `S.glory_worth` DO `C.collect_glory`
 - `R.take_heart` [200]: WHEN `S.has_target_heart` DO `C.take_heart` FOR squad=ring
 - `R.cover_heart` [200]: WHEN `S.has_target_heart` DO `C.cover_heart` FOR squad=cover
 - `R.default_goal` [100]: ALWAYS DO `C.default_goal`
@@ -579,21 +566,20 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy frontier_changed_total from `K.squad_target` into the same-named output.
-  Copy spray_distance_shots_total, direct_capture_ticks_total, glory_detour_ticks_total and
-  tracking_updates_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
-- Uses: `K.contacts`, `K.squad_target`, `SK.motor`, `P.shout`
+  On a send, copy blocked_total, continued_total, opening_ticks_total and
+  tracking_updates_total, cover_capture_ticks_total and spray_distance_shots_total from `SK.motor` into same-named outputs for periodic telemetry.
+- Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
 - Outputs:
-  - frontier_changed_total -- changed frontier targets through this status snapshot
-  - spray_distance_shots_total -- newly enabled spray requests through this status snapshot
-  - direct_capture_ticks_total -- direct cover capture ticks through this status snapshot
-  - glory_detour_ticks_total -- short glory-heart detour ticks through this status snapshot
+  - blocked_total -- disarmed start blocks through this status snapshot
+  - continued_total -- rescued charging ticks through this status snapshot
+  - opening_ticks_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
-- Log: frontier_changed_total, spray_distance_shots_total, direct_capture_ticks_total, glory_detour_ticks_total, tracking_updates_total, cover_capture_ticks_total
+  - spray_distance_shots_total -- actual newly enabled spray requests through this snapshot
+- Log: blocked_total, continued_total, opening_ticks_total, tracking_updates_total, cover_capture_ticks_total, spray_distance_shots_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

@@ -21,6 +21,6 @@
 - Before reactivating M3, port its inactive codec runtime and regenerate its units for Bassy.
   Current v10 qualification does not cover M3; use a separate source-directed change.
 
-- Finish the explicitly authorized i32 v22/v10 comparison, then stand by. Fixed 57% Richard /
-  43% xolod decision and full cohort are in WORKING_CONTEXT and DESIGN-32. No follow-on
-  cohorts or field watcher; orchestrator cron owns monitoring.
+- VERDICT-32 authorizes the new Richard campaign. I33 central opening is in preparation;
+  pipeline visible-teammate blast spacing locally while its hosted comparison runs.
+  See WORKING_CONTEXT and REPORT-33. Only finite cohort workers, no independent field cron.

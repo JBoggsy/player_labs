@@ -2,31 +2,24 @@
 
 ## Current objective and boundary
 
-**I32 active: one fresh v22-versus-v10 A/B, then standing by.** The orchestrator
-explicitly reopened reserve v22 after Richard reached 4/7 recent pairings. No policy
-change or upload. I31 remains rejected; the field watcher stays stopped and the
-orchestrator owns two-hourly cron. Do not resume continuous candidate pipelining.
+**VERDICT-32: new campaign, beat Richard.** I32 is complete and rejected: weighted
++0.013810 [-0.015552,+0.043172]; Richard +0.024746 [-0.026599,+0.076090]. V10 stays.
+Richard is primary; xolod is a guard. Study current public/participant losses, build one
+large-effect counter, and pipeline a second idea locally while hosted evaluation runs.
+No private opponent diagnostics or optimizer league submission. Finite workers only.
 
-Fixed cohort: Richard 400 games/arm, xolod 300/arm, six small guards 8/arm each
-(finist, zhar, relh, basic-v22, daveey/Alpha, Rohit), balanced sides: 1,496 games,
-40 requests, approximately 748 credits. This explicit design overrides the earlier
-roughly 600-credit iteration guideline; retain the 10,000 balance floor. Balance
-before admission: 15,440.89268, leaving 14,692.89268 after the full estimated reserve.
+I33: coordinated central opening on exact v10. Nineteen hash-verified current replays
+(12 i32 losses,4 win comparators,3 league losses) identify separated opening squads and
+repeated early forward-squad deaths. REPORT-33.md records the short model, contrary
+evidence and exact counts. New30s opening sends both squads to the central hearts with
+dry-bank cover, preserving emergency retreat/critical supply and all combat mechanics.
+Opening activation is counted; benefit is unproven. Source is now this v10 child, not v26.
 
-Decision metric: D = 0.57*dRichard + 0.43*dXolod. Fixed weights from rounds 888–893;
-SE = sqrt(0.57²*Var(dRichard) + 0.43²*Var(dXolod)), independent fresh games and
-side-balanced opponent deltas. Nominal 95% normal CI; no pooling earlier cohorts,
-optional stopping, or uncertainty adjustment for the fixed pairing weights.
-Print SUBMIT CANDIDATE only if D >= +0.02, lower95%CI > 0, xolod lower95%CI >= -0.03,
-and no episode failures or verified bad candidate seats. Small guards are descriptive,
-not extra statistical vetoes. Only recommend; no league submission.
-
-Candidate v22: UUID `ae54d4e0-1032-4d74-9767-69cd5d30cfa8`, immutable build
-`9ed1e02e-1`. Freshly resolved v22 and v10 identities and eight opponent versions.
-Doctor passes on 0.3.124. Frozen design: `tmp/collab/optimizer/DESIGN-32.md`;
-requests: `episode_data/optimizer-i32/requests/manifest.json`; results/report:
-`tmp/collab/optimizer/REPORT-32.md`. Admission/results workers only, >=120s cadence,
-skip terminal requests and exit when done. Finalizer prints the decision, then STANDING BY.
+Authorized fresh comparison:400Richard+200xolod games per arm,balanced sides,
+1200games/~600credits. Gate Richard>=+.05 with lower95%CI>0, xolod lower95%CI>=-.02,
+complete cohort and no operational failures. Target a large+.10 Richard effect; this is
+an ambition, not a supported forecast. No pooling i32. Account floor10000; pre-build
+balance14910.60263. Next pipeline idea: visible teammate spacing during central fights.
 
 Champion: `jb-pw-opt:v10`, UUID `8c4947c7-0679-4826-a653-9de20c62ffa3`, immutable
 build [`7faadaa4-1`](strategy/compiled/7faadaa4-1/report.md), source `7faadaa4`.
@@ -34,12 +27,9 @@ Submitted by the orchestrator as `sub_1616ba24-8791-47aa-9f13-51931d9a42db`.
 Player James Botts: `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`.
 League: `league_ae677105-0ab8-4561-81ec-c9cf6735821c`.
 
-**Working strategy source is the rejected v26 bundle, not champion v10.**
-`STRATEGY.md` and the authored motor are frozen at source `c11410ab`; build
-[`c11410ab-1`](strategy/compiled/c11410ab-1/report.md), uploaded UUID
-`4faf6330-9863-4b8e-b761-be4f65c2fa64`. Do not accidentally compile this as a v10 child.
-Recover champion inputs from `7faadaa4` if a future authorized experiment needs them;
-never edit generated BASIC. Upload provenance is in `strategy/compiled/uploads.jsonl`.
+Current strategy source: i33 central-opening counter on champion source `7faadaa4`.
+Rejected v26 is recoverable at `c11410ab` / build `c11410ab-1`; never use it as the
+champion. All policy edits go through committed strategy/skill sources and the compiler.
 
 ## Final robust-bundle result
 
@@ -119,7 +109,7 @@ Coworld 0.1.57 and softmax-cli 0.26.38 were release-checked during i31; refresh 
 future CLI diagnosis. Broader neural/oracle references retain `PW_DOCS_SHA=118e1619`.
 M3 comms remains inactive and unqualified on current Bassy; see [comms.md](strategy/comms.md).
 
-Only i32 is active. Admission/results workers exit on terminal work;
+I32 is complete; i33 is being prepared. Admission/results workers exit on terminal work;
 field_watch.py is stopped by explicit handoff. Dashboard 8810 stays off. Do not poll
 terminal requests for optional artifacts. Future authorized polling/retries: at least
 120 seconds, bounded artifacts, finite exit. No hosted self-play. Local games establish
