@@ -1,13 +1,13 @@
 ---
 name: paintbot-pw-loop
-description: "Use when an agent should run the Paintbot PW improvement loop on its own — 'run the loop', 'keep improving the policy', a /loop or scheduled job over paintbot_pw_lab, or any unattended evaluate → diagnose → change → A/B cycle. Works only under a loop charter written by James in paintbot_pw_lab/WORKING_CONTEXT.md; every step is a pw.py command with a --json result and a rule for each exit code."
+description: "Use when an agent should run the Paintbot PW improvement loop on its own — 'run the loop', 'keep improving the policy', a /loop or scheduled job over paintbot_pw_lab, or any unattended evaluate → diagnose → change → A/B cycle. Works only under a loop charter authorized by James in paintbot_pw_lab/WORKING_CONTEXT.md; every step is a pw.py command with a --json result and a rule for each exit code."
 ---
 
 # Paintbot PW autonomous improvement loop
 
 One loop iteration evaluates the current accepted policy, finds its weakest point, makes one
-attributable change, screens it locally, uploads it, A/Bs it against the field, and records the
-verdict. Each step below names the command, the JSON field to read, and what to do on each
+attributable change, compiles it through G1–G5, uploads it, A/Bs it against the field, and records the
+verdict. `policy_file` always means strategy source, never compiled BASIC. Each step below names the command, the JSON field to read, and what to do on each
 outcome. The step skills hold the detail:
 [paintbot-pw-ab](../paintbot-pw-ab/SKILL.md), [paintbot-pw-diagnose](../paintbot-pw-diagnose/SKILL.md),
 [paintbot-pw-local](../paintbot-pw-local/SKILL.md), [paintbot-pw-replay](../paintbot-pw-replay/SKILL.md),
@@ -26,17 +26,17 @@ unchanged), **3** a build or environment is missing (run the command in `next[0]
 The loop acts only inside an objective James has authorized (repo `AGENTS.md`: authorization,
 propose-and-pause). Read the `## Loop charter` section of
 [`paintbot_pw_lab/WORKING_CONTEXT.md`](../../../WORKING_CONTEXT.md). If it is missing or
-incomplete, **stop**: write a proposed charter into your report and ask James. It must name:
+incomplete, **stop**: write a proposed charter into your report and report to the orchestrator and wait for PROCEED. It must name:
 
 | Field | Meaning |
 | --- | --- |
-| `objective` | the target, e.g. "raise mean Elo outcome vs the top 3 champions" |
-| `policy_file` | the source we edit, e.g. `paintbot_pw_lab/policy/dist/<name>.bas` |
+| `objective` | the target, e.g. "raise mean score_outcome vs the top 3 champions" |
+| `policy_file` | the source we edit, e.g. `paintbot_pw_lab/strategy/STRATEGY.md` plus authored `skills/*/skill.bas` |
 | `policy_name` | the upload name (`coworld upload-policy --name`) and the player identity to use |
 | `baseline` | the accepted version `name:vN` (the loop updates this line on an accepted change) |
 | `opponents` | explicit `policy_ref`s to evaluate against, never `top_n`/`random` |
 | `allowed_changes` | the classes of change the loop may make on its own (e.g. "constants and thresholds", "target selection", "routing"); anything else is a new strategic direction |
-| `credit_budget` | max XP credits per iteration and per day (≈0.3 credits per episode) |
+| `credit_budget` | max XP credits per iteration and per day (budget 0.5 credits per episode) |
 | `max_iterations` | iterations before the loop stops and reports |
 
 ## 1. Preflight
@@ -82,7 +82,7 @@ unreachable.
 # the same policy as --baseline and --candidate = evaluate that one policy (one arm)
 uv run python paintbot_pw_lab/tools/pw.py ab-requests --design field --baseline BASE:vN \
   --candidate BASE:vN --opponent OPP:vM [--opponent ...] --episodes 10 \
-  --league-id league_b9458ff8-0854-4e21-82b8-3c99942902e0 --run-id eval-<date> --out RUN/requests --json
+  --league-id league_ae677105-0ab8-4561-81ec-c9cf6735821c --run-id eval-<date> --out RUN/requests --json
 ```
 
 Create the bodies with the shared skill (`experience_request.py create BODY --check-schema`,
@@ -116,36 +116,44 @@ directories are named `<time>_<first 16 characters of the id>`).
 - With ≥ 8 episodes and no specific suspect, run the miner (`pw.py miner ... --json`, then
   `pw.py mine ...`; with fewer than 8 rows `miner` sets `result.warning` and `mine` fails).
 - Write at most three hypotheses, each a mechanism pinned to a module of `policy_file`, with the
-  predicted change in the primary metric (Elo outcome score) and per-group effects.
+  predicted change in the primary metric (score_outcome score) and per-group effects.
 
 ## 4. Choose one change
 
 Pick the hypothesis with the best evidence per unit of change. **If it falls outside
-`allowed_changes`, stop and propose it to James** with its evidence — that is a new strategic
+`allowed_changes`, stop and propose it to the orchestrator and wait for PROCEED** with its evidence — that is a new strategic
 direction, which the human sets. Otherwise make exactly one attributable change to
-`policy_file` (tunable numbers go in its config block; mark them `' @tune name min max step` so
+`policy_file` or an authored skill (tunable numbers go in source Params; mark authored skill constants `' @tune name min max step` so
 [paintbot-pw-tune](../paintbot-pw-tune/SKILL.md) can search them later).
 
-## 5. Local screen (fast; never field evidence)
+## 5. Compile committed strategy source
+
+Every policy edit is in `strategy/STRATEGY.md` or an authored `skills/*/skill.bas`.
+Never hand-edit any other BASIC file. Run the documentation audit, commit those inputs,
+then compile (use `--from BUILD_ID` to pin the accepted baseline for reuse):
 
 ```bash
-uv run python paintbot_pw_lab/tools/pw.py local compile CANDIDATE.bas --json
-uv run python paintbot_pw_lab/tools/pw.py local screen CANDIDATE.bas BASELINE.bas --seeds 1-28 --json
+uv run python paintbot_pw_lab/tools/pw.py strategy compile --agent codex --json
 ```
 
-- `compile` not ok → fix and retry (at most twice), then stop and report.
-- `screen`: sides are strongly asymmetric locally (odd seats won 10/14 in base vs base, a mirror
-  effect; the league shows none), so read `seed_balanced`, never one side. If the candidate is clearly worse (outcome CI entirely below the baseline's),
-  revise once; if still worse, drop the hypothesis, record it, and return to step 4. Otherwise
-  continue: a local tie is not a reason to stop, because the field is the test.
+Read the immutable build report and G1–G5. Use normal behavior-change compilation, not
+`--milestone m1` (reserved for baseline reproduction). G4 checks runtime health; local scores
+are not a performance signal and must never veto, park, drop or rank a candidate. Local runs
+may check bad seats, activation and mechanisms only. Every candidate that compiles and runs
+cleanly proceeds to hosted A/B against real opponents, mostly the current target. Diagnose
+compile/runtime failures; after repeated tool failure report to the orchestrator.
+Include activation tracing in the source for every new or re-gated behavior.
 
-## 6. Upload (inert; enters no league)
+## 6. Upload (enters no league)
+
+Confirm James Botts is active with `uv run coworld player list`, then:
 
 ```bash
-uv run coworld upload-policy --file CANDIDATE.bas --name POLICY_NAME
+uv run coworld upload-policy --file paintbot_pw_lab/strategy/compiled/BUILD_ID/policy.bas --name POLICY_NAME
 ```
 
-Record the returned `name:vN`.
+Record the returned version identity, build id and policy hash in
+`strategy/compiled/uploads.jsonl`. Never upload a failed build.
 
 ## 7. A/B against the field
 
@@ -155,16 +163,21 @@ episodes arrive:
 
 ```bash
 uv run python paintbot_pw_lab/tools/pw.py compare sprt    paintbot_pw_lab/episode_data/RUN --design paired \
-  --baseline BASE:vN --candidate CAND:vM --json          # result.decision: accept_h1 | accept_h0 | continue
+  --baseline BASE:vN --candidate CAND:vM --target score_outcome --margin-scale 600 --h0 0 --h1 0.10 --json          # result.decision: accept_h1 | accept_h0 | continue
 uv run python paintbot_pw_lab/tools/pw.py compare compare paintbot_pw_lab/episode_data/RUN --design paired \
-  --baseline BASE:vN --candidate CAND:vM --requests RUN/requests/manifest.json --json   # the final comparison
+  --baseline BASE:vN --candidate CAND:vM --requests RUN/requests/manifest.json --target score_outcome --margin-scale 600 --json   # the final comparison
 ```
+
+Recheck the live ranking margin before comparison. Hosted per-pair SD was about 0.6;
+pre-register H1 around +0.08–0.10 and a fixed credit ceiling. This is a design assumption,
+not a predicted measured gain. Track spend from request previews in the run ledger: the
+ordinary player session receives 403 from the credit endpoint. Budget 0.5 credits/episode.
 
 ## 8. Decide and record
 
 | SPRT decision (`compare sprt` → `result.decision`; `compare compare` → `result.sprt.decision`) | Action |
 | --- | --- |
-| `accept_h1` (candidate better on Elo outcome) | the candidate becomes the charter `baseline` in `WORKING_CONTEXT.md`; note the evidence (request ids, estimate, CI) |
+| `accept_h1` (candidate better on score_outcome) | the candidate becomes the charter `baseline` in `WORKING_CONTEXT.md`; note the evidence (request ids, estimate, CI) |
 | `accept_h0` or a significant regression | keep the baseline; record the refuted hypothesis in `TENTATIVE_LESSONS.md` as a current constraint only if the evidence supports one |
 | `continue` at the iteration's credit budget | inconclusive: keep the baseline, record the estimate, and do not claim equality |
 
@@ -172,9 +185,10 @@ Replace superseded context in place (lab doc rules); keep request bodies and ids
 
 ## 9. Stop rules and human gates
 
-Stop the loop and report to James when any of these happens:
+Stop the loop and report to the orchestrator and wait for PROCEED when any of these happens:
 
-- `max_iterations` reached, or the daily `credit_budget` would be exceeded;
+- `max_iterations` reached, or the charter credit budget/account reserve would be violated
+  (apply a daily cap only when the current charter specifies one);
 - two consecutive iterations end `accept_h0` or inconclusive;
 - a preflight finds changed rule-bearing engine files;
 - a proposed change is outside `allowed_changes`;
@@ -182,8 +196,14 @@ Stop the loop and report to James when any of these happens:
 
 Never do these without James's explicit go-ahead, whatever the charter says: **league
 submission** (`coworld-policy-lifecycle`), **public forum/wiki writes**, git push/PR, or spending
-beyond the credit budget. When a loop run ends, write a short report (what changed, the evidence,
-the current baseline, the next proposal) and pause.
+beyond the credit budget. At a stop boundary, write a short report (what changed, the evidence,
+the current baseline, the next proposal) and wait for the orchestrator's PROCEED.
+
+Under the optimizer brief, all stop rules mean write `QUESTION.md`, print
+`NEED ORCHESTRATOR`, and wait for PROCEED. Task 0 ends with `REPORT-0.md` and
+`TASK 0 DONE`; wait before iteration 1. Later iterations write `REPORT-<n>.md`, print
+`ITERATION <n> DONE`, and continue unless a decision is needed. Keep `STATUS.md` current.
+Never submit to leagues, write public community content, or push Git from this optimizer.
 
 ## Scheduling
 

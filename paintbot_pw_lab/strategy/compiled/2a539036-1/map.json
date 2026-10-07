@@ -1,0 +1,1119 @@
+{
+  "adaptations": [],
+  "build_id": "2a539036-1",
+  "codes": {
+    "adaptation": {},
+    "capability": {
+      "C.cover_heart": 2,
+      "C.default_goal": 3,
+      "C.fall_back": 5,
+      "C.resupply": 4,
+      "C.take_heart": 1
+    },
+    "condition": {
+      "C.cover_heart": {},
+      "C.default_goal": {},
+      "C.fall_back": {},
+      "C.resupply": {},
+      "C.take_heart": {}
+    },
+    "direction": {
+      "receive": 2,
+      "send": 1
+    },
+    "event": {
+      "abort": 3,
+      "died": 5,
+      "done": 2,
+      "preempted": 4,
+      "start": 1
+    },
+    "held": {
+      "kept": 1,
+      "new_or_idle": 0
+    },
+    "knowledge": {
+      "K.contacts": 3,
+      "K.pickups": 4,
+      "K.self_motion": 1,
+      "K.squad_target": 2
+    },
+    "message": {
+      "COM.grenade_out": 2,
+      "COM.status_call": 1
+    },
+    "role": {
+      "squad": {
+        "cover": 2,
+        "ring": 1
+      }
+    },
+    "rule": {
+      "R.cover_heart": 4,
+      "R.default_goal": 5,
+      "R.fall_back": 1,
+      "R.resupply": 2,
+      "R.take_heart": 3
+    },
+    "situation": {
+      "S.has_target_heart": 3,
+      "S.losing_fight": 1,
+      "S.supply_worth": 2
+    }
+  },
+  "commitment": {
+    "interrupt_at": 0,
+    "min_hold": 0,
+    "preempt_margin": 0
+  },
+  "components": {
+    "C.cover_heart": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWD.c"
+          ],
+          "text": "the rule selects this capability when the squad has a target."
+        },
+        {
+          "level": "Acted properly",
+          "reads": [
+            "`K.squad_target`.idle_capture",
+            "replay"
+          ],
+          "text": "a cover cog stays near its post while a teammate captures."
+        }
+      ],
+      "code": 2,
+      "generated": false,
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "step_in_sq",
+          "idle_limit",
+          "post_x",
+          "post_y",
+          "post_shift",
+          "post_radius",
+          "hold_sq",
+          "quiet_sq"
+        ]
+      },
+      "kind": "C",
+      "llm": true,
+      "prefix": "c_cover_heart",
+      "text_hash": "sha256:1f2a10675dcffa44929763fe420da2f5e986fecc1bb200845bc83e33b935b81c",
+      "unit": "C.cover_heart",
+      "unit_sha256": "55abd9d675d5c5f37d26fe3d0eaff541b56b895e2df4cf414da6fd0150d17791",
+      "uses": [
+        "K.squad_target",
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "C.default_goal": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWD.c"
+          ],
+          "text": "the rule selects this capability when no other rule holds."
+        }
+      ],
+      "code": 3,
+      "generated": false,
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "kind": "C",
+      "llm": true,
+      "prefix": "c_default_goal",
+      "text_hash": "sha256:6e56e4ac481f51f4971f1614814cddb96ad581f289ad1b1230e7e29f93d4c272",
+      "unit": "C.default_goal",
+      "unit_sha256": "0499a862428d89141297914d8b3c69c7136c3dacd17456aee4995381a3f58ea7",
+      "uses": [
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.fall_back": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWD.c"
+          ],
+          "text": "the rule selects this capability when we are losing the fight."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "PWE.e",
+            "replay"
+          ],
+          "text": "we survive the activation."
+        }
+      ],
+      "code": 5,
+      "generated": false,
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "kind": "C",
+      "llm": true,
+      "prefix": "c_fall_back",
+      "text_hash": "sha256:9d0e13fcdbae1542c228a258cbcb448ce22f8729cff63af6d8a08314e8014f3e",
+      "unit": "C.fall_back",
+      "unit_sha256": "71fccecfbe4a61bf4a14d5d658cd341e9f29be258995e7cae8b11a7d6cb49e96",
+      "uses": [
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.resupply": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWD.c"
+          ],
+          "text": "the rule selects this capability when a supply is worth it."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "PWE.e",
+            "replay"
+          ],
+          "text": "we take a supply during the activation."
+        }
+      ],
+      "code": 4,
+      "generated": false,
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "kind": "C",
+      "llm": true,
+      "prefix": "c_resupply",
+      "text_hash": "sha256:cd8990c5650af4b96e73a5ed6939f7fd690edd4a3514313546e4729c0fd667dd",
+      "unit": "C.resupply",
+      "unit_sha256": "cd90856df85c645dac00ae8a37b9e475caaedc2e064b16784139266c1badca76",
+      "uses": [
+        "K.pickups",
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.take_heart": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r",
+            "PWD.c"
+          ],
+          "text": "the rule selects this capability when the squad has a target."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "PWE.e",
+            "replay"
+          ],
+          "text": "our team captures the target heart during the activation."
+        }
+      ],
+      "code": 1,
+      "generated": false,
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "hold_sq",
+          "quiet_sq"
+        ]
+      },
+      "kind": "C",
+      "llm": true,
+      "prefix": "c_take_heart",
+      "text_hash": "sha256:f59e0462e455bd0767345774ddcc94f3b3d2391af30e7c32097ade92ae616dba",
+      "unit": "C.take_heart",
+      "unit_sha256": "17c0309133c5c23b32b1ecdf5611569a91492e1360400af0fc649f7af975ac16",
+      "uses": [
+        "K.squad_target",
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "COM.grenade_out": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "replay"
+          ],
+          "text": "the shout appears in the replay with each full charge."
+        }
+      ],
+      "code": 2,
+      "generated": false,
+      "interface": {
+        "directions": [
+          "send"
+        ],
+        "outputs": {},
+        "params": []
+      },
+      "kind": "COM",
+      "llm": true,
+      "prefix": "com_grenade_out",
+      "text_hash": "sha256:0daa3c5423701b417c5094339907c230f3084615efbd9af3ff8931be209207f2",
+      "unit": "COM.grenade_out",
+      "unit_sha256": "994559fb94afc574e270042da96f690150d96b221fe5c381e56c511122510729",
+      "uses": [
+        "SK.motor",
+        "P.shout"
+      ]
+    },
+    "COM.status_call": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "replay"
+          ],
+          "text": "the shout appears in the replay on the scheduled ticks."
+        }
+      ],
+      "code": 1,
+      "generated": false,
+      "interface": {
+        "directions": [
+          "send"
+        ],
+        "outputs": {
+          "blocked_total": 1,
+          "continued_total": 1,
+          "forced_total": 1,
+          "release_charge": 1,
+          "release_need": 1,
+          "starts_total": 1
+        },
+        "params": []
+      },
+      "kind": "COM",
+      "llm": true,
+      "log_every": null,
+      "log_fields": [
+        {
+          "cells": 1,
+          "name": "release_charge"
+        },
+        {
+          "cells": 1,
+          "name": "release_need"
+        },
+        {
+          "cells": 1,
+          "name": "starts_total"
+        },
+        {
+          "cells": 1,
+          "name": "blocked_total"
+        },
+        {
+          "cells": 1,
+          "name": "continued_total"
+        },
+        {
+          "cells": 1,
+          "name": "forced_total"
+        }
+      ],
+      "log_offset": null,
+      "prefix": "com_status_call",
+      "text_hash": "sha256:21d26f91eb201286de717821caec29cc8ec6df50e3b3039fc589a50df0642e05",
+      "unit": "COM.status_call",
+      "unit_sha256": "9006cc008d415c2c23c2302be0502b08a574394c497b966452c0ff2bfac8d759",
+      "uses": [
+        "K.contacts",
+        "SK.motor",
+        "P.shout"
+      ]
+    },
+    "K.contacts": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "`K.contacts`.best",
+            "`K.contacts`.foes_near",
+            "`K.contacts`.friends_near"
+          ],
+          "text": "best and the near counts are logged."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`K.contacts`.best",
+            "replay"
+          ],
+          "text": "the logged best is a visible enemy-parity seat in the replay within range."
+        }
+      ],
+      "code": 3,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "best": 1,
+          "best_cost": 1,
+          "best_vx": 1,
+          "best_vy": 1,
+          "foe_cx": 1,
+          "foe_cy": 1,
+          "foes_near": 1,
+          "foes_seen": 1,
+          "friends_near": 1,
+          "range_rejected_total": 1,
+          "thief": 1
+        },
+        "params": [
+          "hp_weight",
+          "carrier_bonus",
+          "former_range_sq",
+          "near_foe_sq",
+          "near_friend_sq"
+        ]
+      },
+      "kind": "K",
+      "llm": true,
+      "log_every": 24,
+      "log_fields": [
+        {
+          "cells": 1,
+          "name": "best"
+        },
+        {
+          "cells": 1,
+          "name": "foes_near"
+        },
+        {
+          "cells": 1,
+          "name": "friends_near"
+        },
+        {
+          "cells": 1,
+          "name": "range_rejected_total"
+        }
+      ],
+      "log_offset": 1,
+      "prefix": "k_contacts",
+      "text_hash": "sha256:2b802bedf722a441635a2f8a73eec2f6d178329d40dcbf414cfbe33f5d7cc586",
+      "unit": "K.contacts",
+      "unit_sha256": "ea18972f91840968ef7e3791992692aca4fe36e123fe570b4391f0e9bf68c904",
+      "uses": []
+    },
+    "K.pickups": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "`K.pickups`.nearest"
+          ],
+          "text": "the chosen supply is logged."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`K.pickups`.nearest",
+            "replay"
+          ],
+          "text": "a supply of the remembered kind was at the remembered point in the replay."
+        }
+      ],
+      "code": 4,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "critical": 1,
+          "hp_cap": 1,
+          "hp_changed_total": 1,
+          "nearest": 1,
+          "nearest_x": 1,
+          "nearest_y": 1
+        },
+        "params": [
+          "memory_ticks",
+          "reach_sq",
+          "arrive_sq"
+        ]
+      },
+      "kind": "K",
+      "llm": true,
+      "log_every": 24,
+      "log_fields": [
+        {
+          "cells": 1,
+          "name": "nearest"
+        },
+        {
+          "cells": 1,
+          "name": "hp_cap"
+        },
+        {
+          "cells": 1,
+          "name": "hp_changed_total"
+        }
+      ],
+      "log_offset": 2,
+      "prefix": "k_pickups",
+      "text_hash": "sha256:099187de4f06cc46c21c4b628635a1393751681d37545361cf765c0d1ebd4856",
+      "unit": "K.pickups",
+      "unit_sha256": "494d9c846ef0ba0f0a936c406a34179bcb4524fe659dd58a41f6f707177a3653",
+      "uses": []
+    },
+    "K.self_motion": {
+      "checks": [
+        {
+          "level": "True",
+          "reads": [
+            "replay"
+          ],
+          "text": "vx and vy equal the replay position change, except both are zero on initialization or when either axis exceeds teleport_step."
+        }
+      ],
+      "code": 1,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "teleported": 1,
+          "vx": 1,
+          "vy": 1
+        },
+        "params": [
+          "teleport_step"
+        ]
+      },
+      "kind": "K",
+      "llm": true,
+      "prefix": "k_self_motion",
+      "text_hash": "sha256:7d9fd1eaf31041f6c7478c749191bed6653b60597dd2e78541e501bd0cf18f29",
+      "unit": "K.self_motion",
+      "unit_sha256": "b1a75e13de6a889d423e6103fb6d5c81c9e56ff9ea15b19ac2d267b7b9839ae5",
+      "uses": []
+    },
+    "K.squad_target": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "`K.squad_target`.objective"
+          ],
+          "text": "objective is logged as a heart index or -1."
+        },
+        {
+          "level": "True",
+          "reads": [
+            "`K.squad_target`.objective",
+            "replay"
+          ],
+          "text": "the logged objective equals the replay re-computation using public heart state and this cog's reconstructed avoid memory."
+        }
+      ],
+      "code": 2,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "heart_count": 1,
+          "idle_capture": 1,
+          "objective": 1,
+          "seat": 1,
+          "squad": 1
+        },
+        "params": [
+          "progress_period",
+          "stall_sq",
+          "far_sq",
+          "avoid_ticks",
+          "ref_offset",
+          "mirror_y",
+          "neutral_bonus",
+          "avoid_penalty"
+        ]
+      },
+      "kind": "K",
+      "llm": true,
+      "log_every": 24,
+      "log_fields": [
+        {
+          "cells": 1,
+          "name": "objective"
+        },
+        {
+          "cells": 1,
+          "name": "idle_capture"
+        }
+      ],
+      "log_offset": 0,
+      "prefix": "k_squad_target",
+      "text_hash": "sha256:681bb58606ac6cd883c72ba26d2c2d813b49b110fd9590c789c8693f7ba54ef8",
+      "unit": "K.squad_target",
+      "unit_sha256": "d1d692c834084b15b1ed61d32e60e7e5fea22b826082d16cc14e7f60020f0114",
+      "uses": []
+    },
+    "P.chargeGrenade": {
+      "checks": [],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "P",
+      "llm": false,
+      "prefix": "p_chargegrenade",
+      "text_hash": "sha256:4cf32f39b9e8d02fca7a984c19d94d51b9f974b38df473e935cd9fe00b96d737",
+      "unit": null,
+      "unit_sha256": null,
+      "uses": []
+    },
+    "P.lookAt": {
+      "checks": [],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "P",
+      "llm": false,
+      "prefix": "p_lookat",
+      "text_hash": "sha256:170a72d13fded7aca0a0048425c85092c83318df0a9fbe9efc6033f19e875e88",
+      "unit": null,
+      "unit_sha256": null,
+      "uses": []
+    },
+    "P.shootAt": {
+      "checks": [],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "P",
+      "llm": false,
+      "prefix": "p_shootat",
+      "text_hash": "sha256:8506eab3254d3208ee361dcb0f89b3d2c228f3e80ebed26370d24dde6f65d905",
+      "unit": null,
+      "unit_sha256": null,
+      "uses": []
+    },
+    "P.shout": {
+      "checks": [],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "P",
+      "llm": false,
+      "prefix": "p_shout",
+      "text_hash": "sha256:b1058719718b735507e9ebf0cf4c8043e1929bf769e047015a02e3f6aeae502e",
+      "unit": null,
+      "unit_sha256": null,
+      "uses": []
+    },
+    "P.walkTo": {
+      "checks": [],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "P",
+      "llm": false,
+      "prefix": "p_walkto",
+      "text_hash": "sha256:d09ec33972962737ffc7ac9f3d603b9b5eeb3a72933837ac0a97642274a21915",
+      "unit": null,
+      "unit_sha256": null,
+      "uses": []
+    },
+    "S.has_target_heart": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "PWD.f"
+          ],
+          "text": "the flag is logged with the decision."
+        }
+      ],
+      "code": 3,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": []
+      },
+      "kind": "S",
+      "llm": true,
+      "prefix": "s_has_target_heart",
+      "text_hash": "sha256:6b60c6ab97e4664fa799fdb79198871401925214fa58d94ce890e32c8b29a453",
+      "unit": "S.has_target_heart",
+      "unit_sha256": "af457029da613f7463a73f2b6b1412f6183dddae7ea943542d168cae638f99d0",
+      "uses": [
+        "K.squad_target"
+      ]
+    },
+    "S.losing_fight": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "PWD.f"
+          ],
+          "text": "the flag is logged with the decision."
+        }
+      ],
+      "code": 1,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": []
+      },
+      "kind": "S",
+      "llm": true,
+      "prefix": "s_losing_fight",
+      "text_hash": "sha256:f5a8a8388f9d7f65985452424be2a3792ead5e61a95d15758d81e379b00fb232",
+      "unit": "S.losing_fight",
+      "unit_sha256": "510aba98da3a299a433b636541fb035bdc27bbc43fdd2f53b5f3f98d2fa977e8",
+      "uses": [
+        "K.contacts",
+        "K.squad_target"
+      ]
+    },
+    "S.supply_worth": {
+      "checks": [
+        {
+          "level": "Believed",
+          "reads": [
+            "PWD.f"
+          ],
+          "text": "the flag is logged with the decision."
+        }
+      ],
+      "code": 2,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": [
+          "fight_clear_sq"
+        ]
+      },
+      "kind": "S",
+      "llm": true,
+      "prefix": "s_supply_worth",
+      "text_hash": "sha256:097169d598f879dccd3abae806a3477c10e299ea8f5978d34be92cfa0a67187b",
+      "unit": "S.supply_worth",
+      "unit_sha256": "61d6993ea5cbae02c6371fd9ad4ac03376d627f3fda967935853a4ebccff0dba",
+      "uses": [
+        "K.pickups",
+        "K.contacts"
+      ]
+    },
+    "SK.motor": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "replay"
+          ],
+          "text": "a shot is ordered only when the gun wait is zero, the teammate line is clear, and the spray range condition holds."
+        },
+        {
+          "level": "Acted",
+          "reads": [
+            "replay"
+          ],
+          "text": "committed grenade charge continues until its locked need unless equipment is lost or disarm forces release."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "replay"
+          ],
+          "text": "grenade teammate and self damage per episode, with enemy damage retained."
+        },
+        {
+          "level": "Result",
+          "reads": [
+            "replay"
+          ],
+          "text": "hit rate per shot at range."
+        }
+      ],
+      "code": null,
+      "generated": false,
+      "interface": {
+        "outputs": {
+          "blocked_total": 1,
+          "continued_total": 1,
+          "forced_total": 1,
+          "release_charge": 1,
+          "release_need": 1,
+          "root": 1,
+          "starts_total": 1,
+          "threw": 1
+        },
+        "params": [
+          "wet_cost",
+          "lead_ticks",
+          "drift_ticks",
+          "gun_wait_light",
+          "gun_wait_heavy",
+          "spray_range_sq"
+        ],
+        "subs": {
+          "sk_motor__act": 3,
+          "sk_motor__dry_route": 0,
+          "sk_motor__footwork": 0,
+          "sk_motor__grenade": 0,
+          "sk_motor__gun": 0,
+          "sk_motor__init": 0,
+          "sk_motor__isqrt": 1,
+          "sk_motor__leg_time": 4,
+          "sk_motor__look_around": 0,
+          "sk_motor__next_random": 0,
+          "sk_motor__plan_leg": 2,
+          "sk_motor__wet_line": 4
+        }
+      },
+      "kind": "SK",
+      "llm": false,
+      "prefix": "sk_motor",
+      "text_hash": "sha256:3e442bdd29acd490b4169e98a97c366dbecb2a7c22c1bd63453f50337c6b94ba",
+      "unit": "SK.motor",
+      "unit_sha256": "c87214fc08e7a6bb80417c8672e1cae0a414798733f51aa12c1a4f71ffda79c4",
+      "uses": [
+        "P.walkTo",
+        "P.lookAt",
+        "P.shootAt",
+        "P.chargeGrenade",
+        "K.contacts",
+        "K.self_motion"
+      ]
+    },
+    "ST.commitment": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "PWD.h",
+            "PWD.r"
+          ],
+          "text": "the selected rule is always the best rule."
+        }
+      ],
+      "code": null,
+      "generated": true,
+      "interface": {
+        "outputs": {},
+        "params": [
+          "min_hold",
+          "preempt_margin",
+          "interrupt_at"
+        ]
+      },
+      "kind": "ST",
+      "llm": false,
+      "prefix": "st_commitment",
+      "text_hash": "sha256:a62939f54dc93d853ec2c9ac7c926abc8f1103602ad6f4f668012b2d4884ebac",
+      "unit": "generated.tables",
+      "unit_sha256": "5d7323ad5efdef4f2ba8510f84bcec3afbda4733b5c0dfe2ee038fb99a83d996",
+      "uses": []
+    },
+    "ST.roles": {
+      "checks": [
+        {
+          "level": "Acted",
+          "reads": [
+            "PWD.r"
+          ],
+          "text": "ring seats select only ring or shared rules."
+        }
+      ],
+      "code": null,
+      "generated": true,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "ST",
+      "llm": false,
+      "prefix": "st_roles",
+      "text_hash": "sha256:60eb74b1643db06a837eee490ad457ba9603402287e741e9a5d1bb80c858ff23",
+      "unit": "generated.tables",
+      "unit_sha256": "5d7323ad5efdef4f2ba8510f84bcec3afbda4733b5c0dfe2ee038fb99a83d996",
+      "uses": []
+    },
+    "ST.rules": {
+      "checks": [
+        {
+          "level": "Acted properly",
+          "reads": [
+            "PWD.r",
+            "PWD.f",
+            "PWP.n"
+          ],
+          "text": "re-running selection from the logged flags gives the logged rule."
+        }
+      ],
+      "code": null,
+      "generated": true,
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "kind": "ST",
+      "llm": false,
+      "prefix": "st_rules",
+      "text_hash": "sha256:64cfd58c11c5280cedf903bd91cb38db0a077cf93da4022117edae4e5dd6836d",
+      "unit": "generated.tables",
+      "unit_sha256": "5d7323ad5efdef4f2ba8510f84bcec3afbda4733b5c0dfe2ee038fb99a83d996",
+      "uses": []
+    }
+  },
+  "flag_words": 1,
+  "priorities": {
+    "R.cover_heart": 200,
+    "R.default_goal": 100,
+    "R.fall_back": 400,
+    "R.resupply": 300,
+    "R.take_heart": 200
+  },
+  "roles": {
+    "squad": {
+      "cover": [
+        4,
+        5,
+        6,
+        7,
+        12,
+        13,
+        14,
+        15
+      ],
+      "ring": [
+        0,
+        1,
+        2,
+        3,
+        8,
+        9,
+        10,
+        11
+      ]
+    }
+  },
+  "rules": [
+    {
+      "args": {},
+      "capability": "C.fall_back",
+      "code": 1,
+      "condition": "S.losing_fight",
+      "id": "R.fall_back",
+      "inputs": [],
+      "priority": 400,
+      "role_set": null,
+      "roles": null
+    },
+    {
+      "args": {},
+      "capability": "C.resupply",
+      "code": 2,
+      "condition": "S.supply_worth",
+      "id": "R.resupply",
+      "inputs": [],
+      "priority": 300,
+      "role_set": null,
+      "roles": null
+    },
+    {
+      "args": {},
+      "capability": "C.take_heart",
+      "code": 3,
+      "condition": "S.has_target_heart",
+      "id": "R.take_heart",
+      "inputs": [],
+      "priority": 200,
+      "role_set": "squad",
+      "roles": [
+        "ring"
+      ]
+    },
+    {
+      "args": {},
+      "capability": "C.cover_heart",
+      "code": 4,
+      "condition": "S.has_target_heart",
+      "id": "R.cover_heart",
+      "inputs": [],
+      "priority": 200,
+      "role_set": "squad",
+      "roles": [
+        "cover"
+      ]
+    },
+    {
+      "args": {},
+      "capability": "C.default_goal",
+      "code": 5,
+      "condition": "ALWAYS",
+      "id": "R.default_goal",
+      "inputs": [],
+      "priority": 100,
+      "role_set": null,
+      "roles": null
+    }
+  ],
+  "runtime": {
+    "files": {
+      "runtime.lib": "ef0a6b940d95f537ac9623f53d25b6aa26b9e474d311ccb6bc64d89bfa47dee7",
+      "runtime.main": "735c59e4033a60229b3d8ae3d3128a26d8aac9563873999e0f5db71111a30527"
+    }
+  },
+  "schema": "pw-strategy-map/1",
+  "skills": {
+    "SK.motor": {
+      "path": "skills/motor/skill.bas",
+      "sha256": "c87214fc08e7a6bb80417c8672e1cae0a414798733f51aa12c1a4f71ffda79c4"
+    }
+  },
+  "source_commit": "2a5390366a90c092c2d1f5008da0ed65c05fdf38",
+  "telemetry": {
+    "lines": {
+      "PWB": [
+        "t",
+        "k",
+        "d"
+      ],
+      "PWC": [
+        "t",
+        "m",
+        "s",
+        "w",
+        "d"
+      ],
+      "PWD": [
+        "t",
+        "r",
+        "c",
+        "i",
+        "h",
+        "p",
+        "f"
+      ],
+      "PWE": [
+        "t",
+        "c",
+        "e",
+        "k"
+      ],
+      "PWP": [
+        "t",
+        "a",
+        "r",
+        "o",
+        "n",
+        "p"
+      ]
+    },
+    "list_keys": {
+      "PWB": [
+        "d"
+      ],
+      "PWC": [
+        "d"
+      ],
+      "PWD": [
+        "i",
+        "f"
+      ]
+    },
+    "version": 2,
+    "worst_case": {
+      "bytes": 395,
+      "events": 64,
+      "limit_bytes": 512,
+      "limit_events": 64,
+      "lines": {
+        "PWB": {
+          "bytes": 76,
+          "count": 3,
+          "events": 11
+        },
+        "PWC": {
+          "bytes": 166,
+          "count": 2,
+          "events": 23
+        },
+        "PWD": {
+          "bytes": 50,
+          "count": 1,
+          "events": 11
+        },
+        "PWE": {
+          "bytes": 103,
+          "count": 3,
+          "events": 19
+        },
+        "PWP": {
+          "bytes": 0,
+          "count": 0,
+          "events": 0
+        }
+      },
+      "log_offsets": {
+        "K.contacts": 1,
+        "K.pickups": 2,
+        "K.squad_target": 0
+      }
+    }
+  }
+}

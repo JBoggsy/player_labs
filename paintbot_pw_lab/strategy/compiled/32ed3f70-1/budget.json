@@ -1,0 +1,48 @@
+{
+  "array_cells": 983,
+  "array_cells_limit": 4096,
+  "arrays": 22,
+  "arrays_limit": 256,
+  "globals": 280,
+  "globals_limit": 512,
+  "source_bytes": 55091,
+  "source_limit": 131072,
+  "telemetry": {
+    "bytes": 325,
+    "events": 53,
+    "limit_bytes": 512,
+    "limit_events": 64,
+    "lines": {
+      "PWB": {
+        "bytes": 76,
+        "count": 3,
+        "events": 11
+      },
+      "PWC": {
+        "bytes": 96,
+        "count": 2,
+        "events": 12
+      },
+      "PWD": {
+        "bytes": 50,
+        "count": 1,
+        "events": 11
+      },
+      "PWE": {
+        "bytes": 103,
+        "count": 3,
+        "events": 19
+      },
+      "PWP": {
+        "bytes": 0,
+        "count": 0,
+        "events": 0
+      }
+    },
+    "log_offsets": {
+      "K.contacts": 1,
+      "K.pickups": 2,
+      "K.squad_target": 0
+    }
+  }
+}

@@ -31,6 +31,7 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
   `map-raw`) and the shared `mine`/`test` passthroughs do not print the JSON envelope.
 - **Opponent refs:** `pw.py leaders --json` lists today's champions as exact `name:vN` refs
   (it handles champions whose leaderboard label is null).
+- **Deferred game-specific work:** [TODO.md](TODO.md).
 - **Release pin:** `tools/release.env` is the single source of the engine tag every tool uses;
   `pw.py deployed-ref --write --json` moves it when the league moves.
 - **Skills** (in [.claude/skills/](.claude/skills/); read the SKILL.md directly when working from
@@ -38,9 +39,10 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 
 | Skill | Use when |
 | --- | --- |
+| [paintbot-pw-compile](.claude/skills/paintbot-pw-compile/SKILL.md) | compiling committed strategy source with Claude or Codex through local gates |
 | [paintbot-pw-loop](.claude/skills/paintbot-pw-loop/SKILL.md) | running the improvement loop unattended (needs the loop charter in WORKING_CONTEXT) |
 | [paintbot-pw-replay](.claude/skills/paintbot-pw-replay/SKILL.md) | unpacking or looking at a replay/episode: events, metrics, movement diagrams, match report |
-| [paintbot-pw-ab](.claude/skills/paintbot-pw-ab/SKILL.md) | deciding whether a change helped (paired A/B on the Elo outcome score, SPRT stop) |
+| [paintbot-pw-ab](.claude/skills/paintbot-pw-ab/SKILL.md) | deciding whether a change helped (A/B on an explicit score outcome and ranking margin) |
 | [paintbot-pw-diagnose](.claude/skills/paintbot-pw-diagnose/SKILL.md) | "why are we losing / what should we change": flags, worst losses, hypotheses, miner |
 | [paintbot-pw-scout](.claude/skills/paintbot-pw-scout/SKILL.md) | what the leaders do, from public episodes: matrix, profiles, shout protocols |
 | [paintbot-pw-local](.claude/skills/paintbot-pw-local/SKILL.md) | compile checks and fast local screening (never field evidence) |
@@ -59,7 +61,9 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
    request options and credit budget.
 6. [docs/evidence-pipeline.md](docs/evidence-pipeline.md) — artifacts, the replay format and
    hash-checked re-simulation; [docs/tools/README.md](docs/tools/README.md) — the tools built on it.
-7. [TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md) — untested hypotheses to turn into A/Bs.
+7. [best_practices.md](best_practices.md) — supported Paintbot PW findings: release checks, what the
+   ladder rewards, evaluation design, the champion lineage and refuted levers.
+8. [TENTATIVE_LESSONS.md](TENTATIVE_LESSONS.md) — untested hypotheses to turn into A/Bs.
 
 ## Files
 
@@ -72,11 +76,11 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 | `docs/evidence-pipeline.md` | Artifact inventory, replay format, re-simulation constraints, local runs. |
 | `docs/reports/` | Dated evidence reports (not maintained as current truth): [2026-09-29-league-field-analysis.md](docs/reports/2026-09-29-league-field-analysis.md) (80 league episodes: endings, sides, seeds, champion styles, shout protocols, friendly fire). The readable game overview is the repo-level [onboarding report](../docs/reports/paintbot-pw-onboarding-2026-09-28.html). |
 | `docs/tools/` | One reference per tool (agent contract, commands, outputs, limits); `README.md` is the generated index, `tables.md` the Parquet table contract. |
-| `strategy/` | The policy source (layout: strategy-file-format design §4.1). **Load-bearing: `STRATEGY.md` is the source of truth; compiled BASIC is never edited by hand.** Today only [`comms.md`](strategy/comms.md) exists (draft comms v1). `STRATEGY.md`, `skills/`, `compiler/`, and `compiled/` come with milestones M0-M1. |
+| `strategy/` | The policy source (layout: strategy-file-format design §4.1). **Load-bearing: `STRATEGY.md` is the source of truth; compiled BASIC is never edited by hand.** [`compiler/`](strategy/compiler/) contains the M0 runtime and agent instructions; [`pw.py strategy`](docs/tools/pw_strategy.md) compiles committed sources. `STRATEGY.md` and `skills/motor/skill.bas` contain the most recently built candidate, which can differ from the champion; check `WORKING_CONTEXT.md` for exact identities. M3 is inactive and recoverable from `2184fc64`; [`compiled/b41ef1fc-1/report.md`](strategy/compiled/b41ef1fc-1/report.md) records passing gates and identical baseline play. [`comms.md`](strategy/comms.md) defines comms v1 and its acceptance status. |
 | `docs/designs/` | Design documents. [`2026-09-29-tooling-plan.html`](docs/designs/2026-09-29-tooling-plan.html) is the tools-and-skills plan, now implemented (brief: `.tooling-plan-brief.md`). [`2026-09-30-strategy-file-format.md`](docs/designs/2026-09-30-strategy-file-format.md) (rendered: `.html`) is the **accepted** format for the load-bearing strategy file (2026-09-30). [`2026-09-30-strategy-compilation.md`](docs/designs/2026-09-30-strategy-compilation.md) (rendered: `.html`) is the **accepted** compile process: deterministic Python around one LLM step, unit files, versioning, report, gates. |
 | `tools/` | The instruments: `pw.py` (dispatcher, catalog, doctor), `pw_cli.py` (shared CLI contract), `release.env` / `pw_release.py` (engine pin), Nim `pw_trace` / `pw_map`, Python readers, metrics, visuals, A/B, local harness, scouting, miner, win probability, tuning; `tests/`. Build products go to gitignored `tools/bin/` and `tools/.cache/`. |
-| `.claude/skills/` | The seven lab skills listed above. |
-| `reference/base.bas`, `reference/jev.bas` | Official teams starters at the pinned release, from `coworld/paintbot/players/` (the files the manifest's `player[]` hashes name). The repo's `examples/paintbot/players/base.bas` is an older engine-test copy; do not use it. Keep reference files distinct from candidates. |
+| `.claude/skills/` | The eight lab skills listed above. |
+| `reference/base.bas`, `reference/jev.bas` | Frozen official teams starters at 0.3.89 (preserved across engine-pin migration), from `coworld/paintbot/players/` (the files the manifest's `player[]` hashes name). For Bassy compilation use `reference/base-bassy-28030de6.bas`, copied verbatim from upstream `examples/paintbot/players/base.bas` at `28030de6`; frozen pre-Bassy starters fail on 0.3.123. Keep reference files distinct from candidates. |
 | `reference/intent_telemetry.bas`, `reference/wire_intent_base.py` | The intent-line module for our policies, and a script that wires it into `base.bas` for audits. |
 | `reference/heartland/` | FFA-kin starters for the separate Heartland coworld; they do not compile in the teams game. |
 | `reference/manifest-0.3.80.json` | The deployed coworld manifest (config schema, variants, readme). |
@@ -84,6 +88,12 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 
 ## Rules specific to this lab
 
+- **Every policy change goes through `strategy/STRATEGY.md` and the compiler.** Never hand-edit
+  compiled policy `.bas` files. Compiler-owned runtime templates are editable infrastructure
+  under the Task 0 VERDICT-0 authorization; for policy changes, edit `STRATEGY.md` (or a skill's authored `skill.bas`), then build
+  with `pw.py strategy compile`. This applies to optimizer loops, local experiments and tuning
+  candidates alike; the paintbot-pw-loop skill's `policy_file` means the strategy source.
+  (James, 2026-10-06.)
 - **Cite the deployed commit, not `main`.** The source is `Metta-AI/paintbot-pw` (local
   clone `~/coding/coworlds/paintbot-pw`), a standalone copy of Polyworld. The manifest's
   `source_url` carries no commit; the `coworld-v<version>` tag is the only link from a
@@ -93,13 +103,12 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
   the manifest readme and the wiki have all disagreed with the deployed code (budgets, glory
   values, size limits). Verify every mechanical claim against source at the deployed commit before
   relying on it; record mismatches in `docs/mechanics.md` §8 / `docs/community.md` and move on.
-- **Glory margin is the rank signal.** The result `scores` are the winning team's glory;
-  the loser and both sides of a draw get 0. Since 2026-09-28 the ladder's Elo uses
-  `margin_scale: 1000`: each episode counts as `clamp(0.5 + (our glory - their glory) / 2000,
-  0, 1)`, so a 500-glory win is 0.75, a 950-glory win about 0.98 and a 0-glory win a draw
-  (metta `elo.py:183-187`). Fast, high-glory wins move rank more; a loss to a fast winner
-  costs more. Never infer a win from anything but the result. The canonical, source-cited
-  statement of scoring and rank is [docs/mechanics.md §1](docs/mechanics.md); update it there.
+- **Resolve the current ranking rule before performance comparisons.** On 2026-10-05 the
+  current league reports OpenSkill, `margin_scale: 600`, and mean round scoring. The earlier
+  Elo outcome formula is historical; backend semantics were verified at metta `dcdfc19a`. Use the additive
+  `score_outcome` metric with explicit `--margin-scale 600` after rechecking the live value;
+  `elo_outcome` remains the historical default. Result scores remain winning glory, with loser/draw scores zero. Read
+  [docs/mechanics.md §1](docs/mechanics.md) and never infer a win from anything but the result.
 - **A BASIC compile error fails the whole episode** (no results, no data from that
   eval slot); it shows up as failed hosted episodes, which is the signal to read. Using a host
   function name as a variable is a compile error too: `rnd` became one in 0.3.89. A file the host
@@ -127,3 +136,20 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
   the game adapters. Keep documentation as complete current references; replace
   superseded information in place.
 - League submission and public community writing remain explicitly gated.
+
+## Strategy compiler for Codex and Claude
+
+Use `pw.py strategy compile --agent codex|claude --json`. Both agents read
+[`strategy/compiler/AGENT.md`](strategy/compiler/AGENT.md); the driver owns the
+compile loop. See [the command reference](docs/tools/pw_strategy.md). Never edit
+finalized BASIC builds. Source and compiler inputs must be committed first.
+
+`pw.py strategy audit ROOT... --build ID --json` audits existing recordings against a
+verified build. Read the [audit contract](docs/tools/pw_strategy.md#five-level-audit-m2):
+exit 0 means analysis completed, not that checks passed. Unmeasurable checks and missing
+level declarations never pass. M2 is qualified locally and in a hosted episode on 0.3.115; see WORKING_CONTEXT.
+
+For compiler architecture, Python interfaces, artifact contracts and cross-game adaptation,
+read [the maintainer guide](docs/strategy-compiler-maintainers.md). The compiler is currently
+Paintbot-specific; `--source` does not select a different game. Coordinate compiler/runtime
+edits with concurrent policy work, and never change inputs underneath an active build.

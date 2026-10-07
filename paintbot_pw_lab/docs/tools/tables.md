@@ -165,7 +165,7 @@ of seats. Exact attribution of those needs an engine hook (`mechanics.nim:712-71
 ### `damage` (1 row per damage event past the shield and life checks)
 
 `t`, `seat` (attacker; null = the map), `team`, `victim`, `victim_team`, `weapon`
-(gun/grenade/spray), `hp_removed`, `armor_absorbed` (armor-only hits have hp_removed 0),
+(gun/grenade/spray/self_destruct/none), `hp_removed`, `armor_absorbed` (armor-only hits have hp_removed 0),
 `killed`, `friendly`, `self`, `distance`, `attacker_x/z`, `victim_x/z`.
 
 ### `kills` (1 row per death by damage)
@@ -183,7 +183,7 @@ spawn).
 ### `pickups`
 
 `t`, `seat` (null when no taker could be identified), `team`, `pickup` (index), `pickup_kind`
-(grenade/spray/medkit/armor/uniform), `x`, `z`, `ambiguous` (more than one plausible taker; the
+(grenade/spray/medkit/armor/uniform/mister/sniper/radar), `x`, `z`, `ambiguous` (more than one plausible taker; the
 first in the tick's seat order was chosen). The pickup itself is exact (its `readyAt` jumped).
 
 ### `captures`
@@ -217,7 +217,8 @@ target), `hp`, `armor`, `lives`, `shield`, `respawn`, `cooldown`, `disguised`, `
 `trench` (index or -1), `grenade`, `spray_can`, `charge`, `windup`, `burst`, `captures`,
 `tags`, `alive`, and the command applied in the step that produced `t`: `cmd_walk`,
 `cmd_shoot`, `cmd_direct`, `cmd_sneak`, `cmd_charge`, `cmd_goal_x/z`, `cmd_aim_x/z` (null at
-t = 0).
+t = 0). Schema 2 adds `cmd_self_destruct` (also null at t = 0), `sniper` (0/1),
+`radar_until` and `mister_until` (absolute expiry tick, 0 when absent).
 
 ### `team_states` (same sampling)
 
@@ -274,3 +275,7 @@ current tag serves every recording it accepts. A tape newer than the build fails
 `trace_failed`: build the newer tag.
 
 CLI: [pw_episodes.md](pw_episodes.md), [pw_metrics.md](pw_metrics.md).
+
+Rules-49 trace schema 2 / table version 3 distinguish `self_destruct` from `grenade` in
+damage/kills and add a `self_destruct` event. New pickup kinds are `mister`, `sniper`,
+`radar`. Inferred aim targets/range bins remain uncalibrated under rules 49.

@@ -1,53 +1,34 @@
-# Candidate guidance
+# Paintbot PW open hypotheses
 
-Keep unresolved, testable ideas here with the current evidence needed to evaluate them.
-Promote supported guidance to best_practices.md, and remove resolved or unsupported
-claims. This is a current working document, not a session log.
+Supported findings, the champion lineage and refuted levers live in
+[best_practices.md](best_practices.md). This file keeps only unresolved, testable ideas with
+the evidence needed to decide them. Current champion and identities are in
+[WORKING_CONTEXT.md](WORKING_CONTEXT.md).
 
-Entries come from source-verified mechanics or local tool runs, not hosted gameplay evidence.
-Each needs an A/B on the live roster before it is a lesson.
+## Untested structural ideas against Richard
 
-- **Win before glory decays to zero.** Mechanics: winner's glory is 600 minus elapsed
-  seconds plus awards, and the ladder rates the glory margin (`margin_scale: 1000`), so every
-  second of delay costs rank and a win at the 10:00 limit with no awards rates as a draw. Evidence needed: distribution of win times
-  and winning glory for our policy; any winning episodes scored 0.
-- **Avoid pickups when they are not needed.** Mechanics: the team earns +10 glory for
-  every 30 s in which no teammate takes a pickup, and a pickup is taken only when useful
-  (a medkit only when hurt). Glory size moves Elo under `margin_scale: 1000`, so +10 glory
-  is +0.005 of Elo outcome per episode. Evidence needed: outcome-score change and win-rate
-  change versus the starter.
-- **Falling behind pays glory only if the team still wins.** Mechanics: in the league config
-  a team earns +5 per life behind and +10 per extra cog out of the match, each every 5 s
-  ([mechanics.md §1.2](docs/mechanics.md)). Evidence needed: whether leaders' wins cluster
-  with a lives or cogs deficit (replay stats), before treating it as anything but a side effect.
-- **Stop aiming at disguised teammates.** Local evidence: `base.bas` picks its target by observed
-  seat parity, and a uniform makes a teammate answer to an enemy seat, so base.bas aimed at a
-  disguised teammate on 35 of 4,718 target lines (6 local matches, `pw.py intent audit`). Friendly
-  fire is on. Evidence needed: how often it actually fires on them and the lives it costs
-  (`pw.py metrics` friendly-fire columns), then an A/B of a check that skips a disguise-candidate
-  target standing where a teammate was last seen.
-- **Lives decide matches, not the meter.** League evidence: 78 of 80 current league episodes
-  ended by elimination (median 82 s); earlier, 38 of 40 league and 57 of 60 local ones did, and in the win-probability fit lives dominate while
-  meter plus hearts alone predicted nothing held-out (`pw.py winprob`, thin data: 40 league
-  episodes). Evidence needed: a larger league sample; then whether survival changes (refusing
-  fights earlier, fewer lone deaths) raise the Elo outcome more than capture changes do.
-- **Never abandon a grenade charge.** Local evidence (28 seeds, base.bas vs base.bas, 2026-09-29):
-  the engine throws a charged grenade on the first tick the script stops calling
-  `chargeGrenade`, and base.bas stops mid-charge whenever its conditions fail (target died,
-  teammate near the target, out of range; `reference/base.bas` grenade block). The throw then
-  flies ~197 units, inside the 415-unit blast. 86 of 340 throws were such short throws (mean 264
-  units); they killed the thrower 60 times, teammates 12 times and enemies 4 times; own-team
-  grenades caused 104 of 1,675 deaths (6.2%). Example: local seed 24, seat 2 at t=454-465 killed
-  itself and seats 4 and 6. Candidate fix: keep charging and throw at the last good aim point, or
-  cancel only while the charge is 0. Evidence needed: a hosted A/B; the league field may punish
-  or ignore this differently.
-- **Never pick up uniforms (unless teammates track our disguises).** League evidence (80 episodes,
-  2026-09-29): a disguised cog is hit about 31 times as often per tick, mostly by its own team
-  (74 teammate hits vs 15 enemy hits); every policy in the field except the neural one picks up
-  0.7-1.6 uniforms per episode. Evidence needed: an A/B of base.bas-derived play with the uniform
-  pickup avoided (walk around uniform stations), on the Elo outcome score.
-- **Win by killing, fast.** League evidence: the countdown (−88 glory on average) dwarfs all awards
-  (+42), and daveey-pw-neural wins with the fewest captures but the best K/D and the fastest wins
-  (74 s median). Evidence needed: whether a candidate that trades capture time for engagement
-  wins raises the Elo outcome against the leaders.
+v29 scores about 0.70 against Richard (295/400 wins). A +0.10 gain would have to recover about a
+third of the remaining headroom; no existing evidence supports that size of effect for any idea
+below. Each needs a cheap falsification test first (REPORT-40 in the campaign archive).
 
+- **Dynamic capture pairs plus a reserve.** Losses start with an earlier first death (median 25 s
+  in losses vs 38 s in wins, in a 24-game v29 sample) and usually in the forward squad (9/12 losses
+  vs 5/11 wins). Differs from the refuted refuse-and-counter plan: it must not concede the first
+  central fight. Evidence needed: a hosted A/B of 400 Richard games per arm.
+- **Interception of Richard's repeated routes.** His opening capture route separated him from xolod
+  in 20/20 held-out games, so it is predictable. Evidence needed: whether pre-positioning on the
+  route converts into kills before his first capture.
+- **Staggered weapon roles** (grenadiers vs gunners). Loss/win damage totals differ by weapon, but
+  totals depend on survival time and do not show causality.
+
+## Conditional reserve
+
+- **v22 (frontier pairs + direct capture).** +0.060 [+0.009, +0.111] against Richard, −0.013 against
+  xolod. A fresh comparison is worth running only if Richard becomes a clear majority of our league
+  pairings; at 57% it was +0.014 weighted, not significant.
+
+## Unproven older levers
+
+- M3 communications, disguise handling and the older route/resupply variants were never shown to help
+  on 0.3.123+. A uniform can be acquired by crossing its location, so avoiding pickup targets alone does
+  not prevent disguise. Re-check current source and traces before reviving any of them.

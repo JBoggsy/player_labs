@@ -16,6 +16,12 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   player's logs or artifacts only when ordinary non-elevated access permits it; never use elevated
   permissions to retrieve competitor evidence for optimization.
 
+- **Self-play is not a performance signal; only real opponents are.** Local screens against our
+  own versions or a reference port check that a build runs (no disabled seats, sane activation)
+  and explain mechanisms. They never decide whether a candidate is better, and a candidate is
+  never dropped or ranked on a local loss. Hosted results against other players' policies decide.
+  (Stated 2026-10-06.)
+
 - **Never spend XP requests on self-play**. Use local episodes for self-play; reserve hosted XP requests for real-opponent evaluation. XP uses a granted, replenishing credit allowance; see [credit accounting](docs/xp-credits.md).
 
 - **Every behavior change ships with activation tracing**. Whenever
@@ -44,6 +50,9 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   --port <port> xreq_...`) and give James the `http://localhost:<port>` link in the same
   message that reports the request was created. Reuse a running dashboard's port only by
   restarting it with the new xreq id(s); don't leave it pointed at a stale request.
+  Every poller/dashboard must exit when its cohort is complete. Stop watching terminal
+  requests even if optional artifacts remain missing. Poll no faster than once every
+  two minutes. A session-specific instruction to stop a dashboard overrides starting it.
 
 - **Keep documentation current.** All repository documentation and game wiki pages must describe current behavior. Remove historical reports, version logs, obsolete measurements, change narratives and references to removed information. Retain supported lessons as current guidance; do not recreate archival documentation.
 
@@ -76,3 +85,15 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   the deployed code, verify against source, record the mismatch in the lab's docs, and move on; do
   not raise it with the maintainer unless James asks. (Stated 2026-09-30.)
 
+- **Pipeline independent candidates in parallel.** Single-change siblings of the same submitted
+  parent may each upload and run a separate A/B without waiting for one another when
+  the active campaign permits concurrent cohorts. Campaign credit-pacing rules override
+  this default; local preparation can still overlap hosted evaluation. Combine
+  candidates afterwards and evaluate the combination; the active campaign decides its evidence
+  threshold. Campaign-specific budgets
+  belong in the owning lab context. (Stated 2026-10-06.)
+
+- **Local self-play is not a performance signal.** Use local runs only for runtime health,
+  activation and mechanism diagnosis. Never drop, park or rank a candidate on a local loss.
+  Every candidate that compiles and runs cleanly goes to a hosted A/B against real opponents.
+  Prioritize by hosted mechanism evidence. (James via VERDICT-11, 2026-10-06.)

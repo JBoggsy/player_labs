@@ -64,6 +64,14 @@ NATIVE_EXITS = ("0 ok; 1 a seat failed to compile or was disabled, or a recordin
 # table in docs/tools/README.md. Keep this list and the tools in step: the README test fails
 # when the generated file is stale.
 CATALOG: list[dict] = [
+    {"name": "strategy", "target": ("py", "pw_strategy.py"),
+     "purpose": "Compile immutable BASIC builds and audit strategy telemetry against verified replays.",
+     "when_to_use": "Compile committed source, or audit recorded beliefs and decisions; never uploads or submits.",
+     "questions": ["Does the strategy source lint?", "Compile a strategy with Claude or Codex?", "What changed since a build?", "Did recorded beliefs and decisions match the strategy and replay?"],
+     "inputs": "lint [STRATEGY.md] | prepare/compile [--source FILE --agent claude|codex --model MODEL --full --milestone m0|m1 --from ID] | assemble/verify/trace ID | audit ROOT... --build ID [--check COMPONENT.N --level LEVEL --out DIR --refresh]; --json",
+     "outputs": "strategy/compiled/<build-id>/ policy, units, map, version, reports and local gate evidence; staging under tmp/strategy/; audit JSON, Markdown and evidence JSONL under analysis/strategy_audit/",
+     "exit_codes": "0 completed (audit findings may fail); 1 lint/build/gate or episode loading failure; 2 invalid source or arguments; 3 required tool missing",
+     "doc": "pw_strategy.md", "skill": "paintbot-pw-compile"},
     {"name": "doctor", "target": ("self", "doctor"),
      "purpose": "Check the lab is ready: release.env vs the league, built binaries and library, Python deps, "
                 "source clone, shared skill engines. Prints the exact fix command for each problem.",

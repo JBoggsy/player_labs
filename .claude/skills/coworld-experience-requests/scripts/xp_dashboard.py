@@ -75,15 +75,32 @@ class Poller:
         self._started = time.time()
         self._last_poll = 0.0
         self._poll_count = 0
+        self.finished_at: float | None = None
 
     # --- polling -----------------------------------------------------------------
-    def run_forever(self) -> None:
+    def run_until_finished(self) -> None:
+        """Poll until every request is terminal and every completed episode has results.
+
+        Then stop: the page keeps serving the cached snapshot, and further polling
+        would only spend the shared per-user API budget on data that cannot change.
+        """
         while True:
             try:
                 self._poll_once()
+                if self._all_captured():
+                    self.finished_at = time.time()
+                    print("[poll] all requests terminal and results captured; polling stopped",
+                          file=sys.stderr, flush=True)
+                    return
             except Exception as exc:  # never let the poll thread die
                 print(f"[poll error] {exc}", file=sys.stderr, flush=True)
             time.sleep(POLL_SECONDS)
+
+    def _all_captured(self) -> bool:
+        with self._lock:
+            requests_done = all(r.get("status") == "done" for r in self._req.values())
+            results_missing = any(e.get("results") is None for e in self._episodes.values())
+        return requests_done and not results_missing
 
     def _poll_once(self) -> None:
         # Collect the episodes that still need a results fetch this poll, across all
@@ -266,6 +283,10 @@ def main(argv: list[str] | None = None) -> int:
                           "rendered XP-request stats, not credentials.")
     ap.add_argument("--elevated", action="store_true",
                      help="Rejected: player-lab analysis uses normal participant access.")
+    ap.add_argument("--linger-minutes", type=float, default=30.0,
+                     help="Keep serving the final page this long after every request finishes, then exit.")
+    ap.add_argument("--max-hours", type=float, default=24.0,
+                     help="Hard lifetime cap, so a forgotten dashboard cannot poll the API for days.")
     args = ap.parse_args(argv)
 
     client = FA.Client(FA.default_server(), FA.load_token(), elevated=args.elevated)
@@ -273,12 +294,26 @@ def main(argv: list[str] | None = None) -> int:
     # Prime + poll in the background so the server binds and serves IMMEDIATELY.
     # Priming many requests x ~100 result fetches can take minutes; the page just
     # shows 0/0 until the first poll lands, then fills in.
-    threading.Thread(target=poller.run_forever, daemon=True).start()
+    threading.Thread(target=poller.run_until_finished, daemon=True).start()
 
     Handler.poller = poller
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer((args.host, args.port), Handler) as httpd:
-        print(f"XP dashboard: http://{args.host}:{args.port}  ({len(args.xreqs)} request(s); Ctrl-C to stop)", flush=True)
+        def shut_down_when_stale() -> None:
+            started = time.time()
+            while True:
+                time.sleep(30)
+                now = time.time()
+                lingered = poller.finished_at is not None and now - poller.finished_at > args.linger_minutes * 60
+                if lingered or now - started > args.max_hours * 3600:
+                    reason = "requests finished" if lingered else f"--max-hours {args.max_hours:g} reached"
+                    print(f"XP dashboard exiting: {reason}", flush=True)
+                    httpd.shutdown()
+                    return
+
+        threading.Thread(target=shut_down_when_stale, daemon=True).start()
+        print(f"XP dashboard: http://{args.host}:{args.port}  ({len(args.xreqs)} request(s); "
+              f"exits {args.linger_minutes:g} min after they finish or after {args.max_hours:g} h)", flush=True)
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

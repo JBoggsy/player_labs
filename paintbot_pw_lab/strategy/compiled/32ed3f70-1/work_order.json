@@ -1,0 +1,690 @@
+{
+  "build_id": "32ed3f70-1",
+  "compiler": {
+    "agent": "codex",
+    "agent_sha256": "fdf8939ceda5ab4641570cd71874c7f8a788d51c9e126c2451e2c3182fc6b863",
+    "cli_version": "codex-cli 0.160.1",
+    "lessons_sha256": "8734a91f73563a780e2b9342e7938ed2cf9343f2d04fbdbc7e25342745a9a0b5",
+    "model": "gpt-6-astra"
+  },
+  "components": {
+    "C.cover_heart": {
+      "compiled_text": "### C.cover_heart\n- Summary: Cover the squad target from outside the ring, and step in when nobody captures it\n  (squad seats 2 and 3).\n- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `hx = controlX(objective)`, `hy = controlY(objective)`, with objective of `K.squad_target`.\n  Set `goal_x = hx` and `goal_y = hy`. Step 2: set `dx = hx - selfX` and `dy = hy - selfY`. If\n  `dx * dx + dy * dy > step_in_sq OR idle_capture < idle_limit`, with idle_capture of\n  `K.squad_target`, compute the cover post. Set `side = 1`, or `side = -1` when seat of\n  `K.squad_target` is 3. Set `ax = post_x - hx` and `ay = post_y - hy`. If `selfTeam = 0`, add\n  `post_shift` to ax. Else subtract `post_shift` from ax. Call `sk_motor__isqrt(ax * ax + ay * ay)`\n  of `SK.motor`. If root of `SK.motor` is more than 0, set\n  `goal_x = hx + (ax * 3 - ay * 2 * side) * post_radius \\ root` and\n  `goal_y = hy + (ay * 3 + ax * 2 * side) * post_radius \\ root`. Step 3: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when\n  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 4: call\n  `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (quiet approach): call the host command\n  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of\n  `K.squad_target`. Step 6: set status to 0.\n- Uses: `K.squad_target`, `K.contacts`, `SK.motor`\n- Params:\n  - step_in_sq = 640000 square cm -- base.bas value, 8 m\n  - idle_limit = 96 ticks -- base.bas value, four seconds without our team capturing\n  - post_x = 3200 cm -- base.bas value, x of the point the post faces away from\n  - post_y = 2000 cm -- base.bas value, y of the point the post faces away from\n  - post_shift = 1200 cm -- base.bas value, team offset of that point\n  - post_radius = 90 -- base.bas value, post distance scale\n  - hold_sq = 8100 square cm -- base.bas value, within 90 cm of the post\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective\n- Done when: never\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWD.c\n  - Acted properly: Reads: `K.squad_target`.idle_capture, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted: the rule selects this capability when the squad has a target. Reads: PWD.r, PWD.c\n  - Acted properly: a cover cog stays near its post while a teammate captures. Reads: `K.squad_target`.idle_capture, replay",
+        "Done when": "never",
+        "Params": "\n  - step_in_sq = 640000 square cm -- base.bas value, 8 m\n  - idle_limit = 96 ticks -- base.bas value, four seconds without our team capturing\n  - post_x = 3200 cm -- base.bas value, x of the point the post faces away from\n  - post_y = 2000 cm -- base.bas value, y of the point the post faces away from\n  - post_shift = 1200 cm -- base.bas value, team offset of that point\n  - post_radius = 90 -- base.bas value, post distance scale\n  - hold_sq = 8100 square cm -- base.bas value, within 90 cm of the post\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective",
+        "Spec": "`__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `hx = controlX(objective)`, `hy = controlY(objective)`, with objective of `K.squad_target`.\n  Set `goal_x = hx` and `goal_y = hy`. Step 2: set `dx = hx - selfX` and `dy = hy - selfY`. If\n  `dx * dx + dy * dy > step_in_sq OR idle_capture < idle_limit`, with idle_capture of\n  `K.squad_target`, compute the cover post. Set `side = 1`, or `side = -1` when seat of\n  `K.squad_target` is 3. Set `ax = post_x - hx` and `ay = post_y - hy`. If `selfTeam = 0`, add\n  `post_shift` to ax. Else subtract `post_shift` from ax. Call `sk_motor__isqrt(ax * ax + ay * ay)`\n  of `SK.motor`. If root of `SK.motor` is more than 0, set\n  `goal_x = hx + (ax * 3 - ay * 2 * side) * post_radius \\ root` and\n  `goal_y = hy + (ay * 3 + ax * 2 * side) * post_radius \\ root`. Step 3: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when\n  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 4: call\n  `sk_motor__act(goal_x, goal_y, hold)`. Step 5 (quiet approach): call the host command\n  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of\n  `K.squad_target`. Step 6: set status to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Cover the squad target from outside the ring, and step in when nobody captures it\n  (squad seats 2 and 3).",
+        "Uses": "`K.squad_target`, `K.contacts`, `SK.motor`"
+      },
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "step_in_sq",
+          "idle_limit",
+          "post_x",
+          "post_y",
+          "post_shift",
+          "post_radius",
+          "hold_sq",
+          "quiet_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "c_cover_heart",
+      "text_hash": "sha256:1f2a10675dcffa44929763fe420da2f5e986fecc1bb200845bc83e33b935b81c",
+      "uses": [
+        "K.squad_target",
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "C.default_goal": {
+      "compiled_text": "### C.default_goal\n- Summary: With no squad target, go for the thief, home, or the heart.\n- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: with thief of\n  `K.contacts`: if `carrying`, then the goal is the position of thief when\n  `ownHeartStolen AND thief >= 0`, else `(homeX, homeY)`. If not carrying, the goal is the\n  position of thief when `thief >= 0`, else `(heartX, heartY)`. The position of a seat is\n  `(playerX(seat), playerY(seat))`. Step 2: call `sk_motor__act(goal_x, goal_y, 0)` of\n  `SK.motor`. Step 3 (quiet approach): call the host command `sneak(1)` when all of these\n  hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is\n  0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 4: set status to 0.\n- Uses: `K.contacts`, `K.squad_target`, `SK.motor`\n- Params:\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective\n- Done when: never\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWD.c\n",
+      "fields": {
+        "Checks": "\n  - Acted: the rule selects this capability when no other rule holds. Reads: PWD.r, PWD.c",
+        "Done when": "never",
+        "Params": "\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective",
+        "Rationale": "The rule selects this capability only when objective is -1. Step 3 never fires then.\n  It stays for a literal match with base.bas.",
+        "Spec": "`__start` does nothing. `__tick` does these steps in order. Step 1: with thief of\n  `K.contacts`: if `carrying`, then the goal is the position of thief when\n  `ownHeartStolen AND thief >= 0`, else `(homeX, homeY)`. If not carrying, the goal is the\n  position of thief when `thief >= 0`, else `(heartX, heartY)`. The position of a seat is\n  `(playerX(seat), playerY(seat))`. Step 2: call `sk_motor__act(goal_x, goal_y, 0)` of\n  `SK.motor`. Step 3 (quiet approach): call the host command `sneak(1)` when all of these\n  hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is\n  0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 4: set status to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "With no squad target, go for the thief, home, or the heart.",
+        "Uses": "`K.contacts`, `K.squad_target`, `SK.motor`"
+      },
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "c_default_goal",
+      "text_hash": "sha256:6e56e4ac481f51f4971f1614814cddb96ad581f289ad1b1230e7e29f93d4c272",
+      "uses": [
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.fall_back": {
+      "compiled_text": "### C.fall_back\n- Summary: Head for the heart that is far from the enemies and near us.\n- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `cx = foe_cx` and `cy = foe_cy` of `K.contacts`. Set `away = -1` and\n  `away_score = -2147483647`. For `j = 0` while `j < heartCount() AND j < 64`, set `ex = (controlX(j) - cx) \\ 16`,\n  `ey = (controlY(j) - cy) \\ 16`, `mx = (controlX(j) - selfX) \\ 16`,\n  `my = (controlY(j) - selfY) \\ 16`, and `score = ex * ex + ey * ey - (mx * mx + my * my) \\ 2`.\n  If `score > away_score`, set `away = j` and `away_score = score`. Step 2: if `away >= 0`, the\n  goal is `(controlX(away), controlY(away))`. Else the goal is our own position. Step 3: call\n  `sk_motor__act(goal_x, goal_y, 0)` of `SK.motor`. Step 4 (quiet approach): call the host command\n  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`.\n  objective of `K.squad_target` is 0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 5:\n  set status to 0.\n- Uses: `K.contacts`, `K.squad_target`, `SK.motor`\n- Params:\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective\n- Done when: never\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWD.c\n  - Result: Reads: PWE.e, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted: the rule selects this capability when we are losing the fight. Reads: PWD.r, PWD.c\n  - Result: we survive the activation. Reads: PWE.e, replay",
+        "Done when": "never",
+        "Params": "\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective",
+        "Rationale": "`S.losing_fight` needs a heart, so away is never -1 here. A losing fight also means a\n  visible target, so Step 4 never fires. Both stay for a literal match with base.bas.",
+        "Spec": "`__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `cx = foe_cx` and `cy = foe_cy` of `K.contacts`. Set `away = -1` and\n  `away_score = -2147483647`. For `j = 0` while `j < heartCount() AND j < 64`, set `ex = (controlX(j) - cx) \\ 16`,\n  `ey = (controlY(j) - cy) \\ 16`, `mx = (controlX(j) - selfX) \\ 16`,\n  `my = (controlY(j) - selfY) \\ 16`, and `score = ex * ex + ey * ey - (mx * mx + my * my) \\ 2`.\n  If `score > away_score`, set `away = j` and `away_score = score`. Step 2: if `away >= 0`, the\n  goal is `(controlX(away), controlY(away))`. Else the goal is our own position. Step 3: call\n  `sk_motor__act(goal_x, goal_y, 0)` of `SK.motor`. Step 4 (quiet approach): call the host command\n  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`.\n  objective of `K.squad_target` is 0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 5:\n  set status to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Head for the heart that is far from the enemies and near us.",
+        "Uses": "`K.contacts`, `K.squad_target`, `SK.motor`"
+      },
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "c_fall_back",
+      "text_hash": "sha256:9d0e13fcdbae1542c228a258cbcb448ce22f8729cff63af6d8a08314e8014f3e",
+      "uses": [
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.resupply": {
+      "compiled_text": "### C.resupply\n- Summary: Walk to the remembered supply.\n- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: call\n  `sk_motor__act(nearest_x, nearest_y, 0)` of `SK.motor`, with nearest_x and nearest_y of\n  `K.pickups`. Step 2 (quiet approach): call the host command `sneak(1)` when all of these\n  hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is\n  0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 3: set status to 0.\n- Uses: `K.pickups`, `K.contacts`, `K.squad_target`, `SK.motor`\n- Params:\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective\n- Done when: never\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWD.c\n  - Result: Reads: PWE.e, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted: the rule selects this capability when a supply is worth it. Reads: PWD.r, PWD.c\n  - Result: we take a supply during the activation. Reads: PWE.e, replay",
+        "Done when": "never",
+        "Params": "\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective",
+        "Spec": "`__start` does nothing. `__tick` does these steps in order. Step 1: call\n  `sk_motor__act(nearest_x, nearest_y, 0)` of `SK.motor`, with nearest_x and nearest_y of\n  `K.pickups`. Step 2 (quiet approach): call the host command `sneak(1)` when all of these\n  hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is\n  0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 3: set status to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Walk to the remembered supply.",
+        "Uses": "`K.pickups`, `K.contacts`, `K.squad_target`, `SK.motor`"
+      },
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "quiet_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "c_resupply",
+      "text_hash": "sha256:cd8990c5650af4b96e73a5ed6939f7fd690edd4a3514313546e4729c0fd667dd",
+      "uses": [
+        "K.pickups",
+        "K.contacts",
+        "K.squad_target",
+        "SK.motor"
+      ]
+    },
+    "C.take_heart": {
+      "compiled_text": "### C.take_heart\n- Summary: Stand in the capture ring of the squad target (squad seats 0 and 1).\n- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `goal_x = controlX(objective)` and `goal_y = controlY(objective)`, with objective of\n  `K.squad_target`. Step 2: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when\n  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 3: call `sk_motor__act(goal_x, goal_y, hold)` of\n  `SK.motor`. Step 4 (quiet approach): call the host command `sneak(1)` when all of these hold. best\n  of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of\n  `K.squad_target`. Step 5: set status to 0.\n- Uses: `K.squad_target`, `K.contacts`, `SK.motor`\n- Params:\n  - hold_sq = 8100 square cm -- base.bas value, within 90 cm of the post\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective\n- Done when: never\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWD.c\n  - Result: Reads: PWE.e, replay\n",
+      "fields": {
+        "Checks": "\n  - Acted: the rule selects this capability when the squad has a target. Reads: PWD.r, PWD.c\n  - Result: our team captures the target heart during the activation. Reads: PWE.e, replay",
+        "Done when": "never",
+        "Params": "\n  - hold_sq = 8100 square cm -- base.bas value, within 90 cm of the post\n  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective",
+        "Spec": "`__start` does nothing. `__tick` does these steps in order. Step 1: set\n  `goal_x = controlX(objective)` and `goal_y = controlY(objective)`, with objective of\n  `K.squad_target`. Step 2: set `dx = goal_x - selfX` and `dy = goal_y - selfY`. Set `hold = 1` when\n  `dx * dx + dy * dy < hold_sq`. Else set `hold = 0`. Step 3: call `sk_motor__act(goal_x, goal_y, hold)` of\n  `SK.motor`. Step 4 (quiet approach): call the host command `sneak(1)` when all of these hold. best\n  of `K.contacts` is less than 0. `soundCount() > 0`. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +\n  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`, with objective of\n  `K.squad_target`. Step 5: set status to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Stand in the capture ring of the squad target (squad seats 0 and 1).",
+        "Uses": "`K.squad_target`, `K.contacts`, `SK.motor`"
+      },
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": [
+          "hold_sq",
+          "quiet_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "c_take_heart",
+      "text_hash": "sha256:f59e0462e455bd0767345774ddcc94f3b3d2391af30e7c32097ade92ae616dba",
+      "uses": [
+        "K.squad_target",
+        "K.contacts",
+        "SK.motor"
+      ]
+    },
+    "COM.grenade_out": {
+      "compiled_text": "### COM.grenade_out\n- Summary: Call out a grenade when the charge is ready.\n- Spec: In `__send`, when threw of `SK.motor` is 1, shout \"Grenade out!\" and set sent to 1. Else\n  set sent to 0.\n- Uses: `SK.motor`, `P.shout`\n- Content: a warning. No teammate decodes it.\n- Encoding: literal text, `shout(strNew(\"Grenade out!\"))`\n- Send when: threw of `SK.motor` is 1\n- Directions: send\n- Checks (reads):\n  - Acted: Reads: replay\n",
+      "fields": {
+        "Checks": "\n  - Acted: the shout appears in the replay with each full charge. Reads: replay",
+        "Content": "a warning. No teammate decodes it.",
+        "Directions": "send",
+        "Encoding": "literal text, `shout(strNew(\"Grenade out!\"))`",
+        "Send when": "threw of `SK.motor` is 1",
+        "Spec": "In `__send`, when threw of `SK.motor` is 1, shout \"Grenade out!\" and set sent to 1. Else\n  set sent to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Call out a grenade when the charge is ready.",
+        "Uses": "`SK.motor`, `P.shout`"
+      },
+      "interface": {
+        "directions": [
+          "send"
+        ],
+        "outputs": {},
+        "params": []
+      },
+      "llm": true,
+      "prefix": "com_grenade_out",
+      "text_hash": "sha256:0daa3c5423701b417c5094339907c230f3084615efbd9af3ff8931be209207f2",
+      "uses": [
+        "SK.motor",
+        "P.shout"
+      ]
+    },
+    "COM.status_call": {
+      "compiled_text": "### COM.status_call\n- Summary: Every fifteen seconds, say whether we are in contact, falling back, or moving.\n- Spec: In `__send`, when `worldTick MOD 360 = selfId * 21`, shout one message. If best of\n  `K.contacts` is 0 or more, shout \"Contact! Cover this lane.\". Else, if\n  `foes_near - friends_near >= 1` of `K.contacts`, shout \"Too many. Falling back.\". Else shout\n  \"Moving with the squad.\". Set sent to 1 on a tick with a shout, else 0.\n- Uses: `K.contacts`, `P.shout`\n- Content: our contact state. No teammate decodes it.\n- Encoding: literal text, `shout(strNew(\"...\"))`, with the three exact strings in Spec.\n- Send when: `worldTick MOD 360 = selfId * 21`\n- Directions: send\n- Checks (reads):\n  - Acted: Reads: replay\n",
+      "fields": {
+        "Checks": "\n  - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay",
+        "Content": "our contact state. No teammate decodes it.",
+        "Directions": "send",
+        "Encoding": "literal text, `shout(strNew(\"...\"))`, with the three exact strings in Spec.",
+        "Rationale": "Listeners turn to the first heard message. base.bas shouts this before the grenade\n  call, so this component comes first.",
+        "Send when": "`worldTick MOD 360 = selfId * 21`",
+        "Spec": "In `__send`, when `worldTick MOD 360 = selfId * 21`, shout one message. If best of\n  `K.contacts` is 0 or more, shout \"Contact! Cover this lane.\". Else, if\n  `foes_near - friends_near >= 1` of `K.contacts`, shout \"Too many. Falling back.\". Else shout\n  \"Moving with the squad.\". Set sent to 1 on a tick with a shout, else 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Every fifteen seconds, say whether we are in contact, falling back, or moving.",
+        "Uses": "`K.contacts`, `P.shout`"
+      },
+      "interface": {
+        "directions": [
+          "send"
+        ],
+        "outputs": {},
+        "params": []
+      },
+      "llm": true,
+      "prefix": "com_status_call",
+      "text_hash": "sha256:4a04ae92e0bdc06975aa4b179abd363aa388bedf1d4c75e3b46f11b19f960cd5",
+      "uses": [
+        "K.contacts",
+        "P.shout"
+      ]
+    },
+    "K.contacts": {
+      "compiled_text": "### K.contacts\n- Summary: The visible enemy we fight, the visible enemy carrier, and the local fight balance.\n- Spec: In `__update`, on every tick, do Steps 1 to 4 in order.\n  Step 1. Set `best = -1`, `best_cost = 2147483647`, `thief = -1`, `foes_near = 0`,\n  `friends_near = 1` (we count ourselves), `foe_sum_x = 0`, `foe_sum_y = 0`, `foes_seen = 0`.\n  Step 2. For `i = 0` to 15, use seat i only when `i <> selfId AND visible(i)`. Set\n  `dx = playerX(i) - selfX`, `dy = playerY(i) - selfY`, `d2 = dx * dx + dy * dy`.\n  For an enemy seat (`i MOD 2 <> selfTeam`, not playerTeam): set `cost = d2 - (3 - playerHp(i)) * hp_weight`. If `playerCarrying(i)`,\n  subtract `carrier_bonus` from cost and set `thief = i`. Then, if\n  `cost < best_cost AND d2 <= gunRange() * gunRange()`, set `best = i` and `best_cost = cost`.\n  For activation tracing, independently count each visible enemy observation with\n  `d2 <= former_range_sq AND d2 > gunRange() * gunRange()` by adding 1 to\n  `range_rejected_total`. This counter is cumulative across ticks, starts at zero, and\n  never changes target ranking or other behavior. Then add 1 to\n  `foes_seen`, add `playerX(i)` to `foe_sum_x` and `playerY(i)` to `foe_sum_y`. If\n  `d2 < near_foe_sq`, add 1 to `foes_near`.\n  For a teammate seat (`i MOD 2 = selfTeam`): if `d2 < near_friend_sq`, add 1 to `friends_near`.\n  Step 3. Set `best_vx = 0` and `best_vy = 0`. If `best >= 0 AND seen_tick(best) = worldTick - 1`,\n  set `best_vx = playerX(best) - old_x(best)` and `best_vy = playerY(best) - old_y(best)`.\n  The memory arrays start at 0, so on tick 1 this test compares with 0. Keep that.\n  Step 4. For every seat `i = 0` to 15, our own seat included, with `visible(i)`: set\n  `old_x(i) = playerX(i)`, `old_y(i) = playerY(i)` and `seen_tick(i) = worldTick`.\n  Also set `foe_cx = foe_sum_x \\ foes_seen` and `foe_cy = foe_sum_y \\ foes_seen` when\n  `foes_seen > 0`. Else set both to 0.\n- Sources: `selfId`, `selfTeam`, `selfX`, `selfY`, `worldTick`, `visible`, `playerX`, `playerY`,\n  `playerHp`, `playerCarrying`, `gunRange`\n- Memory: range_rejected_total persists for the whole match, initialized to 0.\n  Also, old_x, old_y and seen_tick (16 cells each, private arrays) persist for the whole match.\n  Step 3 reads them before Step 4 overwrites them. That is the same as base.bas, which aims\n  first and updates old positions after aiming.\n- Outputs:\n  - best -- the enemy seat to fight, or -1\n  - best_cost -- the cost of best (smaller is more urgent)\n  - best_vx -- best's x movement since the previous tick, or 0\n  - best_vy -- best's y movement since the previous tick, or 0\n  - thief -- the highest-index visible enemy seat that carries a heart, or -1\n  - foes_near -- visible enemy seats closer than 26 m\n  - friends_near -- 1 plus visible teammate seats closer than 12 m\n  - foes_seen -- visible enemy seats at any range\n  - foe_cx -- mean x of visible enemy seats, or 0\n  - foe_cy -- mean y of visible enemy seats, or 0\n  - range_rejected_total -- cumulative visible enemy observations excluded by the real gun range but within the former range\n- Log: best, foes_near, friends_near, range_rejected_total every 24 ticks\n- Params:\n  - hp_weight = 160000 -- base.bas value, cost bonus per missing hit point\n  - carrier_bonus = 2500000 -- base.bas value, cost bonus of a heart carrier\n  - former_range_sq = 27562500 square cm -- former 52.5 m cap, used only for activation tracing\n  - near_foe_sq = 6760000 square cm -- base.bas value, 26 m\n  - near_friend_sq = 1440000 square cm -- base.bas value, 12 m\n- Checks (reads):\n  - Believed: Reads: `K.contacts`.best, `K.contacts`.foes_near, `K.contacts`.friends_near\n  - True: Reads: `K.contacts`.best, replay\n",
+      "fields": {
+        "Checks": "\n  - Believed: best and the near counts are logged. Reads: `K.contacts`.best, `K.contacts`.foes_near, `K.contacts`.friends_near\n  - True: the logged best is a visible enemy-parity seat in the replay within range. Reads: `K.contacts`.best, replay",
+        "Log": "best, foes_near, friends_near, range_rejected_total every 24 ticks",
+        "Memory": "range_rejected_total persists for the whole match, initialized to 0.\n  Also, old_x, old_y and seen_tick (16 cells each, private arrays) persist for the whole match.\n  Step 3 reads them before Step 4 overwrites them. That is the same as base.bas, which aims\n  first and updates old positions after aiming.",
+        "Outputs": "\n  - best -- the enemy seat to fight, or -1\n  - best_cost -- the cost of best (smaller is more urgent)\n  - best_vx -- best's x movement since the previous tick, or 0\n  - best_vy -- best's y movement since the previous tick, or 0\n  - thief -- the highest-index visible enemy seat that carries a heart, or -1\n  - foes_near -- visible enemy seats closer than 26 m\n  - friends_near -- 1 plus visible teammate seats closer than 12 m\n  - foes_seen -- visible enemy seats at any range\n  - foe_cx -- mean x of visible enemy seats, or 0\n  - foe_cy -- mean y of visible enemy seats, or 0\n  - range_rejected_total -- cumulative visible enemy observations excluded by the real gun range but within the former range",
+        "Params": "\n  - hp_weight = 160000 -- base.bas value, cost bonus per missing hit point\n  - carrier_bonus = 2500000 -- base.bas value, cost bonus of a heart carrier\n  - former_range_sq = 27562500 square cm -- former 52.5 m cap, used only for activation tracing\n  - near_foe_sq = 6760000 square cm -- base.bas value, 26 m\n  - near_friend_sq = 1440000 square cm -- base.bas value, 12 m",
+        "Sources": "`selfId`, `selfTeam`, `selfX`, `selfY`, `worldTick`, `visible`, `playerX`, `playerY`,\n  `playerHp`, `playerCarrying`, `gunRange`",
+        "Spec": "In `__update`, on every tick, do Steps 1 to 4 in order.\n  Step 1. Set `best = -1`, `best_cost = 2147483647`, `thief = -1`, `foes_near = 0`,\n  `friends_near = 1` (we count ourselves), `foe_sum_x = 0`, `foe_sum_y = 0`, `foes_seen = 0`.\n  Step 2. For `i = 0` to 15, use seat i only when `i <> selfId AND visible(i)`. Set\n  `dx = playerX(i) - selfX`, `dy = playerY(i) - selfY`, `d2 = dx * dx + dy * dy`.\n  For an enemy seat (`i MOD 2 <> selfTeam`, not playerTeam): set `cost = d2 - (3 - playerHp(i)) * hp_weight`. If `playerCarrying(i)`,\n  subtract `carrier_bonus` from cost and set `thief = i`. Then, if\n  `cost < best_cost AND d2 <= gunRange() * gunRange()`, set `best = i` and `best_cost = cost`.\n  For activation tracing, independently count each visible enemy observation with\n  `d2 <= former_range_sq AND d2 > gunRange() * gunRange()` by adding 1 to\n  `range_rejected_total`. This counter is cumulative across ticks, starts at zero, and\n  never changes target ranking or other behavior. Then add 1 to\n  `foes_seen`, add `playerX(i)` to `foe_sum_x` and `playerY(i)` to `foe_sum_y`. If\n  `d2 < near_foe_sq`, add 1 to `foes_near`.\n  For a teammate seat (`i MOD 2 = selfTeam`): if `d2 < near_friend_sq`, add 1 to `friends_near`.\n  Step 3. Set `best_vx = 0` and `best_vy = 0`. If `best >= 0 AND seen_tick(best) = worldTick - 1`,\n  set `best_vx = playerX(best) - old_x(best)` and `best_vy = playerY(best) - old_y(best)`.\n  The memory arrays start at 0, so on tick 1 this test compares with 0. Keep that.\n  Step 4. For every seat `i = 0` to 15, our own seat included, with `visible(i)`: set\n  `old_x(i) = playerX(i)`, `old_y(i) = playerY(i)` and `seen_tick(i) = worldTick`.\n  Also set `foe_cx = foe_sum_x \\ foes_seen` and `foe_cy = foe_sum_y \\ foes_seen` when\n  `foes_seen > 0`. Else set both to 0.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "The visible enemy we fight, the visible enemy carrier, and the local fight balance."
+      },
+      "interface": {
+        "outputs": {
+          "best": 1,
+          "best_cost": 1,
+          "best_vx": 1,
+          "best_vy": 1,
+          "foe_cx": 1,
+          "foe_cy": 1,
+          "foes_near": 1,
+          "foes_seen": 1,
+          "friends_near": 1,
+          "range_rejected_total": 1,
+          "thief": 1
+        },
+        "params": [
+          "hp_weight",
+          "carrier_bonus",
+          "former_range_sq",
+          "near_foe_sq",
+          "near_friend_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "k_contacts",
+      "text_hash": "sha256:2b802bedf722a441635a2f8a73eec2f6d178329d40dcbf414cfbe33f5d7cc586",
+      "uses": []
+    },
+    "K.pickups": {
+      "compiled_text": "### K.pickups\n- Summary: Supplies seen in the last ten seconds, and the nearest one we want at our observed spawn HP.\n- Spec: In `__update`, first set `hp_cap = selfHp` when `selfHp > hp_cap`.\n  Set `critical = 1` when `selfHp > 0 AND selfHp * 3 <= hp_cap`, else 0.\n  Then do Steps 1 to 3 in order.\n  Step 1 (refresh). For `i = 0` while `i < pickupCount() AND i < 64`: if `pickupVisible(i)`, set\n  `mem_x(i) = pickupX(i)`, `mem_y(i) = pickupY(i)`, `mem_kind(i) = pickupKind(i)` and\n  `mem_tick(i) = worldTick + 1`.\n  Step 2 (carrier). Set `carrier = 0`. For `i = 0` to 15, set `carrier = 1` when\n  `i <> selfId AND visible(i) AND i MOD 2 <> selfTeam AND playerCarrying(i)`.\n  Step 3 (choice). Set `nearest = -1`, `nearest_x = 0`, `nearest_y = 0`. Do the rest of this step\n  only when `carrying = 0 AND carrier = 0`. Set `nearest_cost = reach_sq`. For `j = 0` while\n  `j < pickupCount() AND j < 64`, use j only when\n  `mem_tick(j) > 0 AND worldTick - mem_tick(j) < memory_ticks`. Set `kind = mem_kind(j)` and\n  `wanted = (kind = 0 AND hasGrenade = 0) OR (kind = 2 AND selfHp < hp_cap) OR (kind = 3 AND armorHp < 3 AND selfHp = hp_cap)`.\n  For activation tracing only, compute `old_wanted` with the same expression but both\n  `hp_cap` references replaced by 3. If the truth of wanted differs from old_wanted,\n  increment `hp_changed_total` once for this remembered pickup observation.\n  If wanted: set `dx = mem_x(j) - selfX`, `dy = mem_y(j) - selfY`, and\n  `cost = dx * dx + dy * dy`. Then, if\n  `kind = 2 AND critical = 1`, set `cost = cost \\ 4`. Then, if\n  `cost < arrive_sq AND pickupVisible(j) = 0`, set `mem_tick(j) = 0` and do not use j. Else, if\n  `cost < nearest_cost`, set `nearest = j` and `nearest_cost = cost`.\n  After the loop, if `nearest >= 0`, set `nearest_x = mem_x(nearest)` and\n  `nearest_y = mem_y(nearest)`.\n- Sources: `pickupCount`, `pickupVisible`, `pickupX`, `pickupY`, `pickupKind`, `visible`,\n  `playerCarrying`, `carrying`, `hasGrenade`, `selfHp`, `armorHp`, `selfX`, `selfY`, `worldTick`\n- Memory: hp_cap and hp_changed_total start at 0 and persist for the whole match.\n  mem_x, mem_y, mem_kind and mem_tick (64 cells each, private arrays) persist for the\n  whole match and start at 0.\n- Outputs:\n  - nearest -- the remembered supply to fetch, or -1\n  - nearest_x -- its remembered x, or 0\n  - nearest_y -- its remembered y, or 0\n  - hp_cap -- maximum selfHp observed since initialization\n  - critical -- 1 when alive and at most one third of hp_cap, else 0\n  - hp_changed_total -- cumulative remembered pickup observations whose eligibility changed with spawn-HP thresholds\n- Log: nearest, hp_cap, hp_changed_total every 24 ticks\n- Params:\n  - memory_ticks = 240 ticks -- base.bas value, ten seconds\n  - reach_sq = 4840000 square cm -- base.bas value, 22 m\n  - arrive_sq = 10000 square cm -- base.bas value, 1 m. A remembered supply this close and not visible is gone.\n- Checks (reads):\n  - Believed: Reads: `K.pickups`.nearest\n  - True: Reads: `K.pickups`.nearest, replay\n",
+      "fields": {
+        "Checks": "\n  - Believed: the chosen supply is logged. Reads: `K.pickups`.nearest\n  - True: a supply of the remembered kind was at the remembered point in the replay. Reads: `K.pickups`.nearest, replay",
+        "Log": "nearest, hp_cap, hp_changed_total every 24 ticks",
+        "Memory": "hp_cap and hp_changed_total start at 0 and persist for the whole match.\n  mem_x, mem_y, mem_kind and mem_tick (64 cells each, private arrays) persist for the\n  whole match and start at 0.",
+        "Outputs": "\n  - nearest -- the remembered supply to fetch, or -1\n  - nearest_x -- its remembered x, or 0\n  - nearest_y -- its remembered y, or 0\n  - hp_cap -- maximum selfHp observed since initialization\n  - critical -- 1 when alive and at most one third of hp_cap, else 0\n  - hp_changed_total -- cumulative remembered pickup observations whose eligibility changed with spawn-HP thresholds",
+        "Params": "\n  - memory_ticks = 240 ticks -- base.bas value, ten seconds\n  - reach_sq = 4840000 square cm -- base.bas value, 22 m\n  - arrive_sq = 10000 square cm -- base.bas value, 1 m. A remembered supply this close and not visible is gone.",
+        "Rationale": "Step 2 repeats the carrier test of `K.contacts` because a Knowledge component cannot\n  use another Knowledge component. The result is the same as base.bas's `thief < 0` guard.",
+        "Sources": "`pickupCount`, `pickupVisible`, `pickupX`, `pickupY`, `pickupKind`, `visible`,\n  `playerCarrying`, `carrying`, `hasGrenade`, `selfHp`, `armorHp`, `selfX`, `selfY`, `worldTick`",
+        "Spec": "In `__update`, first set `hp_cap = selfHp` when `selfHp > hp_cap`.\n  Set `critical = 1` when `selfHp > 0 AND selfHp * 3 <= hp_cap`, else 0.\n  Then do Steps 1 to 3 in order.\n  Step 1 (refresh). For `i = 0` while `i < pickupCount() AND i < 64`: if `pickupVisible(i)`, set\n  `mem_x(i) = pickupX(i)`, `mem_y(i) = pickupY(i)`, `mem_kind(i) = pickupKind(i)` and\n  `mem_tick(i) = worldTick + 1`.\n  Step 2 (carrier). Set `carrier = 0`. For `i = 0` to 15, set `carrier = 1` when\n  `i <> selfId AND visible(i) AND i MOD 2 <> selfTeam AND playerCarrying(i)`.\n  Step 3 (choice). Set `nearest = -1`, `nearest_x = 0`, `nearest_y = 0`. Do the rest of this step\n  only when `carrying = 0 AND carrier = 0`. Set `nearest_cost = reach_sq`. For `j = 0` while\n  `j < pickupCount() AND j < 64`, use j only when\n  `mem_tick(j) > 0 AND worldTick - mem_tick(j) < memory_ticks`. Set `kind = mem_kind(j)` and\n  `wanted = (kind = 0 AND hasGrenade = 0) OR (kind = 2 AND selfHp < hp_cap) OR (kind = 3 AND armorHp < 3 AND selfHp = hp_cap)`.\n  For activation tracing only, compute `old_wanted` with the same expression but both\n  `hp_cap` references replaced by 3. If the truth of wanted differs from old_wanted,\n  increment `hp_changed_total` once for this remembered pickup observation.\n  If wanted: set `dx = mem_x(j) - selfX`, `dy = mem_y(j) - selfY`, and\n  `cost = dx * dx + dy * dy`. Then, if\n  `kind = 2 AND critical = 1`, set `cost = cost \\ 4`. Then, if\n  `cost < arrive_sq AND pickupVisible(j) = 0`, set `mem_tick(j) = 0` and do not use j. Else, if\n  `cost < nearest_cost`, set `nearest = j` and `nearest_cost = cost`.\n  After the loop, if `nearest >= 0`, set `nearest_x = mem_x(nearest)` and\n  `nearest_y = mem_y(nearest)`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Supplies seen in the last ten seconds, and the nearest one we want at our observed spawn HP."
+      },
+      "interface": {
+        "outputs": {
+          "critical": 1,
+          "hp_cap": 1,
+          "hp_changed_total": 1,
+          "nearest": 1,
+          "nearest_x": 1,
+          "nearest_y": 1
+        },
+        "params": [
+          "memory_ticks",
+          "reach_sq",
+          "arrive_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "k_pickups",
+      "text_hash": "sha256:099187de4f06cc46c21c4b628635a1393751681d37545361cf765c0d1ebd4856",
+      "uses": []
+    },
+    "K.self_motion": {
+      "compiled_text": "### K.self_motion\n- Summary: Our own movement since the previous tick.\n- Spec: In `__init`, set `last_x = selfX` and `last_y = selfY`. In `__update`, on every tick, do\n  these steps in order. Step 1: set `vx = selfX - last_x` and `vy = selfY - last_y`. Step 2: if\n  `vx > teleport_step OR vx < 0 - teleport_step OR vy > teleport_step OR vy < 0 - teleport_step`,\n  set `vx = 0`, `vy = 0` and `teleported = 1`. Else set `teleported = 0`. Step 3: set\n  `last_x = selfX` and `last_y = selfY`.\n- Sources: `selfX`, `selfY`\n- Memory: last_x and last_y, our position on the previous living tick. Never reset.\n- Outputs:\n  - vx -- our x movement since the previous tick, cm per tick (0 after a teleport)\n  - vy -- our y movement since the previous tick, cm per tick (0 after a teleport)\n  - teleported -- 1 when the movement was a respawn jump, else 0\n- Params:\n  - teleport_step = 60 cm -- base.bas value. A respawn moves more than this on one axis.\n- Checks (reads):\n  - True: Reads: replay\n",
+      "fields": {
+        "Checks": "\n  - True: vx and vy equal the replay position change, except both are zero on initialization or when either axis exceeds teleport_step. Reads: replay",
+        "Memory": "last_x and last_y, our position on the previous living tick. Never reset.",
+        "Outputs": "\n  - vx -- our x movement since the previous tick, cm per tick (0 after a teleport)\n  - vy -- our y movement since the previous tick, cm per tick (0 after a teleport)\n  - teleported -- 1 when the movement was a respawn jump, else 0",
+        "Params": "\n  - teleport_step = 60 cm -- base.bas value. A respawn moves more than this on one axis.",
+        "Rationale": "base.bas computes myVX and myVY at the top of the tick and stores lastX at the end.\n  selfX does not change during a tick, so storing it here gives the same values.",
+        "Sources": "`selfX`, `selfY`",
+        "Spec": "In `__init`, set `last_x = selfX` and `last_y = selfY`. In `__update`, on every tick, do\n  these steps in order. Step 1: set `vx = selfX - last_x` and `vy = selfY - last_y`. Step 2: if\n  `vx > teleport_step OR vx < 0 - teleport_step OR vy > teleport_step OR vy < 0 - teleport_step`,\n  set `vx = 0`, `vy = 0` and `teleported = 1`. Else set `teleported = 0`. Step 3: set\n  `last_x = selfX` and `last_y = selfY`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Our own movement since the previous tick."
+      },
+      "interface": {
+        "outputs": {
+          "teleported": 1,
+          "vx": 1,
+          "vy": 1
+        },
+        "params": [
+          "teleport_step"
+        ]
+      },
+      "llm": true,
+      "prefix": "k_self_motion",
+      "text_hash": "sha256:7d9fd1eaf31041f6c7478c749191bed6653b60597dd2e78541e501bd0cf18f29",
+      "uses": []
+    },
+    "K.squad_target": {
+      "compiled_text": "### K.squad_target\n- Summary: The heart that our squad of four attacks, derived from squad arithmetic, heart\n  ownership and our own avoid memory.\n- Spec: In `__update`, on every tick, do Steps 1 to 4 in order.\n  Step 1 (stall memory). This step reads the value of `objective` from the previous tick. It is 0\n  before the first assignment, not -1. When `worldTick MOD progress_period = 0`: set\n  `px = selfX - progress_x` and `py = selfY - progress_y`. If\n  `px * px + py * py < stall_sq AND objective >= 0 AND objective < 64`, set\n  `hx = controlX(objective) - selfX` and `hy = controlY(objective) - selfY`. If\n  `hx * hx + hy * hy > far_sq`, set `avoid_until(objective) = worldTick + avoid_ticks`. Then, on\n  every tick where `worldTick MOD progress_period = 0`, set `progress_x = selfX` and\n  `progress_y = selfY`.\n  Step 2 (squad). Set `member = (selfId \\ 2) MOD 8`, `squad = member \\ 4`, `seat = member MOD 4`.\n  Step 3 (target). Set `objective = -1`. If `heartCount() > 0`, do the two passes below. Else\n  skip to Step 4.\n  Set `other = -1`. Run `pass = 0` then `pass = 1`. In each pass, set `ref_y = homeY - ref_offset`\n  for pass 0, and `ref_y = homeY + ref_offset` for pass 1. Then, if `selfTeam = 1`, set\n  `ref_y = mirror_y - ref_y`. Set `choice = -1` and `choice_cost = 2147483647`.\n  For `j = 0` while `j < heartCount() AND j < 64`, skip j when `controlOwner(j) = selfTeam` or `j = other`. Else set\n  `dx = (controlX(j) - homeX) \\ 8`, `dy = (controlY(j) - ref_y) \\ 8`, and\n  `cost = dx * dx + dy * dy`. If `controlOwner(j) = -1`, subtract `neutral_bonus` from cost. If\n  `pass = squad AND avoid_until(j) > worldTick`, add `avoid_penalty` to cost. If\n  `cost < choice_cost`, set `choice = j` and `choice_cost = cost`. Strict less-than keeps the\n  lowest index on a tie.\n  At the end of each pass: if `pass = squad`, set `objective = choice`. Else, if `pass < squad`,\n  set `other = choice`. After both passes: if `objective < 0 AND other >= 0`, set\n  `objective = other`.\n  Step 4 (idle capture). If `objective >= 0 AND seat >= 2`: if\n  `controlCaptureTeam(objective) = selfTeam`, set `idle_capture = 0`. Else add 1 to\n  `idle_capture`. In all other cases do not change `idle_capture`.\n  Also set `heart_count = heartCount()` on every tick.\n- Sources: `selfId`, `selfTeam`, `selfX`, `selfY`, `homeX`, `homeY`, `worldTick`, `heartCount`,\n  `controlX`, `controlY`, `controlOwner`, `controlCaptureTeam`\n- Memory: avoid_until (64 cells, a private array, ticks), progress_x, progress_y, objective and\n  idle_capture persist for the whole match. Nothing resets them on death, respawn or a rule\n  change. All start at 0.\n- Outputs:\n  - objective -- the target heart index, or -1 when there is none\n  - squad -- 0 or 1, from selfId\n  - seat -- 0 to 3, our place in the squad (2 and 3 cover)\n  - idle_capture -- ticks in a row that our team was not capturing the objective (cover seats)\n  - heart_count -- heartCount() on this tick\n- Log: objective, idle_capture every 24 ticks\n- Params:\n  - progress_period = 72 ticks -- base.bas value, three seconds\n  - stall_sq = 40000 square cm -- base.bas value, less than 2 m of progress\n  - far_sq = 160000 square cm -- base.bas value, more than 4 m from the heart\n  - avoid_ticks = 360 ticks -- base.bas value, fifteen seconds\n  - ref_offset = 1500 cm -- base.bas value, squad reference point above or below home\n  - mirror_y = 4000 cm -- base.bas value, blue mirrors the reference y about this line\n  - neutral_bonus = 20000 -- base.bas value, cost bonus of a neutral heart\n  - avoid_penalty = 4000000 -- base.bas value, cost added to an avoided heart on our own pass\n- Checks (reads):\n  - Believed: Reads: `K.squad_target`.objective\n  - True: Reads: `K.squad_target`.objective, replay\n",
+      "fields": {
+        "Checks": "\n  - Believed: objective is logged as a heart index or -1. Reads: `K.squad_target`.objective\n  - True: the logged objective equals the replay re-computation using public heart state and this cog's reconstructed avoid memory. Reads: `K.squad_target`.objective, replay",
+        "Log": "objective, idle_capture every 24 ticks",
+        "Memory": "avoid_until (64 cells, a private array, ticks), progress_x, progress_y, objective and\n  idle_capture persist for the whole match. Nothing resets them on death, respawn or a rule\n  change. All start at 0.",
+        "Outputs": "\n  - objective -- the target heart index, or -1 when there is none\n  - squad -- 0 or 1, from selfId\n  - seat -- 0 to 3, our place in the squad (2 and 3 cover)\n  - idle_capture -- ticks in a row that our team was not capturing the objective (cover seats)\n  - heart_count -- heartCount() on this tick",
+        "Params": "\n  - progress_period = 72 ticks -- base.bas value, three seconds\n  - stall_sq = 40000 square cm -- base.bas value, less than 2 m of progress\n  - far_sq = 160000 square cm -- base.bas value, more than 4 m from the heart\n  - avoid_ticks = 360 ticks -- base.bas value, fifteen seconds\n  - ref_offset = 1500 cm -- base.bas value, squad reference point above or below home\n  - mirror_y = 4000 cm -- base.bas value, blue mirrors the reference y about this line\n  - neutral_bonus = 20000 -- base.bas value, cost bonus of a neutral heart\n  - avoid_penalty = 4000000 -- base.bas value, cost added to an avoided heart on our own pass",
+        "Rationale": "base.bas says the target is a pure function of public heart state. That is not\n  exactly true. Each cog applies its own avoid_until memory in its own pass. A squad 1 cog\n  predicts the squad 0 choice without squad 0's avoid memory. So two cogs of one squad can\n  disagree after one of them marks a heart as stalled.",
+        "Sources": "`selfId`, `selfTeam`, `selfX`, `selfY`, `homeX`, `homeY`, `worldTick`, `heartCount`,\n  `controlX`, `controlY`, `controlOwner`, `controlCaptureTeam`",
+        "Spec": "In `__update`, on every tick, do Steps 1 to 4 in order.\n  Step 1 (stall memory). This step reads the value of `objective` from the previous tick. It is 0\n  before the first assignment, not -1. When `worldTick MOD progress_period = 0`: set\n  `px = selfX - progress_x` and `py = selfY - progress_y`. If\n  `px * px + py * py < stall_sq AND objective >= 0 AND objective < 64`, set\n  `hx = controlX(objective) - selfX` and `hy = controlY(objective) - selfY`. If\n  `hx * hx + hy * hy > far_sq`, set `avoid_until(objective) = worldTick + avoid_ticks`. Then, on\n  every tick where `worldTick MOD progress_period = 0`, set `progress_x = selfX` and\n  `progress_y = selfY`.\n  Step 2 (squad). Set `member = (selfId \\ 2) MOD 8`, `squad = member \\ 4`, `seat = member MOD 4`.\n  Step 3 (target). Set `objective = -1`. If `heartCount() > 0`, do the two passes below. Else\n  skip to Step 4.\n  Set `other = -1`. Run `pass = 0` then `pass = 1`. In each pass, set `ref_y = homeY - ref_offset`\n  for pass 0, and `ref_y = homeY + ref_offset` for pass 1. Then, if `selfTeam = 1`, set\n  `ref_y = mirror_y - ref_y`. Set `choice = -1` and `choice_cost = 2147483647`.\n  For `j = 0` while `j < heartCount() AND j < 64`, skip j when `controlOwner(j) = selfTeam` or `j = other`. Else set\n  `dx = (controlX(j) - homeX) \\ 8`, `dy = (controlY(j) - ref_y) \\ 8`, and\n  `cost = dx * dx + dy * dy`. If `controlOwner(j) = -1`, subtract `neutral_bonus` from cost. If\n  `pass = squad AND avoid_until(j) > worldTick`, add `avoid_penalty` to cost. If\n  `cost < choice_cost`, set `choice = j` and `choice_cost = cost`. Strict less-than keeps the\n  lowest index on a tie.\n  At the end of each pass: if `pass = squad`, set `objective = choice`. Else, if `pass < squad`,\n  set `other = choice`. After both passes: if `objective < 0 AND other >= 0`, set\n  `objective = other`.\n  Step 4 (idle capture). If `objective >= 0 AND seat >= 2`: if\n  `controlCaptureTeam(objective) = selfTeam`, set `idle_capture = 0`. Else add 1 to\n  `idle_capture`. In all other cases do not change `idle_capture`.\n  Also set `heart_count = heartCount()` on every tick.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "The heart that our squad of four attacks, derived from squad arithmetic, heart\n  ownership and our own avoid memory."
+      },
+      "interface": {
+        "outputs": {
+          "heart_count": 1,
+          "idle_capture": 1,
+          "objective": 1,
+          "seat": 1,
+          "squad": 1
+        },
+        "params": [
+          "progress_period",
+          "stall_sq",
+          "far_sq",
+          "avoid_ticks",
+          "ref_offset",
+          "mirror_y",
+          "neutral_bonus",
+          "avoid_penalty"
+        ]
+      },
+      "llm": true,
+      "prefix": "k_squad_target",
+      "text_hash": "sha256:681bb58606ac6cd883c72ba26d2c2d813b49b110fd9590c789c8693f7ba54ef8",
+      "uses": []
+    },
+    "P.chargeGrenade": {
+      "compiled_text": "### P.chargeGrenade\n- Summary: Charge a grenade, or throw it.\n- Spec: Host command `chargeGrenade(flag)`. A tick with flag 0 after charging throws the grenade.\n",
+      "fields": {
+        "Spec": "Host command `chargeGrenade(flag)`. A tick with flag 0 after charging throws the grenade.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Charge a grenade, or throw it."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "p_chargegrenade",
+      "text_hash": "sha256:4cf32f39b9e8d02fca7a984c19d94d51b9f974b38df473e935cd9fe00b96d737",
+      "uses": []
+    },
+    "P.lookAt": {
+      "compiled_text": "### P.lookAt\n- Summary: Turn to face a point.\n- Spec: Host command `lookAt(x, y)`.\n",
+      "fields": {
+        "Spec": "Host command `lookAt(x, y)`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Turn to face a point."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "p_lookat",
+      "text_hash": "sha256:170a72d13fded7aca0a0048425c85092c83318df0a9fbe9efc6033f19e875e88",
+      "uses": []
+    },
+    "P.shootAt": {
+      "compiled_text": "### P.shootAt\n- Summary: Order a gun shot at a point.\n- Spec: Host command `shootAt(x, y)`. The ray leaves six moves after the order.\n",
+      "fields": {
+        "Spec": "Host command `shootAt(x, y)`. The ray leaves six moves after the order.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Order a gun shot at a point."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "p_shootat",
+      "text_hash": "sha256:8506eab3254d3208ee361dcb0f89b3d2c228f3e80ebed26370d24dde6f65d905",
+      "uses": []
+    },
+    "P.shout": {
+      "compiled_text": "### P.shout\n- Summary: Speak a text message to every cog within 12.8 m.\n- Spec: Host command `shout(strNew(\"text\"))`. Enemies hear it too.\n",
+      "fields": {
+        "Spec": "Host command `shout(strNew(\"text\"))`. Enemies hear it too.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Speak a text message to every cog within 12.8 m."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "p_shout",
+      "text_hash": "sha256:b1058719718b735507e9ebf0cf4c8043e1929bf769e047015a02e3f6aeae502e",
+      "uses": []
+    },
+    "P.walkTo": {
+      "compiled_text": "### P.walkTo\n- Summary: Walk toward a point. The engine paths around walls but not around water.\n- Spec: Host command `walkTo(x, y)`.\n",
+      "fields": {
+        "Spec": "Host command `walkTo(x, y)`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Walk toward a point. The engine paths around walls but not around water."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "p_walkto",
+      "text_hash": "sha256:d09ec33972962737ffc7ac9f3d603b9b5eeb3a72933837ac0a97642274a21915",
+      "uses": []
+    },
+    "S.has_target_heart": {
+      "compiled_text": "### S.has_target_heart\n- Summary: Our squad has a target heart.\n- Spec: Set `on = 1` when objective of `K.squad_target` is 0 or more. Else set `on = 0`.\n- Uses: `K.squad_target`\n- Checks (reads):\n  - Believed: Reads: PWD.f\n",
+      "fields": {
+        "Checks": "\n  - Believed: the flag is logged with the decision. Reads: PWD.f",
+        "Spec": "Set `on = 1` when objective of `K.squad_target` is 0 or more. Else set `on = 0`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Our squad has a target heart.",
+        "Uses": "`K.squad_target`"
+      },
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": []
+      },
+      "llm": true,
+      "prefix": "s_has_target_heart",
+      "text_hash": "sha256:6b60c6ab97e4664fa799fdb79198871401925214fa58d94ce890e32c8b29a453",
+      "uses": [
+        "K.squad_target"
+      ]
+    },
+    "S.losing_fight": {
+      "compiled_text": "### S.losing_fight\n- Summary: We see more near enemies than near friends, so we refuse the fight.\n- Spec: Set `on = 1` when\n  `foes_near - friends_near >= 1 AND carrying = 0 AND heart_count > 0`, using the outputs of\n  `K.contacts` and `K.squad_target`. Else set `on = 0`.\n- Uses: `K.contacts`, `K.squad_target`\n- Checks (reads):\n  - Believed: Reads: PWD.f\n",
+      "fields": {
+        "Checks": "\n  - Believed: the flag is logged with the decision. Reads: PWD.f",
+        "Rationale": "The heart_count term covers a base.bas case. With no heart, the retreat block finds\n  no heart and keeps the earlier goal.",
+        "Spec": "Set `on = 1` when\n  `foes_near - friends_near >= 1 AND carrying = 0 AND heart_count > 0`, using the outputs of\n  `K.contacts` and `K.squad_target`. Else set `on = 0`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "We see more near enemies than near friends, so we refuse the fight.",
+        "Uses": "`K.contacts`, `K.squad_target`"
+      },
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": []
+      },
+      "llm": true,
+      "prefix": "s_losing_fight",
+      "text_hash": "sha256:f5a8a8388f9d7f65985452424be2a3792ead5e61a95d15758d81e379b00fb232",
+      "uses": [
+        "K.contacts",
+        "K.squad_target"
+      ]
+    },
+    "S.supply_worth": {
+      "compiled_text": "### S.supply_worth\n- Summary: A wanted supply is remembered and no close fight stops us from fetching it.\n- Spec: Set `on = 1` when `nearest >= 0` of `K.pickups` and\n  `(best < 0 OR best_cost > fight_clear_sq OR critical = 1)` with best and best_cost of\n  `K.contacts`, and critical of `K.pickups`. Else set `on = 0`.\n- Uses: `K.pickups`, `K.contacts`\n- Params:\n  - fight_clear_sq = 1440000 -- base.bas value, cost above which the target does not hold us\n- Checks (reads):\n  - Believed: Reads: PWD.f\n",
+      "fields": {
+        "Checks": "\n  - Believed: the flag is logged with the decision. Reads: PWD.f",
+        "Params": "\n  - fight_clear_sq = 1440000 -- base.bas value, cost above which the target does not hold us",
+        "Rationale": "`K.pickups` already applies the carrying and carrier guards.",
+        "Spec": "Set `on = 1` when `nearest >= 0` of `K.pickups` and\n  `(best < 0 OR best_cost > fight_clear_sq OR critical = 1)` with best and best_cost of\n  `K.contacts`, and critical of `K.pickups`. Else set `on = 0`.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "A wanted supply is remembered and no close fight stops us from fetching it.",
+        "Uses": "`K.pickups`, `K.contacts`"
+      },
+      "interface": {
+        "outputs": {
+          "on": 1
+        },
+        "params": [
+          "fight_clear_sq"
+        ]
+      },
+      "llm": true,
+      "prefix": "s_supply_worth",
+      "text_hash": "sha256:097169d598f879dccd3abae806a3477c10e299ea8f5978d34be92cfa0a67187b",
+      "uses": [
+        "K.pickups",
+        "K.contacts"
+      ]
+    },
+    "SK.motor": {
+      "compiled_text": "### SK.motor\n- Summary: The baseline mechanics. Look around, dodge with timed legs, route around water, aim\n  with lead, hold fire on teammates, and charge grenades to the range.\n- Spec: The code is authored in `skill.bas`. A capability calls `sk_motor__act(gx, gy, hold)`\n  exactly once on every tick, with its goal point and holding flag. `act` runs six parts in\n  this order. They are the gun wait countdown, the look sweep, footwork, the dry route with the\n  one `walkTo`, the gun, and the grenade. The look sweep runs only when there is no target. `sk_motor__isqrt(n)` puts the integer square root of n\n  into the output root.\n- Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`\n- Code: skills/motor/skill.bas\n- Outputs:\n  - root -- the result of the last sk_motor__isqrt call\n  - threw -- 1 on a tick where the grenade charge reached the need, else 0\n- Params:\n  - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route\n  - lead_ticks = 6 ticks -- base.bas value, the gun windup\n  - drift_ticks = 5 ticks -- base.bas value, our own drift to cancel\n  - gun_wait_light = 25 ticks -- base.bas value, gun cooldown\n  - gun_wait_heavy = 73 ticks -- base.bas value, cooldown with armor, in a trench, or carrying\n  - spray_range_sq = 640000 -- base.bas value, the spray gun shoots only below this target cost\n- Checks (reads):\n  - Acted properly: Reads: replay\n  - Result: Reads: replay\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: a shot is ordered only when the gun wait is zero, the teammate line is clear, and the spray range condition holds. Reads: replay\n  - Result: hit rate per shot at range. Reads: replay",
+        "Code": "skills/motor/skill.bas",
+        "Outputs": "\n  - root -- the result of the last sk_motor__isqrt call\n  - threw -- 1 on a tick where the grenade charge reached the need, else 0",
+        "Params": "\n  - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route\n  - lead_ticks = 6 ticks -- base.bas value, the gun windup\n  - drift_ticks = 5 ticks -- base.bas value, our own drift to cancel\n  - gun_wait_light = 25 ticks -- base.bas value, gun cooldown\n  - gun_wait_heavy = 73 ticks -- base.bas value, cooldown with armor, in a trench, or carrying\n  - spray_range_sq = 640000 -- base.bas value, the spray gun shoots only below this target cost",
+        "Spec": "The code is authored in `skill.bas`. A capability calls `sk_motor__act(gx, gy, hold)`\n  exactly once on every tick, with its goal point and holding flag. `act` runs six parts in\n  this order. They are the gun wait countdown, the look sweep, footwork, the dry route with the\n  one `walkTo`, the gun, and the grenade. The look sweep runs only when there is no target. `sk_motor__isqrt(n)` puts the integer square root of n\n  into the output root.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "The baseline mechanics. Look around, dodge with timed legs, route around water, aim\n  with lead, hold fire on teammates, and charge grenades to the range.",
+        "Uses": "`P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`"
+      },
+      "interface": {
+        "outputs": {
+          "root": 1,
+          "threw": 1
+        },
+        "params": [
+          "wet_cost",
+          "lead_ticks",
+          "drift_ticks",
+          "gun_wait_light",
+          "gun_wait_heavy",
+          "spray_range_sq"
+        ],
+        "subs": {
+          "sk_motor__act": 3,
+          "sk_motor__dry_route": 0,
+          "sk_motor__footwork": 0,
+          "sk_motor__grenade": 0,
+          "sk_motor__gun": 0,
+          "sk_motor__init": 0,
+          "sk_motor__isqrt": 1,
+          "sk_motor__leg_time": 4,
+          "sk_motor__look_around": 0,
+          "sk_motor__next_random": 0,
+          "sk_motor__plan_leg": 2,
+          "sk_motor__wet_line": 4
+        }
+      },
+      "llm": false,
+      "prefix": "sk_motor",
+      "text_hash": "sha256:bd0901035030ccbaca131a8fd0519075f2b991ff94d101f012ab5294c16a1061",
+      "uses": [
+        "P.walkTo",
+        "P.lookAt",
+        "P.shootAt",
+        "P.chargeGrenade",
+        "K.contacts",
+        "K.self_motion"
+      ]
+    },
+    "ST.commitment": {
+      "compiled_text": "### ST.commitment\n- Summary: Select the best rule on every tick. Keep nothing from earlier ticks.\n- Spec: Switch to the best rule as soon as it differs from the current rule.\n- Params:\n  - min_hold = 0 ticks -- base.bas has no commitment\n  - preempt_margin = 0 points -- base.bas has no commitment\n  - interrupt_at = 0 points -- every better rule interrupts at once\n- Checks (reads):\n  - Acted properly: Reads: PWD.h, PWD.r\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: the selected rule is always the best rule. Reads: PWD.h, PWD.r",
+        "Params": "\n  - min_hold = 0 ticks -- base.bas has no commitment\n  - preempt_margin = 0 points -- base.bas has no commitment\n  - interrupt_at = 0 points -- every better rule interrupts at once",
+        "Spec": "Switch to the best rule as soon as it differs from the current rule.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Select the best rule on every tick. Keep nothing from earlier ticks."
+      },
+      "interface": {
+        "outputs": {},
+        "params": [
+          "min_hold",
+          "preempt_margin",
+          "interrupt_at"
+        ]
+      },
+      "llm": false,
+      "prefix": "st_commitment",
+      "text_hash": "sha256:a62939f54dc93d853ec2c9ac7c926abc8f1103602ad6f4f668012b2d4884ebac",
+      "uses": []
+    },
+    "ST.roles": {
+      "compiled_text": "### ST.roles\n- Summary: Two squads of four per team. Seats 0 and 1 of a squad take the ring, seats 2 and 3 cover.\n- Spec: The squad seat is `((selfId \\ 2) MOD 8) MOD 4`. Ring seats have squad seat 0 or 1.\n  Cover seats have squad seat 2 or 3.\n- Roles squad:\n  - ring = seats 0,1,2,3,8,9,10,11\n  - cover = seats 4,5,6,7,12,13,14,15\n- Checks (reads):\n  - Acted: Reads: PWD.r\n",
+      "fields": {
+        "Checks": "\n  - Acted: ring seats select only ring or shared rules. Reads: PWD.r",
+        "Roles squad": "\n  - ring = seats 0,1,2,3,8,9,10,11\n  - cover = seats 4,5,6,7,12,13,14,15",
+        "Spec": "The squad seat is `((selfId \\ 2) MOD 8) MOD 4`. Ring seats have squad seat 0 or 1.\n  Cover seats have squad seat 2 or 3.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Two squads of four per team. Seats 0 and 1 of a squad take the ring, seats 2 and 3 cover."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "st_roles",
+      "text_hash": "sha256:60eb74b1643db06a837eee490ad457ba9603402287e741e9a5d1bb80c858ff23",
+      "uses": []
+    },
+    "ST.rules": {
+      "compiled_text": "### ST.rules\n- Summary: Retreat beats resupply, resupply beats the squad target, the squad target beats the default goal.\n- Spec: Evaluate the rules below each tick. The highest priority rule whose condition holds wins.\n- Checks (reads):\n  - Acted properly: Reads: PWD.r, PWD.f, PWP.n\n- `R.fall_back` [400]: WHEN `S.losing_fight` DO `C.fall_back`\n- `R.resupply` [300]: WHEN `S.supply_worth` DO `C.resupply`\n- `R.take_heart` [200]: WHEN `S.has_target_heart` DO `C.take_heart` FOR squad=ring\n- `R.cover_heart` [200]: WHEN `S.has_target_heart` DO `C.cover_heart` FOR squad=cover\n- `R.default_goal` [100]: ALWAYS DO `C.default_goal`\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: re-running selection from the logged flags gives the logged rule. Reads: PWD.r, PWD.f, PWP.n",
+        "Rationale": "base.bas computes one goal and lets later blocks override it. The retreat block\n  comes last, then supply, then the squad target. These priorities give the same order.",
+        "Spec": "Evaluate the rules below each tick. The highest priority rule whose condition holds wins.",
+        "Status": "specified (2026-10-05)",
+        "Summary": "Retreat beats resupply, resupply beats the squad target, the squad target beats the default goal."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "st_rules",
+      "text_hash": "sha256:64cfd58c11c5280cedf903bd91cb38db0a077cf93da4022117edae4e5dd6836d",
+      "uses": []
+    }
+  },
+  "created": "2026-10-07T00:36:28.794885+00:00",
+  "diagnostics": [],
+  "engine": {
+    "commit": "28030de6",
+    "tag": "coworld-v0.3.123"
+  },
+  "full": false,
+  "intent": "m1",
+  "milestone": "m1",
+  "previous_build": "50a999c2-1",
+  "source_commit": "32ed3f7088c8b96e339c79c526618a0152024d83",
+  "source_hashes": {
+    "paintbot_pw_lab/docs/policy-surface.md": "40e27692319db1f42616992bd5128803b3987c14583ba7fefd12ffbb9c82e974",
+    "paintbot_pw_lab/reference/base-bassy-28030de6.bas": "8c81b016a92a4bde2d8420e793633b79ef4f1f8e834e7bf3cd2baf6cc9e4775b",
+    "paintbot_pw_lab/strategy/STRATEGY.md": "c6b69a0bfabcffe9c6c5149dc656a99f6e15a638be51beb83f3507a37447d008",
+    "paintbot_pw_lab/strategy/comms.md": "3eb82c8e0dad6fddacec59cdd3300a4389cae5d0ea360c6bd8ef9ed8227123a7",
+    "paintbot_pw_lab/strategy/compiler/AGENT.md": "fdf8939ceda5ab4641570cd71874c7f8a788d51c9e126c2451e2c3182fc6b863",
+    "paintbot_pw_lab/strategy/compiler/LESSONS.md": "8734a91f73563a780e2b9342e7938ed2cf9343f2d04fbdbc7e25342745a9a0b5",
+    "paintbot_pw_lab/strategy/compiler/config.json": "f0240c328e26289f6ddf41857df3b9eddaafce89404228988303df332c3d2c93",
+    "paintbot_pw_lab/strategy/compiler/runtime/comms.bas": "05639c3995e9d527f0e4b124a3d37b57d76636266102a8da7d21f5c4603d1e4e",
+    "paintbot_pw_lab/strategy/compiler/runtime/lib.bas": "ef0a6b940d95f537ac9623f53d25b6aa26b9e474d311ccb6bc64d89bfa47dee7",
+    "paintbot_pw_lab/strategy/compiler/runtime/main.bas": "735c59e4033a60229b3d8ae3d3128a26d8aac9563873999e0f5db71111a30527",
+    "paintbot_pw_lab/strategy/skills/motor/skill.bas": "8f0b5a0ee157676e323a700ea0599c1ecc4d25bf242bb9ebfdf31586310c4b00",
+    "paintbot_pw_lab/tools/pw.py": "954672c1b9584cd9d091d7db3b79dccd1f21d8b67bd51bd760b4fa41560784c6",
+    "paintbot_pw_lab/tools/pw_cli.py": "3d988c9504269e7bf6944aec739633df3bddd5e0775e26303f0cd532585d5797",
+    "paintbot_pw_lab/tools/pw_intent.py": "f8ad7ee2ff30bc437637b17d5692fe7879a12627fcbb8d303c94d12c773581fe",
+    "paintbot_pw_lab/tools/pw_local.py": "fb8a1d27ac71adf7a087ec1090d4900edb50de56b2e2f4ab9b0e23e350402947",
+    "paintbot_pw_lab/tools/pw_release.py": "68283656ad029b75f119eb8ef2f9d1d04004979c00a9a70b433409e713b444dd",
+    "paintbot_pw_lab/tools/pw_strategy.py": "e56e3ff1e98d04520569a63a3e5e8005061d624c7f4b287dbe053930ae1f6405",
+    "paintbot_pw_lab/tools/pw_terrain.py": "4ddc544c60f9eed2e9bb737e4534f955bb504f6f178452e375287f438b73eade",
+    "paintbot_pw_lab/tools/release.env": "e02a01775277a9bd5f04c9ac62de4f05b4daed8c0d4fef60d8c02c1ac15205bd",
+    "paintbot_pw_lab/tools/strategy_audit.py": "6b276ed3b4924b222839c1d077034b5f7dc32182552079666959ed9a128655f6",
+    "paintbot_pw_lab/tools/strategy_audit_baseline.py": "70ae26dd9bd0a23ced231ec7dfa7e531bdfe794dd1d1df767c2e1cb505a6aa9a",
+    "paintbot_pw_lab/tools/strategy_audit_comms.py": "758cdf899577c8d225bf719dc382e3b67842029273214360c6119e1c8d08fc59",
+    "paintbot_pw_lab/tools/strategy_audit_runtime.py": "e430c38955632541dbccc854f88bcb34c9e8341e25dd65fb6faacf1c7f60f065",
+    "paintbot_pw_lab/tools/strategy_basic.py": "b3818ae285d2da96e3d6b6ca0d8a2bcd6abae012f348801b1c1af6e65f712780",
+    "paintbot_pw_lab/tools/strategy_build.py": "8948f9bce170a91987c3a88936eee85c802169ac2ef993b0e74d8e629a985727",
+    "paintbot_pw_lab/tools/strategy_comms.py": "71fad5fa243465eb71b8a80f6a070ad1554c65452c59220ceef39740cb60f8a7",
+    "paintbot_pw_lab/tools/strategy_format.py": "46ff44e22b0bb8478520cd3de81b10afeaf2c97dad3900e68738275731e43f53",
+    "paintbot_pw_lab/tools/strategy_gates.py": "c212518f9a5fe5f59c63f9c60d89459fa7c81de189d13eb8ad079f90c4681cb4"
+  },
+  "source_path": "paintbot_pw_lab/strategy/STRATEGY.md",
+  "units": {
+    "C.cover_heart": "reused",
+    "C.default_goal": "reused",
+    "C.fall_back": "reused",
+    "C.resupply": "changed",
+    "C.take_heart": "reused",
+    "COM.grenade_out": "reused",
+    "COM.status_call": "reused",
+    "K.contacts": "reused",
+    "K.pickups": "changed",
+    "K.self_motion": "reused",
+    "K.squad_target": "reused",
+    "P.chargeGrenade": "reused",
+    "P.lookAt": "reused",
+    "P.shootAt": "reused",
+    "P.shout": "reused",
+    "P.walkTo": "reused",
+    "S.has_target_heart": "reused",
+    "S.losing_fight": "reused",
+    "S.supply_worth": "changed",
+    "SK.motor": "reused",
+    "ST.commitment": "reused",
+    "ST.roles": "reused",
+    "ST.rules": "reused"
+  }
+}

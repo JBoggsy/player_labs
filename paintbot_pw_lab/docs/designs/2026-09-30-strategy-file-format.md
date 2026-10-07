@@ -1,7 +1,11 @@
 # Design: the strategy file format
 
-> **Status:** accepted 2026-09-30 (James). Not implemented yet: `strategy/STRATEGY.md`, telemetry
-> v2, and the `pw.py strategy` commands do not exist. The implementation plan is in
+> **Status:** accepted 2026-09-30 (James). M0 implemented and qualified: the parser and linter
+> (`tools/strategy_format.py`), the unit checks, table generation and assembly
+> (`tools/strategy_basic.py`), the runtime library with telemetry v2 emission
+> (`strategy/compiler/runtime/`), and the `pw.py strategy` driver exist. M1 `STRATEGY.md` is qualified in
+> `compiled/b41ef1fc-1`. The M2 audit is qualified locally and with hosted telemetry on 0.3.115.
+> The exact grammar the parser implements is §4.9. The plan is in
 > [the compilation design](2026-09-30-strategy-compilation.md) §11. Rendered, commentable copy:
 > [2026-09-30-strategy-file-format.html](2026-09-30-strategy-file-format.html) (may lag this file;
 > this Markdown file is authoritative).
@@ -59,12 +63,13 @@ script is a build product.**
   goes into a separate, versioned compile report that is linked to the policy version. The edit
   loop reads the report and decides whether to promote a guess into the strategy file.
 - Every compiled script is traceable to the exact source that produced it (section 8).
-- Two other kinds of authored source are copied into builds unchanged: `strategy/comms.md`
-  defines the comms policy, and `strategy/compiler/runtime/` holds the hand-written runtime
-  library (the per-tick skeleton, telemetry print routines, and comms codec; compilation design
-  §4.1).
+- `strategy/compiler/runtime/` holds authored BASIC copied unchanged into builds: the tick
+  skeleton, telemetry routines and optional comms codec (compilation design §4.1).
+  `strategy/comms.md` describes the protocol and is hashed as an input; it is not copied into
+  BASIC or automatically expanded into component prompts. Required message semantics must
+  appear in the owning component fields.
 
-There is one kind of authored BASIC: **skill code** (section 4.1). Each Skill has a
+The other authored BASIC is **skill code** (section 4.1). Each Skill has a
 `skill.bas` file that we write and improve directly, because improving mechanics is more
 productive in code than in prose. `skill.bas` is source, not output: the compiler copies it into
 the build unchanged and never regenerates it. The rule above still holds without exception for
@@ -112,7 +117,7 @@ to layers below it. The side sections have the specific exceptions stated in the
 | Capabilities | `C.` | Tactical sub-objectives, built from Skills, each with success and abort conditions. | `K.`, `S.`, `SK.` | push to heart, hold heart, attack heart, retreat to heart, grab supply, snatch glory heart |
 | Strategy | `ST.` / `R.` | Roles, the prioritized rules (`R.`) from Situation to Capability, and commitment. | all layers above | "two cogs per squad capture, two cover"; "when ahead on lives after 5:00, hunt instead of capture" |
 | Adaptations | `A.` | Rules that change rule priorities during a match. | `K.`, `S.`, and `R.` rules (priorities only) | "if our pushes to the far heart fail 3 times, lower `R.push_far` by 20" |
-| Communication | `COM.` | Messages we send and understand: content, encoding, when sent, and which Knowledge a heard message updates. A parallel track to the main decision. | everything (the send side reads this tick's decision) | "announce my target heart"; "report enemy count at my heart" |
+| Communication | `COM.` | Messages we send and understand: content, encoding, when sent, and which Knowledge a heard message updates. A parallel track to the main decision. | P, K, S, SK, C, A, R, ST; not other COM components (the send side reads this tick's decision) | "announce my target heart"; "report enemy count at my heart" |
 
 Why Skills and Capabilities are separate: Skills hold mechanical quality (aim, footwork,
 timing) and are reused by many Capabilities. Capabilities hold tactical intent. We can improve
@@ -161,7 +166,9 @@ paintbot_pw_lab/strategy/
   compiled/<build-id>/         # build output, never hand-edited (compilation design §5)
 ```
 
-One `STRATEGY.md` for now. Any section can link out to a per-section file when it grows.
+One `STRATEGY.md` for now. Links are documentation references, not parser includes;
+component fields must remain in this file. Opening prose and linked glossaries are not
+passed to the generation agent.
 Every Skill has a directory from the start, because every Skill has its own code.
 
 ### 4.2 Headings and IDs
@@ -204,15 +211,21 @@ marked * are required.
 | Field | Used by | Meaning |
 | --- | --- | --- |
 | `Summary`* | all | One sentence. |
-| `Spec`* | all | What the compiler must implement. Precise: distances, ticks, order. |
+| `Spec`* | all (also `ST.*`) | What the compiler must implement. Precise: distances, ticks, order. |
 | `Sources` | K | Host reads it uses (`playerX`, `controlOwner`, `heardX` ...) and `COM.` messages that update it. |
+| `Outputs` | K, S, SK, COM | The values other components can read: one sub-bullet per name, scalar or a fixed-size array (§4.9). A Situation always has the implicit output `on`. |
+| `Inputs` | C | The values a rule passes in (at most 3, because `PWD` logs 3). |
 | `Memory` | K | What persists across ticks and for how long. |
-| `Log` | K | The belief values telemetry records, and how often (section 6). Required if the component has a `Believed` check. |
-| `Uses` | S, SK, C, R, A, COM | IDs of components it depends on. |
-| `Params` | S, SK, C, R, A | Named numbers: value, units, range `[min, max, step]` if tunable, and **why this value** (hand-set, or tuned, with a link to the tune run). |
+| `Log` | K, COM | The output values telemetry records, and how often (section 6). Required if a K component has a `Believed` check. A COM log has no period: it is printed on every send or receive. |
+| `Uses` | K, S, SK, C, ST, A, COM | IDs of components it depends on. |
+| `Params` | K, S, SK, C, ST, A, COM | Named numbers: value, units, range `[min, max, step]` if tunable, and **why this value** (hand-set, or tuned, with a link to the tune run). |
 | `Code` | SK | Path to `skill.bas`. |
+| `Effect` | A | The priority change: rule, operator, amount, duration (§4.5). |
+| `Directions` | COM | `send`, `receive`, or `both`: which halves of the message the unit implements. |
+| `Roles` | ST.roles | Seat partitions (§4.4). |
+| `Accepts` | all | Guess IDs (`G-<ID>-<n>`) from a compile report that this component accepts as intended behavior. |
 | `Done when` / `Abort when` | C | Success condition; conditions that give control back to Strategy. Each has a stable name, so telemetry can say which one fired. |
-| `Checks`* | all but P | The five-level checks (section 5). |
+| `Checks`* | all but P | The five-level checks (section 5). A check can end with `Reads: item, item` (the log fields it needs), which the linter verifies. |
 | `Evidence` | all | Links: TENTATIVE_LESSONS, reports, A/B results, tune runs. |
 | `Status`* | all | `idea`, `specified`, `compiled`, `tested`, or `proven`, with date. |
 | `Rationale` | all | Why. For people and the edit loop. **The compiler does not implement rationale.** |
@@ -231,16 +244,41 @@ ties.
 ```markdown
 ### ST.rules
 - `R.dump_grenade` [900]: WHEN `S.about_to_die_with_charge` DO `C.dump_grenade`
-- `R.retreat` [700]: WHEN `S.outnumbered` AND NOT `S.on_owned_heart` DO `C.retreat_to_heart`(toward=nearest_friend)
-- `R.defend` [600]: WHEN `S.enemy_capturing_our_heart` DO `C.attack_heart`(heart=that_heart) FOR role=cover
+- `R.retreat` [700]: WHEN `S.outnumbered` AND NOT `S.on_owned_heart` DO `C.retreat_to_heart`(toward=`K.contacts`.nearest_friend)
+- `R.defend` [600]: WHEN `S.enemy_capturing_our_heart` DO `C.attack_heart`(heart=`S.enemy_capturing_our_heart`.heart) FOR role=cover
 - `R.hunt` [400]: WHEN `S.ahead_on_lives` AND `S.late_match` DO `C.hunt`
-- `R.push` [100]: ALWAYS DO `C.push_to_heart`(heart=squad_target)
+- `R.push` [100]: ALWAYS DO `C.push_to_heart`(heart=`K.squad`.target)
 ```
 
+This is a rule-syntax fragment; its referenced components, outputs and role set must exist.
+For a complete runnable source, use the
+[committed trivial fixture](../../tools/tests/fixtures/strategy_trivial/STRATEGY.md).
+
+A rule's arguments bind each declared `Input` of the capability to an integer or to a named
+value of another component: `` `S.enemy_capturing_our_heart`.heart `` (an Output) or
+`` `C.hold_heart`.leash `` (a Param). Free names such as `that_heart` are lint errors.
+
 `ST.roles` says how the eight cogs on a team split up. All eight run the same file, so roles are
-a function of `selfId`, as `base.bas` squads are. `ST.commitment` says when a running capability
-may be interrupted: minimum hold times, the priority margin a new rule needs to preempt, and
-hysteresis, so the agent does not switch capability every tick.
+a function of `selfId`, as `base.bas` squads are. In v1 a role set is a static partition of the
+16 seats (`- Roles squad:` with sub-bullets `role = seats 0,2,4,6`); a rule restricts itself
+with `FOR squad=role,...`. Roles that change during a match are not in v1.
+
+`ST.commitment` says when a running capability may be interrupted. It has exactly three Params:
+`min_hold` (ticks), `preempt_margin` (priority points), and `interrupt_at` (priority). Each tick,
+`ok(r)` = the rule's condition holds and its role matches; `best` = the highest-priority `ok`
+rule (file order breaks ties, none if no rule is ok). With the current rule `cur`:
+
+1. If there is no `cur`, or its capability reported done or abort on an earlier tick, or
+   `cur` is no longer `ok`: switch to `best` (idle if there is none).
+2. Else, if `best` is not `cur` and `prio(best) >= interrupt_at`: switch.
+3. Else, if `best` is not `cur`, the activation is at least `min_hold` ticks old, and
+   `prio(best) >= prio(cur) + preempt_margin`: switch.
+4. Else keep `cur`.
+
+A switch always starts a new activation, even to the same rule after done or abort. A cog that
+was dead (a gap in `worldTick`) ends its activation before anything else runs. Rule inputs are
+bound again every tick. Hysteresis on a signal belongs in the Situation's `Spec`.
+`strategy_basic.reference_select` is the Python statement of these rules.
 
 ### 4.5 Adaptations
 
@@ -249,15 +287,31 @@ of the policy changing its own structure.
 
 ```markdown
 ### A.demote_failed_push
-- Summary: Stop pushing a heart that keeps failing.
-- Spec: When `K.push_history` shows `fail_limit` failed pushes to one heart within
-  `window` ticks, lower `R.push` priority for that heart by `step`. Restore it after `window`.
+- Summary: Stop pushing after repeated failed pushes.
+- Spec: Fire when `K.push_history` shows `fail_limit` failed pushes within `window` ticks.
 - Uses: `K.push_history`, `R.push`
-- Params: fail_limit = 3; window = 1440 ticks [480, 2880, 240]; step = 50 [10, 100, 10]
+- Params:
+  - fail_limit = 3 -- hand-set
+  - window = 1440 ticks [480, 2880, 240] -- hand-set
+  - step = 50 [10, 100, 10] -- hand-set
+- Effect: `R.push` -= step FOR window
 ```
 
+Priorities belong to rules, not to (rule, argument) pairs (decided 2026-09-30): an Adaptation
+cannot lower `R.push` "for one heart". Per-heart avoidance belongs in Knowledge and the
+Capability, as `base.bas`'s `avoidUntil` does.
+
+The unit writes only the trigger (`fire`, 0 or 1). Generated code and the runtime do the rest:
+on the rising edge of `fire`, while the Adaptation is not active, it becomes active for the
+duration (`FOR` a param or an integer tick count, or `FOREVER` without `FOR`); a fire on its expiry tick is ignored.
+Each time an Adaptation turns on or off, the rule's priority is recomputed from its default by
+applying every active effect on that rule in Adaptation order (`+=`/`-=` add, `=` sets), then
+clamped to 0..1000. Effect amounts are bounded to ±1000 (`=`: 0..1000), so the arithmetic
+cannot overflow.
+
 Limits: globals reset every episode, so an Adaptation lasts only within one match. Every
-priority change is logged (section 6); otherwise the "acted properly" check cannot be computed.
+priority change is logged (`PWP`, section 6); otherwise the "acted properly" check cannot be
+computed.
 
 ### 4.6 Communication
 
@@ -268,6 +322,9 @@ A Communication component defines one message type:
 - `Send when`: the condition, which can refer to this tick's selected rule and capability.
 - `On receipt`: which `K.` component it updates, and how much to trust it.
 - `Checks`: sent when it should be; decoded correctly by teammates; did it change the result.
+- `Directions`: `send`, `receive`, or `both`. The unit implements only those halves, and only
+  those halves are logged and budgeted. A send-only message such as `base.bas`'s literal
+  "Grenade out!" shout is a `send` component; it needs no codec.
 
 Engine constraints ([policy-surface §5.7](../policy-surface.md)): every living cog within
 12.8 m hears a shout, **enemies included**; at most 4 shouts per cog per tick; delivery is on the
@@ -283,18 +340,24 @@ each message type there becomes one `COM.` component.
 - Spec: Stand inside the capture ring of `heart`. Stay off the line between the ring center
   and the nearest remembered enemy. Face the most recent threat direction. Fight with
   `SK.move_and_shoot`. Do not go more than `leash` outside the ring.
-- Uses: `K.enemy_contacts`, `K.threat_direction`, `SK.move_and_shoot`, `SK.lead_aim`
-- Params: heart (heart index); leash = 300 cm [100, 800, 50], hand-set, no tune run yet
-- Done when: never (runs until Strategy selects a different rule)
-- Abort when: `outnumbered_hold` = `S.outnumbered` true for 24 ticks; `heart_lost` = the heart
-  is not ours
+- Uses: `K.enemy_contacts`, `K.threat_direction`, `SK.move_and_shoot`, `SK.lead_aim`, `S.outnumbered`
+- Inputs: heart
+- Params:
+  - leash = 300 cm [100, 800, 50] -- hand-set, no tune run yet
+- Done when: never
+- Abort when:
+  - outnumbered_hold -- `S.outnumbered` true for 24 ticks
+  - heart_lost -- the heart is not ours
 - Checks:
   - Acted properly: while active, the cog is within ring + `leash` in >= 95% of ticks. (script:
-    `pw.py strategy audit --check C.hold_heart.leash`)
+    `pw.py strategy audit EPISODE_DIR --build BUILD_ID --check C.hold_heart.1`)
   - Result: the heart stays ours for the whole activation in >= 60% of activations. (replay stat)
 - Status: idea (2026-09-30)
 - Rationale: base.bas has no hold behavior. It moves on when a heart is ours ...
 ```
+
+This component is an illustrative fragment. Its dependencies and rule must be declared in a
+complete strategy. The check prose requires a reviewed evaluator; the example does not ship one.
 
 ### 4.8 Prose style
 
@@ -303,6 +366,39 @@ sentences, one meaning per word, active voice, no hedging. It is a technical spe
 compiler agent, not a guide for people. Precision and no ambiguity come first. `Rationale` uses
 the same style. The linter flags the mechanical violations (semicolons, "may/should/would",
 sentences over 25 words).
+
+### 4.9 Machine-readable fields (the exact grammar)
+
+Python reads these fields, so their form is fixed; anything else is a lint error. Prose fields
+stay free STE text. Source of truth: `tools/strategy_format.py`.
+
+| Field | Form |
+| --- | --- |
+| heading | `### <ID>`; ID = `K. S. SK. C. A. COM.` + snake_case name (no `__`, no leading or trailing `_`), `P.` + any identifier, or exactly `ST.roles`, `ST.rules`, `ST.commitment` |
+| `Uses` | `` `ID`, `ID` `` |
+| `Params` | sub-bullets `name = INT [unit words] [[low, high, step]] -- why` (all int32; a range means tunable) |
+| `Inputs` | `name, name` (≤ 3) |
+| `Outputs` | sub-bullets `name -- meaning` or `name[N] -- meaning` (N = 2..64 cells) |
+| `Done when` / `Abort when` | `never` (Done only), or sub-bullets `name -- description` |
+| `Log` | K: `name, name every N ticks`; COM: `name, name` (names from `Outputs`) |
+| `Checks` | sub-bullets `<Level>: text [Reads: item, ...]`; Level = True, Believed, Acted, Acted properly, Result; item = `PWD.<key>`, `PWE.<key>`, `PWP.<key>`, `PWC.<key>`, `` `K.id`.name `` / `` `COM.id`.name `` (must be logged), or `replay` |
+| `Effect` | `` `R.x` += AMOUNT FOR DURATION `` or `` `R.x` += AMOUNT FOREVER ``; operator `+=`, `-=` or `=`; AMOUNT = INT or own param; DURATION = own param or integer tick count (no `ticks` suffix) |
+| `Directions` | `send`, `receive`, or `both` |
+| `Roles [set]` | sub-bullets `role = seats a,b,...`; each set covers seats 0-15 exactly once |
+| `Accepts` | `G-<ID>-<n>, ...` |
+| `Status` | `idea`, `specified`, `compiled`, `tested`, or `proven`, with `(YYYY-MM-DD)` |
+| rule (in `ST.rules`) | `` - `R.id` [P]: WHEN <cond> DO `C.x`(input=arg, ...) [FOR set=role,...] `` or `ALWAYS` in place of `WHEN <cond>`; cond = `` `S.id` ``, `NOT`, `AND`, `OR`, parentheses (AND binds tighter than OR); P = 0..1000; arg = INT or `` `ID`.name `` |
+
+Reserved local names (they would collide with the unit ABI): `on`, `fire`, `status`, `cond`,
+`got`, `sent`, `from`, the phase SUB names, and anything starting `in_` or `k_`. Lint also
+errors on: an unresolved or out-of-layer reference, a reference missing from `Uses`, a
+Situation or Capability that nothing uses, a check reading an unlogged field, and a telemetry
+worst case over the budget (section 6).
+
+**What the hash covers.** A component is recompiled when its compiled text changes: the ID and
+every field except `Evidence`, `Status`, and `Rationale`, with `Checks` contributing only the level and
+`Reads:` entries of checks that declare Reads, not the predicate prose. That text is exactly what the compiler agent receives. Text after the field list
+is not compiled (a lint warning).
 
 ## 5. Checks: five levels
 
@@ -331,7 +427,16 @@ Levels by section:
 
 Each check has one or more of: a semantic description, a script to run, a replay statistic. At
 least one is required. A check that the logs cannot compute reports **unmeasurable**; it never
-passes by default.
+passes by default. The local audit additionally distinguishes `measured` (no acceptance
+threshold), `not_exercised` (no opportunities), and `not_declared` (a level absent from
+source). Partial coverage cannot pass. Raw outcomes remain separate from conditional
+Results: missing execution or belief-truth evidence, including a called Skill's correctness,
+blocks Result eligibility. Sampled PWB agreement does not prove full-window truth.
+
+The M1 audit binds reviewed evaluators to component semantics and a separate hash of
+check prose/level/Reads, because compiler component hashes exclude check prose. New or
+changed checks without a reviewed evaluator are explicitly unmeasurable. This does not
+change the source grammar or permit an LLM to decide whether a gameplay claim is true.
 
 Belief building (Knowledge) is imperfect by nature: data is fogged. Belief-accuracy checks let us
 optimize belief building from replays like any other component.
@@ -343,7 +448,8 @@ mode code, target, and reason. v2 must provide **every value that a Believed, Ac
 properly check needs**. The replay already contains every position and every executed command,
 so telemetry logs only what is in the agent's head: beliefs and decisions.
 
-Line kinds (all integer fields; `map.json` decodes every code to its ID):
+Line kinds (all integer fields; `map.json` decodes every code to its ID; the exact formats are
+below the table):
 
 | Line | When | Fields | Serves |
 | --- | --- | --- | --- |
@@ -353,6 +459,28 @@ Line kinds (all integer fields; `map.json` decodes every code to its ID):
 | `PWB` belief | per the `K.` component's `Log` field | tick; knowledge code; the logged values (for example seat, x, y, age for each believed enemy) | Knowledge belief accuracy; Situations Believed |
 | `PWC` communication | on send and on decode | tick; send or receive; message code; speaker seat; decoded values | Communication checks |
 
+Exact formats. Every line is `KIND v=2` followed by these keys, in this order, separated by
+single spaces. A list value is comma-joined.
+
+| Kind | Keys | Notes |
+| --- | --- | --- |
+| `PWD` | `t r c i h p f` | `r` rule code, `c` capability code (0 = idle); `i` = always three input values, unused = 0; `h` = 1 when the activation continued from the previous tick, 0 for a new selection or idle; `p` = priority-set version; `f` = situation flag words (situation code s is bit `(s-1) mod 31` of word `(s-1) div 31`). Printed when any of `r c i h p f` changes, and at least every 24 ticks. |
+| `PWP` | `t a r o n p` | One line each time an Adaptation `a` turns on or off: rule, old and new priority, new version. **Initial snapshot:** lines with `a=0` and `p=0` give each rule's default (`o = n = default`), one rule per line, printed at the end of the first ticks while the tick's print use leaves room. They are not priority changes. |
+| `PWE` | `t c e k` | `e`: 1 start, 2 done, 3 abort, 4 preempted, 5 died. `k` = the Done/Abort condition code, 0 for other events, -1 for an invalid status (treated as abort). |
+| `PWB` | `t k d` | Knowledge code; `d` = the logged outputs in `Log` order, arrays flattened. Printed when `worldTick mod every = offset`; the compiler picks offsets so logs do not coincide. |
+| `PWC` | `t m s w d` | Message code; `s` 1 send, 2 receive; `w` speaker seat (own seat on send); `d` = the logged outputs, or `0` when nothing is logged. |
+
+M3 adds an opt-in compact physical representation for communication, specified in
+[`strategy/comms.md`](../../strategy/comms.md) §12. `PWC v=3 t=... b=...` carries at most
+eight accepted receives and one actual send as fixed-width decoded payload pairs. It is
+flushed after snapshots; the reader expands it into individual logical PWC events at the
+receive/send phases below. Build maps bind wire types, codec constants and COM codes.
+Duplicate batches and wrong physical ordering fail parsing. Existing v2 remains unchanged.
+This extension is implemented and M3 acceptance is complete; the [qualification record](2026-10-05-m3-qualification.md) separates transport success, an inconclusive A/B and failed/unmeasurable semantic checks.
+
+Order within one tick: PWE died, PWC receive, PWP, PWE preempted, PWE start, PWE done/abort,
+PWC send, PWD, PWB, PWP snapshot.
+
 Rules:
 
 - **Alignment.** `tick` is `worldTick` at decision time. It equals the replay table tick of the
@@ -360,21 +488,30 @@ Rules:
 - **Coverage is checked, not assumed.** `map.json` lists, for each check, the log fields it
   reads. The linter fails a check whose fields no component logs.
 - **Budget.** Each tick the engine allows 1,024 printed bytes and 128 print events; exceeding
-  either is a runtime error that disables the seat for the rest of the episode. The compiler
-  reports the worst-case per-tick total and keeps it at or below half of each limit. Large belief
-  lists are split across ticks (for example, 4 enemies per tick). The seat log is cut at 10 MiB
-  per episode; target at most 2 MiB for a 14,400-tick match.
-- **Kill switch.** `telemetryOff = 1` turns all lines off.
-- **Tooling.** `pw_intent.py` gains a v2 parser and the five-level audit (section 10).
-- **Hosted logs: available, with two caveats.** Our XP episodes return a seat log per seat
-  (`logs/policy_agent_<seat>.log`, confirmed in the 2026-09-30 seed pilot,
-  [field.md](../field.md#seeds-what-actually-reaches-the-engine)), and the engine writes PRINT
-  output into that file. Caveat 1: no hosted policy of ours has printed anything yet (`base.bas`
-  prints nothing), so the first telemetry v2 upload must confirm that the lines arrive complete.
-  Caveat 2: some logs are missing for minutes after an episode ends (5 of 32 of our seat logs in
-  the pilot's first fetch); refetch with `--force`, and the audit reports a seat with no log as
-  unmeasurable. Logs come back only for our own seats (the pilot returned none for the opponent's),
-  so belief checks apply only to our own seats.
+  either is a runtime error that disables the seat for the rest of the episode (the VM charges
+  the limit before the host sees the text, so local runs that discard output enforce it too).
+  The linter computes a static worst case per tick and fails above half of each limit (512
+  bytes, 64 events). Each print item and newline costs one event. Component-written values,
+  ticks, nonconstant rule inputs and priority versions keep the signed-int32 bound of 11 bytes.
+  Only generated/runtime-controlled values use narrower proven bounds: codes, held flags,
+  condition bitsets and clamped priorities. A generated PWD folds constant zero inputs and
+  a constant zero priority version into literals; the serialized v2 fields do not change.
+  The common one-word folded line costs 11 events/50 bytes; three PWE cost 19/103.
+  Codec communication reserves 22 events/205 bytes for eight receives plus one send.
+  Other sources use their actual generated item counts. Belief logs print whole arrays;
+  splitting an array across ticks is not implemented, so over-budget source is rejected
+  rather than truncated. G5 records rare codec message types as not exercised while requiring
+  valid unconditional per-seat fields and both transport paths across the recording set.
+  Missing event coverage never establishes semantic correctness. The seat log is
+  cut at 10 MiB per episode; target at most 2 MiB for a 14,400-tick match.
+- **Kill switch.** `telemetryOff = 1` turns all lines off. Generated code never resets it.
+- **Tooling.** The v2 emission (runtime library and generated print code) and the v2 parser are
+  milestone M0-M1 work; the five-level audit is M2 (section 10, decided 2026-09-30).
+- **Hosted logs are qualified.** M2 confirmed v2 telemetry on 0.3.115; M3 confirmed v2 plus
+  compact PWC v3 across 256 candidate-seat logs. See the
+  [qualification record](2026-10-05-m3-qualification.md). Some logs arrive after the episode
+  completes; refetch missing artifacts. Missing seat logs remain unmeasurable. Access to our
+  logs does not imply access to opponents' private beliefs.
 
 ## 7. The two loops
 
@@ -403,8 +540,8 @@ BASIC. Output is one `compiled/<build-id>/` directory. Its contract:
    a recompile.
 6. **Telemetry v2** as specified in section 6, with the budget report.
 7. **Report every guess.** Where `Spec` is ambiguous or impossible, choose the most conservative
-   reading, implement it, and record it in `report.md` with the component ID. Unresolved guesses
-   block `Status: tested`.
+   reading, implement it, and record it in `report.md` with the component ID. Unclosed high-severity guesses
+   block `Status: tested` or `proven`; lower-severity guesses remain visible.
 8. **Safety and budget.** The build MUST pass the local gates (compilation design §8): lint,
    compile in all 16 seats, budget peaks, local screen, telemetry. A compile error or a rejected
    upload fails the whole hosted episode, so nothing uploads without passing them. The local
@@ -431,10 +568,10 @@ is written. Field list and details: compilation design §6.
   compile, and the compile report.
 - **Beliefs can be wrong.** Knowledge is built from fogged data. Belief-accuracy checks measure
   this, and we optimize it like any other component.
-- **Hosted telemetry is not yet seen end to end** (section 6): retrieval works, but no hosted
-  episode has carried our telemetry lines yet.
+- **Telemetry delivery does not prove truth.** Hosted telemetry is qualified (section 6),
+  but unknown predicates, missing private state and unexercised behavior remain explicit.
 
-## 10. Tooling (not yet built)
+## 10. Tooling
 
 The compilation design adds `prepare`, `assemble`, `verify`, and `compile` (its §4). This
 document needs three more:
@@ -445,8 +582,10 @@ document needs three more:
   violations. Nonzero exit on errors, so a loop can gate on it.
 - `pw.py strategy trace <build>`: compare `version.json` with the current source and list the
   components changed since that build.
-- `pw.py strategy audit <episodes> --json`: parse telemetry v2, join it to the hash-checked
-  replay, and compute every check at all five levels. Extends `pw_intent.py`.
+- `pw.py strategy audit <episodes> --json`: join telemetry v2 to the hash-checked replay and
+  report every declared check across all five levels (M2; local and hosted evidence qualified).
+  An explicit `--build ID` selects the verified source/map. Checks without data or a reviewed
+  evaluator are unmeasurable, never implicitly passed. See the [audit contract](../tools/pw_strategy.md#five-level-audit-m2).
 
 No new dependency.
 
@@ -473,16 +612,21 @@ Decided (2026-09-30):
 - One `STRATEGY.md`, with optional links to per-section files. Skills are directories.
 - `TENTATIVE_LESSONS.md` stays the evidence log. `STRATEGY.md` links to it through `Evidence`. A
   lesson becomes policy only when it goes into a component.
+- **Priorities are per rule in v1** (James, 2026-09-30); per-argument priorities are not
+  supported.
+- **Telemetry v2 emission and its parser move into M0-M1** (James, 2026-09-30); the five-level
+  audit and the first hosted confirmation stay in M2.
 - **Starting point:** the first `STRATEGY.md` is a faithful description of `base.bas` in this
   format. Its compiled output must play like `base.bas` in a local screen before we change any
   behavior. This tests the compiler before we test strategy.
 
-Open:
+Current limits and decisions:
 
-1. **Communication design.** Drafted as comms v1 (not yet verified against the engine; its §11) in [strategy/comms.md](../../strategy/comms.md):
-   policy content that changes often, so it lives outside this format document. The field already
-   has public shout protocols (Aaron's `FIRE22`/`ITEM23`,
-   [field analysis](../reports/2026-09-29-league-field-analysis.md)).
-2. **First hosted telemetry run.** Retrieval is confirmed; confirm that telemetry v2 lines arrive
-   complete in hosted seat logs (section 6).
-3. ~~Compile process design~~ Done: [2026-09-30-strategy-compilation.md](2026-09-30-strategy-compilation.md).
+- Comms v1 is implemented and engine-verified; see [comms.md](../../strategy/comms.md).
+  Its scrambling is not authentication. M3's performance comparison is inconclusive.
+- Hosted telemetry confirmation is complete. Some semantic checks fail or remain unmeasurable;
+  those outcomes are retained in the qualification record, not converted to passes.
+- The current grammar and runtime are Paintbot-specific. Generalizing them is separate work;
+  see the [maintainer guide](../strategy-compiler-maintainers.md) for coupling and contracts.
+- Undeclared Situation truth, unlogged private skill state and Result thresholds remain source
+  decisions; see [TODO](../../TODO.md). The compiler must not invent acceptance criteria.

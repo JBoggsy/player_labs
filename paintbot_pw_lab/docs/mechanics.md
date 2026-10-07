@@ -1,19 +1,19 @@
 # Paintbot PW mechanics (as deployed)
 
-> **Currency.** Verified 2026-09-30 against Metta-AI/paintbot-pw commit `118e1619` (tag
-> `coworld-v0.3.89`), which is coworld `paintbot-pw` 0.3.89
-> (`cow_f741e7d2-9ed6-41ef-b2db-c532875a572e`), the build the main league runs that day
-> (`pw.py deployed-ref`). Every `file:line` citation below is at `118e1619`. Live games record
-> rules **48**; rules 48 changed only FFA-kin fog, so the teams game plays rules 47.
-> 0.3.80-0.3.89 changed no teams rule and added no rules version: `mechanics.nim`, `kinship.nim`
-> and `maps.nim` are identical to 0.3.79; `sim.nim` gained only the opt-in `vision_range`
-> config (section 6; no deployed variant sets it) and a training-only (`-d:pwTraining`) ray
-> path, which moved later `sim.nim` lines by 62; `game.nim` gained the ranged replay format.
-> Checked by play: a local 16-seat `base.bas` match gives the same final hash under 0.3.79 and
-> 0.3.89, and the 0.3.89 build re-simulates all 80 hosted 0.3.79 tapes and 12 hosted 0.3.89
-> tapes hash-exactly. Re-verify when the coworld version changes: `pw.py deployed-ref` lists the
-> rule-bearing files that changed; diff `examples/paintbot/sim.nim`, `mechanics.nim`,
-> `game.nim`, `match_config.nim`, `kinship.nim`, and the manifest template's `variants`.
+> **Currency.** Active tools target `coworld-v0.3.124` / `7a29ed7a` (2026-10-07), rules 49.
+> The 0.3.123→0.3.124 diff adds training-map infrastructure (`maps.nim`, native environment,
+> cover/navigation/terrain array sizes); no rules, BASIC or seat-view behavior changed.
+> At optimizer handoff, deployed-ref confirmed the pin, tools/native were rebuilt, and v10
+> completed seed 7 on both sides with zero bad-seat matches and matching native/headless
+> hashes. No hosted requalification was needed for this infrastructure-only release.
+> The 0.3.115→0.3.123 diff preserves simulation rules; changes in `sim.nim` and
+> `mechanics.nim` add training damage/pickup telemetry. Earlier rules-49 changes below
+> were verified at `244dc62b`. BASIC execution changes materially: see policy-surface §2.
+> Unqualified `file:line` citations retain their `118e1619` anchors; new rules-49 claims name
+> `244dc62b`. `PW_DOCS_SHA` remains `118e1619` because the wider neural/oracle documentation
+> has not been fully requalified. Historical hosted measurements are not rules-49 evidence.
+> Recheck `pw.py deployed-ref` before hosted work. The frozen `reference/base.bas` remains
+> the 0.3.89 starter; its 3-HP assumptions and long-range targeting are not tuned for rules 49.
 
 This is **Paintbot on Polyworld**: a Nim engine where every seat is a BASIC script run inside the
 game pod (`player_runtime: game-hosted`). It is not the older Paintbot (Season 1 capture-the-heart
@@ -25,6 +25,13 @@ Paths are relative to the repo root. `sim.nim` and `mechanics.nim` are under `ex
 `readme:skip` blocks (checked by diff). Companion page: [policy-surface.md](policy-surface.md).
 
 ## 1. The one thing to get right: winning, glory, and rank
+
+> **Current ranking (2026-10-06).** League
+> `league_ae677105-0ab8-4561-81ec-c9cf6735821c` uses OpenSkill with
+> `margin_scale: 600`, `round_scoring_rule: mean`, `new_version_sigma: 6.0`.
+> Matchmaking is `team_n` / `elo_softmax`, temperature 100, favouring rating neighbours.
+> Settings evidence: `league.json` in the 2026-10-07 campaign archive (`~/coding/personal_labs/paintbot_pw_archives/2026-10-07-optimizer-campaign.tar.zst`); source verification below.
+> The later Elo subsection describes the retired league only.
 
 > **Currency of this section.** Rules verified 2026-09-30 against paintbot-pw `118e1619` (tag
 > `coworld-v0.3.89`, the league's build that day; teams recordings are stamped rules 48 and play
@@ -41,8 +48,28 @@ Three different numbers matter, and only the last one is what the league ranks b
 1. **The heart meter decides who wins the match.**
 2. **Glory is the score the platform receives.** The winner keeps its glory; the loser and both
    sides of a draw get 0.
-3. **League rank (MMR) moves by the glory margin.** Since 2026-09-28 evening the ladder's Elo
-   uses `margin_scale: 1000`, so every point of winning glory moves rank, not just the win.
+3. **League rank (MMR) is platform-owned.** The current settings use OpenSkill with
+   `margin_scale: 600`. Ratings belong to the player and displayed MMR is the conservative
+   ordinal `mu - 3*sigma`. Each two-team episode uses the soft outcome
+   `clamp(0.5 + (our glory - their glory)/1200, 0, 1)`.
+
+**Source verification:** metta revision `bb174d5ffb`,
+`packages/observatory-competitions/src/observatory_competitions/v2/ladders/rankings/openskill.py`
+(lines 194–196, 220–227, 288), and `.../ladders/updater.py:416-425`.
+A champion version change preserves player rating but widens sigma to at least 6.0;
+its immediate ordinal cost is `3*max(0, 6 - old_sigma)` before episode updates.
+Submit clear improvements and combine small wins into fewer submissions; uploads for
+experimentation do not themselves trigger this champion-version update.
+
+Observed pairings change as ratings move. Rounds 849–852 paired all four of our games
+with Richard (v6 went 3–1). Rounds 871–876 paired seven with xolod (five) and finist (two).
+The latest six completed rounds checked at optimizer handoff, 888–893, paired v10 with
+Richard four times and xolod three times; no other opponents. All seven episode rows were
+retrieved and exact policy/seat identities checked (`standby-six-rounds.json` in the 2026-10-07 campaign archive).
+These samples are not guaranteed future frequencies. The latest 57.1% Richard share supports
+re-evaluating reserve v22 with fresh controls and an xolod guard, not immediate submission.
+The orchestrator owns subsequent field checks. Frozen finist/zhar/relh activity must be
+rechecked before interpreting passive-opponent margin as active-combat strength.
 
 ### 1.1 Heart meter versus glory
 
@@ -100,7 +127,7 @@ Local runs through the repo's `local.py` use the engine defaults; `pw.py local` 
 `teamLives(team)`, `teamCogsOut(team)`, and the configured award values `awardBehind`,
 `awardBehindSeconds`, `awardBehindCogs`, `awardBehindCogsSeconds`.
 
-### 1.3 How glory becomes league rank
+### 1.3 Historical Elo conversion (retired league)
 
 The main league (`league_b9458ff8-…`) ranks by Elo with these live settings (read 2026-09-29):
 `k_factor 32`, `initial_rating 1500`, `round_scoring_rule "mean"`, **`margin_scale 1000`**.
@@ -230,13 +257,13 @@ to 0, 1 or -2 (draw) (`mechanics.nim:794`). A match decided on the meter at 10:0
 
 | Item | Value | Source |
 | --- | --- | --- |
-| Base HP | 3 (FFA-kin 10) | `sim.nim:65`, `72`, `298-300` |
-| Lives | 4 per cog: the first life plus 3 respawns. `livesLeft` counts the current life | `mechanics.nim:146`, `444` |
-| Respawn delay | 72 ticks (3 s) | `sim.nim:23`, `mechanics.nim:447` |
+| Base HP | 10 under rules 49; teams before 49 use 3 | `244dc62b sim.nim`: `seatMaxHp`, `OneLifeRules` |
+| Lives | 1 under rules 49; teams before 49 use 4. `livesLeft` counts the current life | `244dc62b mechanics.nim`: world initialization |
+| Respawn delay | No respawn after death under rules 49; earlier teams use 72 ticks (3 s) | `sim.nim:23`, `mechanics.nim:447` |
 | Spawn protection | 36 ticks; all damage ignored (`shield > 0`) | `sim.nim:844`, `mechanics.nim:371` |
-| On death | equipment wiped (grenade, spray, armor, charge), uniform removed | `mechanics.nim:445-446` |
+| On death | equipment wiped (including new items), uniform removed; the cog is out under rules 49 | `mechanics.nim:445-446` |
 
-- **Where you spawn** (`sim.nim:802-874`, `mechanics.nim:596-611`): if the team owns any heart,
+- **Initial spawn (and respawn under older rules)** (`sim.nim:802-874`, `mechanics.nim:596-611`): if the team owns any heart,
   within 350 units of an owned heart (wider by the square root of seats/16 in matches over 16
   seats, `sim.nim:830-834`) chosen by a softmax over the summed distance from living
   teammates (temperature 1000, distances quantized to 10). Larger sums (less-covered hearts) are
@@ -266,16 +293,16 @@ Units: 1 unit = 1 cm; `Radius` (body) = 55 (`sim.nim:17`).
 - Cooldown 24 ticks (1 shot/s), **tripled to 72** if the shooter has armor or is in a trench
   at the moment of the order (`mechanics.nim:734-736`). The check also reads `carrying`, which
   nothing sets under rules 47.
-- Hitscan: samples every 20 units out to 5,250 units (FFA-kin 2,000); stops at cover or the map
+- Hitscan: samples every 20 units out to 2,133 units under rules 49 (previously 5,250; FFA-kin 2,000); stops at cover or the map
   edge; the **first** body within 55 units of the ray with a clear sight line takes 1 damage.
   **Friendly fire is on**: teammates block and take hits (`mechanics.nim:713-723`).
 - Trench cover: a victim in a different trench from the shooter is skipped 70% of the time and
   the ray continues (`mechanics.nim:719-721`).
-- Spread: small random jitter scaled by height difference, 25% less per metre the shooter stands
-  above the target, clamped to 50-150% (`mechanics.nim:60-63`, `691-701`). The jitter is at most
-  ±64/5,250 of the distance, so at 20 m the lateral error is at most about 24 units on level
-  ground and 37 at the 150% clamp, both less than the body radius; the main source of misses is
-  the target moving during the windup (**inferred** from the jitter bound).
+- Rules 49 spread: two uniform draws in [-300, 300] sum to a lateral jitter scaled by
+  distance/5,250, then by terrain height. Above 711 units, an ordinary gun hit can be a dud:
+  its chance grows to 50% at full reach. A dud stops the ray without damage. Snipers retain
+  the old [-32, 32] draws and have no duds (`244dc62b mechanics.nim`: `gunDudPercent`,
+  `stepEquipment`). Raw inferred-target range bins are not calibrated for this spread.
 - All gun targets in a tick are chosen before damage, so mutual kills happen (`mechanics.nim:737-739`).
 
 ### Spray can (`mechanics.nim:674-682`, `506-516`, `743-750`)
@@ -303,8 +330,22 @@ Units: 1 unit = 1 cm; `Radius` (body) = 55 (`sim.nim:17`).
 | 2 medkit | `hp < max` | full HP | 720 |
 | 3 armor | armor < 3 | armor = 3, absorbed before HP; **triples gun cooldown** while > 0 | 720 |
 | 4 uniform | not disguised, not attacking this tick | disguise (below) | 720 |
+| 5 mister | not already misting | 60 seconds without attacks; heals each nearby living cog by 1 HP every 15 seconds within 500 units, including enemies | 720 |
+| 6 sniper | neither sniper nor spray held | gun reach 4,800, 96-tick cooldown (tripled by armor/trench/carrying); 1 damage, no duds | 720 |
+| 7 radar | any living cog in reach | 60 seconds without attacks and speed at 60%; all living cogs within 800 deal double damage, either side | 720 |
 
-Pickup reach is 120 units. On Heartwick the layout is 2 uniforms, 4 grenades, 2 sprays, 2 armors,
+Rules-49 items and pickup conditions: `244dc62b mechanics.nim`, `pickupEquipment` and
+`stepMisters`. Spray and sniper are mutually exclusive. Any pickup ends the current radar;
+a radar pickup starts a fresh timer. Mister/radar pickup cancels an attack already charging.
+
+`selfDestruct()` issues a one-tick command under rules 49. A living cog without mister/radar
+explodes before gun damage, then dies regardless of armor/shield. Other living cogs within
+415 units take the bomber's current HP as damage, subject to their normal protection;
+walls/trenches do not block it. Radar boosts damage as usual. The engine groups this damage
+with grenades; the lab trace identifies it separately (`244dc62b mechanics.nim`: `selfDestruct`).
+
+Pickup reach is 120 units. Rules 49 add one mirrored pair of each new item to Heartwick.
+The older Heartwick layout is 2 uniforms, 4 grenades, 2 sprays, 2 armors,
 6 medkits (the base pair plus two deep-wilderness pairs) and 6 trenches of 280 x 280
 (`mechanics.nim:137-193`). The per-kind split and the totals are **verified** at `d0728ab1` (map code
 unchanged through `118e1619`) from the engine's map export (`pw.py map --json`), and every pickup kept one kind across all 3,050 pickups
@@ -381,7 +422,7 @@ Config keys the engine reads (`coworld.nim:17-24`, `match_config.nim:43-126`, `g
 | `glory` | object (section 1): 7 keys since rules 47 (`behind_cogs`, `behind_cogs_seconds` added) | teams only; rejected in FFA-kin |
 | `kin_layout` | `sampled`, `fours`, `pairs`, `trios_loner`, `cousins`, `strangers`, `clones`, `tribes` (0.3.75+: families of 5) | FFA-kin only |
 
-### Deployed variants (manifest 0.3.89)
+### Variants (manifest 0.3.115; engine configuration unchanged since 0.3.89)
 
 | Variant | Config beyond seed/players |
 | --- | --- |

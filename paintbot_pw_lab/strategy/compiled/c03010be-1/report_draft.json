@@ -1,0 +1,151 @@
+{
+  "guesses": [
+    {
+      "id": "G-C.take_heart-1",
+      "component": "C.take_heart",
+      "spec_quote": "`goal_x = controlX(objective)`",
+      "decision": "Read controlX/controlY(objective) without checking objective >= 0. If the activation runs with objective = -1, the host returns -1 (invalid index), so there is no runtime error. The goal is then (-1, -1), which the engine clamps.",
+      "why": "The spec has no objective >= 0 guard here, unlike the default_goal/resupply/fall_back steps. The selector presumably runs this only when S.has_target_heart is on, and controlX(-1) is safe.",
+      "severity": "low",
+      "state": "kept"
+    },
+    {
+      "id": "G-C.cover_heart-1",
+      "component": "C.cover_heart",
+      "spec_quote": "`hx = controlX(objective)`",
+      "decision": "Same as C.take_heart: no objective >= 0 guard, relying on controlX(-1) = -1 being safe.",
+      "why": "Literal reading of the spec. The host returns -1 for invalid indices instead of raising an error.",
+      "severity": "low",
+      "state": "kept"
+    },
+    {
+      "id": "G-C.default_goal-1",
+      "component": "C.default_goal",
+      "spec_quote": "else `(heartX, heartY)`",
+      "decision": "Used the legacy host fields carrying, ownHeartStolen, heartX and heartY exactly as written. Under rules 47 carrying and ownHeartStolen are always 0 and heartX/heartY read the enemy home, so in practice the goal is the thief (never set, see gaps) or the enemy home.",
+      "why": "The spec names these fields explicitly and matches base.bas; I did not substitute control* fields.",
+      "severity": "medium",
+      "state": "kept"
+    },
+    {
+      "id": "G-K.pickups-1",
+      "component": "K.pickups",
+      "spec_quote": "(kind = 2 AND selfHp < 3)",
+      "decision": "Kept the literal HP thresholds (medkit wanted below 3 HP, armor only at exactly 3 HP, medkit cost quartered at 1 HP) even though rules 49 HP runs 0-10.",
+      "why": "The numbers are written into the Spec, not Params; changing them would be inventing behavior. Under rules 49 armor is rarely wanted and medkits only when nearly dead.",
+      "severity": "medium",
+      "state": "open"
+    },
+    {
+      "id": "G-K.pickups-2",
+      "component": "K.pickups",
+      "spec_quote": "`mem_tick(j) = worldTick` (previously visible and ready)",
+      "decision": "Step 0 tests mem_tick(j) = worldTick literally, so a take is detected only when the station was in view on the immediately previous tick (mem_tick = previous tick + 1). The pickupVisible, prev_ and host state values are read once per tick and reused for Step 0c.",
+      "why": "Literal reading; the runtime runs every living tick, so worldTick advances by 1 between updates.",
+      "severity": "low",
+      "state": "open"
+    },
+    {
+      "id": "G-K.contacts-1",
+      "component": "K.contacts",
+      "spec_quote": "whose own evidence holds and where",
+      "decision": "Own evidence (and so xe_label) is evaluated only for teammate-parity bodies that reached Step 0c, that is not matched by a live friend record and not enemy parity.",
+      "why": "Own evidence is defined inside Step 0c, and a body matched in Step 0a skips to the next i.",
+      "severity": "low",
+      "state": "open"
+    },
+    {
+      "id": "G-K.contacts-2",
+      "component": "K.contacts",
+      "spec_quote": "`cost = d2 - (3 - playerHp(i)) * hp_weight`",
+      "decision": "Kept the literal 3 in the cost even though rules 49 HP is 0-10; the term still ranks wounded bodies first, offset by a constant.",
+      "why": "The value is in the Spec, not a Param.",
+      "severity": "low",
+      "state": "open"
+    },
+    {
+      "id": "G-COM.disguise_alert-1",
+      "component": "COM.disguise_alert",
+      "spec_quote": "one sender never fills both witnesses",
+      "decision": "When a report fills witness 1 (expired slot) and the live witness 2 has the same speaker, witness 2 is expired (xa_t2 = 0).",
+      "why": "The explicit witness-1 rule does not check witness 2, so without this one sender could hold both slots and block a real second witness. Expiring the duplicate keeps the stated invariant; K.contacts also requires xa_s1 <> xa_s2.",
+      "severity": "medium",
+      "state": "open"
+    },
+    {
+      "id": "G-COM.disguise_alert-2",
+      "component": "COM.disguise_alert",
+      "spec_quote": "Set `xa_amb(L) = 0` again when both witnesses",
+      "decision": "The reset is done in __recv for label L, before this message is applied, when both xa_t1(L) and xa_t2(L) are <= worldTick.",
+      "why": "COM units have no per-tick SUB, and send/recv may not run on a given tick. A stale amb is harmless while both witnesses are expired, because K.contacts also requires live witnesses.",
+      "severity": "low",
+      "state": "open"
+    },
+    {
+      "id": "G-COM.disguise_alert-3",
+      "component": "COM.disguise_alert",
+      "spec_quote": "In `__recv`: set `L = cm__fa`, `amb = 0`",
+      "decision": "A message whose cm__fa is outside 0..15 is ignored. In __send, the strong label is used only when 0 <= xe_label < 16.",
+      "why": "This keeps every array index in range (AGENTS.md rule 5); the wire field width is not visible to the unit.",
+      "severity": "low",
+      "state": "open"
+    },
+    {
+      "id": "G-COM.disguise_friend-1",
+      "component": "COM.disguise_friend",
+      "spec_quote": "visible within `d_range_sq`",
+      "decision": "Within means squared distance <= d_range_sq. In __recv, a cm__fa outside 0..15 is ignored.",
+      "why": "Inclusive bound, plus the index guard required by rule 5.",
+      "severity": "low",
+      "state": "open"
+    },
+    {
+      "id": "G-COM.enemy_sighting-1",
+      "component": "COM.enemy_sighting",
+      "spec_quote": "Choose the one nearest to any teammate seat s with",
+      "decision": "Teammate seats are s <> selfId with s MOD 2 = selfTeam. The cost of a body is its squared distance to the nearest such recently heard teammate, or to us when there is none.",
+      "why": "cm__heard_* is kept per claimed sender seat, which may include enemy-parity labels; the spec says teammate.",
+      "severity": "low",
+      "state": "open"
+    },
+    {
+      "id": "G-COM.glory_seen-1",
+      "component": "COM.glory_seen",
+      "spec_quote": "Use the slot j that is within h_match of `(px, py)`",
+      "decision": "Position matching for gl_* (in __recv) and hs_* (after a send) considers only slots in use (gl_until > 0, hs_t > 0), taking the lowest matching slot. Otherwise it takes the slot with the smallest gl_until or hs_t, lowest index on a tie.",
+      "why": "Without this, an empty slot at (0, 0) would match a heart near the origin.",
+      "severity": "low",
+      "state": "open"
+    },
+    {
+      "id": "G-COM.grenade_warning-1",
+      "component": "COM.grenade_warning",
+      "spec_quote": "call `cm__send(2, release_in, 0, cell, quiet)`",
+      "decision": "release_in is sent unclamped, exactly as SK.motor reports it.",
+      "why": "The spec gives no clamp; the runtime owns encoding.",
+      "severity": "low",
+      "state": "open"
+    }
+  ],
+  "gaps": [
+    {
+      "component": "C.take_heart",
+      "need": "sk_motor__sneak(1), declared in the SK.motor interface and named by every C.* quiet-approach step",
+      "substitute": "Called sk_motor__sneak(1) as declared. The read-only context copy units/SK.motor.bas defines no sk_motor__sneak (nor quiet, charging, charge_x/y, charge_started or release_in), so the build depends on the assembled SK.motor matching its declared interface. The same applies to C.cover_heart, C.default_goal, C.resupply and C.fall_back."
+    },
+    {
+      "component": "COM.grenade_warning",
+      "need": "sk_motor__charging, charge_started, charge_x, charge_y, release_in and quiet outputs of SK.motor",
+      "substitute": "Read them as declared in the SK.motor interface; the context copy of units/SK.motor.bas does not set them yet."
+    },
+    {
+      "component": "C.default_goal",
+      "need": "a heart carrier / thief and carrying state",
+      "substitute": "Used the legacy carrying, ownHeartStolen, heartX/heartY and K.contacts thief (from playerCarrying) as written; under rules 47+ these are constant (0 / enemy home), so thief is always -1."
+    }
+  ],
+  "lessons": [
+    "A COM unit may define only its Direction SUBs (plus optional init), so cell encode/decode cannot be factored into a helper SUB; inline it in each send/recv.",
+    "Every scratch scalar a unit assigns is a whole-policy global, and 21 units with 5-30 temporaries each overflowed the 512-global limit (567). Keep temporaries and private scalar memory in one small unit-owned array (DIM <prefix>__t(N), with a comment mapping each cell), and keep named scalars for declared outputs only."
+  ]
+}

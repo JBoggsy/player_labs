@@ -1,5 +1,12 @@
 # paintbot-pw: league, field and evaluation budget
 
+> Current teams league (authenticated lookup, 2026-10-05):
+> `league_ae677105-0ab8-4561-81ec-c9cf6735821c`, release 0.3.115 / `244dc62b`.
+> The retired `league_b9458ff8-0854-4e21-82b8-3c99942902e0` returns 404.
+> Dated standings, episodes and configuration observations below remain historical;
+> resolve the live roster and release again before a hosted request.
+
+
 The reference for where paintbot-pw is played, how an episode is configured and ranked, who
 is in the field, and what an experience request (XP) can do and cost. Verified **2026-09-29,
 about 23:00 UTC**; the game identity, engine facts and the failed-episode finding re-checked
@@ -318,20 +325,21 @@ reports should link the wrapper and state the tick in text.
 - **Players**: **James Botts** `ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce` (the selected player) and
   **Games Bond** `ply_f39295d0-ac38-4a62-ac4f-e1d62d7dc9d1` ("Games", not "James"). No player named
   "James Boggs" or "James Bond" exists.
-- **Session**: refreshed 2026-09-30 00:11 UTC with `uv run coworld player use ply_53fb05a6-…`;
-  it expires 2026-10-01 00:11 UTC. Check with `pw.py doctor --json` (`result.player.session`).
-- **Policies**: `jb-pw-base:v1` (policy version `d58653f8-5bf1-48be-9de5-6e9c040cc7d8`) is
-  `reference/base.bas` unchanged (sha256 `3679f5bb…`), uploaded 2026-09-30 as our baseline.
-- **League presence** (James Botts, 2026-09-30): `jb-pw-base:v1` submitted to this league
-  (`sub_0ee67ab9-…`) qualified and competes as champion (membership `lpm_4fcd7b3c-…`, Competition
-  division).
-- **Submitting here also enters Heartland and Heartland Big.** The Heartland league takes its
-  entrants from this league, and Heartland Big from Heartland (`entrants_from_league_id`): within a
-  minute of our submission the platform auto-created submissions `sub_480b41ed-…` (Heartland) and
-  `sub_a42f8843-…` (Heartland Big), both qualified as champions (`lpm_e40c0d24-…`,
-  `lpm_ad6322d9-…`). Those are FFA-kin games on the separate `heartland` coworld; a teams policy
-  compiles there but plays them with the wrong model (seat parity is not a team). Every future
-  submission to this league will do the same; retire the Heartland memberships if they are unwanted.
+- **Session**: player sessions expire after about a day; refresh with
+  `uv run coworld player use ply_53fb05a6-…` and check with `pw.py doctor --json`
+  (`result.player.session`).
+- **Policies**: `jb-pw-opt:vN` are builds compiled from `strategy/STRATEGY.md`; every upload is
+  recorded with its build id and SHA256 in `strategy/compiled/uploads.jsonl`. `jb-pw-base:v1` is the
+  pre-Bassy `reference/base.bas` (dead on 0.3.123+); `jb-pw-base:v2` is upstream's ported base.
+- **League presence** (James Botts, 2026-10-07): champion `jb-pw-opt:v29` (submission
+  `sub_08157a74-…`), rank 1. Standings and rating belong to the player; only the champion
+  membership plays, and earlier `jb-pw-base` / `jb-pw-opt` memberships remain listed as
+  non-champion.
+- **Heartland and Heartland Big.** The 2026-09-30 `jb-pw-base:v1` submission was auto-entered into
+  both FFA-kin leagues on the separate `heartland` coworld (`entrants_from_league_id`). Those
+  memberships (`lpm_e40c0d24-…`, `lpm_ad6322d9-…`) were retired on 2026-10-07 because the policy was
+  disabled by Bassy. Later submissions here (`jb-pw-base:v2`, `jb-pw-opt` v3–v29) created no new
+  Heartland memberships. After any submission, list all memberships to confirm.
 
 ## Experience requests (XP)
 

@@ -32,8 +32,8 @@ import urllib.request
 from pathlib import Path
 
 API = "https://softmax.com/api/observatory"
-MAIN_LEAGUE = "league_b9458ff8-0854-4e21-82b8-3c99942902e0"          # paintbot-pw teams ladder (docs/field.md)
-COMPETITION_DIVISION = "div_d1053eaf-6e7d-4266-950a-a740d0b9bd7b"    # its Competition division
+MAIN_LEAGUE = "league_ae677105-0ab8-4561-81ec-c9cf6735821c"          # paintbot-pw teams ladder (docs/field.md)
+COMPETITION_DIVISION = "div_63c08219-c269-4bc5-84ae-5ccfc55b0a90"    # its Competition division
 USER_AGENT = "paintbot-pw-lab/1.0 (+personal_labs paintbot_pw_lab)"  # urllib's default agent gets HTTP 403
 REQUEST_PAUSE_SECONDS = 1.0
 MAX_RETRIES = 3

@@ -56,7 +56,7 @@ TOOLS = Path(__file__).resolve().parent
 LAB = TOOLS.parent
 DEFAULT_TAG = pw_release.current_tag()  # tools/release.env, shared with build_tools.sh
 CACHE_VERSION = 1   # bump when the receipt signature changes
-TABLES_VERSION = 2  # bump when any table's columns or meaning change
+TABLES_VERSION = 3  # bump when any table's columns or meaning change
 REPLAY_NAMES = ("replay.json", "replay.json.z", "replay", "replay.bin", "replay.gz")
 MAGIC = b"POLYWORLDREPLAY"
 CACHE_DIR = "pw_cache"
@@ -557,7 +557,7 @@ INT_COLUMNS = {"t", "seat", "team", "victim", "victim_team", "aim_target", "aim_
                "aim_target_across", "hit_distance", "near_owned_heart", "previous_owner", "lost_ticks",
                "capture_ticks", "heart", "pickup", "line_no", "engine_tick", "amount", "config_seed",
                "policy_version", "distance", "attacker_x", "attacker_z", "cmd_walk", "cmd_shoot",
-               "cmd_direct", "cmd_sneak", "cmd_charge", "cmd_goal_x", "cmd_goal_z", "cmd_aim_x", "cmd_aim_z"}
+               "cmd_direct", "cmd_sneak", "cmd_charge", "cmd_self_destruct", "sniper", "radar_until", "mister_until", "cmd_goal_x", "cmd_goal_z", "cmd_aim_x", "cmd_aim_z"}
 BOOL_COLUMNS = {"is_filler", "name_matches_tape", "hit", "friendly", "self", "killed", "initial", "ambiguous"}
 STRING_COLUMNS = {"episode_id", "kind", "data", "line_kind", "raw", "fields", "file", "policy_version_id",
                   "policy_id", "policy_name", "player_name", "outcome", "platform_episode_id", "job_id",

@@ -773,7 +773,7 @@ def render_markdown(report: dict) -> str:
                   f"{p['opening_first_targets_per_episode']}; first hearts reached within 30 s "
                   f"{p['first_hearts_reached_per_episode']}; first capture started {p['first_capture_start']}; "
                   f"capture order {p['capture_order']}.",
-                  f"- **Weapons**: HP share gun/grenade/spray {p['weapon_hp_share']}; gun accuracy "
+                  f"- **Weapons**: HP share by weapon {p['weapon_hp_share']}; gun accuracy "
                   f"{_pct(p['gun_enemy_accuracy'])} on {p['shots_per_episode']:.0f} shots/ep; grenades "
                   f"{_num(p['grenades_per_episode'], '.1f')}/ep ({_pct(p['grenade_effective_share'])} hurt an enemy); "
                   f"spray bursts {_num(p['spray_bursts_per_episode'], '.1f')}/ep ({_pct(p['spray_effective_share'])} effective).",

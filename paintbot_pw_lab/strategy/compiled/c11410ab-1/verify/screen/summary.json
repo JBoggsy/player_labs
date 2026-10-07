@@ -1,0 +1,123 @@
+{
+  "screening_only": "local matches vs files we seat; not evidence about the league field",
+  "build": {
+    "tag": "coworld-v0.3.124",
+    "commit": "7a29ed7a790019c8e772ab2f0e0bd3c63cd1dd1a",
+    "nim": "Nim Compiler Version 2.2.10 [MacOSX: arm64]"
+  },
+  "rules": [
+    49
+  ],
+  "glory": {
+    "behind_lives": 5,
+    "behind_cogs": 10
+  },
+  "max_ticks": 14400,
+  "map": "Heartwick (default)",
+  "a": {
+    "path": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy/c11410ab-1/policy.bas",
+    "sha256": "6930b8d2a8b35656ef4baee9f73d940014f644fb1375296be961582951cef592"
+  },
+  "b": {
+    "path": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/strategy/compiled/66386cde-1/policy.bas",
+    "sha256": "c3ba8c1a82662902371ea6d72583153811c019ccff9fa28d3a8e0dff8e7b289e"
+  },
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28
+  ],
+  "sides": [
+    0,
+    1
+  ],
+  "parity": [
+    {
+      "seed": 1,
+      "a_side": 0,
+      "library_hash": 3343977712,
+      "headless_hash": 3343977712,
+      "library_tick": 2444,
+      "headless_ticks": 2444,
+      "match": true
+    },
+    {
+      "seed": 2,
+      "a_side": 1,
+      "library_hash": 4097217184,
+      "headless_hash": 4097217184,
+      "library_tick": 3580,
+      "headless_ticks": 3580,
+      "match": true
+    }
+  ],
+  "matches_with_bad_seats": 0,
+  "wall_seconds": 30.9,
+  "workers": 14,
+  "matches_per_second": 1.811,
+  "summary": {
+    "all": {
+      "n": 56,
+      "wins": 31,
+      "draws": 0,
+      "losses": 25,
+      "win_rate": 0.5535714285714286,
+      "mean_outcome": 0.543875,
+      "ci95_low": 0.4681910214534386,
+      "ci95_high": 0.6195589785465614
+    },
+    "a_side_0": {
+      "n": 28,
+      "wins": 15,
+      "draws": 0,
+      "losses": 13,
+      "win_rate": 0.5357142857142857,
+      "mean_outcome": 0.5223571428571429,
+      "ci95_low": 0.417312748044847,
+      "ci95_high": 0.6274015376694386
+    },
+    "a_side_1": {
+      "n": 28,
+      "wins": 16,
+      "draws": 0,
+      "losses": 12,
+      "win_rate": 0.5714285714285714,
+      "mean_outcome": 0.5653928571428571,
+      "ci95_low": 0.4550729731186654,
+      "ci95_high": 0.6757127411670488
+    },
+    "seed_balanced": {
+      "n_seeds": 28,
+      "mean_outcome": 0.5438750000000001,
+      "ci95_low": 0.4694375916737201,
+      "ci95_high": 0.6183124083262801
+    }
+  },
+  "recorded": null,
+  "identical_play": false
+}

@@ -1,18 +1,11 @@
 # Paintbot PW evidence pipeline
 
-> **Currency.** Verified 2026-09-30 against paintbot-pw tag `coworld-v0.3.89` = `118e1619`
-> (recordings stamped rules 48; the teams game plays rules 47). Re-simulation at 0.3.89 was
-> checked with `paintbot-headless` and the lab's `pw_trace` built from that tag by local Nim
-> 2.2.6 on arm64 macOS; the tools are pinned to 0.3.89 (`pw_trace.nim` and `pw_map.nim` define
-> the wading test locally since 0.3.89 removed `neural_contract.inWater`,
-> [pw_trace.md](tools/pw_trace.md)).
-> Measurements come from 80 hosted main-league episodes of 0.3.79 (rounds 2382-2388,
-> `episode_data/audit-2026-09-29/`) and the three rules-44 samples of 2026-09-28
-> (`episode_data/20260928T214433_*`), all loaded with `pw.py episodes` / `pw.py metrics`, plus
-> 12 hosted 0.3.89 episodes of rounds 2509-2510 (`pw.py scout fetch`, 2026-09-30) for the
-> format checks. **Re-verify when** a new `coworld-vX` tag appears:
-> `pw.py deployed-ref`, the accepted rules list in `game.nim` `loadRecording`, and a
-> hash-checked re-simulation of fresh league tapes (`pw.py episodes <dir> --json`).
+> **Currency.** Active tools target `coworld-v0.3.124` / `7a29ed7a` (2026-10-07), rules 49.
+> The 0.3.123→0.3.124 diff adds training-map registration only; hosted simulation rules are unchanged.
+> The current trace adds rules-49 commands/equipment and separates self-destruct damage.
+> Prior hosted measurements below remain evidence about 0.3.79/0.3.89, not hosted rules 49.
+> New local qualification is recorded in [WORKING_CONTEXT.md](../WORKING_CONTEXT.md).
+> All re-simulation must still pass the per-tick hash check.
 
 Line references are to `118e1619` in `~/coding/coworlds/paintbot-pw` (abbreviated `pw:`).
 **Verified** means exercised on the episodes above or a local run; **inferred** means read from
@@ -25,6 +18,39 @@ The lab's tools built on this pipeline are indexed in [docs/tools/README.md](too
 `pw_trace` (hash-checked expansion), `pw_episodes` (reader, cache, Parquet tables:
 [tables.md](tools/tables.md)), `pw_metrics`, `pw_local` and the analysis tools on top. This page
 is the reference for the artifacts and the re-simulation they rest on.
+
+### Runtime migration and evidence limits
+
+The 0.3.115→0.3.123 engine diff keeps rules 49 while replacing the BASIC runtime with
+Bassy. Replaying recorded commands does not execute policy BASIC, so hash-exact replay
+is evidence for simulation reconstruction, not policy compatibility. Recompile and execute
+policies under the new runtime before treating old hosted policy results as transferable.
+
+Upstream training telemetry now adds mister/sniper/radar pickup counters and a damage
+queue distinguishing ordinary gun, sniper and self-destruct (`sim.nim`, `mechanics.nim`,
+`native_env.nim` at `28030de6`). These upstream additions do not automatically change the
+lab's table schema or establish exact attribution in the existing lab exporter.
+Native snapshots now encode Bassy typed values; do not reuse old VM snapshots across runtimes.
+
+### Rules-49 trace contract
+
+`pw_trace` schema 2 and Python table version 3 add `cmd_self_destruct`, `sniper`,
+`radar_until`, `mister_until` to state rows. Equipment timers are absolute expiry ticks
+(0 when absent), not the remaining-tick host calls. Self-destruct is a separate event and
+`weapon` value in damage/kills, although the engine labels it grenade damage. New item kinds
+are mister/sniper/radar. Pickup takers remain inferred; a full-health medkit condition avoids
+confusing partial mister healing with a pickup, but simultaneous healing can remain ambiguous.
+An unassigned or ambiguous pickup is never exact taker evidence. Taking a radar and then
+another item in the same tick can leave the radar taker unassigned. State changes are consumed
+once per seat/item kind, allowing distinct pickups without reusing one change for two pads.
+Damage and pickup metrics include the new kinds; grenade-specific flags, throw-efficiency
+metrics and trajectory drawings exclude self-destruct. Self-destruct remains visible in the
+event/damage/kill tables. Duds are not classified separately from other misses.
+
+Gun target inference now uses the seat's actual ordinary/sniper reach. The old 110-unit aim
+corridor is **uncalibrated for rules 49**; range-bin outcomes remain raw descriptive values.
+Damage-derived hit flags are exact; a dud creates no damage event. The five-level audit does
+not promote these inferred bins to proof of correct motor execution.
 
 ## 1. Summary
 

@@ -1,0 +1,46 @@
+{
+  "array_cells": 609,
+  "array_cells_limit": 4096,
+  "arrays": 13,
+  "arrays_limit": 256,
+  "globals": 57,
+  "globals_limit": 512,
+  "source_bytes": 12147,
+  "source_limit": 131072,
+  "telemetry": {
+    "bytes": 362,
+    "events": 43,
+    "limit_bytes": 512,
+    "limit_events": 64,
+    "lines": {
+      "PWB": {
+        "bytes": 40,
+        "count": 1,
+        "events": 5
+      },
+      "PWC": {
+        "bytes": 0,
+        "count": 0,
+        "events": 0
+      },
+      "PWD": {
+        "bytes": 130,
+        "count": 1,
+        "events": 19
+      },
+      "PWE": {
+        "bytes": 192,
+        "count": 3,
+        "events": 19
+      },
+      "PWP": {
+        "bytes": 0,
+        "count": 0,
+        "events": 0
+      }
+    },
+    "log_offsets": {
+      "K.position": 0
+    }
+  }
+}

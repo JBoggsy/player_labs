@@ -19,12 +19,17 @@ Run from the repo root. Pass every episode root of both arms (dirs, batch dirs o
 # Full report (Markdown to stdout; --out writes the result JSON for compare_report.py and the
 # experiment record; --json prints the agent envelope instead of the Markdown)
 uv run python paintbot_pw_lab/tools/compare.py compare ROOT... --design paired \
-    --baseline NAME:vN --candidate NAME:vM [--target elo_outcome] [--metrics a,b,...] \
-    [--xreq xreq_... --xreq ...] [--requests manifest.json] [--out out.json] [--json]
+    --baseline NAME:vN --candidate NAME:vM [--target elo_outcome|score_outcome] [--margin-scale 1000] \
+    [--metrics a,b,...] [--xreq xreq_... --xreq ...] [--requests manifest.json] [--out out.json] [--json]
 
-# Stop check while episodes stream in (same loading, primary metric only)
+# Stop check while episodes stream in (same loading, one outcome score)
 uv run python paintbot_pw_lab/tools/compare.py sprt ROOT... --design paired \
-    --baseline NAME:vN --candidate NAME:vM [--h0 0 --h1 0.05 --alpha 0.05 --beta 0.05] [--out sprt.json] [--json]
+    --baseline NAME:vN --candidate NAME:vM [--target elo_outcome|score_outcome] [--margin-scale 1000] \
+    [--h0 0 --h1 0.05 --alpha 0.05 --beta 0.05] [--out sprt.json] [--json]
+
+# The current ladder's outcome (OpenSkill, margin_scale 600): request it explicitly
+uv run python paintbot_pw_lab/tools/compare.py compare ROOT... --design paired \
+    --baseline NAME:vN --candidate NAME:vM --target score_outcome --margin-scale 600 --out out.json
 
 # HTML page from the JSON (shared renderer)
 uv run python .claude/skills/coworld-ab/scripts/compare_report.py out.json --out ab.html \
@@ -36,16 +41,33 @@ file name, e.g. `base.bas`, also resolves as their label), or `name:vN` resolved
 episodes' own participants (an ambiguous or unknown label stops the run with exit 2 and
 `result.valid`). `--tag`, `--jobs`, `--refresh` pass through to `pw_episodes.load_batch`.
 
+## Outcome scores: current ladder versus historical
+
+| Metric | Formula | Use |
+| --- | --- | --- |
+| `score_outcome` | `clamp(0.5 + (our mean result score − their mean result score) / (2 × margin_scale), 0, 1)`; attributable forfeit 0/1 | **The current ladder's quantity.** metta's OpenSkill ranking rates a two-team episode by this soft outcome (`openskill.py` at `dcdfc19a`, the `margin_scale` branch). The live paintbot-pw ladder (`league_ae677105…`) has `algorithm openskill`, `margin_scale 600`, so pass `--target score_outcome --margin-scale 600`. Read the scale from the league's `settings.ladder.ranking` before a batch; it can change without a game release. |
+| `elo_outcome` (default `--target`, primary) | `clamp(0.5 + (our glory − their glory) / 2000, 0, 1)`; attributable forfeit 0/1 | Historical: the Elo ladder with `margin_scale 1000` that ran until the league moved to OpenSkill. Fixed at 1000 and unaffected by `--margin-scale`, so earlier results keep their meaning. |
+
+`--margin-scale` must be positive and finite (otherwise exit 2). It changes only
+`score_outcome`; its default, 1000, equals the historical scale, so a run without the flag
+computes the same numbers as `elo_outcome` and never silently adopts the live scale. Scores
+are the episode's result scores (`results.json` `scores`, checked by `pw_episodes` against the
+hash-verified trace's settled team glory), averaged per team as OpenSkill averages a side.
+Clipping matters at 600: any margin of 600 glory or more scores 0 or 1. The scale and both
+formulas are written to the result JSON (`outcome`) and printed on the "Outcome scales" line.
+OpenSkill rates a forfeited episode by rank (the failed side last), which the 0/1 forfeit
+score approximates, as `elo_outcome` already did.
+
 ## Agent contract
 
 `uv run python paintbot_pw_lab/tools/pw.py compare compare|sprt ROOT... --json` (or the tool directly). Shared rules (envelope keys, exit codes, selector checks): [README.md § Agent contract](README.md#agent-contract), implemented once in `tools/pw_cli.py`.
 
 | | |
 | --- | --- |
-| Inputs | roots of both arms; `--design`, `--baseline`, `--candidate` (required); `--target`, `--metrics`, `--xreq`, `--requests`, `--h0/--h1/--alpha/--beta`, `--out FILE`, `--tag`, `--jobs`, `--refresh` |
+| Inputs | roots of both arms; `--design`, `--baseline`, `--candidate` (required); `--target` (`sprt`: `elo_outcome` or `score_outcome`), `--margin-scale` (positive; default 1000), `--metrics`, `--xreq`, `--requests`, `--h0/--h1/--alpha/--beta`, `--out FILE`, `--tag`, `--jobs`, `--refresh` |
 | Outputs | `--out FILE`: the full result JSON with every row (the input of `compare_report.py`) |
-| `--json` result | `compare`: the JSON below without `rows` (a count instead); `sprt`: `{decision, llr, lower, upper, n, estimate, stderr, h0, h1, alpha, beta, note, design, arm_policy_keys, exclusions}`. `counts` holds `rows`, `excluded` and `exclusions` |
-| Exit codes | 0 ok; 1 some episodes failed to load (listed as `LOAD FAILED` and in `failures[]`; the analysis still runs on the rest); 2 an unknown or ambiguous arm (`result.valid` lists the labels and keys), both arms resolving to one policy, pooled rules/coworld versions, both arms in one episode under paired/field, an unknown `--metrics` name; 3 `pw_trace` not built |
+| `--json` result | `compare`: the JSON below without `rows` (a count instead); `sprt`: `{decision, llr, lower, upper, n, estimate, stderr, h0, h1, alpha, beta, note, metric, outcome, design, arm_policy_keys, exclusions}`. `counts` holds `rows`, `excluded` and `exclusions` |
+| Exit codes | 0 ok; 1 some episodes failed to load (listed as `LOAD FAILED` and in `failures[]`; the analysis still runs on the rest); 2 an unknown or ambiguous arm (`result.valid` lists the labels and keys), both arms resolving to one policy, pooled rules/coworld versions, both arms in one episode under paired/field, an unknown `--metrics` name, a non-positive or non-finite `--margin-scale`; 3 `pw_trace` not built |
 | Idempotence / cache | traces are cached, so `sprt` can be rerun as episodes stream in |
 | Typical next step | `compare_report.py RUN/ab.json` for the page, then review replays per arm |
 
@@ -54,7 +76,7 @@ episodes' own participants (an ambiguous or unknown label stops the run with exi
 | `--design` | Episodes | Unit and tests | Groups |
 | --- | --- | --- | --- |
 | `paired` (recommended) | each arm vs the same opponent; pw_ab_requests gives one request per (arm, opponent, side, seed) | pairs keyed by (opponent, side, seed); seed = `game_config.seed` (hosted) or the engine seed (local). An explicit request seed fixes the world for every episode of that request, so use one single-episode request per (arm, opponent, side, seed): extra episodes replay one match (`duplicate_game`). Means: paired t, and the Wilcoxon signed-rank p must also be < 0.05. Rates: exact McNemar on discordant pairs | `all`, `red`, `blue`, `vs <opponent>` when there is more than one opponent |
-| `h2h` | candidate vs baseline in one episode | `elo_outcome`: one-sample t vs 0.5; `win_rate`: exact binomial on decisive games (draws dropped); other metrics paired within the episode | `all`, candidate side |
+| `h2h` | candidate vs baseline in one episode | `elo_outcome` and `score_outcome`: one-sample t vs 0.5; `win_rate`: exact binomial on decisive games (draws dropped); other metrics paired within the episode | `all`, candidate side |
 | `field` | unpaired arms, e.g. vs a mix of leaders | Fisher (rates), Welch (means), as `ab_stats` always did | as `paired` |
 
 All three: Benjamini-Yekutieli across every reported (metric, group) test, and no
@@ -70,7 +92,8 @@ numerators and denominators (pw_metrics).
 
 | Metric | Kind | Definition |
 | --- | --- | --- |
-| `elo_outcome` (primary) | mean | the Elo outcome score, `clamp(0.5 + (our glory − their glory)/2000, 0, 1)`; attributable platform failure = forfeit 0/1 |
+| `elo_outcome` (primary) | mean | historical Elo outcome score, `clamp(0.5 + (our glory − their glory)/2000, 0, 1)`; attributable platform failure = forfeit 0/1 |
+| `score_outcome` | mean | current ladder outcome at `--margin-scale` (see "Outcome scores"); forfeit 0/1 |
 | `win_rate`, `draw_rate` | rate | per episode; a draw is a non-win |
 | `zero_glory_win_rate` | rate | won with 0 glory (worth 0.5 on the ladder, like a draw) |
 | `first_capture_rate` | rate | our team completed the match's first capture (strictly earlier) |
@@ -85,7 +108,7 @@ print on the "Exclusions and failure handling" line and go into the JSON:
 
 | Counter | Meaning |
 | --- | --- |
-| `ops_fail_forfeit_scored` | platform failure attributed to one seat (`failed_policy_index`, error type not infrastructure, per metta `episode_failures.py`): Elo outcome and win scored as a forfeit, all other metrics unknown |
+| `ops_fail_forfeit_scored` | platform failure attributed to one seat (`failed_policy_index`, error type not infrastructure, per metta `episode_failures.py`): both outcome scores and win scored as a forfeit, all other metrics unknown |
 | `ops_fail_unattributed` | infrastructure failure: only `ops_fail_rate` counts it |
 | `unfinished` | episode not terminal yet (streaming) |
 | `load_<code>` | a completed episode that `pw_episodes` could not verify (`no_replay`, `trace_failed`, `identity`, `results_mismatch`); listed as `LOAD FAILED` |
@@ -108,13 +131,15 @@ matched the request, not the world.
 deltas[{metric, group, base, cand, n_base, n_cand, p, raw_p, effect, verdict}]`) plus, for
 `paired`/`h2h`, each delta's `test` and `detail` (Wilcoxon p, discordant counts, draws), and:
 `design`, `unit`, `arm_policy_keys`, `exclusions`, `load_failures`, `pairing`, `sprt` (the
-primary-metric SPRT at the given H0/H1), `requests` (`--xreq` ids and the `--requests`
+SPRT at the given H0/H1, with its `metric`), `outcome` (`margin_scale` and both outcome
+formulas), `requests` (`--xreq` ids and the `--requests`
 manifest, stored verbatim) and `rows` (every analysed row). `n_base == n_cand` = pairs used
 for paired tests.
 
 ## SPRT
 
-`sprt` (and the `SPRT on elo_outcome` line of `compare`) tests the primary metric: the mean
+`sprt` (and the `SPRT on <metric>` line of `compare`) tests one outcome score: `--target` when
+it is `elo_outcome` or `score_outcome`, else the primary `elo_outcome`. It uses the mean
 per-pair difference (paired), the candidate's mean outcome minus 0.5 (h2h), or the
 difference of arm means (field). Normal approximation with estimated variance, the form
 fishtest's GSPRT uses: `LLR = ((est − h0)² − (est − h1)²) / (2·var(est))`, stop at
@@ -143,7 +168,10 @@ sample episodes.
   `--xreq`/`--requests`. `compare_report.py` rendered the paired JSON.
 - Tests: `paintbot_pw_lab/tools/tests/test_pw_compare.py` (failure attribution, pairing,
   duplicates, rules pooling, policy resolution, test selection per design, sample rows,
-  request bodies) and root `tools/tests/test_paired_stats.py` (the statistics).
+  request bodies), `test_compare_margin.py` (the `score_outcome` formula against metta's,
+  clipping, scale validation and exit 2, forfeit and infrastructure handling, SPRT and h2h
+  target selection, CLI defaults and propagation, the hosted sample at scale 600 with
+  `elo_outcome` unchanged) and root `tools/tests/test_paired_stats.py` (the statistics).
 
 Measured on the fake local arms only (plan the first hosted batch with its own numbers):
 per-pair difference SD of `elo_outcome` 0.40 (paired), per-episode SD 0.29 (h2h), single-arm

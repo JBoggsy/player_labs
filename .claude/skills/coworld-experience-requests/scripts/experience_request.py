@@ -10,7 +10,7 @@ parts — auth, live-schema validation, the POST + readback race, polling, and I
 resolution — and leaves *composition of the request body* to you (see
 `references/api.md` for every field).
 
-Three subcommands:
+Four subcommands:
 
   resolve  --policy NAME [--version N]      -> policy_version_id(s)
   resolve  --division DIV [--top N]         -> ranked opponents (name + pv id) for the roster
@@ -18,6 +18,8 @@ Three subcommands:
                                                so resolve is mostly for ranking the field)
   create   <body.json | ->  [--check-schema]  -> validate keys vs live schema, POST, read back
   monitor  <xreq_id>  [--once] [--interval S] -> poll status counts until every child episode is terminal
+  credits                                   -> the account's XP credit balance (user credential;
+                                               the credit route rejects player sessions)
 
 Usage (auth from `softmax login`; run inside `uv run` so `softmax` imports):
 
@@ -363,6 +365,32 @@ def cmd_monitor(args: argparse.Namespace) -> int:
 
 
 # --------------------------------------------------------------------------- #
+# credits
+# --------------------------------------------------------------------------- #
+
+def cmd_credits(args: argparse.Namespace) -> int:
+    """Print the account's XP credit balance.
+
+    `/usage/me/credits` rejects player-session credentials (403), and the other
+    subcommands use the active player session. This one deliberately sends the
+    user credential that `softmax login` saved, so it works while a player is active.
+    """
+    auth = _auth()
+    api = auth.get_api_server()
+    token = auth.load_user_token(server=api)
+    if not token:
+        sys.exit("No saved user credential. Run: uv run softmax login")
+    base = args.server.rstrip("/") if args.server else api.rstrip("/") + "/observatory"
+    with httpx.Client(base_url=base, headers={"X-Auth-Token": token}, timeout=60.0) as client:
+        detail = get_json(client, "/usage/me/credits")
+    status = detail.get("status", detail)
+    keys = ("balance_credits", "refill_credits", "refill_cadence", "max_balance_credits",
+            "next_refill_at", "credits_per_usd", "enforced")
+    emit({key: status.get(key) for key in keys})
+    return 0
+
+
+# --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
 
@@ -389,6 +417,9 @@ def main(argv: list[str] | None = None) -> int:
     pm.add_argument("--once", action="store_true", help="Print status once and exit.")
     pm.add_argument("--interval", type=float, default=15.0, help="Seconds between polls.")
     pm.set_defaults(func=cmd_monitor)
+
+    pk = sub.add_parser("credits", help="Print the account's XP credit balance (uses the user credential).")
+    pk.set_defaults(func=cmd_credits)
 
     args = parser.parse_args(argv)
     return args.func(args)

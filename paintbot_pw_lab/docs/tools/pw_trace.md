@@ -62,7 +62,7 @@ One JSON object per line, each with `type`:
 
 - `meta` (first line): `schema_version`, `tool`, `engine_release` (the build tag),
   `nim_version`, `replay`, `rules` (tape header), `mode` (`teams`/`ffa_kin`), `map`,
-  `vision`, `glory_config` (engine field names), `seats`, `seed`, `end_tick`, `frames`,
+  `bounds` (`minX, minZ, maxX, maxZ`, in centimetres), `vision`, `glory_config` (engine field names), `seats`, `seed`, `end_tick`, `frames`,
   `names`, `tick_rate`, `meter_target_ticks`, `hearts` (`idx`, `pos`, initial `owner`),
   `pickups` (`idx`, `kind`, `pos`), `trenches`, `cover_count`, `homes`, `options`,
   `state_columns`, `heart_columns`.
@@ -154,3 +154,16 @@ tape). The notes below are from build `coworld-v0.3.78`:
   RiverWaterHeight`, the test `mechanics.nim:628-629` uses to slow a wading cog. It was imported
   from `neural_contract` until 0.3.89 removed it (#185); if a future release changes the wading
   rule in `mechanics.nim`, change both copies.
+
+## Rules 49
+
+Schema 2 includes self-destruct commands and sniper/radar/mister state. Self-destruct
+damage and events are distinct from grenades. New pickup kinds are supported; taker
+attribution remains inferred. Ordinary and sniper reach constrain inferred aim targets,
+but the aim corridor is calibrated only for rules 48. See [tables](tables.md) and the
+[evidence contract](../evidence-pipeline.md#rules-49-trace-contract). Cache receipts include
+the binary hash and table version, so old expansions are rebuilt.
+
+The same owner self-destructing while its earlier lob lands on that tick is verified
+against the engine phase order but is not a separate integration fixture. Tests exercise
+initial suicides and post-shield blasts that kill enemies and later would-be bombers.

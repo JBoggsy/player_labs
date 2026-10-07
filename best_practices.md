@@ -17,6 +17,11 @@ Use the owning game's reference for mechanics and the current user request for s
   explicit authorization; existing authorization for the action counts.
 - After any league submission, list all of the policy's memberships, not only the target league:
   leagues can take their entrants from another league, so one submission can enter several.
+- Keep the pipeline full. Build and screen the next candidate while a hosted comparison runs,
+  and run independent candidates in parallel against their own fresh controls.
+- When the human delegates gate decisions to an orchestrating agent, the optimizer asks that
+  agent instead of stopping. Write each delegated rule (budget, submission bar, stop rules) into
+  the lab's charter so a fresh session inherits it.
 
 ## Measure the actual objective
 
@@ -38,10 +43,25 @@ Use the owning game's reference for mechanics and the current user request for s
   Do not silently replace a multi-policy field with one representative policy.
 - A live survey locates weaknesses. A fresh, matched, same-window A/B comparison
   isolates a change. Replicate meaningful gains before promotion.
-- Offline and local proxies can rank candidates but do not establish improvement
-  against the field. Verify that any intermediate metric maps to the actual objective.
+- Self-play and local screens are not performance evidence. Use them to check that a build
+  runs and that a behavior activates; never drop, park or rank a candidate on a local result.
+  Verify that any intermediate metric maps to the actual objective.
 - Target hosted requests to the question and stream artifacts as episodes finish.
   Use the [credit allowance](docs/xp-credits.md); communicate the design and cost.
+- Learn the ladder's matchmaking. When it pairs rating neighbours, the opponents that move your
+  rating are the ones next to you, and they change as you climb. Read your recent league pairings
+  and weight the decision metric by that mix; keep wider guards for robustness.
+- Learn what a new version costs. A rating that displays `mu − k·sigma` and widens sigma for a new
+  version charges each submission a temporary penalty, so submit clear gains, not every positive
+  point estimate. On a margin-rated ladder, once you win every game only margin moves; estimate
+  the remaining headroom before spending on it.
+- Estimate each opponent's outcome variance from a pilot and size arms from it. A high-variance
+  matchup can need 400 games per arm to resolve +0.05; a one-sided one resolves 0.01 at 100.
+  Changes smaller than the resolution are invisible; aim for larger mechanisms instead.
+- Report every opponent separately and expect trade-offs: a change can help against one opponent
+  and hurt against another. Opponent-adaptive behavior, keyed to observable play, can keep both.
+- Individually positive but non-significant estimates are not additive. Test a bundle as its own
+  candidate; do not predict its effect from the parts.
 - Resolve the ranking rule from the live league settings before choosing a metric. A ladder
   setting can change what "better" means without any game release (paintbot-pw's Elo switched
   from win/draw/loss to glory margin overnight); measure the quantity the ladder actually rates.
@@ -95,6 +115,8 @@ See [player engineering](docs/player-engineering.md) for architecture and naviga
 
 - Check current SDK/CLI behavior and the game's manifest before assuming a feature
   is absent. Match protocol, configuration and artifact identity to the evaluation.
+- Diff every game release's rule-bearing files before anything else. A runtime change can disable
+  every existing policy at once; the first entrant to port then wins by playing at all.
 - Pin analysis tools to the deployed game release in one place and check for drift at the start
   of each session; a game can ship several releases a day. Verify replays re-simulate (hash-check)
   before trusting any number derived from them.
@@ -115,6 +137,10 @@ See [player engineering](docs/player-engineering.md) for architecture and naviga
 - Keep the active experiment's exact artifact identities in its machine-readable
   inputs/results. Resolve upload and membership state from the platform; do not
   maintain a documentation version log.
+- Share platform budgets deliberately. The API request budget, pending-request cap and XP
+  credits belong to the user account and every lab and agent draws on them. Long-running pollers
+  and dashboards must exit when their requests finish; parallel hosted cohorts can spend a day's
+  refill in hours, so pace against the live balance.
 - Commit only attributable changes after checking documentation. Keep credentials
   out of source, reports and logs. Do not include unrelated work in a checkpoint.
 - Keep documentation complete and current. Promote supported rules with their limits;

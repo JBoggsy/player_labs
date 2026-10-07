@@ -31,14 +31,15 @@ when not defined(pwTraining):
   {.error: "pw_trace needs -d:pwTraining (damageObserver/damageWeapon)".}
 
 const
-  SchemaVersion = 1
+  SchemaVersion = 2
   AimTolerance = 110  # units off the aim line for the inferred intended target of a shot; calibrated 2026-09-30: real victims lie within 107 units of the aim line on 99.9% of 80-episode league hits
   PwRelease {.strdefine.} = "unknown"
   StateColumns = ["x", "z", "aim_x", "aim_z", "goal_x", "goal_z", "hp", "armor", "lives",
     "shield", "respawn", "cooldown", "disguised", "in_water", "trench", "grenade", "spray_can",
     "charge", "windup", "burst", "captures", "tags",
     "cmd_walk", "cmd_shoot", "cmd_direct", "cmd_sneak", "cmd_charge",
-    "cmd_goal_x", "cmd_goal_z", "cmd_aim_x", "cmd_aim_z"]
+    "cmd_goal_x", "cmd_goal_z", "cmd_aim_x", "cmd_aim_z",
+    "cmd_self_destruct", "sniper", "radar_until", "mister_until"]
 
 type
   Options = object
@@ -59,6 +60,8 @@ var
   preArmor: int32            # armor before the current damage() call (observeHit fires first)
   stepDamage: seq[JsonNode]  # damage events of the current step, for shot outcomes
   killEvents, enemyKillEvents: int
+  selfDestructDamage: bool  # latched before damage changes the bomber's HP
+  selfDestructed: seq[bool]
 
 proc ev(kind: string, fields: JsonNode = newJObject()): JsonNode =
   fields["type"] = %"event"
@@ -90,7 +93,7 @@ proc gloryKindName(k: GloryKind): string =
 
 proc onDamage(w: World, victim, attacker: int, removed: int32, killed: bool) {.nimcall, gcsafe.} =
   {.cast(gcsafe).}:
-    let weapon = weaponName(damageWeapon)
+    let weapon = if selfDestructDamage: "self_destruct" else: weaponName(damageWeapon)
     let other = attacker >= 0 and attacker != victim
     let seat = if attacker >= 0: %attacker else: newJNull()  # null: the map (barrage)
     var row = %*{"seat": seat, "victim": victim, "weapon": weapon,
@@ -103,6 +106,7 @@ proc onDamage(w: World, victim, attacker: int, removed: int32, killed: bool) {.n
       row["attacker_pos"] = xz(w.cogs[attacker].pos)
     stepDamage.add ev("damage", row)
     if killed:
+      if selfDestructDamage and victim == attacker: selfDestructed[attacker] = true
       inc killEvents
       if other and team(attacker) != team(victim): inc enemyKillEvents
       discard ev("kill", %*{"seat": seat, "victim": victim, "weapon": weapon,
@@ -144,6 +148,10 @@ proc openTape(path: string): string =
   if not readFile(result).startsWith("POLYWORLDREPLAY"):
     quit("not a POLYWORLDREPLAY tape: " & path, 2)
 
+proc seatHealthLimit(i: int): int32 =
+  when declared(seatMaxHp): seatMaxHp(i)
+  else: maxHp()
+
 proc stateRow(w: World, cmds: seq[Command], haveCmds: bool): JsonNode =
   var seats = newJArray()
   for i in 0..<Seats:
@@ -159,6 +167,12 @@ proc stateRow(w: World, cmds: seq[Command], haveCmds: bool): JsonNode =
         row.add %v
     else:
       for _ in 0..8: row.add newJNull()
+    when declared(SelfDestructRules):
+      row.add (if haveCmds: %int(cmds[i].selfDestruct) else: newJNull())
+      for v in [int(w.sniper[i]), w.radarUntil[i].int, w.misterUntil[i].int]: row.add %v
+    else:
+      row.add (if haveCmds: %0 else: newJNull())
+      for _ in 0..2: row.add %0
     seats.add row
   var hearts = newJArray()
   for n, h in w.controlHearts:
@@ -199,9 +213,10 @@ proc newGloryPickups(before, after: seq[GloryPickup]): seq[GloryPickup] =
     if seen[key] > 0: seen.inc(key, -1)
     else: result.add e
 
-proc aimTarget(w: World, cogs: seq[Cog], seat: int, aim: Point): tuple[seat, along, across: int] =
+proc aimTarget(w: World, cogs: seq[Cog], seat: int, aim: Point, reach: int): tuple[seat, along, across: int] =
   ## Inferred intended target: the nearest living enemy within AimTolerance of the aimed
-  ## line (the pre-jitter gunAim from the shooter's position), out to GunRange. -1 if none.
+  ## line (the pre-jitter gunAim from the shooter's position), out to its gun reach.
+  ## AimTolerance is calibrated only for rules48; rules49 target attribution is uncalibrated.
   result = (-1, 0, 0)
   let len = sqrt(float(aim.x)*float(aim.x)+float(aim.z)*float(aim.z))
   if len == 0: return
@@ -210,7 +225,7 @@ proc aimTarget(w: World, cogs: seq[Cog], seat: int, aim: Point): tuple[seat, alo
     let dx = float(cogs[j].pos.x-cogs[seat].pos.x); let dz = float(cogs[j].pos.z-cogs[seat].pos.z)
     let along = (dx*float(aim.x)+dz*float(aim.z))/len
     let across = abs(dx*float(aim.z)-dz*float(aim.x))/len
-    if along <= 0 or along > GunRange.float or across > AimTolerance.float: continue
+    if along <= 0 or along > reach.float or across > AimTolerance.float: continue
     if result.seat < 0 or along < result.along.float: result = (j, int(along), int(across))
 
 proc reachesHeart(w: World, p: Point, h: ControlHeart): bool =
@@ -237,7 +252,7 @@ proc main() =
   emit(%*{"type": "meta", "schema_version": SchemaVersion, "tool": "pw_trace",
     "engine_release": PwRelease, "nim_version": NimVersion,
     "replay": opt.replay, "rules": rules, "mode": (if ffa(): "ffa_kin" else: "teams"),
-    "map": r.map, "vision": r.vision, "glory_config": %r.glory, "seats": n, "seed": r.seed,
+    "map": r.map, "bounds": [minX(), minZ(), maxX(), maxZ()], "vision": r.vision, "glory_config": %r.glory, "seats": n, "seed": r.seed,
     "end_tick": r.endTick, "frames": r.frames.len, "names": r.names, "tick_rate": TickRate,
     "meter_target_ticks": w.heartMeterTarget(), "hearts": hearts, "pickups": pickups,
     "trenches": %w.trenches, "cover_count": w.cover.len,
@@ -268,8 +283,14 @@ proc main() =
   var mismatchTick = -1
 
   observeShot = proc(tick: int32, slot: int) = pendingFires.add slot
+  var stepCommands: seq[Command]
   observeHit = proc(tick: int32, victim, attacker: int, pos: Point) =
     preArmor = w.equipment[victim].armor
+    when declared(SelfDestructRules):
+      # Self-destruct runs before guns and landing grenades, and kills its bomber.
+      # A later lob from that seat therefore cannot satisfy the living-attacker test.
+      selfDestructDamage = damageWeapon == dwGrenade and attacker >= 0 and
+        stepCommands[attacker].selfDestruct and w.cogs[attacker].hp > 0 and not w.disarmed(attacker)
   observeTag = proc(tick: int32, victim, attacker: int, pos: Point) = inc tagCount
   damageObserver = onDamage
 
@@ -295,6 +316,16 @@ proc main() =
     let prevCogs = w.cogs
     let prevEq = w.equipment
     let prevUni = w.uniforms
+    when declared(SelfDestructRules):
+      let prevSniper = w.sniper
+      let prevRadar = w.radarUntil
+      let prevMister = w.misterUntil
+    var gunRanges: seq[int]
+    for i in 0..<n:
+      when declared(SelfDestructRules):
+        gunRanges.add (if w.hasSniper(i): SniperRange else: gunReach())
+      else:
+        gunRanges.add (if ffa(): FfaGunRange else: GunRange)
     let prevCaps = w.heartCaptures
     let prevGloryEvents = w.gloryEvents
     let prevGloryPickups = w.gloryPickups
@@ -334,6 +365,8 @@ proc main() =
         counters[i].lastActiveCommandTick = postTick
         counters[i].idleRunTicks = 0
 
+    stepCommands = fr.commands
+    selfDestructed = newSeq[bool](n)
     if useTelemetry: combatTelemetry = addr stats
     w.step(fr.commands, rules)
     combatTelemetry = nil
@@ -375,7 +408,7 @@ proc main() =
             let s = if len2 > 0: clamp((px*ax+pz*az)/len2, 0.0, 1.0) else: 0.0
             let dx = px-s*ax; let dz = pz-s*az
             if dx*dx+dz*dz <= float(Radius*Radius): row["inferred_trench_dodge"].add %j
-      let target = aimTarget(w, prevCogs, seat, w.equipment[seat].gunAim)
+      let target = aimTarget(w, prevCogs, seat, w.equipment[seat].gunAim, gunRanges[seat])
       row["aim_target"] = if target.seat >= 0: %target.seat else: newJNull()
       row["aim_target_distance"] = if target.seat >= 0: %target.along else: newJNull()
       row["aim_target_across"] = if target.seat >= 0: %target.across else: newJNull()
@@ -411,16 +444,20 @@ proc main() =
           "lands_at": g.landsAt + 1})
     for b in w.blasts:
       if b.tick == preTick:
+        # The first new blast of a self-destructing owner precedes its landing lobs.
+        let isSelfDestruct = b.owner >= 0 and selfDestructed[b.owner]
+        if isSelfDestruct: selfDestructed[b.owner] = false
+        let weapon = if isSelfDestruct: "self_destruct" else: "grenade"
         var victims = newJArray()
         for d in stepDamage:
-          if d["weapon"].getStr == "grenade" and (if d["seat"].kind == JInt: d["seat"].getInt else: -1) == b.owner:
+          if d["weapon"].getStr == weapon and (if d["seat"].kind == JInt: d["seat"].getInt else: -1) == b.owner:
             victims.add d["victim"]
-        discard ev("grenade_blast", %*{"seat": b.owner, "pos": xz(b.pos), "trench": b.trench,
+        discard ev((if isSelfDestruct: "self_destruct" else: "grenade_blast"), %*{"seat": b.owner, "pos": xz(b.pos), "trench": b.trench,
           "victims": victims})
 
     # Pickups: a pickup's readyAt jump names the pickup; the taker is the seat within 120 units
     # whose state changed the matching way (pickupEquipment), first in this tick's seat order.
-    var taken = newSeq[bool](n)
+    var taken = newSeq[set[PickupKind]](n)
     var order = w.seatOrder()  # post-step tick: flip it back to the pre-step order
     if rules >= 35 and preTick mod 2 != w.tick mod 2:
       for i in countup(0, n-2, 2): swap(order[i], order[i+1])
@@ -428,18 +465,26 @@ proc main() =
       if pk.readyAt == prevReady[k]: continue
       var candidates: seq[int]
       for i in order:
-        if taken[i] or w.cogs[i].hp <= 0 or distance2(w.cogs[i].pos, pk.pos) > 120*120: continue
+        if pk.kind in taken[i] or w.cogs[i].hp <= 0 or distance2(w.cogs[i].pos, pk.pos) > 120*120: continue
         let ok = case pk.kind
           of grenadePickup: w.equipment[i].grenade and not prevEq[i].grenade
           of sprayPickup: w.equipment[i].sprayCan and not prevEq[i].sprayCan
-          of medkitPickup: prevCogs[i].hp > 0 and w.cogs[i].hp > prevCogs[i].hp
+          of medkitPickup: prevCogs[i].hp > 0 and w.cogs[i].hp > prevCogs[i].hp and w.cogs[i].hp == seatHealthLimit(i)
           of uniformPickup: w.uniforms[i] and not prevUni[i]
           of armorPickup: w.equipment[i].armor == 3 and prevEq[i].armor < 3 and prevCogs[i].hp > 0
+          else:
+            when declared(misterPickup):
+              case pk.kind
+              of misterPickup: w.misterUntil[i] > prevMister[i]
+              of sniperPickup: w.sniper[i] and not prevSniper[i]
+              of radarPickup: w.radarUntil[i] > prevRadar[i]
+              else: false
+            else: false
         if ok: candidates.add i
       var seat = newJNull()
       if candidates.len > 0:
         seat = %candidates[0]
-        taken[candidates[0]] = true
+        taken[candidates[0]].incl pk.kind
       discard ev("pickup", %*{"seat": seat, "idx": k, "pickup_kind": pickupName(pk.kind),
         "pos": xz(pk.pos), "ambiguous": candidates.len > 1})
 

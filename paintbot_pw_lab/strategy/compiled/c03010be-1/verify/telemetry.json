@@ -1,0 +1,287 @@
+{
+  "coverage": {
+    "messages": {
+      "COM.disguise_alert": {
+        "received": 0,
+        "sent": 0
+      },
+      "COM.disguise_friend": {
+        "received": 0,
+        "sent": 0
+      },
+      "COM.enemy_sighting": {
+        "received": 851,
+        "sent": 710
+      },
+      "COM.focus_call": {
+        "received": 128,
+        "sent": 165
+      },
+      "COM.glory_seen": {
+        "received": 6,
+        "sent": 13
+      },
+      "COM.grenade_warning": {
+        "received": 5,
+        "sent": 7
+      },
+      "COM.pickup_ready": {
+        "received": 325,
+        "sent": 76
+      },
+      "COM.pickup_taken": {
+        "received": 4,
+        "sent": 2
+      },
+      "COM.under_fire": {
+        "received": 1,
+        "sent": 1
+      }
+    },
+    "unexercised_event_fields": [
+      "COM.disguise_alert.packet",
+      "COM.disguise_friend.packet"
+    ],
+    "unexercised_message_types": [
+      "COM.disguise_alert",
+      "COM.disguise_friend"
+    ]
+  },
+  "failures": [],
+  "passed": true,
+  "seats": [
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a0/player-0.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 143,
+        "PWD": 149,
+        "PWE": 207,
+        "PWP": 5
+      },
+      "lines": 629,
+      "missing_fields": [],
+      "peak_bytes": 270,
+      "seat": 0
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a0/player-2.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 230,
+        "PWD": 84,
+        "PWE": 81,
+        "PWP": 5
+      },
+      "lines": 508,
+      "missing_fields": [],
+      "peak_bytes": 270,
+      "seat": 2
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a0/player-4.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 206,
+        "PWD": 223,
+        "PWE": 321,
+        "PWP": 5
+      },
+      "lines": 882,
+      "missing_fields": [],
+      "peak_bytes": 270,
+      "seat": 4
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a0/player-6.log",
+      "kinds": {
+        "PWB": 105,
+        "PWC": 152,
+        "PWD": 79,
+        "PWE": 87,
+        "PWP": 5
+      },
+      "lines": 407,
+      "missing_fields": [],
+      "peak_bytes": 270,
+      "seat": 6
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a0/player-8.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 75,
+        "PWD": 117,
+        "PWE": 145,
+        "PWP": 5
+      },
+      "lines": 476,
+      "missing_fields": [],
+      "peak_bytes": 257,
+      "seat": 8
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a0/player-10.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 104,
+        "PWD": 239,
+        "PWE": 377,
+        "PWP": 5
+      },
+      "lines": 856,
+      "missing_fields": [],
+      "peak_bytes": 258,
+      "seat": 10
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a0/player-12.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 157,
+        "PWD": 88,
+        "PWE": 85,
+        "PWP": 5
+      },
+      "lines": 453,
+      "missing_fields": [],
+      "peak_bytes": 263,
+      "seat": 12
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a0/player-14.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 178,
+        "PWD": 160,
+        "PWE": 209,
+        "PWP": 5
+      },
+      "lines": 686,
+      "missing_fields": [],
+      "peak_bytes": 257,
+      "seat": 14
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a1/player-1.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 112,
+        "PWD": 47,
+        "PWE": 25,
+        "PWP": 5
+      },
+      "lines": 324,
+      "missing_fields": [],
+      "peak_bytes": 270,
+      "seat": 1
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a1/player-3.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 80,
+        "PWD": 35,
+        "PWE": 5,
+        "PWP": 5
+      },
+      "lines": 262,
+      "missing_fields": [],
+      "peak_bytes": 258,
+      "seat": 3
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a1/player-5.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 200,
+        "PWD": 85,
+        "PWE": 73,
+        "PWP": 5
+      },
+      "lines": 486,
+      "missing_fields": [],
+      "peak_bytes": 270,
+      "seat": 5
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a1/player-7.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 76,
+        "PWD": 38,
+        "PWE": 9,
+        "PWP": 5
+      },
+      "lines": 263,
+      "missing_fields": [],
+      "peak_bytes": 257,
+      "seat": 7
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a1/player-9.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 149,
+        "PWD": 85,
+        "PWE": 73,
+        "PWP": 5
+      },
+      "lines": 447,
+      "missing_fields": [],
+      "peak_bytes": 270,
+      "seat": 9
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a1/player-11.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 169,
+        "PWD": 186,
+        "PWE": 237,
+        "PWP": 5
+      },
+      "lines": 712,
+      "missing_fields": [],
+      "peak_bytes": 258,
+      "seat": 11
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a1/player-13.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 163,
+        "PWD": 42,
+        "PWE": 17,
+        "PWP": 5
+      },
+      "lines": 354,
+      "missing_fields": [],
+      "peak_bytes": 270,
+      "seat": 13
+    },
+    {
+      "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/c03010be-1/telemetry/policy-29f386f1_vs_policy-5523e450_s7_a1/player-15.log",
+      "kinds": {
+        "PWB": 150,
+        "PWC": 100,
+        "PWD": 222,
+        "PWE": 325,
+        "PWP": 5
+      },
+      "lines": 787,
+      "missing_fields": [],
+      "peak_bytes": 258,
+      "seat": 15
+    }
+  ],
+  "summary": {
+    "failures": 0,
+    "lines": 8532,
+    "seat_recordings": 16,
+    "unexercised_message_types": [
+      "COM.disguise_alert",
+      "COM.disguise_friend"
+    ]
+  }
+}

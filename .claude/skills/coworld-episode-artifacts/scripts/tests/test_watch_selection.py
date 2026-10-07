@@ -143,6 +143,7 @@ def test_watch_loop_survives_transient_network_errors(tmp_path: Path) -> None:
 
     args = argparse.Namespace(
         xreq="xreq_test", out=tmp_path, num=10, interval=0.0, max_attempts=3,
+        max_idle_hours=2.0, max_hours=24.0,
     )
     client = FlakyClient()
     rc = watch_loop(
@@ -151,3 +152,98 @@ def test_watch_loop_survives_transient_network_errors(tmp_path: Path) -> None:
     )
     assert rc == 0
     assert client.calls > 1  # first pass errored, loop retried and finished
+
+
+def test_throttled_artifacts_reach_watch_backoff(tmp_path: Path) -> None:
+    import httpx
+    import pytest
+    from fetch_artifacts import Client, fetch_episode
+
+    with Client('https://example.invalid', 'test') as client:
+        client._http.close()
+        client._http = httpx.Client(
+            base_url='https://example.invalid',
+            transport=httpx.MockTransport(lambda request: httpx.Response(429)),
+        )
+        for fetch in (client.get_bytes_or_none, client.get_text_or_none):
+            with pytest.raises(httpx.HTTPStatusError) as caught:
+                fetch('/artifact')
+            assert caught.value.response.status_code == 429
+        with pytest.raises(httpx.HTTPStatusError):
+            fetch_episode(client, _ref('ereq_throttled', 'completed'), tmp_path / 'episode',
+                          want_replay=True, want_results=True, want_logs=True)
+
+
+def test_absent_artifacts_remain_optional() -> None:
+    import httpx
+    from fetch_artifacts import Client
+
+    with Client('https://example.invalid', 'test') as client:
+        client._http.close()
+        client._http = httpx.Client(
+            base_url='https://example.invalid',
+            transport=httpx.MockTransport(lambda request: httpx.Response(404)),
+        )
+        assert client.get_bytes_or_none('/artifact') is None
+        assert client.get_text_or_none('/artifact') is None
+
+
+def test_watch_resumes_partial_episode_without_redownloading_files(tmp_path: Path) -> None:
+    import httpx
+    import json
+    from fetch_artifacts import Client, fetch_episode
+
+    episode = tmp_path / 'episode'
+    (episode / 'logs').mkdir(parents=True)
+    (episode / 'results.json').write_text('{}')
+    (episode / 'replay.json').write_bytes(b'recorded replay')
+    (episode / 'logs/policy_agent_0.log').write_text('kept log')
+    requested = []
+
+    def respond(request):
+        requested.append(request.url.path)
+        if request.url.path.endswith('/policy-artifacts'):
+            return httpx.Response(200, json=[{'position':i,'policy_version_id':'pv','has_log':True,'has_artifact':False} for i in (0,2)])
+        if request.url.path.endswith('/policy-logs/2'):
+            return httpx.Response(200, text='remaining log')
+        return httpx.Response(404)
+
+    with Client('https://example.invalid','test') as client:
+        client._http.close()
+        client._http = httpx.Client(base_url='https://example.invalid', transport=httpx.MockTransport(respond))
+        result = fetch_episode(client,_ref('ereq_resumed','completed'),episode,
+                               want_replay=True,want_results=True,want_logs=True,resume=True)
+    assert result['complete']
+    assert not any(path.endswith(('/artifacts/results','/artifacts/replay','/policy-logs/0')) for path in requested)
+    assert (episode/'logs/policy_agent_0.log').read_text() == 'kept log'
+    assert json.loads((episode/'policy_logs_checked.json').read_text())[1]['position'] == 2
+
+
+def test_watch_loop_exits_when_request_never_progresses(tmp_path: Path) -> None:
+    # Regression: a watcher on a request that never drained polled the shared
+    # per-user API budget for 19 days. No progress for --max-idle-hours must exit.
+    import argparse
+
+    from fetch_artifacts import watch_loop
+
+    class StuckClient:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def get_json(self, path: str, **params: object) -> object:
+            self.calls += 1
+            if path.endswith("/episodes"):
+                return []
+            return {"episode_count": 4, "running_count": 4}
+
+    args = argparse.Namespace(
+        xreq="xreq_stuck", out=tmp_path, num=10, interval=0.0, max_attempts=3,
+        max_idle_hours=0.0, max_hours=24.0,
+    )
+    client = StuckClient()
+    rc = watch_loop(
+        client, args, "https://example.test",
+        want_replay=True, want_results=True, want_logs=True, want_artifacts=True,
+    )
+    assert rc == 1
+    assert client.calls <= 4  # one poll pass, then the idle limit stops it

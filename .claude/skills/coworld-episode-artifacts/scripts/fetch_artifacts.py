@@ -100,12 +100,16 @@ class Client:
         """GET bytes; return None (not raise) on a 4xx so one missing artifact
         does not abort the episode."""
         r = self._http.get(path)
+        if r.status_code == 429:
+            r.raise_for_status()
         if r.status_code >= 400:
             return None
         return r.content
 
     def get_text_or_none(self, path: str) -> str | None:
         r = self._http.get(path)
+        if r.status_code == 429:
+            r.raise_for_status()
         if r.status_code >= 400:
             return None
         return r.text
@@ -317,13 +321,17 @@ def episode_is_complete(out_dir: Path, want_replay: bool, want_logs: bool,
 
 def fetch_episode(client: Client, ref: EpisodeRef, out_dir: Path, *,
                   want_replay: bool, want_results: bool, want_logs: bool,
-                  want_artifacts: bool = True) -> dict[str, Any]:
+                  want_artifacts: bool = True, resume: bool = False) -> dict[str, Any]:
     """Contain one episode's transport/parse failure so bounded retries can progress."""
     try:
         return _fetch_episode(client, ref, out_dir, want_replay=want_replay,
                               want_results=want_results, want_logs=want_logs,
-                              want_artifacts=want_artifacts)
+                              want_artifacts=want_artifacts, resume=resume)
     except (httpx.HTTPError, json.JSONDecodeError, OSError, ValueError, KeyError, TypeError) as exc:
+        # A throttled download is not missing evidence. Let the watcher back off
+        # without spending this episode's bounded artifact retry allowance.
+        if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 429:
+            raise
         return {"ref_id": ref.ref_id, "dir": out_dir.name, "complete": False,
                 "errors": [f"{type(exc).__name__}: {exc}"]}
 
@@ -337,6 +345,7 @@ def _fetch_episode(
     want_results: bool,
     want_logs: bool,
     want_artifacts: bool = True,
+    resume: bool = False,
 ) -> dict[str, Any]:
     """Fetch available artifacts; only complete listings get durable markers.
 
@@ -360,6 +369,9 @@ def _fetch_episode(
     for wanted, kind, filename in ((want_results, "results", "results.json"),
                                    (want_replay, "replay", "replay.json")):
         if not wanted:
+            continue
+        if resume and (out_dir / filename).exists():
+            summary[kind] = True
             continue
         content = client.get_bytes_or_none(f"{base}/artifacts/{kind}")
         if content is None:
@@ -396,12 +408,15 @@ def _fetch_episode(
                     if not row[flag]:
                         continue
                     position, version = row["position"], row["policy_version_id"]
+                    destination = out_dir / folder / template.format(position)
+                    if resume and destination.exists():
+                        summary[key].append(position)
+                        continue
                     content = client.get_bytes_or_none(f"{base}/{version}/{kind}/{position}")
                     if content is None:
                         complete = False
                         summary["errors"].append(f"{kind} seat {position}: unavailable")
                         continue
-                    destination = out_dir / folder / template.format(position)
                     destination.parent.mkdir(exist_ok=True)
                     destination.write_bytes(content)
                     summary[key].append(position)
@@ -538,7 +553,21 @@ def watch_loop(
     if state_path.exists():
         attempts = json.loads(state_path.read_text())
 
+    # A request that never drains (stuck episodes, a persistently unreadable xreq)
+    # must not keep a forgotten watcher polling the shared per-user API budget for
+    # days. Exit after a stretch with no new terminal records, and after a hard
+    # lifetime cap; the loop is resume-safe, so rerunning picks up where it stopped.
+    started = time.monotonic()
+    last_progress = started
+    progress_mark: tuple[int, int, bool] | None = None
     while True:
+        now = time.monotonic()
+        if now - last_progress > args.max_idle_hours * 3600:
+            log(f"[watch] stopping: no progress for {args.max_idle_hours:g}h; rerun to resume.")
+            return 1
+        if now - started > args.max_hours * 3600:
+            log(f"[watch] stopping: reached --max-hours {args.max_hours:g}; rerun to resume.")
+            return 1
         # One whole poll pass is guarded: a transient network/server hiccup
         # (httpx RemoteProtocolError, a 5xx, a timeout) used to kill the watcher
         # silently mid-stream. The loop is resume-safe by construction, so the
@@ -560,6 +589,7 @@ def watch_loop(
                     client, ref, ep_dir,
                     want_replay=want_replay, want_results=want_results, want_logs=want_logs,
                     want_artifacts=want_artifacts,
+                    resume=True,
                 )
                 for err in s["errors"]:
                     log(f"      ! {err}")
@@ -578,6 +608,10 @@ def watch_loop(
             _write_watch_index(args.out, args.xreq, server, refs, done, exhausted, pending, drained)
             log(f"[watch] fetched {len(done)}/{total} "
                 f"(pending {pending}, exhausted {len(exhausted)}, drained={drained})")
+            mark = (len(done), len(exhausted), drained)
+            if mark != progress_mark:
+                progress_mark = mark
+                last_progress = time.monotonic()
             if drained and (pending == 0 or (not waiting and not to_fetch)):
                 if pending:
                     log(f"[watch] incomplete: {pending} requested episodes have no fetched terminal record")
@@ -636,6 +670,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--watch", action="store_true",
                         help="With --xreq: poll the experience request and download each episode's "
                              "artifacts as it completes; exit when all episodes are terminal and fetched.")
+    parser.add_argument("--max-idle-hours", type=float, default=2.0,
+                        help="--watch: exit if no episode turns terminal or is fetched for this long.")
+    parser.add_argument("--max-hours", type=float, default=24.0,
+                        help="--watch: hard lifetime cap, so a forgotten watcher cannot poll for days.")
     parser.add_argument("--interval", type=float, default=15.0,
                         help="Watch mode: seconds between polls.")
     parser.add_argument("--max-attempts", type=int, default=3,

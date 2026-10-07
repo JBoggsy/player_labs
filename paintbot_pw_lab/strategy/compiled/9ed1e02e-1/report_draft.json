@@ -1,0 +1,41 @@
+{
+  "guesses": [
+    {
+      "id": "G-C.take_heart-1",
+      "component": "C.take_heart",
+      "spec_quote": "`goal_x = controlX(objective)`",
+      "decision": "Read controlX/controlY(objective) without checking objective >= 0. For an invalid objective, the host returns -1 and the engine clamps the resulting goal.",
+      "why": "The spec still requires these reads without an objective guard, and the host safely returns -1 for invalid indices.",
+      "severity": "low",
+      "state": "kept"
+    },
+    {
+      "id": "G-C.cover_heart-1",
+      "component": "C.cover_heart",
+      "spec_quote": "`hx = controlX(objective)`",
+      "decision": "Read controlX/controlY(objective) without an objective >= 0 guard, preserving the previous unit's coordinate-read behavior.",
+      "why": "The current spec still requires unguarded coordinate reads and invalid host indices safely return -1. The prior quote is retained verbatim as required for carried guesses, although the current source removed its surrounding backticks. The former finish_capture branch is no longer specified and is removed.",
+      "severity": "low",
+      "state": "kept"
+    },
+    {
+      "id": "G-C.default_goal-1",
+      "component": "C.default_goal",
+      "spec_quote": "else `(heartX, heartY)`",
+      "decision": "Use the legacy carrying, ownHeartStolen, heartX and heartY fields exactly as specified. With the documented current host behavior, the default goal is the enemy home.",
+      "why": "The spec explicitly retains these legacy fields; substituting control objectives would change the requested behavior.",
+      "severity": "medium",
+      "state": "kept"
+    },
+    {
+      "id": "G-COM.grenade_out-1",
+      "component": "COM.grenade_out",
+      "spec_quote": "when threw of `SK.motor` is 1",
+      "decision": "Read sk_motor__threw as left by the most recent SK.motor run before __send. If send runs before motor on a tick, the callout comes one tick late.",
+      "why": "Call order is generated and not visible to the unit.",
+      "severity": "low",
+      "state": "kept"
+    }
+  ],
+  "gaps": []
+}

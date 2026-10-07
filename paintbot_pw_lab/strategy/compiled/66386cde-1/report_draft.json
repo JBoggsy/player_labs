@@ -1,0 +1,41 @@
+{
+  "guesses": [
+    {
+      "id": "G-C.take_heart-1",
+      "component": "C.take_heart",
+      "spec_quote": "`goal_x = controlX(objective)`",
+      "decision": "Read controlX/controlY(objective) without checking objective >= 0. For an invalid objective, the host returns -1 and the engine clamps the resulting goal.",
+      "why": "The spec still requires these reads without an objective guard, and the host safely returns -1 for invalid indices.",
+      "severity": "low",
+      "state": "kept"
+    },
+    {
+      "id": "G-C.cover_heart-1",
+      "component": "C.cover_heart",
+      "spec_quote": "`hx = controlX(objective)`",
+      "decision": "Read controlX/controlY(objective) without an objective >= 0 guard, preserving the previous unit's behavior.",
+      "why": "The spec omits this guard for coordinate reads, and invalid objective indices return -1 without a runtime error. The finish_capture condition separately requires objective >= 0.",
+      "severity": "low",
+      "state": "kept"
+    },
+    {
+      "id": "G-C.default_goal-1",
+      "component": "C.default_goal",
+      "spec_quote": "else `(heartX, heartY)`",
+      "decision": "Retain the specified legacy carrying, ownHeartStolen, heartX and heartY fields. The fallback remains the enemy home under documented host behavior; the current spec removes the prior pursuit override.",
+      "why": "The legacy-field interpretation still applies. The new Step 2 calls sk_motor__act directly, so retaining the previous pursuit logic would contradict the current source.",
+      "severity": "medium",
+      "state": "kept"
+    },
+    {
+      "id": "G-COM.grenade_out-1",
+      "component": "COM.grenade_out",
+      "spec_quote": "when threw of `SK.motor` is 1",
+      "decision": "Read sk_motor__threw as left by the most recent SK.motor run before __send. If send runs before motor on a tick, the callout comes one tick late.",
+      "why": "Call order is generated and not visible to the unit.",
+      "severity": "low",
+      "state": "kept"
+    }
+  ],
+  "gaps": []
+}

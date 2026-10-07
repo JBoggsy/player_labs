@@ -1,0 +1,41 @@
+{
+  "guesses": [
+    {
+      "component": "C.take_heart",
+      "decision": "Read controlX/controlY(objective) without checking objective >= 0. For an invalid objective, the host returns -1 and the engine clamps the resulting goal.",
+      "id": "G-C.take_heart-1",
+      "severity": "low",
+      "spec_quote": "`goal_x = controlX(objective)`",
+      "state": "kept",
+      "why": "The spec still requires these reads without an objective guard, and the host safely returns -1 for invalid indices."
+    },
+    {
+      "component": "C.cover_heart",
+      "decision": "Read controlX/controlY(objective) without an objective >= 0 guard, preserving the previous unit's behavior.",
+      "id": "G-C.cover_heart-1",
+      "severity": "low",
+      "spec_quote": "`hx = controlX(objective)`",
+      "state": "kept",
+      "why": "The spec still omits this guard for the coordinate reads, and invalid objective indices return -1 without a runtime error. The new finish_capture condition separately requires objective >= 0."
+    },
+    {
+      "component": "C.default_goal",
+      "decision": "Use the legacy carrying, ownHeartStolen, heartX and heartY fields exactly as specified. With the documented current host behavior, the default goal is the enemy home.",
+      "id": "G-C.default_goal-1",
+      "severity": "medium",
+      "spec_quote": "else `(heartX, heartY)`",
+      "state": "kept",
+      "why": "The spec explicitly retains these legacy fields; substituting control objectives would change the requested behavior."
+    },
+    {
+      "component": "COM.grenade_out",
+      "decision": "Read sk_motor__threw as left by the most recent SK.motor run before __send. If send runs before motor on a tick, the callout comes one tick late.",
+      "id": "G-COM.grenade_out-1",
+      "severity": "low",
+      "spec_quote": "when threw of `SK.motor` is 1",
+      "state": "kept",
+      "why": "Call order is generated and not visible to the unit."
+    }
+  ],
+  "gaps": []
+}

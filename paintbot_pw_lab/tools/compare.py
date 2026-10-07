@@ -15,19 +15,27 @@ Designs (--design):
   field   unpaired arms (e.g. vs a mix of leaders): Fisher rates, Welch means (ab_stats).
 
 Unit: one row per (episode, arm policy); a policy's 8 seats are summed within the episode and
-per-seat metrics divide by its seat count. Primary metric: the Elo outcome score,
-clamp(0.5 + (our glory - their glory) / 2000, 0, 1); a platform failure attributed to one
+per-seat metrics divide by its seat count. Primary metric (default, historical): the Elo outcome
+score, clamp(0.5 + (our glory - their glory) / 2000, 0, 1); a platform failure attributed to one
 policy is a forfeit (0 for that side, 1 for the other), as in metta elo.py.
+
+score_outcome is the same soft outcome at an explicit --margin-scale (default 1000), computed from
+the episode's exact result scores: clamp(0.5 + (our mean score - their mean score) / (2 * scale),
+0, 1), as metta's OpenSkill ranking rates a two-team margin. The live paintbot-pw ladder uses
+scale 600, so request it explicitly: --target score_outcome --margin-scale 600.
 
 Usage (repo root):
   uv run python paintbot_pw_lab/tools/compare.py compare ROOT... --design paired \
-      --baseline NAME:vN --candidate NAME:vM [--target elo_outcome] [--out OUT.json] [--requests MANIFEST] [--json]
+      --baseline NAME:vN --candidate NAME:vM [--target elo_outcome|score_outcome] [--margin-scale 1000]
+      [--out OUT.json] [--requests MANIFEST] [--json]
   uv run python paintbot_pw_lab/tools/compare.py sprt ROOT... --design paired \
-      --baseline NAME:vN --candidate NAME:vM [--h0 0 --h1 0.05 --alpha 0.05 --beta 0.05]
+      --baseline NAME:vN --candidate NAME:vM [--target score_outcome --margin-scale 600]
+      [--h0 0 --h1 0.05 --alpha 0.05 --beta 0.05]
 """
 from __future__ import annotations
 
 import json
+import math
 import statistics
 import sys
 from collections import Counter, defaultdict
@@ -50,6 +58,7 @@ SIDES = ("red", "blue")  # engine team 0 (Ember, even seats) / 1 (Azure, odd sea
 # (key, higher_is_better, kind, applies_to_group). Rates are binary per episode.
 METRICS = [
     ("elo_outcome", True, "mean", None),
+    ("score_outcome", True, "mean", None),          # result-score margin at --margin-scale
     ("win_rate", True, "rate", None),
     ("draw_rate", False, "rate", None),
     ("zero_glory_win_rate", False, "rate", None),   # a 0-glory win scores 0.5 on the ladder
@@ -68,10 +77,14 @@ METRICS = [
     ("ops_fail_rate", False, "rate", "all"),
 ]
 PRIMARY = "elo_outcome"
+OUTCOME_TARGETS = ("elo_outcome", "score_outcome")  # what the SPRT may run on
+# score_outcome's default scale equals the historical Elo scale, so a default run never changes
+# meaning; the live ladder's OpenSkill margin_scale (600, metta dcdfc19a) must be passed explicitly.
+DEFAULT_MARGIN_SCALE = 1000.0
 PER_SEAT = {"kills_per_seat": "kills", "deaths_per_seat": "deaths", "dealt_hp_enemy_per_seat": "dealt_hp_enemy",
             "captures_per_seat": "captures_completed", "trade_kills_per_seat": "trade_kills"}
 DIRECT = ("gun_enemy_accuracy", "alive_share", "heart_reach_share", "idle_share", "vm_disabled_suspect_seats")
-H2H_TESTS = {"elo_outcome": "one_sample", "win_rate": "decisive_binomial"}
+H2H_TESTS = {"elo_outcome": "one_sample", "score_outcome": "one_sample", "win_rate": "decisive_binomial"}
 
 # metta observatory_competitions/v2/episode_failures.py INFRASTRUCTURE_ONLY_ERROR_TYPES
 # (checked 2f2add7296): a failure of these types is never a policy's forfeit.
@@ -84,6 +97,22 @@ INFRASTRUCTURE_ERRORS = frozenset({
 
 def _known(value):
     return None if value is None or pd.isna(value) else value
+
+
+def score_outcome(ours: float, theirs: float, margin_scale: float) -> float:
+    """metta OpenSkill's two-team soft outcome: clamp(0.5 + (ours - theirs) / (2 * scale), 0, 1)."""
+    return min(1.0, max(0.0, 0.5 + (float(ours) - float(theirs)) / (2 * margin_scale)))
+
+
+def margin_scale_arg(text: str) -> float:
+    """--margin-scale: a positive, finite number of score points."""
+    try:
+        value = float(text)
+    except ValueError:
+        raise pw_cli.UsageError(f"--margin-scale {text!r} is not a number") from None
+    if not math.isfinite(value) or value <= 0:
+        raise pw_cli.UsageError(f"--margin-scale must be positive and finite, got {text!r}")
+    return value
 
 
 # ------------------------------------------------------------------ policy identity
@@ -147,7 +176,8 @@ def failure_rows(episode: dict, arm_keys: dict[str, str], exclusions: Counter) -
         row["ops_fail"] = 1.0
         if failed_seat is not None:
             won = float(failed_seat % 2 != team)
-            row.update(elo_outcome=won, win_rate=won, draw_rate=0.0, forfeit="theirs" if won else "ours")
+            row.update(elo_outcome=won, score_outcome=won, win_rate=won, draw_rate=0.0,
+                       forfeit="theirs" if won else "ours")
         rows.append(row)
     if rows:  # counted once per episode, not per arm row
         exclusions["ops_fail_forfeit_scored" if failed_seat is not None else "ops_fail_unattributed"] += 1
@@ -165,13 +195,22 @@ def empty_row(episode_id, arm, key, team, opponent_keys, opponent_label, config_
 
 # ------------------------------------------------------------------ traced episodes
 
-def episode_rows(ep, arm_keys: dict[str, str], exclusions: Counter) -> list[dict]:
+def team_scores(ep) -> dict[int, float]:
+    """Each team's mean result score over its seats (results.json scores, which pw_episodes
+    has already checked against the hash-verified trace's settled team glory)."""
+    seats = ep["seats"]
+    return {int(team): float(group.score.astype(float).mean()) for team, group in seats.groupby("team")}
+
+
+def episode_rows(ep, arm_keys: dict[str, str], exclusions: Counter,
+                 margin_scale: float = DEFAULT_MARGIN_SCALE) -> list[dict]:
     """One row per arm policy present in a traced episode."""
     seats = pw_metrics.seat_metrics(ep)
     policies = pw_metrics.policy_metrics(ep, seats).set_index("policy_key")
     teams = pw_metrics.team_metrics(ep, seats).set_index("team")
     episode = ep["episodes"].iloc[0]
     labels = {r.policy_key: policy_label(r.policy_name, r.policy_version) for r in ep["seats"].itertuples()}
+    scores = team_scores(ep)
     rows = []
     for arm, key in arm_keys.items():
         if key not in policies.index:
@@ -187,7 +226,9 @@ def episode_rows(ep, arm_keys: dict[str, str], exclusions: Counter) -> list[dict
                         episode.coworld_version)
         ours, theirs = teams.loc[team], teams.loc[1 - team]
         won = p.result == "win"
-        row.update(elo_outcome=float(p.elo_outcome), win_rate=float(won), draw_rate=float(p.result == "draw"),
+        row.update(elo_outcome=float(p.elo_outcome),
+                   score_outcome=score_outcome(scores[team], scores[1 - team], margin_scale),
+                   win_rate=float(won), draw_rate=float(p.result == "draw"),
                    zero_glory_win_rate=float(won and p.glory_ours == 0),
                    first_capture_rate=float(_known(ours.first_capture_tick) is not None and (
                        _known(theirs.first_capture_tick) is None or ours.first_capture_tick < theirs.first_capture_tick)),
@@ -201,7 +242,7 @@ def episode_rows(ep, arm_keys: dict[str, str], exclusions: Counter) -> list[dict
 
 
 def load_rows(roots: list[Path], baseline: str, candidate: str, *, tag=None, jobs=None,
-              refresh=False) -> tuple[list[dict], Counter, list[tuple[str, str, str]], dict[str, str]]:
+              refresh=False, margin_scale: float = DEFAULT_MARGIN_SCALE) -> tuple[list[dict], Counter, list[tuple[str, str, str]], dict[str, str]]:
     """(rows, exclusions, load failures, {arm: policy_key}) for every episode under the roots.
 
     Every episode is accounted for: a row, a counted exclusion, or a listed failure."""
@@ -245,7 +286,7 @@ def load_rows(roots: list[Path], baseline: str, candidate: str, *, tag=None, job
 
     rows = []
     for ep in traced:
-        found = episode_rows(ep, arm_keys, exclusions)
+        found = episode_rows(ep, arm_keys, exclusions, margin_scale)
         if not found and not set(ep["seats"].policy_key) & set(arm_keys.values()):
             exclusions["neither_arm_policy"] += 1
         rows += found
@@ -377,18 +418,24 @@ def analyse(rows: list[dict], design: str, exclusions: Counter, metrics=METRICS)
             "pairs": pairs, "analysis": analysis, "note": analysis}
 
 
+def sprt_target(target: str) -> str:
+    """The outcome the SPRT runs on: the --target when it is an outcome score, else PRIMARY."""
+    return target if target in OUTCOME_TARGETS else PRIMARY
+
+
 def primary_sprt(rows: list[dict], design: str, exclusions: Counter, *, h0: float, h1: float,
-                 alpha: float, beta: float) -> paired_stats.SprtResult:
-    """SPRT on the primary metric. paired: mean per-pair difference (cand - base);
-    h2h: the candidate's mean outcome minus 0.5; field: difference of arm means."""
+                 alpha: float, beta: float, target: str = PRIMARY) -> paired_stats.SprtResult:
+    """SPRT on an outcome score (default the primary metric). paired: mean per-pair difference
+    (cand - base); h2h: the candidate's mean outcome minus 0.5; field: difference of arm means."""
+    key = sprt_target(target)
     if design == "paired":
         pairs, _ = pair_rows(rows, exclusions)
-        diffs = [c[PRIMARY] - b[PRIMARY] for b, c in pairs if b[PRIMARY] is not None and c[PRIMARY] is not None]
+        diffs = [c[key] - b[key] for b, c in pairs if b[key] is not None and c[key] is not None]
         return paired_stats.sprt_mean(diffs, h0=h0, h1=h1, alpha=alpha, beta=beta)
     if design == "h2h":
-        values = [c[PRIMARY] - 0.5 for _, c in h2h_pairs(rows, exclusions) if c[PRIMARY] is not None]
+        values = [c[key] - 0.5 for _, c in h2h_pairs(rows, exclusions) if c[key] is not None]
         return paired_stats.sprt_mean(values, h0=h0, h1=h1, alpha=alpha, beta=beta)
-    arm = lambda name: [r[PRIMARY] for r in rows if r["arm"] == name and r[PRIMARY] is not None]  # noqa: E731
+    arm = lambda name: [r[key] for r in rows if r["arm"] == name and r[key] is not None]  # noqa: E731
     return paired_stats.sprt_two_sample(arm("baseline"), arm("candidate"), h0=h0, h1=h1, alpha=alpha, beta=beta)
 
 
@@ -396,15 +443,25 @@ def primary_sprt(rows: list[dict], design: str, exclusions: Counter, *, h0: floa
 
 def prepare(args) -> tuple[list[dict], Counter, list, dict]:
     rows, exclusions, failures, arm_keys = load_rows(args.roots, args.baseline, args.candidate,
-                                                     tag=args.tag, jobs=args.jobs, refresh=args.refresh)
+                                                     tag=args.tag, jobs=args.jobs, refresh=args.refresh,
+                                                     margin_scale=args.margin_scale)
     check_single_ruleset(rows)
     rows = drop_duplicate_games(rows, exclusions)
     return rows, exclusions, failures, arm_keys
 
 
-def print_accounting(rows, exclusions, failures, arm_keys, design) -> None:
+def outcome_metadata(margin_scale: float) -> dict:
+    """How the two outcome scores were computed; stored with every result."""
+    return {"margin_scale": margin_scale,
+            "score_outcome": f"clamp(0.5 + (our mean result score - their mean result score) / (2 * {margin_scale:g}), 0, 1); "
+                             "attributed forfeit 0/1",
+            "elo_outcome": "historical: clamp(0.5 + (our glory - their glory) / 2000, 0, 1); attributed forfeit 0/1"}
+
+
+def print_accounting(rows, exclusions, failures, arm_keys, design, margin_scale=DEFAULT_MARGIN_SCALE) -> None:
     counts = Counter(r["arm"] for r in rows)
     print(f"Design: {design}. Unit: one row per (episode, arm policy); seats summed within the episode.")
+    print(f"Outcome scales: score_outcome margin_scale {margin_scale:g}; elo_outcome fixed 1000 (historical)")
     print(f"Arms: baseline {arm_keys['baseline']} ({counts['baseline']} rows), "
           f"candidate {arm_keys['candidate']} ({counts['candidate']} rows)")
     print(f"Exclusions and failure handling: {dict(sorted(exclusions.items())) or 'none'}")
@@ -435,12 +492,13 @@ def cmd_compare(args, report: pw_cli.Report) -> dict:
     for path, code, message in failures:        # listed even if the analysis then refuses the design
         report.fail(path, code, message)
     result = analyse(rows, args.design, exclusions, metrics)
-    sprt = primary_sprt(rows, args.design, Counter(), h0=args.h0, h1=args.h1, alpha=args.alpha, beta=args.beta)
+    sprt = primary_sprt(rows, args.design, Counter(), h0=args.h0, h1=args.h1, alpha=args.alpha, beta=args.beta,
+                        target=args.target)
     record_counts(report, rows, exclusions)
-    print_accounting(rows, exclusions, failures, arm_keys, args.design)
+    print_accounting(rows, exclusions, failures, arm_keys, args.design, args.margin_scale)
     if result["pairing"]:
         print(f"Pairing diagnostics: {result['pairing']}")
-    print(f"SPRT on {PRIMARY} (H0 {args.h0}, H1 {args.h1}): {sprt.decision}, LLR {sprt.llr:.2f} "
+    print(f"SPRT on {sprt_target(args.target)} (H0 {args.h0}, H1 {args.h1}): {sprt.decision}, LLR {sprt.llr:.2f} "
           f"in [{sprt.lower:.2f}, {sprt.upper:.2f}], n {sprt.n}{', ' + sprt.note if sprt.note else ''}")
     print()
     print(ab_stats.render_markdown(args.baseline, args.candidate, result["base_groups"], result["cand_groups"],
@@ -453,7 +511,8 @@ def cmd_compare(args, report: pw_cli.Report) -> dict:
     summary.update(
         design=args.design, unit="episode per arm policy", arm_policy_keys=arm_keys,
         exclusions=dict(exclusions), load_failures=[list(f) for f in failures], pairing=result["pairing"],
-        sprt=sprt.as_dict(), requests={"xreq_ids": args.xreq or [],
+        sprt={**sprt.as_dict(), "metric": sprt_target(args.target)}, outcome=outcome_metadata(args.margin_scale),
+        requests={"xreq_ids": args.xreq or [],
                                        "manifest": _read_json(args.requests) if args.requests else None})
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -468,14 +527,16 @@ def cmd_sprt(args, report: pw_cli.Report) -> dict:
     rows, exclusions, failures, arm_keys = prepare(args)
     for path, code, message in failures:
         report.fail(path, code, message)
-    result = primary_sprt(rows, args.design, exclusions, h0=args.h0, h1=args.h1, alpha=args.alpha, beta=args.beta)
+    result = primary_sprt(rows, args.design, exclusions, h0=args.h0, h1=args.h1, alpha=args.alpha, beta=args.beta,
+                          target=args.target)
     record_counts(report, rows, exclusions)
-    print_accounting(rows, exclusions, failures, arm_keys, args.design)
+    print_accounting(rows, exclusions, failures, arm_keys, args.design, args.margin_scale)
     estimate = "-" if result.estimate is None else f"{result.estimate:+.4f}"
-    print(f"SPRT {PRIMARY} ({args.design}): decision {result.decision}  LLR {result.llr:.3f}  "
+    print(f"SPRT {sprt_target(args.target)} ({args.design}): decision {result.decision}  LLR {result.llr:.3f}  "
           f"bounds [{result.lower:.3f}, {result.upper:.3f}]  n {result.n}  estimate {estimate}"
           f"{'  (' + result.note + ')' if result.note else ''}")
-    payload = {**result.as_dict(), "design": args.design, "arm_policy_keys": arm_keys, "exclusions": dict(exclusions)}
+    payload = {**result.as_dict(), "metric": sprt_target(args.target), "outcome": outcome_metadata(args.margin_scale),
+               "design": args.design, "arm_policy_keys": arm_keys, "exclusions": dict(exclusions)}
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(payload, indent=2) + "\n")
@@ -507,12 +568,19 @@ def build_parser() -> pw_cli.ArgumentParser:
         p.add_argument("--beta", type=float, default=0.05, help="SPRT type II error")
         p.add_argument("--out", type=Path, help="write the full result JSON (with every row) here, e.g. "
                                                 "RUN/ab.json; input for coworld-ab compare_report.py")
+        p.add_argument("--margin-scale", type=margin_scale_arg, default=DEFAULT_MARGIN_SCALE,
+                       help="score_outcome margin scale in score points (default %(default)g, the historical "
+                            "Elo scale; the live paintbot-pw ladder uses 600)")
         if name == "compare":
             p.add_argument("--target", choices=[m[0] for m in METRICS], default=PRIMARY,
-                           help="metric the verdict is about (default %(default)s)")
+                           help="metric the verdict is about; the SPRT uses it when it is an outcome score "
+                                "(default %(default)s)")
             p.add_argument("--metrics", help="comma list to report (pre-register it); default all")
             p.add_argument("--xreq", action="append", help="experience request id behind this batch (repeat)")
             p.add_argument("--requests", type=Path, help="pw_ab_requests.py manifest to store with the result")
+        else:
+            p.add_argument("--target", choices=OUTCOME_TARGETS, default=PRIMARY,
+                           help="outcome score to test (default %(default)s)")
     return parser
 
 

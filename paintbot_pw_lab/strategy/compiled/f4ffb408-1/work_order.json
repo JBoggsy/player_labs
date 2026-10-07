@@ -1,0 +1,149 @@
+{
+  "build_id": "f4ffb408-1",
+  "compiler": {
+    "agent": "claude",
+    "agent_sha256": "362d13e562827f56249d9575f2edcaf754b37d71d1fe87319ad0b506db5c25ba",
+    "cli_version": "2.1.286 (Claude Code)",
+    "lessons_sha256": "810dfc8380ccf3caedd598add08f282944202427ccedadfb3e19c3eb71e5f505",
+    "model": "claude-opus-5-5"
+  },
+  "components": {
+    "C.idle": {
+      "compiled_text": "### C.idle\n- Summary: Wait without issuing commands.\n- Spec: Read x from `K.position` into our private observed_x global. Set status to zero. Issue no host commands.\n- Uses: `K.position`\n- Done when: never\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWD.c\n  - Acted properly: Reads: PWE.e\n  - Result: Reads: replay\n",
+      "fields": {
+        "Checks": "\n  - Acted: Select this capability. Reads: PWD.r, PWD.c\n  - Acted properly: Start this capability. Reads: PWE.e\n  - Result: Issue no movement commands. Reads: replay",
+        "Done when": "never",
+        "Spec": "Read x from `K.position` into our private observed_x global. Set status to zero. Issue no host commands.",
+        "Status": "specified (2026-09-30)",
+        "Summary": "Wait without issuing commands.",
+        "Uses": "`K.position`"
+      },
+      "interface": {
+        "conditions": {},
+        "inputs": [],
+        "outputs": {},
+        "params": []
+      },
+      "llm": true,
+      "prefix": "c_idle",
+      "text_hash": "sha256:10c9eb9134b824a7d7cea1f76f6ec2a5ab9179d38e9f8153dfa129009df1f406",
+      "uses": [
+        "K.position"
+      ]
+    },
+    "K.position": {
+      "compiled_text": "### K.position\n- Summary: Read our horizontal position.\n- Spec: Set x to selfX on every tick.\n- Outputs:\n  - x -- Our horizontal position in centimeters.\n- Log: x every 24 ticks\n- Checks (reads):\n  - Believed: Reads: `K.position`.x\n",
+      "fields": {
+        "Checks": "\n  - Believed: Log our position. Reads: `K.position`.x",
+        "Log": "x every 24 ticks",
+        "Outputs": "\n  - x -- Our horizontal position in centimeters.",
+        "Spec": "Set x to selfX on every tick.",
+        "Status": "specified (2026-09-30)",
+        "Summary": "Read our horizontal position."
+      },
+      "interface": {
+        "outputs": {
+          "x": 1
+        },
+        "params": []
+      },
+      "llm": true,
+      "prefix": "k_position",
+      "text_hash": "sha256:c192cacc49e8348ceef2371a9452b380c6c29b7f13062a7845921fde53cd8d44",
+      "uses": []
+    },
+    "ST.commitment": {
+      "compiled_text": "### ST.commitment\n- Summary: Select the best rule each tick.\n- Spec: Apply no minimum hold or priority margin. Disable the emergency interrupt threshold.\n- Params:\n  - min_hold = 0 ticks -- This fixture has no hold.\n  - preempt_margin = 0 points -- This fixture has no margin.\n  - interrupt_at = 1001 points -- No rule reaches this threshold.\n- Checks (reads):\n  - Acted properly: Reads: PWD.h\n",
+      "fields": {
+        "Checks": "\n  - Acted properly: No alternative rule is held back. Reads: PWD.h",
+        "Params": "\n  - min_hold = 0 ticks -- This fixture has no hold.\n  - preempt_margin = 0 points -- This fixture has no margin.\n  - interrupt_at = 1001 points -- No rule reaches this threshold.",
+        "Spec": "Apply no minimum hold or priority margin. Disable the emergency interrupt threshold.",
+        "Status": "specified (2026-09-30)",
+        "Summary": "Select the best rule each tick."
+      },
+      "interface": {
+        "outputs": {},
+        "params": [
+          "min_hold",
+          "preempt_margin",
+          "interrupt_at"
+        ]
+      },
+      "llm": false,
+      "prefix": "st_commitment",
+      "text_hash": "sha256:8c090ac383e8b632f227bd2ec38bcfcb3abdd0c0db979e5362899a4ee690a3d4",
+      "uses": []
+    },
+    "ST.roles": {
+      "compiled_text": "### ST.roles\n- Summary: Every seat has the same role.\n- Spec: Use one role for all seats.\n- Roles:\n  - all = seats 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15\n- Checks (reads):\n  - Acted: Reads: PWD.r\n",
+      "fields": {
+        "Checks": "\n  - Acted: Every seat selects the idle rule. Reads: PWD.r",
+        "Roles": "\n  - all = seats 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
+        "Spec": "Use one role for all seats.",
+        "Status": "specified (2026-09-30)",
+        "Summary": "Every seat has the same role."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "st_roles",
+      "text_hash": "sha256:45b58598421ed249deac903cbe1e632d4ebb6240849645d3b9e6e4f902481517",
+      "uses": []
+    },
+    "ST.rules": {
+      "compiled_text": "### ST.rules\n- Summary: Always wait.\n- Spec: Select the idle capability.\n- Checks (reads):\n  - Acted: Reads: PWD.r, PWP.n\n- `R.idle` [100]: ALWAYS DO `C.idle`\n",
+      "fields": {
+        "Checks": "\n  - Acted: Select the only rule. Reads: PWD.r, PWP.n",
+        "Spec": "Select the idle capability.",
+        "Status": "specified (2026-09-30)",
+        "Summary": "Always wait."
+      },
+      "interface": {
+        "outputs": {},
+        "params": []
+      },
+      "llm": false,
+      "prefix": "st_rules",
+      "text_hash": "sha256:9324e78bd540ec0ebf947ac4a9b15e5b3420d79f2d4cee0ff951dd1709a1f47a",
+      "uses": []
+    }
+  },
+  "created": "2026-10-01T00:12:39.411262+00:00",
+  "diagnostics": [],
+  "engine": {
+    "commit": "118e1619",
+    "tag": "coworld-v0.3.89"
+  },
+  "full": false,
+  "intent": "behavior_change",
+  "milestone": "m0",
+  "previous_build": null,
+  "source_commit": "f4ffb4086aeb69ee2191234ce84f3c99f574fc06",
+  "source_hashes": {
+    "paintbot_pw_lab/docs/policy-surface.md": "60b6e1862150107da1ad66496d6173719509511e1bcc858a0e41b21c3c8e7983",
+    "paintbot_pw_lab/reference/base.bas": "3679f5bb91f8cefd8d61a62af556688b1bff7189171fe540999716fb0c41d9d9",
+    "paintbot_pw_lab/strategy/compiler/AGENT.md": "362d13e562827f56249d9575f2edcaf754b37d71d1fe87319ad0b506db5c25ba",
+    "paintbot_pw_lab/strategy/compiler/LESSONS.md": "810dfc8380ccf3caedd598add08f282944202427ccedadfb3e19c3eb71e5f505",
+    "paintbot_pw_lab/strategy/compiler/config.json": "f0240c328e26289f6ddf41857df3b9eddaafce89404228988303df332c3d2c93",
+    "paintbot_pw_lab/strategy/compiler/runtime/lib.bas": "f8f141333f8e341343096d83cf09bb459fb06d71ed7cc1bfb1c3d3e7d517a796",
+    "paintbot_pw_lab/strategy/compiler/runtime/main.bas": "929eeae5041973f76a0c75f154ee7f8918b5aca8cd4a6cdb5c12d9f05dbedb60",
+    "paintbot_pw_lab/tools/pw_intent.py": "e0b6611bf06c8514f79552a2b7673bcebb734ad7d2a9d4546202a909e93c04e2",
+    "paintbot_pw_lab/tools/pw_strategy.py": "5e9795abc045599c0189acba733faa35b00a0d108770dd8fbec45842accdb746",
+    "paintbot_pw_lab/tools/release.env": "576aa3d6f80eda2ee45c7d042eaacbcc2bcbb09dd4791090f0451fd333e7122a",
+    "paintbot_pw_lab/tools/strategy_basic.py": "4ef4eebbf41066f116c633a0be63bb901dfee9663275d73b20d84dca28ff483e",
+    "paintbot_pw_lab/tools/strategy_build.py": "37887dc504f60e92c0d7ef198b60dbbf5ad7e0482bb2b68ebb35e66603785e39",
+    "paintbot_pw_lab/tools/strategy_format.py": "32b756ec38e95c2a8355c7c0832f1932fdc2089accf17c7efff73810155cc0c9",
+    "paintbot_pw_lab/tools/strategy_gates.py": "1fe93b05e95983c245cbd8e17eab5ebd53631cadcf4b3c1899dbf27722772ec8",
+    "paintbot_pw_lab/tools/tests/fixtures/strategy_trivial/STRATEGY.md": "a8ebe8ec216f62ac7e07f14f3d69ae1c32ec2bc0df19df6a1d462e75958185cf"
+  },
+  "source_path": "paintbot_pw_lab/tools/tests/fixtures/strategy_trivial/STRATEGY.md",
+  "units": {
+    "C.idle": "new",
+    "K.position": "new",
+    "ST.commitment": "new",
+    "ST.roles": "new",
+    "ST.rules": "new"
+  }
+}

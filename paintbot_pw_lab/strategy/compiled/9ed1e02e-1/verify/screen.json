@@ -1,0 +1,153 @@
+{
+  "counts": {
+    "excluded": 0,
+    "failed": 0,
+    "processed": 56
+  },
+  "exit_code": 0,
+  "failures": [],
+  "inputs": {
+    "a": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy/9ed1e02e-1/policy.bas",
+    "b": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/strategy/compiled/a5c28ea4-1/policy.bas",
+    "command": "screen",
+    "glory": "{\"behind_lives\": 5, \"behind_cogs\": 10}",
+    "max_ticks": 14400,
+    "out": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy/9ed1e02e-1/verify/screen",
+    "record": null,
+    "record_seeds": null,
+    "seeds": "1-28",
+    "tag": "coworld-v0.3.123",
+    "workers": 14
+  },
+  "next": [],
+  "ok": true,
+  "outputs": [
+    "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy/9ed1e02e-1/verify/screen/matches.jsonl",
+    "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy/9ed1e02e-1/verify/screen/summary.json"
+  ],
+  "release_tag": "coworld-v0.3.123",
+  "result": {
+    "a": {
+      "path": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy/9ed1e02e-1/policy.bas",
+      "sha256": "ca38984ef2b1dc8f798fba21a500771449040ec55b245354140b3a97d73e556b"
+    },
+    "b": {
+      "path": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/strategy/compiled/a5c28ea4-1/policy.bas",
+      "sha256": "5a6900a05204b9cfcf76c3f734e40db9913e275410cad3d3facdb164995fca4a"
+    },
+    "build": {
+      "commit": "28030de6a3a221fd8b75ac7fb4a2b9f9b5dd8c1b",
+      "nim": "Nim Compiler Version 2.2.10 [MacOSX: arm64]",
+      "tag": "coworld-v0.3.123"
+    },
+    "glory": {
+      "behind_cogs": 10,
+      "behind_lives": 5
+    },
+    "identical_play": false,
+    "map": "Heartwick (default)",
+    "matches_per_second": 2.077,
+    "matches_with_bad_seats": 0,
+    "max_ticks": 14400,
+    "parity": [
+      {
+        "a_side": 0,
+        "headless_hash": 965137242,
+        "headless_ticks": 2555,
+        "library_hash": 965137242,
+        "library_tick": 2555,
+        "match": true,
+        "seed": 1
+      },
+      {
+        "a_side": 1,
+        "headless_hash": 64177872,
+        "headless_ticks": 1967,
+        "library_hash": 64177872,
+        "library_tick": 1967,
+        "match": true,
+        "seed": 2
+      }
+    ],
+    "recorded": null,
+    "rules": [
+      49
+    ],
+    "screening_only": "local matches vs files we seat; not evidence about the league field",
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28
+    ],
+    "sides": [
+      0,
+      1
+    ],
+    "summary": {
+      "a_side_0": {
+        "ci95_high": 0.6458112225827433,
+        "ci95_low": 0.455581634560114,
+        "draws": 0,
+        "losses": 11,
+        "mean_outcome": 0.5506964285714286,
+        "n": 28,
+        "win_rate": 0.6071428571428571,
+        "wins": 17
+      },
+      "a_side_1": {
+        "ci95_high": 0.5303907768970557,
+        "ci95_low": 0.3209663659600871,
+        "draws": 0,
+        "losses": 17,
+        "mean_outcome": 0.4256785714285714,
+        "n": 28,
+        "win_rate": 0.39285714285714285,
+        "wins": 11
+      },
+      "all": {
+        "ci95_high": 0.5601932299479765,
+        "ci95_low": 0.4161817700520236,
+        "draws": 0,
+        "losses": 28,
+        "mean_outcome": 0.48818750000000005,
+        "n": 56,
+        "win_rate": 0.5,
+        "wins": 28
+      },
+      "seed_balanced": {
+        "ci95_high": 0.5678588624996228,
+        "ci95_low": 0.4085161375003773,
+        "mean_outcome": 0.48818750000000005,
+        "n_seeds": 28
+      }
+    },
+    "wall_seconds": 27.0,
+    "workers": 14
+  },
+  "tool": "pw_local"
+}

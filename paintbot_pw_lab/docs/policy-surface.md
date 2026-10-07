@@ -1,25 +1,31 @@
 # Paintbot PW policy surface: what a script can know and do
 
-> **Currency.** Verified 2026-09-30 against Metta-AI/paintbot-pw commit `118e1619` (tag
-> `coworld-v0.3.89`), coworld `paintbot-pw` 0.3.89, the build the league runs that day
-> (`pw.py deployed-ref`). Recordings are stamped rules 48, whose only change is FFA-kin fog, so
-> the teams game plays rules 47. Every `file:line` citation is at `118e1619`, not `main`.
-> Since 0.3.79 (`d0728ab1`): 0.3.89 (commit `06c3c28`, #185) moved every perception builtin
-> into `seat_view.nim` (`SeatView`) with unchanged answers and costs (a 16-seat `base.bas` match
-> and a `jev.bas` match give the same final hash and the same per-seat instruction and work peaks
-> as under 0.3.80; all 80 hosted 0.3.79 tapes re-simulate), added `rnd(n)` (§5.6), and rebuilt
-> the neural lane on `SeatView` (§5.10: new contracts, the old ones refused). `basic.nim`,
-> `oracle.nim`, `runtime/oracle.py` and `runtime/host.py` are unchanged since 0.3.79. Re-verify
-> when the coworld version changes: diff `examples/paintbot/bots.nim` and `seat_view.nim` (host
-> API and limits), `src/polyworld/basic.nim` (dialect), `examples/paintbot/oracle.nim`,
-> `examples/paintbot/neural_host.nim` and `neural_contract.nim`,
-> `coworld/paintbot/runtime/host.py` and `neural_package.py` (upload staging).
+> **Currency.** Raw BASIC host integration is unchanged at `coworld-v0.3.124` / `7a29ed7a`
+> (2026-10-07): diff from the verified0.3.123/28030de6 contains training-map changes only. The engine now imports Bassy, pinned to `77629c038fd2161c61b6a89505f39efa6bb26617`
+> in `coworld/dependencies.lock`. `src/polyworld/basic.nim` was deleted; its old line
+> references below are historical anchors, not the current runtime. Neural ZIP/oracle
+> details remain scoped to 0.3.89 and require separate requalification before use.
+> `PW_DOCS_SHA` stays `118e1619` because those wider surfaces are not reverified.
 
-Paths are relative to the repo root; `bots.nim`, `seat_view.nim`, `oracle.nim`, `neural_host.nim`,
-`neural_contract.nim` and the neural `.md` references are under `examples/paintbot/`, `basic.nim` and `coworld.nim` under `src/polyworld/`, `host.py` and
-`neural_package.py` under `coworld/paintbot/runtime/`. Rules and numbers of the game itself are in
-[mechanics.md](mechanics.md). Starter policies are in `../reference/` (Heartland's in
-`../reference/heartland/`).
+Engine paths are relative to `Metta-AI/paintbot-pw`. Host integration is in
+`examples/paintbot/bots.nim` and `observations.nim`; game rules are in
+[mechanics.md](mechanics.md). Bassy source is resolved by the pinned dependency tool
+under `tmp/coworld/deps/bassy/src/`, including `bassy.nim` and `bassy/numbers.nim`.
+Frozen 0.3.89 policies under `reference/` are migration inputs, not current-runtime examples.
+
+### Rules-49 BASIC additions
+
+At `244dc62b`, `bots.nim:69-99` registers these names (all cost 4 work units):
+`selfDestruct()`, `gunRange()`, `hasSniper()`, `mistingTicks()`, `radarTicks()`,
+`radarBoost()`, `playerMisting(id)` and `playerRadar(id)`. They are reserved host names.
+`gunRange` returns the current seat's actual range; player item readers are fog-gated.
+Mister/radar timers report remaining ticks. `radarBoost` indicates doubled outgoing damage.
+Self-destruct is a command for this tick only. See [mechanics](mechanics.md#5-combat).
+
+Rules 49 give a cog one life: after death its BASIC program never runs again, so it cannot
+print a later death event. The audit closes activations using the replay death instead.
+The unchanged baseline compiles without host-name collisions but retains old strategic
+assumptions; qualification measures compiler fidelity, not competitive suitability.
 
 ## 1. Upload formats
 
@@ -29,7 +35,7 @@ seat's file before the engine starts (`host.py:99-124`):
 | Format | Detected by | Limits | Staging |
 | --- | --- | --- | --- |
 | Raw BASIC | anything not a ZIP | UTF-8, at most 128 KiB, not WASM (`host.py:43-53`) | written as the seat's source |
-| Neural BASIC ZIP | starts with `PK\x03\x04` | exactly `manifest.json` (8 KiB), `policy.bas` (128 KiB), `model.bin` (16 MiB); no encryption (`neural_package.py:11-13`, `693-712`) | manifest schema `paintbot-neural-basic/1` or `/2`, SHA-256 of both payloads must match, contract hashes known and paired (a retired contract is refused by name, §5.10), decoder options and user inputs validated, a PWNET002 model's structure and operation budget checked for the match's seat count, and a teams.view.1 actor's input count checked (`neural_package.py:713-793`; the host passes the seat count, `host.py:105`). Writes `policy.bas` plus `.model.bin` / `.neural.json` sidecars (`neural_package.py:796-800`) |
+| Neural BASIC ZIP (0.3.89 reference; reverify before use) | starts with `PK\x03\x04` | exactly `manifest.json` (8 KiB), `policy.bas` (128 KiB), `model.bin` (16 MiB); no encryption (`neural_package.py:11-13`, `693-712`) | manifest schema `paintbot-neural-basic/1` or `/2`, SHA-256 of both payloads must match, contract hashes known and paired (a retired contract is refused by name, §5.10), decoder options and user inputs validated, a PWNET002 model's structure and operation budget checked for the match's seat count, and a teams.view.1 actor's input count checked (`neural_package.py:713-793`; the host passes the seat count, `host.py:105`). Writes `policy.bas` plus `.model.bin` / `.neural.json` sidecars (`neural_package.py:796-800`) |
 
 WASM is no longer accepted (`host.py:45-46`). There is no other format. Any staging failure,
 including a rejected neural package, puts an idle stub in that seat, but the platform then records
@@ -37,27 +43,27 @@ the episode as failed (§4). The host refuses a roster
 of fewer than 2 or more than 256 seats (`host.py:89-90`, since 0.3.76); the `paintbot-pw` manifest's config
 schema still requires exactly 16 `tokens`, so every paintbot-pw match has 16 seats.
 
-## 2. The BASIC dialect (`basic.nim`)
+## 2. The BASIC dialect (Bassy at 0.3.123)
 
-One file controls one cog. Every seat (16 in paintbot-pw) gets a separate VM with **no shared
-memory** (`bots.nim:172-198`). The only cross-seat channel is speech.
+The upstream migration guide is `docs/bassy-porting.md`; implementation is the pinned
+Bassy dependency plus `bots.nim` / `observations.nim`. These are breaking changes for
+policies generated for the former Polyworld BASIC runtime:
 
-| Feature | Behavior | Evidence |
-| --- | --- | --- |
-| Reserved words | `and call dim else end exit false gosub goto if let mod not or print rem return stop sub then true wend while xor`. `goto`/`gosub` are reserved but not statements. | `basic.nim:551-559`, statement dispatch `1706-1774` |
-| Not present | `FOR/NEXT`, `DO/LOOP`, `SELECT`, `ELSEIF`, `FUNCTION`, built-in math (`ABS`, `SQR`, `MIN`...). Write loops with `WHILE`, math yourself. Random numbers come from the host function `rnd(n)` (§5.6, since 0.3.89). | dispatch `1706-1774` |
-| Values | signed int32 only; `+ - *` wrap on overflow; `/` and `MOD` truncate toward zero; divide by zero is a **runtime error**. `true`/`false` = 1/0. | `basic.nim:946-986`, `1061-1064` |
-| Operators and precedence (low to high) | `OR XOR` < `AND` < `= <> < <= > >=` < `+ -` < `* / MOD` < unary `- + NOT`. Logical ops return 0/1 and always evaluate both sides. **`NOT` binds tighter than `=`**: write `NOT (a = b)`. | `basic.nim:1015-1035`, `1118-1172` |
-| Case | Names and keywords are case-insensitive. | `basic.nim:351-353` |
-| Separators | Newline or `:` ends a statement. `'` or `REM` starts a comment. | `basic.nim:392-399` |
-| Variables | Scalars are global, created on first use, start at 0. Sub parameters are local; anything else assigned inside a `SUB` is global. At most **512 globals**. | `basic.nim:917-936`, `bots.nim:46` |
-| Arrays | `DIM name(N)` at top level only, literal bound, inclusive (`DIM a(15)` = 16 cells). At most **4,096 elements in total** (and 256 arrays). Out-of-range index is a runtime error. | `basic.nim:677-706`, `1174-1183`, `bots.nim:46` |
-| Control flow | `IF cond THEN` newline ... `[ELSE ...]` `END IF`; `WHILE cond` ... `WEND`. `THEN` must end the statement. | `basic.nim:1635-1687` |
-| Subroutines | `SUB name(a, b)` ... `END SUB`, top level only; call as `name(x, y)` or `CALL name(x, y)`. No return values (a sub in an expression is a compile error): return results through globals, as `isqrt` sets `root` in `base.bas`. `RETURN` / `EXIT SUB` leave early. Call depth 16. | `basic.nim:713-779`, `1102-1107`, `1585-1602`, `bots.nim:46` |
-| Strings | Literals only as `PRINT` text or as host-call arguments (compiled to a literal id, used by `strNew`). Everything else is int handles into a per-decision string pool (section 5.7). | `basic.nim:1489-1522` |
-| Printing | `PRINT "a"; x, y` (`;` joins, `,` adds a space, trailing `;` suppresses the newline). **1,024 bytes and 128 print events per decision**; exceeding either is a runtime error. Output goes to the seat's private log (10 MiB cap per episode). | `basic.nim:1604-1631`, `2423-2430`, `bots.nim:47`, `coworld.nim:7`, `170-180` |
-| Host data | Read-only names (section 5.1); assigning one is a compile error. | `basic.nim:1437-1448` |
-| Host function names | Every host function in section 5 (including `rnd` and the neural builtins, which exist in every seat) is taken: using one as a variable, array or `SUB` name is a **compile error** ("host function cannot be assigned", "is not a scalar variable", "duplicate BASIC name"), which fails the whole episode (section 4). Names are case-insensitive, so `RND` and `Rnd` collide too. A script written before 0.3.89 that uses `rnd` as a variable must rename it. | `basic.nim:655-661`, `686-690`, `926-931`, `1444-1448`; checked with a one-line `rnd = 3` script at 0.3.89 |
+| Surface | Current behavior |
+| --- | --- |
+| Division | `/` performs fixed-point division (`3 / 2` is 1.5); `\` is integer division (`3 \ 2` is 1). Preserve truncation order when porting integer algorithms. |
+| Booleans | Comparisons and `TRUE` yield -1; `FALSE` yields 0. `AND`, `OR`, `XOR`, `NOT` are bitwise. Normalize truth when source requires 0/1 or combines flags with comparisons. |
+| Host arguments | Numeric coordinates and indices must be exact integers. Fractional intermediate values cannot be passed as integer host arguments. |
+| Observation records | Host prepends `me` and `agents(Seats - 1)` declarations. `me` has self fields including `tick` and `seats`; agents expose visible/x/y/hp/team/carrying. Do not redeclare these records. Legacy scalar host data and functions remain registered. |
+| Record refresh | Referenced self fields refresh each living decision. Agent columns load lazily through SeatView and charge four work units per seat per loaded column. They retain visibility/disguise constraints. |
+| Record memory | Authored typed record arrays persist between decisions; bounds are inclusive. Writing observation records affects only local policy memory, never world state. |
+| Execution | Bassy binds observations then calls `compileNative()`; decisions invalidate observation arrays, refresh scalars, reset the string pool and execute. |
+| Budgets | `bots.nim:37-50`: 128 KiB source, 50,000 instructions, 125,000 work units, 2 MiB memory, 512 globals, 4,096 array elements, call depth 16, 1,024 print bytes and 128 print events. Compiler G3 intentionally uses lower thresholds. |
+
+The strategy compiler preserves its int32/truncating/0-or-1 source contract using Bassy
+integer division and explicit flags. Pre-Bassy units require a full rebuild; they cannot be
+reused based on unchanged source text alone.
+Do not infer compatibility from the unchanged rules number (49) or a successful tool build.
 
 ## 3. Per-tick execution
 
@@ -150,9 +156,9 @@ plus `oracle.nim:247-340`, `basic.nim:3003-3093`, `neural_host.nim:744-870`.
 | --- | --- |
 | `selfId` | seat 0-15 (0 .. seats−1 in a match of another size) |
 | `selfTeam` | `selfId mod 2` (FFA-kin: the seat) |
-| `selfX`, `selfY`, `selfHp` | position; base HP (0-3, FFA-kin 0-10) |
+| `selfX`, `selfY`, `selfHp` | position; HP 0-10 in rules 49 (teams before rules 49: 0-3) |
 | `armorHp` | armor 0-3 |
-| `livesLeft` | lives including the current one (4 at start) |
+| `livesLeft` | lives including the current one (1 at start in rules 49; previously 4) |
 | `hasGrenade`, `hasSpray`, `grenadeCharge` | 0/1, 0/1, 0-24 |
 | `trenchId` | trench index you stand in, -1 outside |
 | `worldTick` | current tick |
@@ -284,7 +290,7 @@ all were public with no line of sight. **Rules 48 (FFA-kin fog of war):** `kin`,
 `seatScore` and `seatAlive` read -1 for any seat other than yourself that you cannot see this
 tick (`seat_view.nim:394-417`, `sim.nim:240-245`); `seatCount`, hearts and great hearts stay public.
 
-### 5.9 Advisor oracle (`oracle.nim`, `runtime/oracle.py`)
+### 5.9 Advisor oracle (0.3.89 reference) (`oracle.nim`, `runtime/oracle.py`)
 
 A seat can have the host ask an LLM on its behalf. Asking never blocks; answers arrive on a later
 tick.
@@ -314,7 +320,7 @@ tick.
 - Every ask and answer is journaled to the asking seat's private log (`bots.nim:160-163`,
   `oracle.nim:303-314`).
 
-### 5.10 Neural BASIC (ZIP uploads)
+### 5.10 Neural BASIC (0.3.89 reference) (ZIP uploads)
 
 A secondary lane for this lab (we upload plain BASIC), documented so it can be used or read
 correctly. Upstream references: `neural_basic.md` (package, selection options, BASIC I/O),

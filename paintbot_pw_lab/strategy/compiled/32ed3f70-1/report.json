@@ -1,0 +1,458 @@
+{
+  "budget": {
+    "array_cells": 983,
+    "array_cells_limit": 4096,
+    "arrays": 22,
+    "arrays_limit": 256,
+    "globals": 280,
+    "globals_limit": 512,
+    "source_bytes": 55091,
+    "source_limit": 131072,
+    "telemetry": {
+      "bytes": 325,
+      "events": 53,
+      "limit_bytes": 512,
+      "limit_events": 64,
+      "lines": {
+        "PWB": {
+          "bytes": 76,
+          "count": 3,
+          "events": 11
+        },
+        "PWC": {
+          "bytes": 96,
+          "count": 2,
+          "events": 12
+        },
+        "PWD": {
+          "bytes": 50,
+          "count": 1,
+          "events": 11
+        },
+        "PWE": {
+          "bytes": 103,
+          "count": 3,
+          "events": 19
+        },
+        "PWP": {
+          "bytes": 0,
+          "count": 0,
+          "events": 0
+        }
+      },
+      "log_offsets": {
+        "K.contacts": 1,
+        "K.pickups": 2,
+        "K.squad_target": 0
+      }
+    }
+  },
+  "build_id": "32ed3f70-1",
+  "error": null,
+  "gaps": [],
+  "gates": {
+    "G1": {
+      "passed": true,
+      "summary": []
+    },
+    "G2": {
+      "passed": true,
+      "summary": {
+        "failures": [],
+        "seats": 16
+      }
+    },
+    "G3": {
+      "limits": {
+        "instructions": 40000,
+        "print_bytes": 512,
+        "print_events": 64,
+        "work": 100000
+      },
+      "max_ticks": 14400,
+      "passed": true,
+      "per_seat": {
+        "instructions": [
+          10545,
+          9888,
+          10329,
+          9503,
+          10684,
+          9814,
+          10546,
+          9968,
+          10862,
+          9927,
+          10816,
+          9789,
+          10970,
+          9734,
+          10800,
+          10389
+        ],
+        "work": [
+          17446,
+          16284,
+          17330,
+          15740,
+          17903,
+          16311,
+          17590,
+          16481,
+          18054,
+          16178,
+          17879,
+          16170,
+          18227,
+          15999,
+          18045,
+          17000
+        ]
+      },
+      "seed": 7,
+      "summary": {
+        "instructions": 10970,
+        "print_bytes": 325,
+        "print_events": 53,
+        "work": 18227
+      }
+    },
+    "G4": {
+      "identical_play": false,
+      "intent": "m1",
+      "matches_with_bad_seats": 0,
+      "outcome_advisory": false,
+      "passed": true,
+      "summary": {
+        "ci95_high": 0.6589632390622115,
+        "ci95_low": 0.5220546180806456,
+        "mean_outcome": 0.5905089285714286,
+        "n_seeds": 28
+      },
+      "warning": null
+    },
+    "G5": {
+      "coverage": {
+        "messages": {
+          "COM.grenade_out": {
+            "received": 0,
+            "sent": 0
+          },
+          "COM.status_call": {
+            "received": 0,
+            "sent": 31
+          }
+        },
+        "unexercised_event_fields": [],
+        "unexercised_message_types": []
+      },
+      "failures": [],
+      "passed": true,
+      "seats": [
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a0/player-0.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 61,
+            "PWE": 41,
+            "PWP": 5
+          },
+          "lines": 199,
+          "missing_fields": [],
+          "peak_bytes": 151,
+          "seat": 0
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a0/player-2.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 91,
+            "PWE": 77,
+            "PWP": 5
+          },
+          "lines": 265,
+          "missing_fields": [],
+          "peak_bytes": 151,
+          "seat": 2
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a0/player-4.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 97,
+            "PWE": 93,
+            "PWP": 5
+          },
+          "lines": 287,
+          "missing_fields": [],
+          "peak_bytes": 151,
+          "seat": 4
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a0/player-6.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 69,
+            "PWE": 53,
+            "PWP": 5
+          },
+          "lines": 219,
+          "missing_fields": [],
+          "peak_bytes": 151,
+          "seat": 6
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a0/player-8.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 118,
+            "PWE": 119,
+            "PWP": 5
+          },
+          "lines": 334,
+          "missing_fields": [],
+          "peak_bytes": 149,
+          "seat": 8
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a0/player-10.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 100,
+            "PWE": 93,
+            "PWP": 5
+          },
+          "lines": 290,
+          "missing_fields": [],
+          "peak_bytes": 125,
+          "seat": 10
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a0/player-12.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 74,
+            "PWE": 55,
+            "PWP": 5
+          },
+          "lines": 226,
+          "missing_fields": [],
+          "peak_bytes": 125,
+          "seat": 12
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a0/player-14.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 106,
+            "PWE": 105,
+            "PWP": 5
+          },
+          "lines": 308,
+          "missing_fields": [],
+          "peak_bytes": 125,
+          "seat": 14
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a1/player-1.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 66,
+            "PWE": 57,
+            "PWP": 5
+          },
+          "lines": 220,
+          "missing_fields": [],
+          "peak_bytes": 151,
+          "seat": 1
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a1/player-3.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 62,
+            "PWE": 47,
+            "PWP": 5
+          },
+          "lines": 206,
+          "missing_fields": [],
+          "peak_bytes": 151,
+          "seat": 3
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a1/player-5.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 48,
+            "PWE": 23,
+            "PWP": 5
+          },
+          "lines": 168,
+          "missing_fields": [],
+          "peak_bytes": 151,
+          "seat": 5
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a1/player-7.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 49,
+            "PWE": 27,
+            "PWP": 5
+          },
+          "lines": 173,
+          "missing_fields": [],
+          "peak_bytes": 151,
+          "seat": 7
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a1/player-9.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 34,
+            "PWE": 5,
+            "PWP": 5
+          },
+          "lines": 136,
+          "missing_fields": [],
+          "peak_bytes": 151,
+          "seat": 9
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a1/player-11.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 40,
+            "PWE": 13,
+            "PWP": 5
+          },
+          "lines": 150,
+          "missing_fields": [],
+          "peak_bytes": 125,
+          "seat": 11
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a1/player-13.log",
+          "kinds": {
+            "PWB": 69,
+            "PWC": 1,
+            "PWD": 28,
+            "PWE": 9,
+            "PWP": 5
+          },
+          "lines": 112,
+          "missing_fields": [],
+          "peak_bytes": 151,
+          "seat": 13
+        },
+        {
+          "file": "/Users/jamesboggs/coding/personal_labs/personal_labs_paintbot_pw/paintbot_pw_lab/tmp/strategy-evidence/32ed3f70-1/telemetry/policy-7295a9b2_vs_base-bassy-28030de6-8c81b016_s7_a1/player-15.log",
+          "kinds": {
+            "PWB": 90,
+            "PWC": 2,
+            "PWD": 43,
+            "PWE": 17,
+            "PWP": 5
+          },
+          "lines": 157,
+          "missing_fields": [],
+          "peak_bytes": 122,
+          "seat": 15
+        }
+      ],
+      "summary": {
+        "failures": 0,
+        "lines": 3450,
+        "seat_recordings": 16,
+        "unexercised_message_types": []
+      }
+    }
+  },
+  "guesses": [
+    {
+      "component": "K.squad_target",
+      "decision": "Wrapped the whole stall-memory step in `IF progress_period > 0`, so a tuned value of 0 skips Step 1 instead of dividing by zero.",
+      "id": "G-K.squad_target-1",
+      "severity": "low",
+      "spec_quote": "When `worldTick MOD progress_period = 0`",
+      "state": "open",
+      "why": "AGENTS.md rule 5 requires guarding every MOD; progress_period is a tunable param, not a literal."
+    },
+    {
+      "component": "C.take_heart",
+      "decision": "Read controlX/controlY(objective) without checking objective >= 0. For an invalid objective, the host returns -1 and the engine clamps the resulting goal.",
+      "id": "G-C.take_heart-1",
+      "severity": "low",
+      "spec_quote": "`goal_x = controlX(objective)`",
+      "state": "open",
+      "why": "The spec still requires these reads without an objective guard, and the host safely returns -1 for invalid indices."
+    },
+    {
+      "component": "C.cover_heart",
+      "decision": "Read controlX/controlY(objective) without an objective >= 0 guard, preserving the previous unit's behavior.",
+      "id": "G-C.cover_heart-1",
+      "severity": "low",
+      "spec_quote": "`hx = controlX(objective)`",
+      "state": "open",
+      "why": "The spec still omits this guard, and invalid objective indices return -1 without a runtime error."
+    },
+    {
+      "component": "C.default_goal",
+      "decision": "Use the legacy carrying, ownHeartStolen, heartX and heartY fields exactly as specified. With the documented current host behavior, the default goal is the enemy home.",
+      "id": "G-C.default_goal-1",
+      "severity": "medium",
+      "spec_quote": "else `(heartX, heartY)`",
+      "state": "open",
+      "why": "The spec explicitly retains these legacy fields; substituting control objectives would change the requested behavior."
+    },
+    {
+      "component": "COM.grenade_out",
+      "decision": "Read sk_motor__threw as left by the most recent SK.motor run before __send. If send runs before motor on a tick, the callout comes one tick late.",
+      "id": "G-COM.grenade_out-1",
+      "severity": "low",
+      "spec_quote": "when threw of `SK.motor` is 1",
+      "state": "open",
+      "why": "Call order is generated and not visible to the unit."
+    }
+  ],
+  "status": "passed",
+  "units": {
+    "C.cover_heart": "reused",
+    "C.default_goal": "reused",
+    "C.fall_back": "reused",
+    "C.resupply": "changed",
+    "C.take_heart": "reused",
+    "COM.grenade_out": "reused",
+    "COM.status_call": "reused",
+    "K.contacts": "reused",
+    "K.pickups": "changed",
+    "K.self_motion": "reused",
+    "K.squad_target": "reused",
+    "P.chargeGrenade": "reused",
+    "P.lookAt": "reused",
+    "P.shootAt": "reused",
+    "P.shout": "reused",
+    "P.walkTo": "reused",
+    "S.has_target_heart": "reused",
+    "S.losing_fight": "reused",
+    "S.supply_worth": "changed",
+    "SK.motor": "reused",
+    "ST.commitment": "reused",
+    "ST.roles": "reused",
+    "ST.rules": "reused"
+  }
+}

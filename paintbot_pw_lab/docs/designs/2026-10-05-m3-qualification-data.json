@@ -1,0 +1,3156 @@
+{
+  "schema": "paintbot-pw-m3-qualification/1",
+  "build": "18e0aa1f-1",
+  "policy_sha256": "07ae328d1b12f57b0f61151e601e4c95c14e71cd516d9df6334e45c4eda87f04",
+  "design": {
+    "episodes": 64,
+    "pairs": 32,
+    "seeds": [
+      1801,
+      1802,
+      1803,
+      1804,
+      1805,
+      1806,
+      1807,
+      1808
+    ],
+    "sides": [
+      "red",
+      "blue"
+    ],
+    "margin_scale": 600,
+    "primary": "score_outcome",
+    "stopping": "fixed N; SPRT ignored",
+    "estimated_credits": 32.0
+  },
+  "comparison": {
+    "analysis": "Paired design: paired t-test on per-pair differences (Wilcoxon signed-rank must agree) for means; exact McNemar on discordant pairs for rates (draw = non-win). BY correction across reported metrics; minimum 30 pairs. Inconclusive is not equivalence.",
+    "deltas": [
+      {
+        "metric": "score_outcome",
+        "group": "all",
+        "base": 0.7975520833333333,
+        "cand": 0.78109375,
+        "n_base": 32,
+        "n_cand": 32,
+        "p": 1.0,
+        "raw_p": 0.8755351027105348,
+        "effect": -0.02791859661244254,
+        "verdict": "inconclusive",
+        "test": "paired_t",
+        "detail": {
+          "mean_diff": -0.01645833333333332,
+          "wilcoxon_p": 0.9031461499744492
+        }
+      },
+      {
+        "metric": "score_outcome",
+        "group": "red",
+        "base": 0.7330729166666666,
+        "cand": 0.7978125,
+        "n_base": 16,
+        "n_cand": 16,
+        "p": 1.0,
+        "raw_p": 0.6896830415841889,
+        "effect": 0.10177555007503378,
+        "verdict": "inconclusive",
+        "test": "paired_t",
+        "detail": {
+          "mean_diff": 0.06473958333333335,
+          "wilcoxon_p": 0.6015625
+        }
+      },
+      {
+        "metric": "score_outcome",
+        "group": "blue",
+        "base": 0.86203125,
+        "cand": 0.764375,
+        "n_base": 16,
+        "n_cand": 16,
+        "p": 1.0,
+        "raw_p": 0.48634292026389686,
+        "effect": -0.17843630512848005,
+        "verdict": "inconclusive",
+        "test": "paired_t",
+        "detail": {
+          "mean_diff": -0.09765624999999999,
+          "wilcoxon_p": 0.625
+        }
+      },
+      {
+        "metric": "score_outcome",
+        "group": "vs xolod:v13",
+        "base": 0.7947916666666667,
+        "cand": 0.8099479166666667,
+        "n_base": 16,
+        "n_cand": 16,
+        "p": 1.0,
+        "raw_p": 0.9197360368848584,
+        "effect": 0.025619076484069983,
+        "verdict": "inconclusive",
+        "test": "paired_t",
+        "detail": {
+          "mean_diff": 0.015156249999999996,
+          "wilcoxon_p": 0.744140625
+        }
+      },
+      {
+        "metric": "score_outcome",
+        "group": "vs zhar:v55",
+        "base": 0.8003125,
+        "cand": 0.7522395833333333,
+        "n_base": 16,
+        "n_cand": 16,
+        "p": 1.0,
+        "raw_p": 0.75501186665201,
+        "effect": -0.07945200334484588,
+        "verdict": "inconclusive",
+        "test": "paired_t",
+        "detail": {
+          "mean_diff": -0.04807291666666664,
+          "wilcoxon_p": 0.9697265625
+        }
+      },
+      {
+        "metric": "win_rate",
+        "group": "all",
+        "base": 0.8125,
+        "cand": 0.78125,
+        "n_base": 32,
+        "n_cand": 32,
+        "p": 1.0,
+        "raw_p": 1.0,
+        "effect": -0.03125,
+        "verdict": "inconclusive",
+        "test": "mcnemar",
+        "detail": {
+          "only_baseline": 7,
+          "only_candidate": 6,
+          "concordant": 19
+        }
+      },
+      {
+        "metric": "win_rate",
+        "group": "red",
+        "base": 0.75,
+        "cand": 0.8125,
+        "n_base": 16,
+        "n_cand": 16,
+        "p": 1.0,
+        "raw_p": 1.0,
+        "effect": 0.0625,
+        "verdict": "inconclusive",
+        "test": "mcnemar",
+        "detail": {
+          "only_baseline": 3,
+          "only_candidate": 4,
+          "concordant": 9
+        }
+      },
+      {
+        "metric": "win_rate",
+        "group": "blue",
+        "base": 0.875,
+        "cand": 0.75,
+        "n_base": 16,
+        "n_cand": 16,
+        "p": 1.0,
+        "raw_p": 0.6875,
+        "effect": -0.125,
+        "verdict": "inconclusive",
+        "test": "mcnemar",
+        "detail": {
+          "only_baseline": 4,
+          "only_candidate": 2,
+          "concordant": 10
+        }
+      },
+      {
+        "metric": "win_rate",
+        "group": "vs xolod:v13",
+        "base": 0.8125,
+        "cand": 0.8125,
+        "n_base": 16,
+        "n_cand": 16,
+        "p": 1.0,
+        "raw_p": 1.0,
+        "effect": 0.0,
+        "verdict": "inconclusive",
+        "test": "mcnemar",
+        "detail": {
+          "only_baseline": 3,
+          "only_candidate": 3,
+          "concordant": 10
+        }
+      },
+      {
+        "metric": "win_rate",
+        "group": "vs zhar:v55",
+        "base": 0.8125,
+        "cand": 0.75,
+        "n_base": 16,
+        "n_cand": 16,
+        "p": 1.0,
+        "raw_p": 1.0,
+        "effect": -0.0625,
+        "verdict": "inconclusive",
+        "test": "mcnemar",
+        "detail": {
+          "only_baseline": 4,
+          "only_candidate": 3,
+          "concordant": 9
+        }
+      },
+      {
+        "metric": "ops_fail_rate",
+        "group": "all",
+        "base": 0.0,
+        "cand": 0.0,
+        "n_base": 32,
+        "n_cand": 32,
+        "p": 1.0,
+        "raw_p": 1.0,
+        "effect": 0.0,
+        "verdict": "inconclusive",
+        "test": "mcnemar",
+        "detail": {
+          "only_baseline": 0,
+          "only_candidate": 0,
+          "concordant": 32
+        }
+      }
+    ],
+    "exclusions": {
+      "unpaired_baseline": 0,
+      "unpaired_candidate": 0
+    },
+    "load_failures": [],
+    "pairing": {}
+  },
+  "primary_paired_difference": {
+    "mean": -0.01645833333333332,
+    "ci95_unadjusted": [
+      -0.22899988847248637,
+      0.19608322180581972
+    ]
+  },
+  "local_audit": {
+    "statuses": {
+      "unmeasurable": 38,
+      "pass": 18,
+      "fail": 2
+    },
+    "episodes": [
+      "local:policy-07ae328d_vs_policy-812a2f20_s1_a0",
+      "local:policy-07ae328d_vs_policy-812a2f20_s1_a1",
+      "local:policy-07ae328d_vs_policy-812a2f20_s2_a0",
+      "local:policy-07ae328d_vs_policy-812a2f20_s2_a1",
+      "local:policy-07ae328d_vs_policy-29f386f1_s7_a0",
+      "local:policy-07ae328d_vs_policy-29f386f1_s7_a1"
+    ],
+    "candidate_seat_recordings": 48,
+    "decision_ticks": 94465,
+    "transport_counts": {
+      "eligible_teammate_deliveries": 16326,
+      "accepted": 16326,
+      "decoded_teammate_deliveries": 16326,
+      "shape_rejected": 66,
+      "sender_rejected": 503
+    },
+    "checks": [
+      {
+        "id": "C.cover_heart.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "C.cover_heart.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "C.default_goal.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "C.fall_back.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "C.fall_back.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "C.resupply.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "C.resupply.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "C.take_heart.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "C.take_heart.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "COM.disguise_alert.1",
+        "status": "unmeasurable",
+        "opportunities": 32,
+        "measurable": 0,
+        "unmeasurable": 32,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 38,
+          "evidence_source_not_logged": 32
+        }
+      },
+      {
+        "id": "COM.disguise_alert.2",
+        "status": "pass",
+        "opportunities": 29,
+        "measurable": 29,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 38,
+          "no_eligible_receiver": 3
+        }
+      },
+      {
+        "id": "COM.disguise_alert.3",
+        "status": "unmeasurable",
+        "opportunities": 32,
+        "measurable": 29,
+        "unmeasurable": 3,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 38,
+          "reported_point_is_not_a_visible_body": 3
+        }
+      },
+      {
+        "id": "COM.disguise_friend.1",
+        "status": "pass",
+        "opportunities": 12,
+        "measurable": 12,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 44
+        }
+      },
+      {
+        "id": "COM.disguise_friend.2",
+        "status": "pass",
+        "opportunities": 12,
+        "measurable": 12,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 44
+        }
+      },
+      {
+        "id": "COM.disguise_friend.3",
+        "status": "unmeasurable",
+        "opportunities": 12,
+        "measurable": 0,
+        "unmeasurable": 12,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 44,
+          "receiver_friend_records_not_logged": 12
+        }
+      },
+      {
+        "id": "COM.enemy_sighting.1",
+        "status": "pass",
+        "opportunities": 5793,
+        "measurable": 5793,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {}
+      },
+      {
+        "id": "COM.enemy_sighting.2",
+        "status": "pass",
+        "opportunities": 4458,
+        "measurable": 4458,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_eligible_receiver": 1332,
+          "delivery_after_episode_end": 3
+        }
+      },
+      {
+        "id": "COM.enemy_sighting.3",
+        "status": "fail",
+        "opportunities": 5793,
+        "measurable": 5793,
+        "unmeasurable": 0,
+        "violations": 62,
+        "reasons": {
+          "friendly_body": 62
+        }
+      },
+      {
+        "id": "COM.focus_call.1",
+        "status": "pass",
+        "opportunities": 2039,
+        "measurable": 2039,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 2
+        }
+      },
+      {
+        "id": "COM.focus_call.2",
+        "status": "pass",
+        "opportunities": 1663,
+        "measurable": 1663,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_eligible_receiver": 376,
+          "no_sends": 2
+        }
+      },
+      {
+        "id": "COM.focus_call.3",
+        "status": "unmeasurable",
+        "opportunities": 2039,
+        "measurable": 0,
+        "unmeasurable": 2039,
+        "violations": 0,
+        "reasons": {
+          "causal_outcome_not_identified": 2039,
+          "no_sends": 2
+        }
+      },
+      {
+        "id": "COM.glory_seen.1",
+        "status": "unmeasurable",
+        "opportunities": 327,
+        "measurable": 0,
+        "unmeasurable": 327,
+        "violations": 0,
+        "reasons": {
+          "glory_heart_state_not_traced": 327,
+          "no_sends": 9
+        }
+      },
+      {
+        "id": "COM.glory_seen.2",
+        "status": "pass",
+        "opportunities": 198,
+        "measurable": 198,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_eligible_receiver": 129,
+          "no_sends": 9
+        }
+      },
+      {
+        "id": "COM.grenade_warning.1",
+        "status": "pass",
+        "opportunities": 143,
+        "measurable": 143,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 17
+        }
+      },
+      {
+        "id": "COM.grenade_warning.2",
+        "status": "pass",
+        "opportunities": 89,
+        "measurable": 89,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_eligible_receiver": 53,
+          "no_sends": 17,
+          "delivery_after_episode_end": 1
+        }
+      },
+      {
+        "id": "COM.grenade_warning.3",
+        "status": "fail",
+        "opportunities": 143,
+        "measurable": 82,
+        "unmeasurable": 61,
+        "violations": 61,
+        "reasons": {
+          "superseded_by_newer_warning": 54,
+          "charge_never_started": 32,
+          "landed_elsewhere": 29,
+          "after_episode_end": 5,
+          "no_sends": 17,
+          "landing_after_episode_end": 2
+        }
+      },
+      {
+        "id": "COM.pickup_ready.1",
+        "status": "unmeasurable",
+        "opportunities": 231,
+        "measurable": 0,
+        "unmeasurable": 231,
+        "violations": 0,
+        "reasons": {
+          "pickup_readiness_and_sight_not_traced": 231
+        }
+      },
+      {
+        "id": "COM.pickup_ready.2",
+        "status": "pass",
+        "opportunities": 203,
+        "measurable": 203,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_eligible_receiver": 28
+        }
+      },
+      {
+        "id": "COM.pickup_ready.3",
+        "status": "unmeasurable",
+        "opportunities": 231,
+        "measurable": 0,
+        "unmeasurable": 231,
+        "violations": 0,
+        "reasons": {
+          "pickup_readiness_not_traced": 231
+        }
+      },
+      {
+        "id": "COM.pickup_taken.1",
+        "status": "pass",
+        "opportunities": 7,
+        "measurable": 7,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 41
+        }
+      },
+      {
+        "id": "COM.pickup_taken.2",
+        "status": "pass",
+        "opportunities": 7,
+        "measurable": 7,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 41
+        }
+      },
+      {
+        "id": "COM.pickup_taken.3",
+        "status": "pass",
+        "opportunities": 7,
+        "measurable": 7,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 41
+        }
+      },
+      {
+        "id": "COM.under_fire.1",
+        "status": "unmeasurable",
+        "opportunities": 18,
+        "measurable": 0,
+        "unmeasurable": 18,
+        "violations": 0,
+        "reasons": {
+          "sound_cues_not_traced": 18,
+          "no_sends": 34
+        }
+      },
+      {
+        "id": "COM.under_fire.2",
+        "status": "pass",
+        "opportunities": 16,
+        "measurable": 16,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 34,
+          "no_eligible_receiver": 2
+        }
+      },
+      {
+        "id": "K.comms_danger.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.comms_danger.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.contacts.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.contacts.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.contacts.3",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.contacts.4",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.glory_hearts.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.glory_hearts.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.pickups.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.pickups.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.pickups.3",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.self_motion.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.self_motion.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "K.squad_target.1",
+        "status": "pass",
+        "opportunities": 3950,
+        "measurable": 3950,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {}
+      },
+      {
+        "id": "K.squad_target.2",
+        "status": "pass",
+        "opportunities": 3950,
+        "measurable": 3950,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {}
+      },
+      {
+        "id": "S.has_target_heart.1",
+        "status": "pass",
+        "opportunities": 94465,
+        "measurable": 94465,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {}
+      },
+      {
+        "id": "S.losing_fight.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "S.supply_worth.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "SK.motor.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "SK.motor.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "SK.motor.3",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "ST.commitment.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "ST.roles.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      },
+      {
+        "id": "ST.rules.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 48
+        }
+      }
+    ],
+    "verified_input_hashes": 85
+  },
+  "hosted_audit": {
+    "statuses": {
+      "unmeasurable": 36,
+      "not_exercised": 3,
+      "pass": 17,
+      "fail": 2
+    },
+    "episodes": [
+      "ereq_8f39b768-f26f-406e-bac8-9e2b11865fdc",
+      "ereq_0e068d7e-c1ae-41af-8adb-12cd933b8f7f",
+      "ereq_5f6c0ba0-fb2c-453c-ae4f-ddb3983c3756",
+      "ereq_ed6a7faa-f7cd-4d01-99e7-b854607962da"
+    ],
+    "candidate_seat_recordings": 32,
+    "decision_ticks": 84762,
+    "transport_counts": {
+      "eligible_teammate_deliveries": 13126,
+      "accepted": 13126,
+      "decoded_teammate_deliveries": 13126,
+      "shape_rejected": 27
+    },
+    "checks": [
+      {
+        "id": "C.cover_heart.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "C.cover_heart.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "C.default_goal.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "C.fall_back.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "C.fall_back.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "C.resupply.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "C.resupply.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "C.take_heart.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "C.take_heart.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "COM.disguise_alert.1",
+        "status": "not_exercised",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 32
+        }
+      },
+      {
+        "id": "COM.disguise_alert.2",
+        "status": "not_exercised",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 32
+        }
+      },
+      {
+        "id": "COM.disguise_alert.3",
+        "status": "not_exercised",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 32
+        }
+      },
+      {
+        "id": "COM.disguise_friend.1",
+        "status": "pass",
+        "opportunities": 50,
+        "measurable": 50,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 25
+        }
+      },
+      {
+        "id": "COM.disguise_friend.2",
+        "status": "pass",
+        "opportunities": 50,
+        "measurable": 50,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 25
+        }
+      },
+      {
+        "id": "COM.disguise_friend.3",
+        "status": "unmeasurable",
+        "opportunities": 50,
+        "measurable": 0,
+        "unmeasurable": 50,
+        "violations": 0,
+        "reasons": {
+          "receiver_friend_records_not_logged": 50,
+          "no_sends": 25
+        }
+      },
+      {
+        "id": "COM.enemy_sighting.1",
+        "status": "pass",
+        "opportunities": 5661,
+        "measurable": 5661,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {}
+      },
+      {
+        "id": "COM.enemy_sighting.2",
+        "status": "pass",
+        "opportunities": 4098,
+        "measurable": 4098,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_eligible_receiver": 1563
+        }
+      },
+      {
+        "id": "COM.enemy_sighting.3",
+        "status": "fail",
+        "opportunities": 5661,
+        "measurable": 5661,
+        "unmeasurable": 0,
+        "violations": 87,
+        "reasons": {
+          "friendly_body": 87
+        }
+      },
+      {
+        "id": "COM.focus_call.1",
+        "status": "pass",
+        "opportunities": 2186,
+        "measurable": 2186,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {}
+      },
+      {
+        "id": "COM.focus_call.2",
+        "status": "pass",
+        "opportunities": 1612,
+        "measurable": 1612,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_eligible_receiver": 574
+        }
+      },
+      {
+        "id": "COM.focus_call.3",
+        "status": "unmeasurable",
+        "opportunities": 2186,
+        "measurable": 0,
+        "unmeasurable": 2186,
+        "violations": 0,
+        "reasons": {
+          "causal_outcome_not_identified": 2186
+        }
+      },
+      {
+        "id": "COM.glory_seen.1",
+        "status": "unmeasurable",
+        "opportunities": 365,
+        "measurable": 0,
+        "unmeasurable": 365,
+        "violations": 0,
+        "reasons": {
+          "glory_heart_state_not_traced": 365,
+          "no_sends": 1
+        }
+      },
+      {
+        "id": "COM.glory_seen.2",
+        "status": "pass",
+        "opportunities": 245,
+        "measurable": 245,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_eligible_receiver": 120,
+          "no_sends": 1
+        }
+      },
+      {
+        "id": "COM.grenade_warning.1",
+        "status": "pass",
+        "opportunities": 144,
+        "measurable": 144,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 1
+        }
+      },
+      {
+        "id": "COM.grenade_warning.2",
+        "status": "pass",
+        "opportunities": 96,
+        "measurable": 96,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_eligible_receiver": 48,
+          "no_sends": 1
+        }
+      },
+      {
+        "id": "COM.grenade_warning.3",
+        "status": "fail",
+        "opportunities": 144,
+        "measurable": 94,
+        "unmeasurable": 50,
+        "violations": 80,
+        "reasons": {
+          "landed_elsewhere": 43,
+          "charge_never_started": 37,
+          "superseded_by_newer_warning": 50,
+          "no_sends": 1
+        }
+      },
+      {
+        "id": "COM.pickup_ready.1",
+        "status": "unmeasurable",
+        "opportunities": 178,
+        "measurable": 0,
+        "unmeasurable": 178,
+        "violations": 0,
+        "reasons": {
+          "pickup_readiness_and_sight_not_traced": 178
+        }
+      },
+      {
+        "id": "COM.pickup_ready.2",
+        "status": "pass",
+        "opportunities": 153,
+        "measurable": 153,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_eligible_receiver": 25
+        }
+      },
+      {
+        "id": "COM.pickup_ready.3",
+        "status": "unmeasurable",
+        "opportunities": 178,
+        "measurable": 0,
+        "unmeasurable": 178,
+        "violations": 0,
+        "reasons": {
+          "pickup_readiness_not_traced": 178
+        }
+      },
+      {
+        "id": "COM.pickup_taken.1",
+        "status": "pass",
+        "opportunities": 5,
+        "measurable": 5,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 28
+        }
+      },
+      {
+        "id": "COM.pickup_taken.2",
+        "status": "pass",
+        "opportunities": 4,
+        "measurable": 4,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 28,
+          "no_eligible_receiver": 1
+        }
+      },
+      {
+        "id": "COM.pickup_taken.3",
+        "status": "pass",
+        "opportunities": 5,
+        "measurable": 5,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_sends": 28
+        }
+      },
+      {
+        "id": "COM.under_fire.1",
+        "status": "unmeasurable",
+        "opportunities": 20,
+        "measurable": 0,
+        "unmeasurable": 20,
+        "violations": 0,
+        "reasons": {
+          "sound_cues_not_traced": 20,
+          "no_sends": 19
+        }
+      },
+      {
+        "id": "COM.under_fire.2",
+        "status": "pass",
+        "opportunities": 17,
+        "measurable": 17,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_eligible_receiver": 3,
+          "no_sends": 19
+        }
+      },
+      {
+        "id": "K.comms_danger.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.comms_danger.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.contacts.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.contacts.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.contacts.3",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.contacts.4",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.glory_hearts.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.glory_hearts.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.pickups.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.pickups.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.pickups.3",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.self_motion.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.self_motion.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "K.squad_target.1",
+        "status": "pass",
+        "opportunities": 3547,
+        "measurable": 3547,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {}
+      },
+      {
+        "id": "K.squad_target.2",
+        "status": "pass",
+        "opportunities": 3547,
+        "measurable": 3547,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {}
+      },
+      {
+        "id": "S.has_target_heart.1",
+        "status": "pass",
+        "opportunities": 84762,
+        "measurable": 84762,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {}
+      },
+      {
+        "id": "S.losing_fight.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "S.supply_worth.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "SK.motor.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "SK.motor.2",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "SK.motor.3",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "ST.commitment.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "ST.roles.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      },
+      {
+        "id": "ST.rules.1",
+        "status": "unmeasurable",
+        "opportunities": 0,
+        "measurable": 0,
+        "unmeasurable": 0,
+        "violations": 0,
+        "reasons": {
+          "no_evaluator_for_check_text_or_spec": 32
+        }
+      }
+    ],
+    "verified_input_hashes": 61
+  },
+  "hosted_g5": {
+    "status": "complete",
+    "by_arm": {
+      "baseline": 32,
+      "candidate": 32
+    },
+    "g5_passed": true,
+    "g5_summary": {
+      "seat_recordings": 256,
+      "lines": 416062,
+      "failures": 0,
+      "unexercised_message_types": []
+    },
+    "candidate_seat_issues": [],
+    "peak_bytes_per_tick": 270,
+    "max_log_bytes": 117934,
+    "unexercised_message_types": [],
+    "messages": {
+      "COM.disguise_alert:recv": 373,
+      "COM.disguise_alert:send": 88,
+      "COM.disguise_friend:recv": 1022,
+      "COM.disguise_friend:send": 363,
+      "COM.enemy_sighting:recv": 84618,
+      "COM.enemy_sighting:send": 46940,
+      "COM.focus_call:recv": 31081,
+      "COM.focus_call:send": 17636,
+      "COM.glory_seen:recv": 2865,
+      "COM.glory_seen:send": 2237,
+      "COM.grenade_warning:recv": 1566,
+      "COM.grenade_warning:send": 1141,
+      "COM.pickup_ready:recv": 4968,
+      "COM.pickup_ready:send": 1338,
+      "COM.pickup_taken:recv": 110,
+      "COM.pickup_taken:send": 37,
+      "COM.under_fire:recv": 202,
+      "COM.under_fire:send": 107
+    }
+  },
+  "tests": {
+    "passed": 443
+  },
+  "audit_comms_sha256": "758cdf899577c8d225bf719dc382e3b67842029273214360c6119e1c8d08fc59",
+  "episodes": [
+    {
+      "episode_id": "ereq_06445935-38a0-42fd-96b1-9699101b6938",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1806",
+      "engine_seed": "1806",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "950204907",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_04409e64-443d-4d72-8926-0b2a80d37622",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1806",
+      "ticks": 3103,
+      "mean_score_ours": 686.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "c202e251b425799beedf67a519a0cd0863e7fde7cd0b1cdb44475760b7edf765",
+      "results_sha256": "9c175f1cf2cc6a62e7f5455720e627b72decb2b7e566a52946c3fd76aee2e838",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235931_ereq_06445935-38"
+    },
+    {
+      "episode_id": "ereq_0e068d7e-c1ae-41af-8adb-12cd933b8f7f",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1801",
+      "engine_seed": "1801",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "521116418",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_60a7b044-baa8-42b6-9387-372ed917f348",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1801",
+      "ticks": 3136,
+      "mean_score_ours": 740.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "c943e3addd11b02abc56388fc8747c47354646946ea745dd9392aaf531b417fe",
+      "results_sha256": "b39ef4ecfea46e70f6b9f7a2120bd5624b954d1e3cb535f84c1b5c9fb6ee9730",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235746_ereq_0e068d7e-c1"
+    },
+    {
+      "episode_id": "ereq_1076ca69-c6d2-4405-8ff9-b94fe261772e",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1803",
+      "engine_seed": "1803",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1290527746",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_e4cb55b3-f799-4924-a69f-562b3ddbd382",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1803",
+      "ticks": 3550,
+      "mean_score_ours": 948.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "e41db63dbf826e41a8a4616f69e2d6fef2ff479e191a42f0437058dd0dd95fc5",
+      "results_sha256": "233eeeed41db6cc194aac671342ffc2b3025641accc32d53821976f953a5bf79",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235909_ereq_1076ca69-c6"
+    },
+    {
+      "episode_id": "ereq_1dda3880-b1ee-4052-8333-b772e24286c7",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1803",
+      "engine_seed": "1803",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1961147872",
+      "score_outcome": 0.9558333333333333,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_dca06b95-abfc-4fb7-982f-4e900297cac8",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1803",
+      "ticks": 3321,
+      "mean_score_ours": 547.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "d6d74ee8a684dfc4819fbfbc28c44878b916c9772c76fb78d1c59b0582e2675a",
+      "results_sha256": "4704fc7ee01b4e833d374acdf99da63898099b060668e6bfd99fdd46c664c3c9",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235907_ereq_1dda3880-b1"
+    },
+    {
+      "episode_id": "ereq_1e43dab4-0d02-47d1-a770-93a5784775bd",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1805",
+      "engine_seed": "1805",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "3381849359",
+      "score_outcome": 0.9191666666666667,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_1421e357-ec29-48c2-a947-64e6d838fa9c",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1805",
+      "ticks": 3291,
+      "mean_score_ours": 503.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "88641b200be3c41ecb541c827f753dbe0bc9a2d5e5c67668523cd6f51c257c05",
+      "results_sha256": "6d73f868dbf7b8304f8a5ff152f36087f27050880b46a993cd2c872946b507a0",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235829_ereq_1e43dab4-0d"
+    },
+    {
+      "episode_id": "ereq_1f562550-bb01-45d7-b460-cccde081d884",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1807",
+      "engine_seed": "1807",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "800686955",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_e2f5d75a-4edd-44dd-b66e-e984dc6472e4",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1807",
+      "ticks": 3494,
+      "mean_score_ours": 1540.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "03b12716451ef033366b9ee20e0bbef9d7e2147bede1e82216c64d613763715f",
+      "results_sha256": "281e8da7eebced21015b947b5abfc844a9afe55f72b82f231a6d945cd4a4b6d7",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235842_ereq_1f562550-bb"
+    },
+    {
+      "episode_id": "ereq_20e364fc-cf17-41bc-b41d-0fca2ce0fd8c",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1806",
+      "engine_seed": "1806",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2518885992",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_0d8be7f2-9b64-4961-92a7-ae1fbc15d779",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1806",
+      "ticks": 3357,
+      "mean_score_ours": 931.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "f0f3a7a7440fafd93d7760161fe95d66612991da9f2a56f4c8e0a228bfe39bec",
+      "results_sha256": "8673d625864858faa5ee325e1f5bc19b8b27642dc2fa5074abab3cd5527e6193",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235832_ereq_20e364fc-cf"
+    },
+    {
+      "episode_id": "ereq_23a49cea-2c53-4e81-8d5a-55f390798b2c",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1802",
+      "engine_seed": "1802",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "175409736",
+      "score_outcome": 0.11666666666666664,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_527607f0-f328-4276-96f5-29e7552aa50b",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1802",
+      "ticks": 3854,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 460.0,
+      "metadata_sha256": "2a37a528df398384698906c7845a1b097756d01fa51770753f68d808f8e66220",
+      "results_sha256": "71c03cf514f0adf682c4350f15e322be7ab84374156e0ba984764dee87afca00",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235900_ereq_23a49cea-2c"
+    },
+    {
+      "episode_id": "ereq_2b7130d2-f71b-4cd6-b3e0-0640119b790f",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1802",
+      "engine_seed": "1802",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2207147215",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_11534c84-0bed-4284-8399-e41c6c7513f1",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1802",
+      "ticks": 3377,
+      "mean_score_ours": 695.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "bd9fbad6dd5afdf36ab42e6aacd7d9cddad4290e94a88f00d7dc2290990ca51e",
+      "results_sha256": "90d049cfdf4b1fba2136ce568ab308386a66d4a07a281adb897f8075bc084671",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235806_ereq_2b7130d2-f7"
+    },
+    {
+      "episode_id": "ereq_2e2c4d37-6894-44eb-97ed-d30a31676a16",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1801",
+      "engine_seed": "1801",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1123428232",
+      "score_outcome": 0.09083333333333332,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_55a2acf1-25f2-458b-bcf1-3981f8edb32b",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1801",
+      "ticks": 3096,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 491.0,
+      "metadata_sha256": "456e7c907a4d5258d4201fe083d4a48b4493b1fce94104e3d30edbdc61d76320",
+      "results_sha256": "cc8ae0e042fa3554fbe18318fe47de4b1dae2f1f5f7cc848828e4e02aa96aeef",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235851_ereq_2e2c4d37-68"
+    },
+    {
+      "episode_id": "ereq_31b86f3a-1fd0-4296-bb3b-07a1e0a152a4",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1804",
+      "engine_seed": "1804",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1860235146",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_4b501835-5523-4d44-90f5-8fe53501ebab",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1804",
+      "ticks": 3432,
+      "mean_score_ours": 637.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "f930b3e89cdf23b693fdfe2a8157ec275aba34b2576947307259db39cadaa5a5",
+      "results_sha256": "f013afa5c9c4cebf907381b6eda1079ac452643dd0cc366c8726b7c67582edb9",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235918_ereq_31b86f3a-1f"
+    },
+    {
+      "episode_id": "ereq_37774e3e-facf-436d-a52b-71becc4d0817",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1804",
+      "engine_seed": "1804",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2970523439",
+      "score_outcome": 0.9466666666666667,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_3545fc1a-f8bb-455d-ba2f-ef5c51406a95",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1804",
+      "ticks": 3231,
+      "mean_score_ours": 536.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "bb54c4f485b1f80be610129004c421e7d4e6bed7b09a0c1870cc3d2ff2bb9614",
+      "results_sha256": "15dc20df4ee6a22bfa59be7f989b3e0c06c87b096511a6a72546ca22916f9192",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235814_ereq_37774e3e-fa"
+    },
+    {
+      "episode_id": "ereq_3995891b-b572-4712-9da3-bc1888f9b7af",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1802",
+      "engine_seed": "1802",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1830067891",
+      "score_outcome": 0.0,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_d512a3ec-4607-4db0-b7f8-7cac6968b85a",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1802",
+      "ticks": 3135,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 705.0,
+      "metadata_sha256": "e29cb2b3613b7a00a51e409cd26f128f0fcd3e7a655b28ea2b3ae50175dd154b",
+      "results_sha256": "68bfaa9478a7a0f2ccbea058a192c7efb4a66a4785e036c85701a523cba47f18",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235752_ereq_3995891b-b5"
+    },
+    {
+      "episode_id": "ereq_3d043139-3c13-483e-953c-7f9b7bd66f4e",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1808",
+      "engine_seed": "1808",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1457608943",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_eb2ee0b2-d207-44de-8f7a-6261c42f8a41",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1808",
+      "ticks": 3783,
+      "mean_score_ours": 1058.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "1176c45f0c0d22c8869316a095794cb0f6161ab23efb707a9008f41743b9444e",
+      "results_sha256": "77c0f9294ed8b3a985a2f1c365a88312746e8bbf2cfa3eea9bade2ffbe5c0894",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235958_ereq_3d043139-3c"
+    },
+    {
+      "episode_id": "ereq_3dd3651d-affb-4394-a07d-e3c4a39c7021",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1807",
+      "engine_seed": "1807",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2747032772",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_edce4de5-b4e1-421d-b817-6b8c3acd3578",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1807",
+      "ticks": 3823,
+      "mean_score_ours": 1631.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "f976c15f07046d5bc2dd49c3b4d940d7879fa6dcb625903744d35fffbcd60093",
+      "results_sha256": "2b75174d4e0a91124ea1d0a4a4180a1aafcaf2d42d8908380501124556c2d702",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235941_ereq_3dd3651d-af"
+    },
+    {
+      "episode_id": "ereq_3dd7dc9e-d0e1-45a5-ac4a-cfa8deb6300e",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1807",
+      "engine_seed": "1807",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "157204019",
+      "score_outcome": 0.9216666666666666,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_dfbd837a-35bc-4486-b837-19e9bb24648b",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1807",
+      "ticks": 2277,
+      "mean_score_ours": 506.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "370093b6557fea8eef4084c441655f8badec62a47f6deca89098fd27a2ef780c",
+      "results_sha256": "f2294cabf70401ce794a2171d9dd91aebb17543123edd10dd0ff956ef6bcf808",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235950_ereq_3dd7dc9e-d0"
+    },
+    {
+      "episode_id": "ereq_3ee75c1d-b75a-4dd1-84d9-975f3a7b0b02",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1804",
+      "engine_seed": "1804",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2648975418",
+      "score_outcome": 0.07833333333333331,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_a977d48d-8c63-4821-8748-832a296def23",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1804",
+      "ticks": 2616,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 506.0,
+      "metadata_sha256": "6038514c38672ac9e18dd2ab9cf2203984895ae6cddb8bc9a19d13b83153a424",
+      "results_sha256": "6b14439e3c82d7e26cccf51c9db303d4b15dc680cc67579641335194ecdb8ea4",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235914_ereq_3ee75c1d-b7"
+    },
+    {
+      "episode_id": "ereq_3f6b8ad5-2ce8-4929-b68e-eacd736ffb63",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1803",
+      "engine_seed": "1803",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "486869664",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_5536c12b-ad9a-4641-ae78-6192ab0d4745",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1803",
+      "ticks": 3752,
+      "mean_score_ours": 624.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "e2737af2016eb2cf01119c7190afc54dd4a6e8858e75fbbdf1e25f411b4da360",
+      "results_sha256": "0d052e863bdcd2d363f508a5ec9612d32d3702ff4c359d3112cf9f48178afe05",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235906_ereq_3f6b8ad5-2c"
+    },
+    {
+      "episode_id": "ereq_4990a656-bc4c-4035-9762-720d73f363dc",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1805",
+      "engine_seed": "1805",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1584223698",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_82d61ecd-0a4b-43f4-ae08-2be1cf174599",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1805",
+      "ticks": 3406,
+      "mean_score_ours": 619.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "57e88093889e74c9965891e22a1311a8e31346a0a23c4d8cd9f230883b658480",
+      "results_sha256": "2aeb0cb5196ef7ceadc3bd6791a3ad980f65b497727715446b21f46e9f56d8c6",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235824_ereq_4990a656-bc"
+    },
+    {
+      "episode_id": "ereq_499a668e-7b71-40ae-9022-3f10d7bfbe28",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1802",
+      "engine_seed": "1802",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1275858455",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_628df97e-602d-485b-b64c-2fcdb98e4720",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1802",
+      "ticks": 3992,
+      "mean_score_ours": 1414.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "ba778fa13f32f3ea73d1d7f2929c56453f91c415b8e22e3ea8f09b7a72049827",
+      "results_sha256": "13c93a208a3bc80d9f80a74d264f4d64ebafbd56eb50bc1f2075757ce6c1cb47",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235901_ereq_499a668e-7b"
+    },
+    {
+      "episode_id": "ereq_49f96b5e-4a12-48e5-a21c-daad5d8c5a53",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1803",
+      "engine_seed": "1803",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2089516588",
+      "score_outcome": 0.10333333333333333,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_7139ea50-226f-4ec8-a047-fc921101f067",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1803",
+      "ticks": 3700,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 476.0,
+      "metadata_sha256": "879c0732738ed02fbdd538341ca7368ce1fae104871d04eb9f6a5519bb1d98d5",
+      "results_sha256": "6df0b03629409afa68c7db5d8f7eeba268ee59d103d57fcbde89e2d5f771d6dc",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235912_ereq_49f96b5e-4a"
+    },
+    {
+      "episode_id": "ereq_4a35cf92-adc0-4c66-a9f2-9f0227959f86",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1806",
+      "engine_seed": "1806",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "315422795",
+      "score_outcome": 0.9025000000000001,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_2a13739c-f510-4fe6-b001-63b91a8bc260",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1806",
+      "ticks": 3308,
+      "mean_score_ours": 483.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "4a4ffded764d1303b62c6b50d7bf04c9d18e1e977cdb2aae36cc20d97de42d29",
+      "results_sha256": "b698c33c9132fd873e0fac06044e38be84366ce2dc001005a913c96b6bc9040f",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235839_ereq_4a35cf92-ad"
+    },
+    {
+      "episode_id": "ereq_50e0d9a8-ff2a-4590-b6cc-0ccbee8b650c",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1805",
+      "engine_seed": "1805",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "960747925",
+      "score_outcome": 0.08666666666666667,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_025dc7a1-ecd2-4218-8564-16b87575f3ac",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1805",
+      "ticks": 2757,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 496.0,
+      "metadata_sha256": "a350d2eccfc41c792969b252cf24833d7c0cbb4ac4620732272844114aba3563",
+      "results_sha256": "032e70419f31721b394b3f9be3acc7bc8c16f51afd4a3d0588f370d822778ebc",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235923_ereq_50e0d9a8-ff"
+    },
+    {
+      "episode_id": "ereq_52b6faff-a643-47ed-a814-0636edba72fb",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1802",
+      "engine_seed": "1802",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "30631492",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_3fa24d61-4a7b-4a88-bf34-993f8afb6ccf",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1802",
+      "ticks": 3416,
+      "mean_score_ours": 708.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "42d8c5f9023c1bba6cec9af4253a797fb2fbb60e0656cb377fb93f9c956c0716",
+      "results_sha256": "b4dd1cebd21839dd7d8da0ad711981d39b5177f029ad3d04edf5009fba783708",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235903_ereq_52b6faff-a6"
+    },
+    {
+      "episode_id": "ereq_590576a2-5ecc-4646-a499-1592047794f3",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1803",
+      "engine_seed": "1803",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "78798094",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_8e62f541-c5e1-496d-96d1-97d7e567b499",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1803",
+      "ticks": 3425,
+      "mean_score_ours": 673.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "b930b1aeae03b4dabb8fcfd068a69e2e2926d6d8c1c8a8076a40e9abb3760f3f",
+      "results_sha256": "6fa5258b7508245a2881c1ade47e38a100b6b4a4bbbdb53fc8443eb2080a4866",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235812_ereq_590576a2-5e"
+    },
+    {
+      "episode_id": "ereq_5a598603-51b7-41f2-a0cd-56dc43ef18ef",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1801",
+      "engine_seed": "1801",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "3885451947",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_43bd2181-758b-4f25-9812-7fa3f91e05f6",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1801",
+      "ticks": 3518,
+      "mean_score_ours": 1539.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "6b4381fcf23c9637f43b923c5c8d0052fa124927e23df965930cc6fc5fdc1032",
+      "results_sha256": "7bad63051bbc06869cb74f660d8658424922ccf00dcb6dceb66e2232762e023b",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235737_ereq_5a598603-51"
+    },
+    {
+      "episode_id": "ereq_5f6c0ba0-fb2c-453c-ae4f-ddb3983c3756",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1801",
+      "engine_seed": "1801",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "445424082",
+      "score_outcome": 0.9766666666666667,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_5f77401e-72ce-484a-adee-3031be69e594",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1801",
+      "ticks": 3326,
+      "mean_score_ours": 572.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "f7ea044233669202260f3f9671f1cc5e5eae18c673a60cd8bc9a64dc9861fd93",
+      "results_sha256": "4baa052c7e895b2931b0f6f43ee4814fbb36c21072babde439630b3c9e45ea96",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235855_ereq_5f6c0ba0-fb"
+    },
+    {
+      "episode_id": "ereq_71ee9397-a68c-4854-8625-4233b44d5a0e",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1808",
+      "engine_seed": "1808",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1901680908",
+      "score_outcome": 0.09999999999999998,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_10b22580-af9f-4769-8e98-a33b36def092",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1808",
+      "ticks": 3383,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 480.0,
+      "metadata_sha256": "9f5b6b701922ea19183ac15897c3222f043fc495cd82de03e598d2ed5081045b",
+      "results_sha256": "dd9956604e07ac1fecc1ee825f0607fed4c9cf4c015600dfd42ab14b3fd3914b",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235850_ereq_71ee9397-a6"
+    },
+    {
+      "episode_id": "ereq_738537db-91fa-424b-9086-f6d554dcbdc0",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1808",
+      "engine_seed": "1808",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1909176091",
+      "score_outcome": 0.010000000000000009,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_834e59e9-5463-49de-8fe8-a09db3ebdc27",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1808",
+      "ticks": 2454,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 588.0,
+      "metadata_sha256": "7c712c2bfea56ba36b5251b089f6b53fda129c32ef96080892ead2396988b246",
+      "results_sha256": "1d60b5e5a79e01d21a40aee424a733ff4e6d0af01a4640309dcf6f371c8f79e9",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261006T000000_ereq_738537db-91"
+    },
+    {
+      "episode_id": "ereq_75cce512-1972-45b2-a11a-de0005d7bcea",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1802",
+      "engine_seed": "1802",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2283088980",
+      "score_outcome": 0.8975,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_40ac692e-c71c-4aeb-920e-bbd0e847d345",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1802",
+      "ticks": 3312,
+      "mean_score_ours": 477.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "d903e1ba2881a6c390884c020eb57bf1521c30ebe9348bc7295ef2db4eec41b8",
+      "results_sha256": "e0ddedd039eb6a4774634009c08728cd447fcb7979c625d1b2c8ae8a74f0c599",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235858_ereq_75cce512-19"
+    },
+    {
+      "episode_id": "ereq_776d6efa-4d89-4069-afc5-aee2dcc8c3a5",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1807",
+      "engine_seed": "1807",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1140867771",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_1aecf4ee-2509-457c-936e-86a41980edb9",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1807",
+      "ticks": 3790,
+      "mean_score_ours": 1333.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "22ab2c205866b3b98cf5105f79b1d7cad1ab3f3c4b941559f519e90ead55bc21",
+      "results_sha256": "edd83c52c6609536a2e90a1567fb9591804e4cab4ce6b76aaf7c325a5fe555d5",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235940_ereq_776d6efa-4d"
+    },
+    {
+      "episode_id": "ereq_781b6b02-bc52-456a-b37c-8f31eefa1614",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1806",
+      "engine_seed": "1806",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "323338426",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_6f11d46a-28fa-4ff5-99e1-72d103e35427",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1806",
+      "ticks": 3466,
+      "mean_score_ours": 671.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "62b8975862a442e98b005cb78a7e34f90bed69db4eff2b010ca62aeb64b7c3e8",
+      "results_sha256": "f7a79ff4ea1eeb68a83c57fb6b01e80ef9b804823aa8f6a7118de26472c11b07",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235932_ereq_781b6b02-bc"
+    },
+    {
+      "episode_id": "ereq_7a7a4ff7-61e7-46c5-89f5-d58e3c9c5856",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1805",
+      "engine_seed": "1805",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1172362388",
+      "score_outcome": 0.0,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_394a7855-3f46-4c5e-9dfe-d2eca2b1e031",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1805",
+      "ticks": 3099,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 671.0,
+      "metadata_sha256": "eab9ee77aaaaf22c83502142ed884bc2295ec04ce0733f39870c82671490e667",
+      "results_sha256": "4b669ad894a150e103ba4bc548598f40534b4935c6a8744cabddbb30d6e70319",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235827_ereq_7a7a4ff7-61"
+    },
+    {
+      "episode_id": "ereq_84d8b2d3-66d1-4b8a-8e58-113d66f80529",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1808",
+      "engine_seed": "1808",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "4008442804",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_e047676f-dcbf-4aee-b341-ecf1f2d6bfd0",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1808",
+      "ticks": 3075,
+      "mean_score_ours": 997.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "95754e286e5beed19ff4167d6021e99a1319a57582190c0cd8d7e4f0775ce7ef",
+      "results_sha256": "afc4adf7f462c9756b1a90706e6cf6c89d0d72a405d632893c0f5028e9f23640",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235848_ereq_84d8b2d3-66"
+    },
+    {
+      "episode_id": "ereq_85554d0f-622e-4ec7-b2a5-90f34cdf42ea",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1807",
+      "engine_seed": "1807",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "4214341821",
+      "score_outcome": 0.9083333333333333,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_46b72bd5-09e7-4311-9b65-b6cbfcf7d4e1",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1807",
+      "ticks": 3123,
+      "mean_score_ours": 490.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "c978d3ad1706cf825061ac9034a65fa85eba1c7fa40026f4e2ad766be48b312a",
+      "results_sha256": "f925de04a8f717dd9e18fdcd686ca9b501fcccafee1f15ef88c71176a849b233",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235844_ereq_85554d0f-62"
+    },
+    {
+      "episode_id": "ereq_8995ffed-112e-4a7f-9066-958f78820b9d",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1801",
+      "engine_seed": "1801",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1557508707",
+      "score_outcome": 0.0,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_a70183b8-eafa-486c-bef6-1d6b0f7dd0f1",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1801",
+      "ticks": 1968,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 708.0,
+      "metadata_sha256": "a18c033da46d73254a7496ebc1d945d42f5332e6284072705b10b5aa3e9aaf22",
+      "results_sha256": "c7abff72b53d8e3bdaa7b879c6357e5106e5b4cb7c028167d0ccb3076b5c2513",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235751_ereq_8995ffed-11"
+    },
+    {
+      "episode_id": "ereq_8c945fab-4c94-4251-9714-40723c861eeb",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1802",
+      "engine_seed": "1802",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "3299036940",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_2c76c730-1ee2-47fa-b810-68627bd201e5",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1802",
+      "ticks": 3601,
+      "mean_score_ours": 1135.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "359ba408c91381fa5af29df4eaa9b2dabbed05c9ef51d0131f699683999fce0c",
+      "results_sha256": "b0dabebb64d945e14c1a3737c83df36369edd01df796ddfc847cd614fe1e4011",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235808_ereq_8c945fab-4c"
+    },
+    {
+      "episode_id": "ereq_8f39b768-f26f-406e-bac8-9e2b11865fdc",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1801",
+      "engine_seed": "1801",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "3126163426",
+      "score_outcome": 0.9525,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_c7f6a889-1ce9-4a37-ac01-e36d25637d33",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1801",
+      "ticks": 3551,
+      "mean_score_ours": 543.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "70692fc43a038eb843de04a9fc7330bab9923b0f275f708e0c2ebd4b0250adf8",
+      "results_sha256": "22a5875163511fa41dd95410ee99c739bba209f9bd41a5f664c53160baf19c3c",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235742_ereq_8f39b768-f2"
+    },
+    {
+      "episode_id": "ereq_90e967b1-5c30-4704-8459-c4468a7752ad",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1806",
+      "engine_seed": "1806",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "280850468",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_fb801456-bd14-44e5-bea6-87379c309ec9",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1806",
+      "ticks": 3710,
+      "mean_score_ours": 611.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "8369256f4dd802832a02b441e9183b76c5c75253edc5277190b435cb5dc95cdb",
+      "results_sha256": "c5f466309eeac7ec50da42c2b287302039541a88aef8ca674c9f4c97b8dca522",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235830_ereq_90e967b1-5c"
+    },
+    {
+      "episode_id": "ereq_90eefd41-ccf4-40e2-b45f-5cc7c6108966",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1804",
+      "engine_seed": "1804",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "4081771691",
+      "score_outcome": 0.10916666666666669,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_4ee24572-626f-4be0-8ae4-90e1153467a5",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1804",
+      "ticks": 3401,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 469.0,
+      "metadata_sha256": "8ea0ceaf1b71fd05210ef2f415790d98f432ea7468b1dac94b820d57b587061c",
+      "results_sha256": "d96bf889b2b06a5c0476bd42f12c24a479107018fa2ca08fcf18cbb4b3d9cc74",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235816_ereq_90eefd41-cc"
+    },
+    {
+      "episode_id": "ereq_95af65a8-1c38-4684-8b42-bd0f6265d02e",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1805",
+      "engine_seed": "1805",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2122073953",
+      "score_outcome": 0.0,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_e14c8e3f-bd3e-4ce6-8edc-6e41d9f7ac75",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1805",
+      "ticks": 3549,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 623.0,
+      "metadata_sha256": "8dd0e3b3ee55a49b06ed40e5f2738fbc6369412c937c26ee2b5f99fd4071ab73",
+      "results_sha256": "e449ce53f61941b6ed41a48fb3a35a8422e5a0f2e08e4e9941c683dd3cfdc656",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235924_ereq_95af65a8-1c"
+    },
+    {
+      "episode_id": "ereq_9ac6fe20-3c36-4228-beb9-ce0aa140ca96",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1807",
+      "engine_seed": "1807",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1808123447",
+      "score_outcome": 0.935,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_9ca1fafc-a701-459f-abb1-4d23514c1458",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1807",
+      "ticks": 3207,
+      "mean_score_ours": 522.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "6aee32fd95609acbaed22b527e99e5c1ef368f272aab12fd338ce9401cacb52a",
+      "results_sha256": "033996aebf9ff270c5eec999a74bf6243726122ce7fe7bf06416b089bfe709f3",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235942_ereq_9ac6fe20-3c"
+    },
+    {
+      "episode_id": "ereq_9db31550-b74f-465f-8835-b700b933c24c",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1806",
+      "engine_seed": "1806",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2127942857",
+      "score_outcome": 0.9299999999999999,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_4856c81c-d128-4687-aa02-23de2cab92b5",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1806",
+      "ticks": 3462,
+      "mean_score_ours": 516.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "e1de41008211313fc3d1d7820caed63b15f9abb11233dcbca8569b4bc6a3dc88",
+      "results_sha256": "3f189f235b01ca427650292424da5bc0382b0bd7c6ef64a767659a57a1ac27e7",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235938_ereq_9db31550-b7"
+    },
+    {
+      "episode_id": "ereq_a0096bbf-65d9-4a71-be48-adb2673538fe",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1808",
+      "engine_seed": "1808",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "108899188",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_51345667-08f1-4f26-ac10-9cb349bf63d4",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1808",
+      "ticks": 2970,
+      "mean_score_ours": 652.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "93e298c9d69d7dfc7d79ab018389e7db3b4c11d82445621d739bca69e3e5ea12",
+      "results_sha256": "08204f1afcd52d9be595d8ffe0668e4fded866636004b329685c8b24acac4b02",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235954_ereq_a0096bbf-65"
+    },
+    {
+      "episode_id": "ereq_aad6f177-aa70-4f93-a4f0-d333bb03adc3",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1805",
+      "engine_seed": "1805",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "3191124357",
+      "score_outcome": 0.9541666666666666,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_23799312-698b-4fae-9c25-490dc8743675",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1805",
+      "ticks": 3256,
+      "mean_score_ours": 545.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "64afe349818edde38ec97ccb2f3e6dd67c8a1da0ce684bd26179a8b4c37fd8e7",
+      "results_sha256": "8565253d23a4b0ca17a013620666e1cf930d5197d01df08a7aa2708005f08741",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235825_ereq_aad6f177-aa"
+    },
+    {
+      "episode_id": "ereq_ae53325e-76be-4ece-b2c8-f1f3dc715832",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1806",
+      "engine_seed": "1806",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "3885299506",
+      "score_outcome": 0.8816666666666666,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_b0979c17-cafe-4d38-b66e-e83a67dca24e",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1806",
+      "ticks": 3425,
+      "mean_score_ours": 458.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "f7bb7ddbb20967e5f1f66797df116f62fb0c70d0da85e2b7d2c1f769aaea1c24",
+      "results_sha256": "0428a65a65ce5ffc0d43c54688fc92c795ed01b66611d351e02a347d6fc389ca",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235834_ereq_ae53325e-76"
+    },
+    {
+      "episode_id": "ereq_b0cdbeda-cd36-4a03-8a68-e939d41f6abc",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1801",
+      "engine_seed": "1801",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1113755672",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_103c319e-b865-4753-82c1-3f1c65aaa7a9",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1801",
+      "ticks": 3195,
+      "mean_score_ours": 787.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "d11306d5a320e6d55ac2e4631202faad18359824444595585b76c46cb8c43d64",
+      "results_sha256": "8987144df58f1e7afd8da4d2644985a8e0de4cfe5af47d3c4909001417c57b9e",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235857_ereq_b0cdbeda-cd"
+    },
+    {
+      "episode_id": "ereq_bfc8a530-6c9f-496b-b411-0c737d393668",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1804",
+      "engine_seed": "1804",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "3768794007",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_20105a50-c5ff-41aa-acf1-a94d0cec7c14",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1804",
+      "ticks": 3514,
+      "mean_score_ours": 1024.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "b0a75e4ade4aaccba180248dc4edd8bdb5adf4029ce54e9fb39cf5acd600e7e3",
+      "results_sha256": "55324cd598a1d6048f1e66e1f0780ead729f761cf2d19807893db17716a0de11",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235822_ereq_bfc8a530-6c"
+    },
+    {
+      "episode_id": "ereq_c66d1fa6-0841-44bc-b840-935f463664d1",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1806",
+      "engine_seed": "1806",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2770215455",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_b33379ef-efba-4f77-904f-615cbda31c80",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1806",
+      "ticks": 3378,
+      "mean_score_ours": 1120.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "98bdb19b4a04381dcbf9d48423975c7203e17786938bbade855c8dcd6e87c204",
+      "results_sha256": "9ded6b920ac96c90b2cdcf22bac0fe275506692ee7261ea7b5360ed1fa32d27f",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235937_ereq_c66d1fa6-08"
+    },
+    {
+      "episode_id": "ereq_d4621329-ba34-4521-9da7-e709ab9fb06a",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1802",
+      "engine_seed": "1802",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1557055594",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_02d9007c-5fcf-414d-b806-dafedbb3c978",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1802",
+      "ticks": 3312,
+      "mean_score_ours": 987.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "2fc6c496042a80de394845053529f81b3e4d55350142a4d02caba7f3f1b8ea2b",
+      "results_sha256": "60c93ac9d57c52c33fb396593f69f4aaabf3a4eae56b42f78152217743d0976d",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235805_ereq_d4621329-ba"
+    },
+    {
+      "episode_id": "ereq_d5ae580f-a0a2-4ebe-9cca-ed5f0474b50b",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1807",
+      "engine_seed": "1807",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2683291841",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_e7cbca96-52b1-48e2-930a-faaebc2934fd",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1807",
+      "ticks": 3474,
+      "mean_score_ours": 621.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "57a3cb264016b0cdaa02e4cb08917cf06ec021a950b4e031d92e6cefec47d26a",
+      "results_sha256": "e685589f1d68a546fbdb94deb6dcc04a631ec50f957acc40c3e4a3bee5f60d23",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235840_ereq_d5ae580f-a0"
+    },
+    {
+      "episode_id": "ereq_dfc0ded2-11cf-4d07-bc2a-19c61e33b55c",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1805",
+      "engine_seed": "1805",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "462617772",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_2fab6a18-193f-4830-a993-47917f90dcd2",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1805",
+      "ticks": 4791,
+      "mean_score_ours": 1501.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "42190ff141db2d0281d1ae356dd9c1e1710bec91a92275d8959cadd0abbefe34",
+      "results_sha256": "b590869cb8ff9126fc149ed34cc319409ee275ec2cd9925e531a8d5e4fd7e524",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235929_ereq_dfc0ded2-11"
+    },
+    {
+      "episode_id": "ereq_e2a8a071-d862-4bd4-bf5d-e70fee3b85de",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1808",
+      "engine_seed": "1808",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "4062608217",
+      "score_outcome": 0.94,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_d57d2248-9a9a-4dc4-bb4e-ce53ea3842ae",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1808",
+      "ticks": 3065,
+      "mean_score_ours": 528.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "1101b21bd55ae62df6963821aefb6071f04e6bc5992e85be69df93facdf68f9f",
+      "results_sha256": "092cdf767b7e1cffe3b3f864c88c11a2f8aebffa772e035fa41520fba8b614c6",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235846_ereq_e2a8a071-d8"
+    },
+    {
+      "episode_id": "ereq_eac10a4e-fa5a-49b6-a11b-8f38abbe714e",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1804",
+      "engine_seed": "1804",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2119170065",
+      "score_outcome": 0.9341666666666666,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_dabe3390-bd59-4656-9ba6-c56420ec5281",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1804",
+      "ticks": 3457,
+      "mean_score_ours": 521.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "b140f6c2c805aa50a579e58f5de278dce62ca947a393ed698dc1d16bb35a6cac",
+      "results_sha256": "e95410ca51e16b1e27d0e64bf82a162ea8a275596c20bfccca2e1001728b66ad",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235920_ereq_eac10a4e-fa"
+    },
+    {
+      "episode_id": "ereq_ed6a7faa-f7cd-4d01-99e7-b854607962da",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1801",
+      "engine_seed": "1801",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1138490671",
+      "score_outcome": 0.9941666666666666,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_acb653c2-cc26-426e-a804-6a9f18696811",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1801",
+      "ticks": 3774,
+      "mean_score_ours": 593.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "7206893b70d813bf0a6cf2cba52f694eca86e086eb2ffb506ba11bdd00b01ea7",
+      "results_sha256": "ced5a2621c3b60cfbf9944a708e2a2fd0a54614caa42dd841bbc038f51848828",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235856_ereq_ed6a7faa-f7"
+    },
+    {
+      "episode_id": "ereq_ee5a6524-0c07-47b7-8e9e-64326575f589",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1805",
+      "engine_seed": "1805",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "383984056",
+      "score_outcome": 0.9175,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_793131ea-c561-4446-990b-7382d6c1c8c8",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1805",
+      "ticks": 3239,
+      "mean_score_ours": 501.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "4abe2d0c0a3cd72d94983d1577a8a087721e5064e680b85dde084c96ac3dbb1f",
+      "results_sha256": "9f4723c9ab37018b06eb85246a552714ba155c09c795c186d68e89e9c5cb193d",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235921_ereq_ee5a6524-0c"
+    },
+    {
+      "episode_id": "ereq_eec91de7-1677-4dd4-ad0c-7ce7a99fc4a2",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1808",
+      "engine_seed": "1808",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2831564169",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_d9217913-4200-4d86-8851-fe291613b57b",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1808",
+      "ticks": 3170,
+      "mean_score_ours": 638.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "9abe01f402fd317b058050c582887f4b90a186c08bd8c18517887c3e34d6eb6b",
+      "results_sha256": "5e4f4fba44e65b9543143a09cad85da6c07b87b3e1dc9d8792ceba9e099665e6",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235847_ereq_eec91de7-16"
+    },
+    {
+      "episode_id": "ereq_f481fe65-b09a-4408-853b-9aa10084aa4d",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1803",
+      "engine_seed": "1803",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1141009003",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_f70175e9-d792-40e4-9e29-cfe9a316300e",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1803",
+      "ticks": 3075,
+      "mean_score_ours": 712.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "6a0a47b54f329cf853be5aba1e36b4bbbf6955c63573e51ce3d6caf26b10e289",
+      "results_sha256": "48bdbc8377fca3256ab69794dfa2873fdd78739ca11f6b84c7ab3c615ade5ed8",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235809_ereq_f481fe65-b0"
+    },
+    {
+      "episode_id": "ereq_f4caeb3a-cd43-4504-bcbc-7893707f95b1",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1807",
+      "engine_seed": "1807",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "140380387",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_77be62cf-b6a1-427c-992d-f77a52e1f965",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1807",
+      "ticks": 3831,
+      "mean_score_ours": 1041.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "c01f82be51699188a46f23ba6821c34ce62b8b83f2397a9ac318a2351a538278",
+      "results_sha256": "53c637334ac25c8b48c6167ff12a9183b439170a4fbc75e8740e74ad96cd8a63",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235843_ereq_f4caeb3a-cd"
+    },
+    {
+      "episode_id": "ereq_fad235c3-a3ae-479d-9502-9cd6b87a22d2",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "blue",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1804",
+      "engine_seed": "1804",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "965444722",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_6beb0c48-1394-4dab-9458-859a74624093",
+      "label": "baseline-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-blue-s1804",
+      "ticks": 3482,
+      "mean_score_ours": 1505.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "ce6f351b9ac3c81ea523586c23c1a8e9f1ad94519bf0fff245d03044d59551c4",
+      "results_sha256": "062b9372f28261b12c0e0ea09e910f23e905a37168239ff57d936dfa884c6c71",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235913_ereq_fad235c3-a3"
+    },
+    {
+      "episode_id": "ereq_fd970e81-1298-4165-8e91-0764a3948666",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1804",
+      "engine_seed": "1804",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "34154882",
+      "score_outcome": 0.06166666666666665,
+      "win_rate": 0.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_2a2b012e-756a-4e08-b19b-94c0e3112a15",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1804",
+      "ticks": 2022,
+      "mean_score_ours": 0.0,
+      "mean_score_theirs": 526.0,
+      "metadata_sha256": "ada32ce560da0aab6132fcf975f54d8dfcb989b6cfb2a1d1020a73ac98e66566",
+      "results_sha256": "53265b18cca88b5731b857052f3599fbfc9e24476b14d27f0b1e81987fc47152",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235819_ereq_fd970e81-12"
+    },
+    {
+      "episode_id": "ereq_fee294f1-5f6d-4df2-b095-c80318824305",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "red",
+      "opponent_key": "add4ec17-b3ac-43d7-9cce-38f80736455f",
+      "opponent": "zhar:v55",
+      "config_seed": "1808",
+      "engine_seed": "1808",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "1471302321",
+      "score_outcome": 0.8925000000000001,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_6b5b57dd-05db-4500-94d7-fa48143de252",
+      "label": "candidate-vs-add4ec17-b3ac-43d7-9cce-38f80736455f-red-s1808",
+      "ticks": 3116,
+      "mean_score_ours": 471.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "9fcd8811b2522639410752fbfe28002e32736943349716364d8c1c42e5c52e3e",
+      "results_sha256": "28ac240191b1166b6c2dad5e2f57ff49b26b3a981f002ce4d6bb7e248687be53",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235959_ereq_fee294f1-5f"
+    },
+    {
+      "episode_id": "ereq_ff19e15b-989b-45c4-99a3-8b0189a6793e",
+      "arm": "baseline",
+      "policy_key": "e7cf2caf-3d02-4368-9dcd-2b75b429d15f",
+      "side": "red",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1803",
+      "engine_seed": "1803",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "33889648",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_3e0312c2-3fd6-4070-a6e2-e72bb299ca90",
+      "label": "baseline-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-red-s1803",
+      "ticks": 3305,
+      "mean_score_ours": 903.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "cd61c49c7f46073e4c27f8906fdbfb081373ead48825049c62438f1fe1a0dcce",
+      "results_sha256": "a6fc0e8236e7c880bb7ebb8580e3ff358a027f1a45fdfd92e555353c6afc3b8a",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235813_ereq_ff19e15b-98"
+    },
+    {
+      "episode_id": "ereq_fff73ba6-e73b-44d0-b5a4-d6b5e58984bb",
+      "arm": "candidate",
+      "policy_key": "7361ffff-f0d4-4c59-925b-6706331b59d4",
+      "side": "blue",
+      "opponent_key": "3e6edc9d-cbcb-482d-aff0-96a94dfd398d",
+      "opponent": "xolod:v13",
+      "config_seed": "1803",
+      "engine_seed": "1803",
+      "rules": "49",
+      "coworld_version": "0.3.115",
+      "final_hash": "2678440772",
+      "score_outcome": 1.0,
+      "win_rate": 1.0,
+      "ops_fail": 0.0,
+      "xreq_id": "xreq_42fe3ac1-1b6f-4b83-b1f2-af2af8797830",
+      "label": "candidate-vs-3e6edc9d-cbcb-482d-aff0-96a94dfd398d-blue-s1803",
+      "ticks": 3184,
+      "mean_score_ours": 888.0,
+      "mean_score_theirs": 0.0,
+      "metadata_sha256": "fc5bf6e0606e5ab763b0758fbabe3afbfe5272b3f778a93286b8959b610dbbe6",
+      "results_sha256": "34cab1269de13a5169d66cd605eca09dae1e9e61ae232307fd7e6653a414c698",
+      "path": "paintbot_pw_lab/episode_data/m3-18e0aa1f-ab/episodes/20261005T235810_ereq_fff73ba6-e7"
+    }
+  ]
+}
