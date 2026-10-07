@@ -35,14 +35,18 @@ Submit the best one to the league and curate the league's filler roster.
   - Restarts=3 hurts. Machiavelli with 1 restart scored 0.636 over 30 games, against about 0.55 for the 3-restart versions.
   - Bismarck tops the mixed population but scores only 0.48 against the DumbBot field.
   - Kissinger scores 0.38 against the DumbBot field.
-- **Evolution loop** (`tools/evolve.py`, state in `experiments/evolve_state.json`): generation 0
-  elites are Talleyrand, Bismarck-share and Bismarck. The Calhamer anchor scores −0.10.
+- **Evolution loop** (`tools/evolve.py`, image v6b, state in `experiments/evolve_state.json`):
+  at generation 5 the elites are aggressive Bismarck × Talleyrand crosses. g2-0ed5 was
+  promoted as **Blücher** (`webdip-blucher:v1`, 4247912e) and added to the league fillers.
+- **v4a is about equal to Machiavelli with 1 restart** against DumbBot: pooled v4a 0.71 over 45 games
+  vs 0.64 over 30, p≈0.2.
 - **Running:**
-  - `evolve.py`: continuous generations, 2 games in parallel.
-  - `arena-v4a-rerun-vs-dumb`: 30 games, to calibrate noise against v5c with 1 restart.
-- **Next promotion candidate:** a fastadj search with 1 restart, probably with the share objective.
-  It is far cheaper per phase on hosted pods than v3, which uses the package adjudicator and
-  took about 21 s per phase. Decide after the v4a rerun and 2–3 more generations.
+  - `evolve.py`: 3 games in parallel.
+  - `leaguesim-blucher` and `leaguesim-machiavelli`: 24 games each, with the candidate fixed and
+    6 opponents drawn from the filler roster. This decides the next main-line submission
+    (champion: v3).
+- **League fillers (8):** Random, Calhamer, Machiavelli, Bismarck, Metternich, Talleyrand,
+  Napoleon, Blücher.
 
 ## Known hazards
 
