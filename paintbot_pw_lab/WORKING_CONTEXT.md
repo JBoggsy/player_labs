@@ -110,36 +110,30 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
 James Botts was verified active immediately before upload. Confirm again for future uploads.
 Eight copies of our policy face eight copies of one pinned real opponent, matching this league.
 No hosted self-play. Budget 0.5 credits per episode and ledger estimates from request previews;
-the ordinary player session gets 403 from the credit endpoint. Task 0 spent zero XP credits.
+the user-authenticated credits command now gives actual balance. Task 0 spent zero XP credits.
 Heartland memberships and the orchestrator's stopgap are outside this optimizer's scope.
 
 ## Current pipeline source
 
-VERDICT-11: v8 SUBMITTED sub_a37b78a7-1125-4559-b6af-a501924da3e6, parent build5cee1447-1,
-UUID32f1b591-b444-4210-94a8-35521d7f90f1. Local outcomes are not performance signals or vetoes.
-All clean candidates proceed to hosted real-opponent A/B. Four independent v8 children:
-opening v9/build87324810-1, spray-distance v10/build7faadaa4-1,
-spray-safety v11/build5fa13fa0-1, gun-corridor v12/builda0d6a0f3-1.
-All passed G1–G5 and uploaded. Current source is gun-corridor; frozen parent remains v8.
-I13/i14 cohorts fully admitted; i15/i16 admissions resume automatically as pending slots free.
-V7's repaired240-game cohort is inconclusive, so no cadence combination is supported.
-New A/B allocations cover the whole top field under James's latest instruction, not only
-league neighbours. Default: 192 Richard episodes, 48 xolod, and 8 per named remaining opponent, with finist increased to16 after brief opening activity was
-verified. New cohorts total296 episodes / estimated148 credits; already-fixed i13 stays288/144.
-All cohorts are balanced by arm and side.
-Richard is the primary outcome; small opponent samples detect ports and large regressions,
-not precise competitiveness. Campaign previews total1,056.5 after i13/i14; all four reserved cohorts total1,352.5.
-Current budget: approximately600 per iteration, no daily cap, balance floor10,000.
-Reports/manifests own exact spend and identities.
+Parent remains submitted v8/build5cee1447-1, UUID32f1b591-b444-4210-94a8-35521d7f90f1.
+I13–i16 completed: opening v9, spray-distance v10, spray-safety v11 and gun-corridor v12
+all inconclusive on Richard. No supported combination. Reports13–16 own full estimates.
+Current source d68b2194: retreat count restricted to our gun reach. Buildd68b2194-2 passes
+G1–G5, uploaded v13 UUIDc6ca341d-3e72-408e-951d-b4d79066fd27. Activation178, zero validation
+failures. I17 admission:1192 games,596 estimated credits, all eight named opponents,
+Richard960/xolod160/finist32/others8; arm/side balanced. Local outcomes never rank or veto.
 
 ## Current operating limit
 
-James corrected the budget: no daily cap or midnight hold. Keep balance above10,000;
-approximately600 credits per iteration. Reported account balance19,335/20,000, refill
-about1,429/day. This is James's observation, not a successful optimizer balance read.
-Record actual snapshots separately from creation previews; holds/refills/other account work
-can change available balance, and preview totals are not actual metered spend.
-Admission of i13–i16 continues immediately, respecting pending-request capacity.
-New justified cohorts are authorized within this reserve; do not spend merely to fill the cap.
-Dashboard8810 remains stopped. Poll at least120s apart and exit on completed/terminal cohorts;
-optional artifact gaps do not keep old watchers alive. I6/i7/i10 polling remains stopped.
+No daily cap or midnight hold. Keep actual balance above10000; approximately600 per iteration.
+Use `uv run python .claude/skills/coworld-experience-requests/scripts/experience_request.py credits`
+with its user credential path. Verified pre-i17 balance18990.73681, cap20000, refill1428.57143/day.
+Record snapshots separately from previews; concurrent work and refills prevent attributing
+account net changes solely to one cohort. Evidence credit-observations.jsonl and REPORT-17.
+Dashboard8810 stopped. Poll at least120s apart and exit on completion/all terminal children.
+I13–i16 result queue and field watcher exited; new i17 queue has the same finite exit rule.
+I18 is a frozen independent confirmation of unchanged v10 against v8:888 games/444 credits,
+queued after i17 admissions. More basic/Rohit guards, no pooling with i14 discovery.
+Combined v10 discovery+confirmation estimate592 credits. DESIGN-18 owns final criteria.
+First i17 balance interval:18990.73681 to18986.91647, net−3.82034 while admitted previews150;
+this account-level movement is not measured cohort spend.
