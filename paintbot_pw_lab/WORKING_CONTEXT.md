@@ -31,8 +31,12 @@ Rank-9 rating archaeology is explicitly dropped by VERDICT-0.
 Standing pipeline rule (orchestrator): while a hosted batch runs, diagnose and prepare the
 next single-change candidate locally on the current candidate; compile and screen vs v3,
 the parent candidate and upstream. Hold its upload until the running A/B decides its parent.
-Current local child: iteration5 full-speed resupply on v5. The four v5 recordings attribute
-90% of remaining moving-sneak ticks to resupply. Upload held; no iteration5 credits spent.
+Current local child: iteration5 full-speed resupply on v5, build97b77787-1, passes G1–G5.
+The four v5 recordings attribute90% of remaining moving-sneak ticks to resupply. The child
+activates1,285 times across16/32 seats but wins26/56 vs v5 and47/56 vs upstream (v5:52/56).
+Local benefit is unsupported; do not promote or stack further changes on it. Upload held
+pending the parent decision; no iteration5 credits spent. Source currently represents
+this held child; the uploaded v5 parent is immutable build780bef24-1.
 
 The pipeline remains strategy-as-source: edit `strategy/STRATEGY.md` or authored skills,
 commit inputs, then run `pw.py strategy compile`. Compiled builds are immutable. A compiler
