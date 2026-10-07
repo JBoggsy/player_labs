@@ -6,8 +6,9 @@ Continue the authorized optimizer loop. Parent is submitted v8 (build5cee1447-1)
 fresh hosted Richard improvement over v6 was +.133064, CI[+.009925,+.256203].
 Opening child87324810-1 is uploaded as jb-pw-opt:v9; its broad-field A/B is being launched.
 Spray-distance child7faadaa4-1 passed G1–G5 and is uploading. It uses physical target distance
-instead of HP-weighted ranking cost for both spray range gates. Current source is the independent
-spray-safety child on v8: withhold otherwise-ready shots when a visible teammate is in the spray cone. V7 cadence repair is running;
+instead of HP-weighted ranking cost for both spray range gates. Spray-safety child5fa13fa0-1 also passed G1–G5 and is uploading. Current source is the
+independent gun-corridor retest on v8: widen the visible teammate corridor from95cm to195cm
+for guns only, keeping spray width95cm. Counter gun_held_total attributes newly withheld shots. V7 cadence repair is running;
 combine with v8 only if the repaired hosted comparison supports it. Reports6/7/10–14 own details.
 
 Local games establish runtime health, activation and mechanisms, never performance or a veto.
