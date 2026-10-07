@@ -51,6 +51,10 @@ def policy_class(name):
         from webdip_bot.search import SearchBot
 
         return SearchBot
+    if name == "nash":
+        from webdip_bot.nash import NashBot
+
+        return NashBot
     if name == "random":
         from webdip_bot.field.random_legal import RandomLegal
 

@@ -63,3 +63,7 @@ OPP_MODEL_LEVEL = 0
 SEARCH_EVAL = "projected"
 SEARCH_LEARNED_WEIGHT = 1.0  # with SEARCH_EVAL="learned": blend of predicted vs projected centres
 SEARCH_RISK = 0.0  # 0 = mean over opponent samples; 1 = worst case
+# NashBot (nash.py): regret matching over candidate plans for all powers.
+NASH_CANDIDATES = 6
+NASH_ITERS = 60
+NASH_EVAL_SAMPLES = 24

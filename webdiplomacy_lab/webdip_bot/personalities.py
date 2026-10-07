@@ -70,6 +70,11 @@ PERSONALITIES = {
                       "SEARCH_RESTARTS": 1, "OPP_MODEL_LEVEL": 0, "STRENGTH_WEIGHT": 918},
         "motto": "Marshal Forwards. Bred by evolution (g2-0ed5), not designed: always attacking.",
     },
+    "nash": {
+        "base": "nash",
+        "overrides": {"SEARCH_RESTARTS": 1},
+        "motto": "No regrets: plays toward an equilibrium of everyone's best plans (SearchBot-style).",
+    },
 }
 
 
