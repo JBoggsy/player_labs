@@ -5,7 +5,7 @@
 **VERDICT-32: new campaign, beat Richard.** I32 is complete and rejected: weighted
 +0.013810 [-0.015552,+0.043172]; Richard +0.024746 [-0.026599,+0.076090]. V10 stays.
 Richard is primary; xolod is a guard. Study current public/participant losses, build one
-large-effect counter, and pipeline a second idea locally while hosted evaluation runs.
+large-effect counter, and evaluate the pipelined second idea in parallel, as explicitly authorized.
 No private opponent diagnostics or optimizer league submission. Finite workers only.
 
 I33: coordinated central opening on exact v10. Nineteen hash-verified current replays
@@ -33,7 +33,9 @@ I33 is immutable build `9d572cfd-1`, uploaded v27 UUID
 I34 is a separate locally prepared child, build `4f0e5d4e-1`, not a change to that cohort.
 Its compiler gates passed; full-game activation counted 127 changed directions across
 20/32 seat recordings, with 19,644 valid telemetry lines and zero validation failures.
-I34 is not uploaded; local activation does not establish field performance.
+I34 is uploaded as `jb-pw-opt:v28`, UUID `d3287a85-af4c-4817-92cc-18b0aa21b0e2`.
+Its own fresh 400 Richard + 200 xolod games per arm are queued alongside i33,
+with the same gate and finite workers. Local activation does not establish field performance.
 Rejected v26 is recoverable at `c11410ab` / build `c11410ab-1`; never use it as the
 champion. All policy edits go through committed strategy/skill sources and the compiler.
 
@@ -115,7 +117,7 @@ Coworld 0.1.57 and softmax-cli 0.26.38 were release-checked during i31; refresh 
 future CLI diagnosis. Broader neural/oracle references retain `PW_DOCS_SHA=118e1619`.
 M3 comms remains inactive and unqualified on current Bassy; see [comms.md](strategy/comms.md).
 
-I32 is complete; i33 admission/results are active and i34 is compiled and ready locally. Admission/results workers exit on terminal work;
+I32 is complete; i33 admission/results are active and i34 is uploaded with an independent hosted cohort queued. Admission/results workers exit on terminal work;
 field_watch.py is stopped by explicit handoff. Dashboard 8810 stays off. Do not poll
 terminal requests for optional artifacts. Future authorized polling/retries: at least
 120 seconds, bounded artifacts, finite exit. No hosted self-play. Local games establish
