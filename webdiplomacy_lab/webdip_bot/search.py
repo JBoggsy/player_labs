@@ -347,6 +347,8 @@ class SearchBot:
                         self.improved_any += 1
                         if len(joint) > 1:
                             self.trace["search_joint_improvement"] += 1
+                        if len(joint) > 2:
+                            self.trace["search_triple_improvement"] += 1
             if not changed:
                 break
         return best_score, best
@@ -454,6 +456,7 @@ class SearchBot:
                     continue
                 if not config.SEARCH_PAIRS:
                     continue
+                supporters = []
                 for k, other in enumerate(legal):
                     if k == i:
                         continue
@@ -461,6 +464,14 @@ class SearchBot:
                                     and c["fromTerrID"] == here), None)
                     if support is not None:
                         options.append({i: o, k: support})
+                        supporters.append((k, support))
+                if config.SEARCH_TRIPLES:
+                    # Move with two supports: strength 3 breaks a supported hold.
+                    for a in range(len(supporters)):
+                        for c2 in range(a + 1, len(supporters)):
+                            (k1, s1), (k2, s2) = supporters[a], supporters[c2]
+                            options.append({i: o, k1: s1, k2: s2})
+                            self.trace["search_triple_options"] += 1
             joints.append(options)
         return joints
 

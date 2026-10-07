@@ -73,3 +73,4 @@ OPP_LIKELIHOOD = "competent"
 # With OPP_MODEL_LEVEL=1: probability that a given opponent sample is the improved (level-1)
 # plan rather than the raw DumbBot plan (a mixed opponent model).
 OPP_LEVEL1_SHARE = 1.0
+SEARCH_TRIPLES = 0  # joint move + two supports alternatives
