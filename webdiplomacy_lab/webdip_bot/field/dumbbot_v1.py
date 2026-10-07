@@ -1,4 +1,4 @@
-"""DumbBot (David Norman's heuristic Diplomacy bot) on webDiplomacy's own map graph.
+"""FROZEN copy of DumbBot as uploaded in webdip-dumbbot:v1 (the local arena field). Do not edit.
 
 Algorithm follows the MIT-licensed Python port in diplomacy/research
 (`diplomacy_research/players/rulesets/dumbbot_ruleset.py`, Philip Paquette, 2019),
@@ -23,7 +23,7 @@ from collections import Counter
 from players.api import order, order_signature
 from players.legal_orders import LegalOrders
 
-from webdip_bot import config
+from webdip_bot.field import config_v1 as config
 
 
 class Board:
@@ -80,8 +80,8 @@ def size(n):
 
 
 class DumbBot:
-    def __init__(self, variant, board, country, phase, turn, rng, board_model=None):
-        self.b = board_model or Board(variant, board)
+    def __init__(self, variant, board, country, phase, turn, rng):
+        self.b = Board(variant, board)
         self.country = country
         self.phase = phase
         self.spring = turn % 2 == 0

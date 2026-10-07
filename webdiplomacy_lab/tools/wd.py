@@ -4,6 +4,9 @@
     uv run python webdiplomacy_lab/tools/wd.py metrics EVIDENCE_DIR... [--policy NAME:vN] [--json]
     uv run python webdiplomacy_lab/tools/wd.py seats EVIDENCE_DIR... [--policy NAME:vN]   # JSONL rows
     uv run python webdiplomacy_lab/tools/wd.py local --image IMG [--episodes N] [--out DIR]
+    uv run python webdiplomacy_lab/tools/wd.py arena --candidate POLICY [--field dumbbot_v1] \
+        [--episodes N] [--parallel P] [--image IMG] --out DIR
+    uv run python webdiplomacy_lab/tools/wd.py metrics DIR --slot 0          # local arena: candidate seat
 
 `metrics`: per-power results for the target policy's seats next to the FIELD PAR (mean
 of every non-target seat at that power in the same directories), plus coverage and our
@@ -14,6 +17,11 @@ target seats found.
 `seats`: one JSON row per seat (the miner/A-B input).
 
 `local`: run N local episodes of one image in every seat (own-policy self-play only).
+
+`arena`: LOCAL screening. Slot 0 plays `--candidate`, slots 1-6 play `--field` (policy
+names from webdip_bot/bot.py `policy_class`), all inside one image; each episode gets a
+fresh random seed and country permutation. Read it with `metrics DIR --slot 0`: par is
+then the field's own per-power score, and 1/7 = 0.143 is parity.
 """
 
 from __future__ import annotations
@@ -57,8 +65,12 @@ def per_power(seats):
 
 def cmd_metrics(args):
     seats, statuses = load_dirs([Path(p) for p in args.dirs])
-    target = [s for s in seats if args.policy is None or s.policy == args.policy]
-    field = [s for s in seats if args.policy is not None and s.policy != args.policy]
+    if args.slot is not None:
+        is_target = lambda s: s.slot == args.slot  # noqa: E731
+    else:
+        is_target = lambda s: args.policy is None or s.policy == args.policy  # noqa: E731
+    target = [s for s in seats if is_target(s)]
+    field = [s for s in seats if (args.policy is not None or args.slot is not None) and not is_target(s)]
     if not target:
         print(json.dumps({"error": "no target seats", "policies": sorted({s.policy for s in seats})}))
         return 2
@@ -68,7 +80,7 @@ def cmd_metrics(args):
     logs = [s.log for s in target if s.log]
     report = {
         "game_version": GAME_VERSION,
-        "policy": args.policy or "all seats",
+        "policy": args.policy or (f"slot {args.slot}" if args.slot is not None else "all seats"),
         "episodes": len(statuses),
         "coverage": {
             "with_results": sum(not st["missing"] or st["missing"] == ["replay"] for st in statuses),
@@ -157,12 +169,49 @@ def cmd_local(args):
     return subprocess.call(cmd, env={**__import__("os").environ, "DOCKER_DEFAULT_PLATFORM": "linux/amd64"})
 
 
+# Local arena machines are faster than hosted pods; keep per-phase search time short here.
+ARENA_ENV = ["WEBDIP_SEARCH_BUDGET_S=8"]
+
+
+def _manifest():
+    return next((LAB / "coworld_pkg").glob("cow_*/coworld_manifest.json"), None)
+
+
+def _run_one(manifest, image, run, variant, out):
+    cmd = ["uv", "run", "coworld", "run-episode", str(manifest), image, "--variant", variant,
+           "--output-dir", str(out), "--timeout-seconds", "6000"]
+    cmd += [f"--run={token}" for token in run]
+    cmd += [f"--secret-env={kv}" for kv in ARENA_ENV]
+    env = {**__import__("os").environ, "DOCKER_DEFAULT_PLATFORM": "linux/amd64"}
+    return subprocess.call(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def cmd_arena(args):
+    import uuid
+    from concurrent.futures import ThreadPoolExecutor
+
+    manifest = _manifest()
+    if manifest is None:
+        print("run: uv run coworld download webdiplomacy -o webdiplomacy_lab/coworld_pkg", file=sys.stderr)
+        return 2
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    py = "/opt/.venv/bin/python"
+    run = [py, "-m", "players.launcher", py, "-m", "webdip_bot.arena", args.candidate, args.field]
+    dirs = [out / f"ep-{uuid.uuid4().hex[:10]}" for _ in range(args.episodes)]
+    with ThreadPoolExecutor(args.parallel) as pool:
+        codes = list(pool.map(lambda d: _run_one(manifest, args.image, run, args.variant, d), dirs))
+    print(json.dumps({"out": str(out), "episodes": len(dirs), "failed": sum(c != 0 for c in codes)}))
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     m = sub.add_parser("metrics")
     m.add_argument("dirs", nargs="+")
     m.add_argument("--policy", help="target policy NAME:vN (hosted); omit to pool all seats")
+    m.add_argument("--slot", type=int, help="target seat slot (local arena: 0)")
     m.add_argument("--json", action="store_true")
     m.set_defaults(func=cmd_metrics)
     s = sub.add_parser("seats")
@@ -176,6 +225,15 @@ def main():
     lo.add_argument("--episodes", type=int, default=1)
     lo.add_argument("--out", default=str(LAB / "local_runs" / "latest"))
     lo.set_defaults(func=cmd_local)
+    ar = sub.add_parser("arena")
+    ar.add_argument("--candidate", required=True)
+    ar.add_argument("--field", default="dumbbot_v1")
+    ar.add_argument("--image", default="webdip-bot:dev")
+    ar.add_argument("--variant", default="classic-gunboat")
+    ar.add_argument("--episodes", type=int, default=8)
+    ar.add_argument("--parallel", type=int, default=4)
+    ar.add_argument("--out", required=True)
+    ar.set_defaults(func=cmd_arena)
     args = ap.parse_args()
     return args.func(args)
 

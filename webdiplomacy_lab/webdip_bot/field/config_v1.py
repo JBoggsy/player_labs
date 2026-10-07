@@ -25,14 +25,3 @@ BUILD_DEFENSE_WEIGHT = 1000
 
 ALTERNATIVE_DIFF_MODIFIER = 5
 PLAY_ALTERNATIVE = 0.5
-
-# --- SearchBot (search.py) ---
-SEARCH_OPPONENT_SAMPLES = 6
-SEARCH_SEEDS = 6
-SEARCH_PASSES = 3
-# Wall-clock search budget per movement phase. Hosted phases are 1 minute and pods get
-# ~0.25 CPU, so the hosted default is generous; the local arena passes 8 s via env.
-SEARCH_TIME_BUDGET_S = float(__import__("os").environ.get("WEBDIP_SEARCH_BUDGET_S", "20"))
-SEARCH_SC_WEIGHT = 10.0
-SEARCH_POS_WEIGHT = 1.0
-SEARCH_DISLODGED_WEIGHT = 3.0
