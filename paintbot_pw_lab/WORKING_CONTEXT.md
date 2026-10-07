@@ -126,7 +126,7 @@ Richard200/arm, other opponents unchanged. Discovery plus confirmation440 estima
 I19 v14/build482cacdc-1: structural teammate regroup/local retreat, original v8 eligibility.
 Uploaded UUID3386f34a-2c42-43c3-b521-e06a37189540;136 regroup ticks,704 local retreat ticks,
 3811 valid telemetry lines,0 failures. REPORT-18 ranks three structural hypotheses.
-I20 v15/buildb9128d79-1: v10 spray distance plus v12 gun corridor on v8. Current source.
+I20 v15/buildb9128d79-1: v10 spray distance plus v12 gun corridor on v8.
 Uploaded UUID58ba5750-7d7c-4416-8785-6e62fe3721d5;both counters exercised,0 validation failures.
 I19/i20 each584games/292credits, Richard200/arm, full roster; exact designs/manifests own IDs.
 New uploads passed G1–G5. No local performance conclusions or performance vetoes.
@@ -145,5 +145,9 @@ Round857 opponent identities unchanged. Source release0.3.123/28030de6; project 
 and softmax-cli0.26.38 match current releases. Clone main fetched/current; lab branch ahead
 contains authorized local experiments. No changes to the main metta checkout.
 
-Charter max_iterations20 reached in prepared candidates; finish i17–i20 evidence before any
-new iteration beyond that boundary. A supported result is a submission candidate for orchestrator.
+No iteration limit: max_iterations is none (continuous). Keep building structural siblings
+and queuing hosted cohorts while earlier cohorts run. A supported result is a submission
+candidate for orchestrator.
+
+Current source i21: four capturer/escort frontier pairs on v8, with visible pair anchors and
+capture preservation. REPORT-21 owns hypothesis/risks. I22 shared focus targeting is next.

@@ -185,7 +185,7 @@ SUB sk_motor__footwork()
       sk_motor__stalled = 0
       sk_motor__leg_ticks = 0
     END IF
-    sk_motor__want_shot = sk_motor__gun_wait = 0 AND (hasSpray = 0 OR sk_motor__spray_distance_sq < sk_motor__spray_range_sq)
+    sk_motor__want_shot = sk_motor__gun_wait = 0 AND (hasSpray = 0 OR k_contacts__best_cost < sk_motor__spray_range_sq)
     IF worldTick >= sk_motor__path_until THEN
       IF sk_motor__leg_ticks <= 0 OR (sk_motor__want_shot AND sk_motor__leg_ticks < 6) THEN
         IF sk_motor__want_shot THEN
@@ -305,11 +305,6 @@ SUB sk_motor__gun()
     END IF
     ' Hold fire when a visible teammate (by observed slot parity) stands in the line.
     sk_motor__clear = 1
-    sk_motor__old_clear = 1
-    sk_motor__guard_width = sk_motor__previous_line_width
-    IF hasSpray = 0 THEN
-      sk_motor__guard_width = sk_motor__teammate_line_width
-    END IF
     sk_motor__sx = sk_motor__tx - selfX
     sk_motor__sy = sk_motor__ty - selfY
     sk_motor__isqrt(sk_motor__sx * sk_motor__sx + sk_motor__sy * sk_motor__sy)
@@ -325,28 +320,16 @@ SUB sk_motor__gun()
           IF sk_motor__across < 0 THEN
             sk_motor__across = 0 - sk_motor__across
           END IF
-          IF sk_motor__along > 0 AND sk_motor__along < sk_motor__reach THEN
-            IF sk_motor__across < sk_motor__previous_line_width THEN
-              sk_motor__old_clear = 0
-            END IF
-            IF sk_motor__across < sk_motor__guard_width THEN
-              sk_motor__clear = 0
-            END IF
+          IF sk_motor__along > 0 AND sk_motor__along < sk_motor__reach AND sk_motor__across < 95 THEN
+            sk_motor__clear = 0
           END IF
         END IF
         sk_motor__i = sk_motor__i + 1
       WEND
     END IF
-    ' Count ready gun orders held only by the added windup margin, once per decision.
-    IF hasSpray = 0 AND sk_motor__gun_wait = 0 AND sk_motor__old_clear AND sk_motor__clear = 0 THEN
-      sk_motor__gun_held_total = sk_motor__gun_held_total + 1
-    END IF
-    IF hasSpray = 0 OR sk_motor__spray_distance_sq < sk_motor__spray_range_sq THEN
+    IF hasSpray = 0 OR k_contacts__best_cost < sk_motor__spray_range_sq THEN
       IF sk_motor__clear AND sk_motor__gun_wait = 0 THEN
         shootAt(sk_motor__tx, sk_motor__ty)
-        IF hasSpray AND k_contacts__best_cost >= sk_motor__spray_range_sq THEN
-          sk_motor__spray_distance_shots_total = sk_motor__spray_distance_shots_total + 1
-        END IF
         sk_motor__gun_wait = sk_motor__gun_wait_light
         IF armorHp > 0 OR trenchId >= 0 OR carrying THEN
           sk_motor__gun_wait = sk_motor__gun_wait_heavy
@@ -460,12 +443,6 @@ SUB sk_motor__act(sk_motor_gx, sk_motor_gy, sk_motor_hold)
   sk_motor__holding = sk_motor_hold
   IF k_contacts__best < 0 THEN
     sk_motor__look_around()
-  END IF
-  sk_motor__spray_distance_sq = 0
-  IF k_contacts__best >= 0 THEN
-    sk_motor__spray_dx = playerX(k_contacts__best) - selfX
-    sk_motor__spray_dy = playerY(k_contacts__best) - selfY
-    sk_motor__spray_distance_sq = sk_motor__spray_dx * sk_motor__spray_dx + sk_motor__spray_dy * sk_motor__spray_dy
   END IF
   sk_motor__footwork()
   sk_motor__dry_route()
