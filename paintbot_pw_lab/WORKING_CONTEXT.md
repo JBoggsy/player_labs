@@ -220,17 +220,26 @@ Inputs the policy (`STRATEGY.md`) should build on:
 
 ## Loop charter
 
-Not set. The [paintbot-pw-loop](.claude/skills/paintbot-pw-loop/SKILL.md) skill runs only when
-James fills this in; until then an agent proposes a charter and stops.
+Set 2026-10-06 by the orchestrator (Claude Opus 5.5 session) under James's delegation: James
+gave that session full control of Paintbot PW, including league submission. The optimizer
+reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for briefs and verdicts.
 
-- objective: (e.g. raise the mean Elo outcome score vs the top 3 champions)
-- policy_file: (e.g. paintbot_pw_lab/policy/dist/<name>.bas)
-- policy_name / player: (upload name; player identity as shown by `uv run coworld player list`)
-- baseline: (accepted version `name:vN`; the loop updates this line)
-- opponents: (explicit `policy_ref`s)
-- allowed_changes: (classes of change the loop may make without asking)
-- credit_budget: (credits per iteration / per day; ~0.3 credits per episode)
-- max_iterations:
+- objective: raise mean `score_outcome` (`--target score_outcome --margin-scale 600`, recheck the
+  live margin) of our policy against the current top-4 league entrants, then climb the
+  paintbot-pw league standings with a submitted improvement.
+- policy_file: `paintbot_pw_lab/strategy/STRATEGY.md` plus authored `strategy/skills/*/skill.bas`,
+  compiled with `pw.py strategy compile`. Never hand-edit other `.bas`. Working source starts
+  from the foundation build `3d0f8a4f-1` (baseline play, compact telemetry), not M3 comms.
+- policy_name / player: `jb-pw-opt` on James Botts (`ply_53fb05a6-73d1-494d-ab6c-8d566660d7ce`).
+- baseline: first upload of the migrated foundation source as `jb-pw-opt` (set when uploaded).
+- opponents: `xolod:v14`, `zhar:v55`, `finist:v2`, `relh-paintbot-pw:v56` (resolved 2026-10-07
+  round 832); re-resolve with `pw.py leaders --json` before each baseline evaluation.
+- allowed_changes: any single attributable change to the strategy source or a skill, including
+  targeting/range, grenade use, pickups, movement/routing, thresholds and constants, roles. A
+  new win strategy or comms protocol needs an orchestrator PROCEED first.
+- credit_budget: 300 credits per iteration, 1,000 per day (budget 0.5 credits per episode).
+- max_iterations: 20. Stop rules in the loop skill mean "report to the orchestrator and wait
+  for PROCEED", not "stop working".
 
 ## Identity and presence
 

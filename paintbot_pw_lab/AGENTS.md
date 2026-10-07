@@ -86,6 +86,11 @@ uv run python paintbot_pw_lab/tools/pw.py tools --json    # the tool catalog: wh
 
 ## Rules specific to this lab
 
+- **Every policy change goes through `strategy/STRATEGY.md` and the compiler.** Never hand-edit
+  `.bas` files outside skills: edit `STRATEGY.md` (or a skill's authored `skill.bas`), then build
+  with `pw.py strategy compile`. This applies to optimizer loops, local experiments and tuning
+  candidates alike; the paintbot-pw-loop skill's `policy_file` means the strategy source.
+  (James, 2026-10-06.)
 - **Cite the deployed commit, not `main`.** The source is `Metta-AI/paintbot-pw` (local
   clone `~/coding/coworlds/paintbot-pw`), a standalone copy of Polyworld. The manifest's
   `source_url` carries no commit; the `coworld-v<version>` tag is the only link from a
