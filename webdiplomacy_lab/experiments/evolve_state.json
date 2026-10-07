@@ -1,39 +1,6 @@
 {
- "generation": 5,
+ "generation": 6,
  "population": {
-  "g2-0ed5": {
-   "genome": {
-    "SPRING_ATTACK_WEIGHT": 967,
-    "SPRING_DEFENSE_WEIGHT": 100,
-    "FALL_ATTACK_WEIGHT": 850,
-    "FALL_DEFENSE_WEIGHT": 150,
-    "SEARCH_DISLODGED_WEIGHT": 0.5,
-    "SEARCH_POS_WEIGHT": 2.0,
-    "SEARCH_RESTARTS": 1,
-    "OPP_MODEL_LEVEL": 0,
-    "STRENGTH_WEIGHT": 918
-   },
-   "fitness": 0.0745,
-   "generations": 3,
-   "parent": "bismarckxtalleyrand",
-   "last": 0.0522
-  },
-  "g3-a9d8": {
-   "genome": {
-    "SEARCH_OBJECTIVE": "share",
-    "SEARCH_RESTARTS": 1,
-    "SPRING_ATTACK_WEIGHT": 882,
-    "SPRING_DEFENSE_WEIGHT": 100,
-    "FALL_DEFENSE_WEIGHT": 150,
-    "SEARCH_POS_WEIGHT": 2.0,
-    "STRENGTH_WEIGHT": 1107,
-    "SEARCH_OPPONENT_SAMPLES": 6
-   },
-   "fitness": 0.0546,
-   "generations": 2,
-   "parent": "g1-7de3",
-   "last": 0.0506
-  },
   "g4-c2bd": {
    "genome": {
     "SPRING_ATTACK_WEIGHT": 967,
@@ -46,25 +13,28 @@
     "OPP_MODEL_LEVEL": 0,
     "STRENGTH_WEIGHT": 1279
    },
-   "fitness": 0.05098162633609421,
-   "generations": 1,
+   "fitness": 0.0693,
+   "generations": 2,
    "parent": "g2-0ed5",
-   "last": 0.051
+   "last": 0.0875
   },
-  "g5-c004": {
+  "g5-859c": {
    "genome": {
-    "SEARCH_OBJECTIVE": "share",
-    "SEARCH_RESTARTS": 1,
-    "SPRING_ATTACK_WEIGHT": 882,
+    "SPRING_ATTACK_WEIGHT": 967,
     "SPRING_DEFENSE_WEIGHT": 100,
+    "FALL_ATTACK_WEIGHT": 850,
     "FALL_DEFENSE_WEIGHT": 150,
-    "SEARCH_POS_WEIGHT": 2.0,
-    "STRENGTH_WEIGHT": 1375,
-    "SEARCH_OPPONENT_SAMPLES": 6
+    "SEARCH_DISLODGED_WEIGHT": 0.5,
+    "SEARCH_POS_WEIGHT": 1.35,
+    "SEARCH_RESTARTS": 1,
+    "OPP_MODEL_LEVEL": 0,
+    "STRENGTH_WEIGHT": 918,
+    "SEARCH_OPPONENT_SAMPLES": 17
    },
-   "fitness": null,
-   "generations": 0,
-   "parent": "g3-a9d8"
+   "fitness": 0.0498137849709082,
+   "generations": 1,
+   "parent": "g2-0ed5xg4-c2bd",
+   "last": 0.0498
   },
   "g5-15ce": {
    "genome": {
@@ -81,26 +51,64 @@
     "SEARCH_LEARNED_WEIGHT": 0.49,
     "OPP_MODEL_LEVEL": 0
    },
-   "fitness": null,
-   "generations": 0,
-   "parent": "g3-a9d8xg2-0ed5"
+   "fitness": 0.025912345493698138,
+   "generations": 1,
+   "parent": "g3-a9d8xg2-0ed5",
+   "last": 0.0259
   },
-  "g5-859c": {
+  "g6-15f9": {
    "genome": {
     "SPRING_ATTACK_WEIGHT": 967,
     "SPRING_DEFENSE_WEIGHT": 100,
     "FALL_ATTACK_WEIGHT": 850,
     "FALL_DEFENSE_WEIGHT": 150,
     "SEARCH_DISLODGED_WEIGHT": 0.5,
-    "SEARCH_POS_WEIGHT": 1.35,
+    "SEARCH_POS_WEIGHT": 1.44,
     "SEARCH_RESTARTS": 1,
     "OPP_MODEL_LEVEL": 0,
-    "STRENGTH_WEIGHT": 918,
+    "STRENGTH_WEIGHT": 928,
     "SEARCH_OPPONENT_SAMPLES": 17
    },
    "fitness": null,
    "generations": 0,
-   "parent": "g2-0ed5xg4-c2bd"
+   "parent": "g4-c2bdxg5-859c"
+  },
+  "g6-7e2d": {
+   "genome": {
+    "SEARCH_OBJECTIVE": "share",
+    "SEARCH_RESTARTS": 1,
+    "SPRING_ATTACK_WEIGHT": 882,
+    "SPRING_DEFENSE_WEIGHT": 0,
+    "FALL_DEFENSE_WEIGHT": 150,
+    "SEARCH_POS_WEIGHT": 2.0,
+    "STRENGTH_WEIGHT": 1107,
+    "SEARCH_OPPONENT_SAMPLES": 6,
+    "FALL_ATTACK_WEIGHT": 850,
+    "SEARCH_DISLODGED_WEIGHT": 0.5,
+    "SEARCH_LEARNED_WEIGHT": 0.49,
+    "OPP_MODEL_LEVEL": 0,
+    "COMPETITION_WEIGHT": 1131
+   },
+   "fitness": null,
+   "generations": 0,
+   "parent": "g5-15ce"
+  },
+  "g6-ed17": {
+   "genome": {
+    "SPRING_ATTACK_WEIGHT": 967,
+    "SPRING_DEFENSE_WEIGHT": 100,
+    "FALL_ATTACK_WEIGHT": 717,
+    "FALL_DEFENSE_WEIGHT": 150,
+    "SEARCH_DISLODGED_WEIGHT": 0.5,
+    "SEARCH_POS_WEIGHT": 2.0,
+    "SEARCH_RESTARTS": 1,
+    "OPP_MODEL_LEVEL": 0,
+    "STRENGTH_WEIGHT": 1279,
+    "COMPETITION_WEIGHT": 1233
+   },
+   "fitness": null,
+   "generations": 0,
+   "parent": "g4-c2bdxg5-859c"
   }
  },
  "hall_of_fame": [
@@ -189,6 +197,25 @@
    "generations": 3,
    "parent": "bismarckxtalleyrand",
    "last": 0.0522
+  },
+  {
+   "gen": 5,
+   "name": "g4-c2bd",
+   "genome": {
+    "SPRING_ATTACK_WEIGHT": 967,
+    "SPRING_DEFENSE_WEIGHT": 100,
+    "FALL_ATTACK_WEIGHT": 850,
+    "FALL_DEFENSE_WEIGHT": 150,
+    "SEARCH_DISLODGED_WEIGHT": 0.5,
+    "SEARCH_POS_WEIGHT": 2.0,
+    "SEARCH_RESTARTS": 1,
+    "OPP_MODEL_LEVEL": 0,
+    "STRENGTH_WEIGHT": 1279
+   },
+   "fitness": 0.0693,
+   "generations": 2,
+   "parent": "g2-0ed5",
+   "last": 0.0875
   }
  ]
 }

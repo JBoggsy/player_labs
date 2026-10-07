@@ -58,6 +58,12 @@ submit it if it beats the champion.
 
 ## Idea queue (top = next; edit freely, strike what's done)
 
+0. When the leaguesim-blucher and leaguesim-machiavelli runs finish, submit the winner as the next
+   `webdip-dumbbot` version if it beats the champion. Then run a **Kissinger league-sim**:
+   `wd.py tourney --fixed kissinger --agents random,calhamer,machiavelli,bismarck,metternich,talleyrand,napoleon
+   --games 24 --parallel 2 --image webdip-bot:v6c --out local_runs/leaguesim-kissinger`.
+   Its level-1 opponent model was wrong against DumbBots (0.38) but matches a field of search
+   bots.
 1. Measure pop1 (all 7 personalities). Freeze the winner as `field/<name>_vN` and make it the new arena field.
 2. Retreat and build search: choose builds and retreats by evaluating next-phase outcomes with fastadj.
 3. Opponent model upgrade: sample opponents from the SEARCH policy (cheap now), not only DumbBot. This is the iterated best-response / self-play step.
