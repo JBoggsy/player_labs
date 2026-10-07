@@ -312,14 +312,29 @@ def _ensure_images(images_json):
             subprocess.check_call(["docker", "tag", img["public_image_uri"], local])
 
 
-def _run_one(manifest, image, run, variant, out):
+def _run_one(manifest, image, run, variant, out, attempts=3):
+    """Run one local episode; re-check images first and retry if no results appear.
+
+    Another session's `docker image prune` can delete images mid-batch; the failed
+    episode then leaves an empty dir (containers never created)."""
+    import shutil
+
+    out = Path(out)
     cmd = ["uv", "run", "coworld", "run-episode", str(manifest), image, "--variant", variant,
            "--output-dir", str(out), "--timeout-seconds", "6000"]
     cmd += [f"--run={token}" for token in run]
     cmd += [f"--secret-env={kv}" for kv in ARENA_ENV]
     env = {**__import__("os").environ, "DOCKER_DEFAULT_PLATFORM": "linux/amd64"}
-    code = subprocess.call(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    slim_replay(Path(out))
+    code = 1
+    for attempt in range(attempts):
+        _ensure_images(manifest.parent / "coworld_images.json")
+        code = subprocess.call(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if (out / "results.json").exists():
+            break
+        for child in out.iterdir() if out.exists() else []:
+            if child.name != "seating.json":
+                shutil.rmtree(child) if child.is_dir() else child.unlink()
+    slim_replay(out)
     return code
 
 
