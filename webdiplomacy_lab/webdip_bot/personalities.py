@@ -80,6 +80,20 @@ PERSONALITIES = {
         "overrides": {"OPP_MODEL_LEVEL": 2},
         "motto": "Thinks you think it thinks: opponents best-respond to best-responders (level 2).",
     },
+    "fabius": {
+        "base": "search",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "SEARCH_RISK": 0.8, "SEARCH_DISLODGED_WEIGHT": 6.0,
+                      "SPRING_ATTACK_WEIGHT": 500, "SPRING_DEFENSE_WEIGHT": 500,
+                      "FALL_ATTACK_WEIGHT": 450, "FALL_DEFENSE_WEIGHT": 550},
+        "motto": "Cunctator: wins by not losing. Plans for the worst opponent sample, never gives ground.",
+    },
+    "garibaldi": {
+        "base": "search",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "SPRING_ATTACK_WEIGHT": 950, "SPRING_DEFENSE_WEIGHT": 100,
+                      "FALL_ATTACK_WEIGHT": 850, "FALL_DEFENSE_WEIGHT": 150, "SEARCH_DISLODGED_WEIGHT": 0.5,
+                      "SEARCH_POS_WEIGHT": 2.0},
+        "motto": "The Thousand: Kissinger's foresight with a red shirt's appetite for the attack.",
+    },
 }
 
 
