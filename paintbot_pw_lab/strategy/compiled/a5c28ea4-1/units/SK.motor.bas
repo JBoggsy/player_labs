@@ -464,9 +464,3 @@ SUB sk_motor__finish_cover_capture(sk_motor_capture_x, sk_motor_capture_y)
   sk_motor__cover_capture_ticks_total = sk_motor__cover_capture_ticks_total + 1
   sk_motor__act(sk_motor_capture_x, sk_motor_capture_y, 1)
 END SUB
-
-' Shared-focus capability instrumentation; all weapon mechanics remain in act().
-SUB sk_motor__focus_act(sk_motor_gx, sk_motor_gy, sk_motor_hold)
-  sk_motor__focus_attack_ticks_total = sk_motor__focus_attack_ticks_total + 1
-  sk_motor__act(sk_motor_gx, sk_motor_gy, sk_motor_hold)
-END SUB

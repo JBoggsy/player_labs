@@ -73,9 +73,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   selfX does not change during a tick, so storing it here gives the same values.
 
 ### K.squad_target
-- Summary: Four capturer/escort pairs choose distinct frontier hearts using visible pair anchors.
+- Summary: The heart that our squad of four attacks, derived from squad arithmetic, heart
+  ownership and our own avoid memory.
 - Spec: In `__update`, on every tick, do Steps 1 to 4 in order.
-  First save previous_objective = objective.
   Step 1 (stall memory). This step reads the value of `objective` from the previous tick. It is 0
   before the first assignment, not -1. When `worldTick MOD progress_period = 0`: set
   `px = selfX - progress_x` and `py = selfY - progress_y`. If
@@ -99,30 +99,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   At the end of each pass: if `pass = squad`, set `objective = choice`. Else, if `pass < squad`,
   set `other = choice`. After both passes: if `objective < 0 AND other >= 0`, set
   `objective = other`.
-  Step 3b (four-pair frontier allocation). Save legacy_objective = objective. This is only a
-  same-tick reference for activation and must not influence the new selection.
-  Set squad = member \ 2 and seat = (member MOD 2) * 2. There are four pairs; seat0 captures,
-  seat2 escorts using the existing cover capability. Initialize assigned(0) through assigned(3)
-  to -1. For pass = 0 through3 in order, set ref_x = homeX and
-  ref_y = homeY + (pass * 2 - 3) * pair_lane_offset. If selfTeam = 1, set
-  ref_y = mirror_y - ref_y. Let leader = pass * 4 + selfTeam and escort = leader + 2.
-  Use selfX,selfY as ref_x,ref_y if selfId = leader. Otherwise, if visible(leader), use
-  playerX(leader),playerY(leader). Otherwise use selfX,selfY if selfId = escort.
-  Otherwise, if visible(escort), use playerX(escort),playerY(escort). Otherwise retain the
-  home-lane anchor. Read no invisible player's position. Set choice = -1, choice_cost = 2147483647.
-  For each j from0 while j < heartCount() AND j <64, skip hearts already owned by selfTeam
-  or equal to any assigned(k) for k < pass. Compute dx = (controlX(j) - ref_x) \ 8,
-  dy = (controlY(j) - ref_y) \ 8 and cost = dx * dx + dy * dy. Subtract neutral_bonus
-  if controlOwner(j) = -1. Add avoid_penalty if pass = squad AND avoid_until(j) > worldTick.
-  Strictly lower cost wins, with lowest heart index on ties. After this pass set assigned(pass)
-  to choice. After all four passes, set objective = assigned(squad). If this is -1, set
-  objective to the first nonnegative assigned(k) in order0,1,2,3, or retain -1 if none exists.
-  Preserve an already-started capture: only when previous_objective >=0 AND
-  previous_objective < heartCount() AND previous_objective <64, read its state. If it is
-  not owned by selfTeam, controlCaptureTeam(previous_objective) = selfTeam, and our squared
-  distance to that heart <= capture_lock_sq, set objective = previous_objective.
-  Finally, when objective >=0 AND objective <> legacy_objective, increment frontier_changed_total.
-  The counter persists for the match and measures changed target decisions, not captures.
   Step 4 (idle capture). If `objective >= 0 AND seat >= 2`: if
   `controlCaptureTeam(objective) = selfTeam`, set `idle_capture = 0`. Else add 1 to
   `idle_capture`. In all other cases do not change `idle_capture`.
@@ -131,13 +107,11 @@ Reading aid (the compiler receives component fields, not this introduction):
   `controlX`, `controlY`, `controlOwner`, `controlCaptureTeam`
 - Memory: avoid_until (64 cells, a private array, ticks), progress_x, progress_y, objective and
   idle_capture persist for the whole match. Nothing resets them on death, respawn or a rule
-  change. All start at 0. Also assigned (4 cells, private scratch) and frontier_changed_total
-  are private; frontier_changed_total persists and starts at0.
+  change. All start at 0.
 - Outputs:
-  - frontier_changed_total -- target decisions changed by four-pair frontier allocation
   - objective -- the target heart index, or -1 when there is none
-  - squad -- pair index0 through3, from selfId
-  - seat -- 0 for the pair capturer or2 for its escort
+  - squad -- 0 or 1, from selfId
+  - seat -- 0 to 3, our place in the squad (2 and 3 cover)
   - idle_capture -- ticks in a row that our team was not capturing the objective (cover seats)
   - heart_count -- heartCount() on this tick
 - Log: objective, idle_capture every 24 ticks
@@ -146,9 +120,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - stall_sq = 40000 square cm -- base.bas value, less than 2 m of progress
   - far_sq = 160000 square cm -- base.bas value, more than 4 m from the heart
   - avoid_ticks = 360 ticks -- base.bas value, fifteen seconds
-  - pair_lane_offset = 1000 cm -- home fallback lanes for four pairs
-  - capture_lock_sq = 14400 square cm -- keep a started capture within1.2m
-  - ref_offset = 1500 cm -- legacy two-squad reference for activation only
+  - ref_offset = 1500 cm -- base.bas value, squad reference point above or below home
   - mirror_y = 4000 cm -- base.bas value, blue mirrors the reference y about this line
   - neutral_bonus = 20000 -- base.bas value, cost bonus of a neutral heart
   - avoid_penalty = 4000000 -- base.bas value, cost added to an avoided heart on our own pass
@@ -156,10 +128,10 @@ Reading aid (the compiler receives component fields, not this introduction):
   - Believed: objective is logged as a heart index or -1. Reads: `K.squad_target`.objective
   - True: the logged objective equals the replay re-computation using public heart state and this cog's reconstructed avoid memory. Reads: `K.squad_target`.objective, replay
 - Status: specified (2026-10-05)
-- Rationale: More independent capturers can reach distinct frontier hearts sooner. Visible pair
-  leaders anchor travel cost; unseen pairs use public home lanes. Different observations and
-  private avoid memory can still cause temporary disagreement, so this is not perfect consensus.
-  Splitting into smaller groups can lose fights; measure that against territorial gains.
+- Rationale: base.bas says the target is a pure function of public heart state. That is not
+  exactly true. Each cog applies its own avoid_until memory in its own pass. A squad 1 cog
+  predicts the squad 0 choice without squad 0's avoid memory. So two cogs of one squad can
+  disagree after one of them marks a heart as stalled.
 
 ### K.contacts
 - Summary: The visible enemy we fight, the visible enemy carrier, and the local fight balance.
@@ -178,6 +150,31 @@ Reading aid (the compiler receives component fields, not this introduction):
   `foes_seen`, add `playerX(i)` to `foe_sum_x` and `playerY(i)` to `foe_sum_y`. If
   `d2 < near_foe_sq`, add 1 to `foes_near`.
   For a teammate seat (`i MOD 2 = selfTeam`): if `d2 < near_friend_sq`, add 1 to `friends_near`.
+  Step 2b (local shared focus). Set focus_ready =0. Save legacy_best = best. Retain the original selection when
+  best >=0 AND playerCarrying(best) is true; guard the index before reading it. Otherwise
+  choose a supported focus target with the following deterministic ranking.
+  Set focus_choice = -1, focus_support = 0 and focus_hp = 2147483647. For each enemy-parity
+  seat i from0 through15, only when i <> selfId AND visible(i) AND playerHp(i) >0,
+  compute physical d2 from self. Use i only when d2 <= gunRange() * gunRange().
+  Start support = 1 for self. For each j from0 through15, count it once only when j <> selfId,
+  j MOD2 = selfTeam, visible(j), playerHp(j) >0, squared distance from j to self <= support_sq,
+  and squared distance from j to i <= teammate_reach_sq. These are visibility/range proxies,
+  not proof the ally sees the target, has a ready gun, or has a clear shot.
+  Ignore candidates with support <2. Prefer greater support, then lower playerHp(i), then
+  lower seat index. Save the chosen enemy in focus_choice and its support and HP in the
+  other two variables. If i = focus_target AND worldTick < focus_until AND support >=2,
+  remember it as a valid locked target for this tick. Initialize locked_valid = 0 before
+  the loop, set it to1 only by that rule. After the loop, when locked_valid =1, use
+  focus_target as focus_choice regardless of ranking, and increment focus_held_total.
+  If focus_choice >=0, set best = focus_choice and focus_ready =1. When best <> focus_target OR
+  worldTick >= focus_until, set focus_target = best and focus_until = worldTick + focus_ticks.
+  Recompute best_cost using the original d2 - (3 - playerHp(best)) * hp_weight and
+  subtract carrier_bonus if playerCarrying(best). If no supported target exists, leave
+  best and best_cost at their original values and set focus_target = -1, focus_until =0.
+  On the original-carrier bypass, also clear focus_target and focus_until. Finally, increment
+  focus_changed_total once when best <> legacy_best. Both counters persist for the match.
+  Step 2b is the only behavior change. Preserve all original near counts, velocity tracking,
+  range gating, weapon cadence, teammate fire checks, retreat eligibility and heart choice.
   Step 3. Set `best_vx = 0` and `best_vy = 0`. If `best >= 0 AND seen_tick(best) = worldTick - 1`,
   set `best_vx = playerX(best) - old_x(best)` and `best_vy = playerY(best) - old_y(best)`.
   The memory arrays start at 0, so on tick 1 this test compares with 0. Keep that.
@@ -187,11 +184,16 @@ Reading aid (the compiler receives component fields, not this introduction):
   `foes_seen > 0`. Else set both to 0.
 - Sources: `selfId`, `selfTeam`, `selfX`, `selfY`, `worldTick`, `visible`, `playerX`, `playerY`,
   `playerHp`, `playerCarrying`, `gunRange`
-- Memory: range_rejected_total persists for the whole match, initialized to 0.
+- Memory: range_rejected_total, focus_changed_total and focus_held_total persist for the whole
+  match, initialized to0. Initialize focus_target to -1 and focus_until to0 in __init.
+  These two fields persist across ticks and clear when no supported target exists.
   Also, old_x, old_y and seen_tick (16 cells each, private arrays) persist for the whole match.
   Step 3 reads them before Step 4 overwrites them. That is the same as base.bas, which aims
   first and updates old positions after aiming.
 - Outputs:
+  - focus_ready -- 1 when the chosen target has at least two visible nearby support proxies
+  - focus_changed_total -- target decisions changed from original ranking by shared focus
+  - focus_held_total -- ticks retaining a valid supported target inside the focus commitment
   - best -- the enemy seat to fight, or -1
   - best_cost -- the cost of best (smaller is more urgent)
   - best_vx -- best's x movement since the previous tick, or 0
@@ -205,6 +207,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   - range_rejected_total -- cumulative visible enemy observations excluded by the real gun range but within the former range
 - Log: best, foes_near, friends_near, range_rejected_total every 24 ticks
 - Params:
+  - support_sq = 1440000 square cm -- allies within12m contribute to shared pressure
+  - teammate_reach_sq = 4549689 square cm -- conservative normal gun reach2133cm
+  - focus_ticks = 12 ticks -- half-second target commitment, conditional on visibility and support
   - hp_weight = 160000 -- base.bas value, cost bonus per missing hit point
   - carrier_bonus = 2500000 -- base.bas value, cost bonus of a heart carrier
   - former_range_sq = 27562500 square cm -- former 52.5 m cap, used only for activation tracing
@@ -278,6 +283,20 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Rationale: The heart_count term covers a base.bas case. With no heart, the retreat block finds
   no heart and keeps the earlier goal.
 
+### S.focus_attack
+- Summary: Nearby allies can concentrate on a visible target, without abandoning an active capture.
+- Spec: Set on =0. If focus_ready =1 of `K.contacts` AND carrying =0, set on =1.
+  Read objective of `K.squad_target`. Only when objective >=0 AND objective < heartCount()
+  AND objective <64, read that heart. If controlCaptureTeam(objective) = selfTeam and
+  (controlX(objective) - selfX) * (controlX(objective) - selfX) +
+  (controlY(objective) - selfY) * (controlY(objective) - selfY) <= capture_lock_sq, set on =0.
+- Uses: `K.contacts`, `K.squad_target`
+- Params:
+  - capture_lock_sq = 14400 square cm -- preserve an ongoing capture within1.2m
+- Checks:
+  - Believed: supported focus eligibility is logged with the selected rule. Reads: PWD.f
+- Status: specified (2026-10-06)
+
 ### S.supply_worth
 - Summary: A wanted supply is remembered and no close fight stops us from fetching it.
 - Spec: Set `on = 1` when `nearest >= 0` of `K.pickups` and
@@ -326,6 +345,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   once, then calls sk_motor__act(gx, gy, 1). Only C.cover_heart calls this helper when it is
   already inside the objective capture ring and our team is capturing there. The forced
   holding flag uses the existing motor ring-preserving footwork. No other motor logic changes.
+  The helper sk_motor__focus_act(gx, gy, hold) increments focus_attack_ticks_total and
+  calls sk_motor__act(gx, gy, hold). Only C.focus_attack calls it. The counter starts at0
+  and persists for the match.
   Before footwork, compute spray_distance_sq from self to the current best target's actual
   playerX/playerY coordinates when best of `K.contacts` is nonnegative. Use this distance
   instead of best_cost in both spray-range tests: footwork want_shot and the gun's firing
@@ -338,6 +360,7 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
+  - focus_attack_ticks_total -- actual supported focus capability ticks
   - root -- the result of the last sk_motor__isqrt call
   - threw -- 1 on a commanded or forced grenade release tick, else 0
   - release_charge -- observed charge on this release decision
@@ -364,6 +387,27 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ## Capabilities
+
+### C.focus_attack
+- Summary: Close together on the supported target, then hold useful firing range.
+- Spec: __start does nothing. In __tick read best from `K.contacts`. It is valid because
+  S.focus_attack is on only when the shared focus scan selected a visible supported target.
+  Set dx = playerX(best) - selfX and dy = playerY(best) - selfY. Call sk_motor__isqrt(dx * dx + dy * dy)
+  of `SK.motor`, then read root from `SK.motor` as distance. Set reach = gun_standoff,
+  or spray_standoff when hasSpray is true. If distance > reach, set goal_x =
+  playerX(best) - dx * reach \ distance and goal_y = playerY(best) - dy * reach \ distance,
+  and hold =0. Otherwise set goal_x = selfX, goal_y = selfY and hold =1.
+  Call sk_motor__focus_act(goal_x, goal_y, hold), then set status =0.
+  Existing motor aiming, weapon safety, fire timing and grenade commitment remain unchanged.
+- Uses: `K.contacts`, `SK.motor`
+- Params:
+  - gun_standoff = 1700 cm -- close enough for normal shared gun pressure
+  - spray_standoff = 600 cm -- close enough for the existing spray behavior
+- Done when: never
+- Checks:
+  - Acted: the focus rule chooses the approach or hold goal while retreat and supply retain priority. Reads: PWD.r, replay
+  - Result: joint damage pressure and kills per enemy damage increase without losing more territory. Reads: replay
+- Status: specified (2026-10-06)
 
 ### C.take_heart
 - Summary: Stand in the capture ring of the squad target (squad seats 0 and 1).
@@ -490,18 +534,18 @@ Reading aid (the compiler receives component fields, not this introduction):
 ## Strategy
 
 ### ST.roles
-- Summary: Four pairs per team, each with one ring capturer and one escort.
-- Spec: Pair is ((selfId \ 2) MOD8) \ 2. Even team-member indices capture;
-  odd team-member indices escort. K.squad_target exposes seat0 for capturers and seat2 for escorts.
+- Summary: Two squads of four per team. Seats 0 and 1 of a squad take the ring, seats 2 and 3 cover.
+- Spec: The squad seat is `((selfId \ 2) MOD 8) MOD 4`. Ring seats have squad seat 0 or 1.
+  Cover seats have squad seat 2 or 3.
 - Roles squad:
-  - ring = seats 0,1,4,5,8,9,12,13
-  - cover = seats 2,3,6,7,10,11,14,15
+  - ring = seats 0,1,2,3,8,9,10,11
+  - cover = seats 4,5,6,7,12,13,14,15
 - Checks:
   - Acted: ring seats select only ring or shared rules. Reads: PWD.r
-- Status: specified (2026-10-06)
+- Status: specified (2026-10-05)
 
 ### ST.rules
-- Summary: Retreat beats resupply, resupply beats the squad target, the squad target beats the default goal.
+- Summary: Retreat beats resupply, then supported focus combat, then squad territory, then default goal.
 - Spec: Evaluate the rules below each tick. The highest priority rule whose condition holds wins.
 - Checks:
   - Acted properly: re-running selection from the logged flags gives the logged rule. Reads: PWD.r, PWD.f, PWP.n
@@ -510,6 +554,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   comes last, then supply, then the squad target. These priorities give the same order.
 - `R.fall_back` [400]: WHEN `S.losing_fight` DO `C.fall_back`
 - `R.resupply` [300]: WHEN `S.supply_worth` DO `C.resupply`
+- `R.focus_attack` [250]: WHEN `S.focus_attack` DO `C.focus_attack`
 - `R.take_heart` [200]: WHEN `S.has_target_heart` DO `C.take_heart` FOR squad=ring
 - `R.cover_heart` [200]: WHEN `S.has_target_heart` DO `C.cover_heart` FOR squad=cover
 - `R.default_goal` [100]: ALWAYS DO `C.default_goal`
@@ -533,21 +578,21 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy frontier_changed_total from `K.squad_target` into the same-named output.
-  Copy spray_distance_shots_total, continued_total, forced_total and
+  On a send, copy focus_changed_total from `K.contacts` and focus_attack_ticks_total from `SK.motor`.
+  Copy spray_distance_shots_total, forced_total and
   tracking_updates_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
-- Uses: `K.contacts`, `K.squad_target`, `SK.motor`, `P.shout`
+- Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
 - Outputs:
-  - frontier_changed_total -- changed frontier targets through this status snapshot
+  - focus_changed_total -- changed focus decisions through this status snapshot
+  - focus_attack_ticks_total -- supported focus capability ticks through this status snapshot
   - spray_distance_shots_total -- newly enabled spray requests through this status snapshot
-  - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
-- Log: frontier_changed_total, spray_distance_shots_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total
+- Log: focus_changed_total, focus_attack_ticks_total, spray_distance_shots_total, forced_total, tracking_updates_total, cover_capture_ticks_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

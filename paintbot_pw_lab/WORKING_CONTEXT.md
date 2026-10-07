@@ -8,8 +8,8 @@ sub_1616ba24-8791-47aa-9f13-51931d9a42db (orchestrator authorization).
 I18 Richard confirmation: +.0981375,95%CI[+.0172507,+.1790243],200/arm;
 xolod -.0062674,95%CI[-.0225313,+.0099966],48/arm. Finish remaining guards and
 report any regression. Existing i19-i22 v8-control cohorts remain immutable.
-Current i23 source rebases frontier pairs onto v10; i24 will rebase supported focus
-attack independently onto v10. Both get fresh full-roster controls against v10.
+I23 frontier pairs on v10 passed as a5c28ea4-1. Current i24 source rebases supported
+focus attack independently onto v10. Both get fresh full-roster controls against v10.
 I17 retreat eligibility regressed and is excluded from combinations.
 
 No daily cap; balance floor10,000 and per-iteration approximately600 credits. Respect pending
@@ -115,7 +115,7 @@ Heartland memberships and the orchestrator's stopgap are outside this optimizer'
 Parent is submitted v10/build7faadaa4-1, UUID8c4947c7-0679-4826-a653-9de20c62ffa3.
 I13–i16 completed inconclusively against Richard. V10 spray distance and v12 gun corridor
 have positive point estimates; VERDICT-17 authorizes testing their combination without
-requiring individual significance. No proven new winner or optimizer league submission.
+requiring individual significance. I18 confirms v10 on Richard; remaining guards are pending. No optimizer league submission.
 
 I17 v13/buildd68b2194-2 COMPLETE1192/1192: Richard−.063002,95%CI[−.116387,−.009617].
 Regressed; exclude from combinations.596 creation previews, health coverage in REPORT-17.
