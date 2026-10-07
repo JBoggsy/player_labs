@@ -21,6 +21,6 @@
 - Before reactivating M3, port its inactive codec runtime and regenerate its units for Bassy.
   Current v10 qualification does not cover M3; use a separate source-directed change.
 
-- Await orchestrator direction on a fresh v22-versus-v10 comparison: handoff rounds 888–893
-  have Richard 4/7 games, exceeding the one-third trigger. Preserve an xolod guard because
-  v22 previously regressed there. No cohort is queued; field watch belongs to orchestrator cron.
+- Finish the explicitly authorized i32 v22/v10 comparison, then stand by. Fixed 57% Richard /
+  43% xolod decision and full cohort are in WORKING_CONTEXT and DESIGN-32. No follow-on
+  cohorts or field watcher; orchestrator cron owns monitoring.

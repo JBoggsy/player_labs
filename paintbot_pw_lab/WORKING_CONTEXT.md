@@ -2,10 +2,31 @@
 
 ## Current objective and boundary
 
-**Standing by. v10 remains champion.** The orchestrator closed i31: v26 failed its
-registered gate. No new candidates, hosted cohorts, optimizer pollers or field watcher.
-The orchestrator owns the two-hourly field/engine cron and will wake this agent on change.
-Do not restart the previous continuous loop from old briefs or worker PID files.
+**I32 active: one fresh v22-versus-v10 A/B, then standing by.** The orchestrator
+explicitly reopened reserve v22 after Richard reached 4/7 recent pairings. No policy
+change or upload. I31 remains rejected; the field watcher stays stopped and the
+orchestrator owns two-hourly cron. Do not resume continuous candidate pipelining.
+
+Fixed cohort: Richard 400 games/arm, xolod 300/arm, six small guards 8/arm each
+(finist, zhar, relh, basic-v22, daveey/Alpha, Rohit), balanced sides: 1,496 games,
+40 requests, approximately 748 credits. This explicit design overrides the earlier
+roughly 600-credit iteration guideline; retain the 10,000 balance floor. Balance
+before admission: 15,440.89268, leaving 14,692.89268 after the full estimated reserve.
+
+Decision metric: D = 0.57*dRichard + 0.43*dXolod. Fixed weights from rounds 888–893;
+SE = sqrt(0.57²*Var(dRichard) + 0.43²*Var(dXolod)), independent fresh games and
+side-balanced opponent deltas. Nominal 95% normal CI; no pooling earlier cohorts,
+optional stopping, or uncertainty adjustment for the fixed pairing weights.
+Print SUBMIT CANDIDATE only if D >= +0.02, lower95%CI > 0, xolod lower95%CI >= -0.03,
+and no episode failures or verified bad candidate seats. Small guards are descriptive,
+not extra statistical vetoes. Only recommend; no league submission.
+
+Candidate v22: UUID `ae54d4e0-1032-4d74-9767-69cd5d30cfa8`, immutable build
+`9ed1e02e-1`. Freshly resolved v22 and v10 identities and eight opponent versions.
+Doctor passes on 0.3.124. Frozen design: `tmp/collab/optimizer/DESIGN-32.md`;
+requests: `episode_data/optimizer-i32/requests/manifest.json`; results/report:
+`tmp/collab/optimizer/REPORT-32.md`. Admission/results workers only, >=120s cadence,
+skip terminal requests and exit when done. Finalizer prints the decision, then STANDING BY.
 
 Champion: `jb-pw-opt:v10`, UUID `8c4947c7-0679-4826-a653-9de20c62ffa3`, immutable
 build [`7faadaa4-1`](strategy/compiled/7faadaa4-1/report.md), source `7faadaa4`.
@@ -83,7 +104,7 @@ Latest six-round check (888–893, all completed): **Richard 4/7 (57.1%), xolod 
 Richard games were in rounds 891–893, so the sample already shows a recent shift. This is
 above the orchestrator's one-third trigger. Recommend a fresh v22 vs v10 A/B, Richard-focused
 with a substantial xolod guard, before any submission. The seven-game mix is uncertain and
-the old effects may not replicate; no new cohort was queued. Evidence:
+the old effects may not replicate; this triggered the subsequently authorized i32 cohort above. Evidence:
 `tmp/collab/optimizer/standby-six-rounds.json` and `standby-pairing-mix.json`.
 
 ## Environment and operational handoff
@@ -98,14 +119,14 @@ Coworld 0.1.57 and softmax-cli 0.26.38 were release-checked during i31; refresh 
 future CLI diagnosis. Broader neural/oracle references retain `PW_DOCS_SHA=118e1619`.
 M3 comms remains inactive and unqualified on current Bassy; see [comms.md](strategy/comms.md).
 
-No active optimizer cohort remains. Admission/results workers exit on terminal work;
+Only i32 is active. Admission/results workers exit on terminal work;
 field_watch.py is stopped by explicit handoff. Dashboard 8810 stays off. Do not poll
 terminal requests for optional artifacts. Future authorized polling/retries: at least
 120 seconds, bounded artifacts, finite exit. No hosted self-play. Local games establish
 runtime/activation/mechanisms, never competitive superiority. No optimizer league
 submission, public writes or git push without authorization.
 
-Credits: no daily cap; preserve the 10,000 balance floor, roughly 600 per authorized
-iteration. I31 preview was 600; snapshots include refill and concurrent spending, so
+Credits: no daily cap; preserve the 10,000 balance floor, roughly 600 per ordinary authorized
+iteration, with the explicit i32 design authorizing approximately 748. I31 preview was 600; snapshots include refill and concurrent spending, so
 net account movement is not attributable i31 cost. Requests and previews stay in the
 frozen manifest; account observations in `tmp/collab/optimizer/credit-observations.jsonl`.

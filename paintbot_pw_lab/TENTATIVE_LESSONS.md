@@ -1,7 +1,7 @@
 # Supported findings and remaining hypotheses
 
-Current synthesis after i31, on rules 49 / 0.3.123–0.3.124. The optimizer is standing by;
-these findings do not authorize new experiments. The orchestrator owns field monitoring.
+Current synthesis after i31, on rules 49 / 0.3.123–0.3.124. The orchestrator authorized one fresh v22/v10 comparison (i32), then standby;
+these findings do not authorize other experiments. The orchestrator owns field monitoring.
 Exact identities and champion lineage are in [WORKING_CONTEXT.md](WORKING_CONTEXT.md).
 `REPORT-N` references below are local `tmp/collab/optimizer/REPORT-N.md` evidence.
 
