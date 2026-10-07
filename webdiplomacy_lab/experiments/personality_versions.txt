@@ -5,3 +5,4 @@ metternich 67b98a36-df5a-401d-aa52-12d118cd3a97
 talleyrand 266670b8-4fa2-45cb-bc78-6c43b4daf007
 napoleon 312b0a45-f31e-4fbd-9106-daaafcb36782
 blucher 4247912e-737b-4731-948d-99c7cd2d8194
+machiavelli-v2 39a7f008-692b-4247-95b0-78dc19bdc200
