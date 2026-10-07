@@ -45,10 +45,14 @@ backed by a measured result in `experiments/ledger.jsonl`.
   two years ahead (R² 0.75) dropped arena score from 0.64 to 0.33. Its features reward
   standing next to targets instead of taking them. Use learned terms only as small blends
   and verify them in paired games.
+- **Don't stack small null effects.** The final four-way test of Kissinger (48 games, paired)
+  found no gain from risk aversion 0.5 (−0.055), build search (+0.010), or builds + risk +
+  diplomacy combined (−0.016). Fabius (risk 0.8 plus defensive weights) lost by 0.122 (z = −2.6).
+  Plain Kissinger remains the final policy.
 - **Evolution needs a strong anchor.** With Calhamer as the anchor, evolved genomes won by
   tuning against each other's quirks. With the champion as the anchor, none beat it over 53
-  generations. Use evolution to suggest knobs (it repeatedly found risk aversion ≈ 0.5), then
-  test them with paired A/Bs.
+  generations. Use evolution only to suggest knobs, then test them with paired A/Bs: its
+  repeated pick, risk aversion ≈ 0.5, did not survive the paired test.
 - **Freeze reference opponents and pin images by tag.** Other sessions prune Docker images
   and rebuild tags. `wd.py` re-pulls game images, refuses missing candidate images, and
   slims replays (the disk runs near full).
