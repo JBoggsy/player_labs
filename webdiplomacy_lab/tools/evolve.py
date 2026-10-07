@@ -66,7 +66,7 @@ SEEDS = {
     "napoleon-r1": {"SEARCH_ROLLOUT": 1, "SEARCH_RESTARTS": 1},
     "default": {},
 }
-ANCHOR = "calhamer"
+ANCHOR = "machiavelli"  # the current champion: fitness = beating the best, not the average
 
 
 def policy_string(genome):
