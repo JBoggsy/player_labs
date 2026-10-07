@@ -139,6 +139,13 @@ class SearchBot:
             self.parent = {t: self.b.province(t) for t in self.b.terr}
             own_model = DumbBot(self.variant, self.board, self.country, self.phase, self.turn, self.rng, board_model=b)
             our_dumb = [own_model.choose(slots) for _ in range(n_samples)]
+        level1 = None
+        if config.OPP_MODEL_LEVEL >= 2:
+            # Level 2: every opponent best-responds to level-1 versions of the others.
+            level1 = {c: [self._improve_for(c, models[c], theirs[c], dumb_samples[c][j], j, models, theirs,
+                                            dumb_samples, mine, our_dumb, legal) for j in range(n_samples)]
+                      for c in models}
+            self.trace["opp_level2_phases"] += 1
         for j in range(n_samples):
             sample = {}
             raw = []
@@ -146,7 +153,9 @@ class SearchBot:
                 d = dumb_samples[c][j]
                 if self.rng.random() < self._dumb_share(c):
                     chosen = d
-                    if config.OPP_MODEL_LEVEL >= 1:
+                    if level1 is not None:
+                        chosen = self._improve_for(c, models[c], theirs[c], level1[c][j], j, models, theirs, level1, mine, our_dumb, legal)
+                    elif config.OPP_MODEL_LEVEL >= 1:
                         chosen = self._improve_for(c, models[c], theirs[c], d, j, models, theirs, dumb_samples, mine, our_dumb, legal)
                 else:
                     chosen = [self.rng.choice(legal[u["id"]]) for u in theirs[c]]

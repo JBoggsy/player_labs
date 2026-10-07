@@ -75,6 +75,11 @@ PERSONALITIES = {
         "overrides": {"SEARCH_RESTARTS": 1},
         "motto": "No regrets: plays toward an equilibrium of everyone's best plans (SearchBot-style).",
     },
+    "kissinger2": {
+        "base": "search",
+        "overrides": {"OPP_MODEL_LEVEL": 2},
+        "motto": "Thinks you think it thinks: opponents best-respond to best-responders (level 2).",
+    },
 }
 
 
