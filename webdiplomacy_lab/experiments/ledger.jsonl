@@ -1,0 +1,7 @@
+{"date":"2026-10-06","run":"arena-search-c","question":"v2 search vs DumbBot field","image":"webdip-bot:dev","games":24,"result":{"slot0_score":0.556,"se":0.056},"verdict":"baseline for search line"}
+{"date":"2026-10-06","run":"arena-v3a-vs-dumb","question":"joint pairs/convoys + adaptive opp model vs DumbBot field","image":"webdip-bot:v3a","games":23,"result":{"slot0_score":0.571,"diff_vs_v2_adj":0.018,"p":0.76},"verdict":"null vs DumbBot; vs random field 11/12 solo"}
+{"date":"2026-10-06","run":"search-v3-vs-random (hosted)","question":"v3 vs random filler","games":26,"result":{"score":1.0,"solo":1.0},"verdict":"league objective saturated; v3 submitted"}
+{"date":"2026-10-06","run":"arena-v3b-share-vs-dumb","question":"SC-share objective (package adjudicator)","image":"webdip-bot:v3b","games":19,"result":{"slot0_score":0.679},"verdict":"promising, partial batch (arena died)"}
+{"date":"2026-10-06","run":"arena-v4a-vs-dumb","question":"fastadj + 16 opp samples/12 seeds","image":"webdip-bot:v4a","games":15,"result":{"slot0_score":0.756},"verdict":"best so far; partial batch"}
+{"date":"2026-10-06","run":"arena-v4b-rollout-vs-dumb","question":"restarts + spring rollout re-rank","image":"webdip-bot:v4b","games":23,"result":{"slot0_score":0.549},"verdict":"negative vs v4a (confounded with restarts)"}
+{"date":"2026-10-07","run":"filler-validation-pop1 (hosted)","question":"personality fillers work hosted","games":3,"result":"stuck: platform artifact_transport_error / k8s proxy SSL errors","verdict":"retry when infra healthy; fillers unchanged"}
