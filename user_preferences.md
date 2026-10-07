@@ -87,7 +87,8 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
 
 - **Pipeline independent candidates in parallel.** Single-change siblings of the same submitted
   parent may each upload and run a separate A/B without waiting for one another. Combine
-  supported winners afterwards and evaluate the combination. Campaign-specific budgets
+  candidates afterwards and evaluate the combination; the active campaign decides its evidence
+  threshold. Campaign-specific budgets
   belong in the owning lab context. (Stated 2026-10-06.)
 
 - **Local self-play is not a performance signal.** Use local runs only for runtime health,

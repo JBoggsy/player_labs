@@ -136,7 +136,7 @@ Reading aid (the compiler receives component fields, not this introduction):
 ### K.contacts
 - Summary: The visible enemy we fight, the visible enemy carrier, and the local fight balance.
 - Spec: In `__update`, on every tick, do Steps 1 to 4 in order.
-  Step 1. Set `best = -1`, `best_cost = 2147483647`, `thief = -1`, `foes_near = 0`, `fight_foes = 0`,
+  Step 1. Set `best = -1`, `best_cost = 2147483647`, `thief = -1`, `foes_near = 0`,
   `friends_near = 1` (we count ourselves), `foe_sum_x = 0`, `foe_sum_y = 0`, `foes_seen = 0`.
   Step 2. For `i = 0` to 15, use seat i only when `i <> selfId AND visible(i)`. Set
   `dx = playerX(i) - selfX`, `dy = playerY(i) - selfY`, `d2 = dx * dx + dy * dy`.
@@ -148,9 +148,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   `range_rejected_total`. This counter is cumulative across ticks, starts at zero, and
   never changes target ranking or other behavior. Then add 1 to
   `foes_seen`, add `playerX(i)` to `foe_sum_x` and `playerY(i)` to `foe_sum_y`. If
-  `d2 < near_foe_sq`, add 1 to `foes_near`. In that case, also add 1 to
-  `fight_foes` when `d2 <= gunRange() * gunRange()`. Keep the original enemy
-  count, target ranking and friendly count unchanged.
+  `d2 < near_foe_sq`, add 1 to `foes_near`.
   For a teammate seat (`i MOD 2 = selfTeam`): if `d2 < near_friend_sq`, add 1 to `friends_near`.
   Step 3. Set `best_vx = 0` and `best_vy = 0`. If `best >= 0 AND seen_tick(best) = worldTick - 1`,
   set `best_vx = playerX(best) - old_x(best)` and `best_vy = playerY(best) - old_y(best)`.
@@ -172,7 +170,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   - best_vy -- best's y movement since the previous tick, or 0
   - thief -- the highest-index visible enemy seat that carries a heart, or -1
   - foes_near -- visible enemy seats closer than 26 m
-  - fight_foes -- visible enemy seats within both the original near radius and our current gun reach
   - friends_near -- 1 plus visible teammate seats closer than 12 m
   - foes_seen -- visible enemy seats at any range
   - foe_cx -- mean x of visible enemy seats, or 0
@@ -242,23 +239,16 @@ Reading aid (the compiler receives component fields, not this introduction):
 ## Situations
 
 ### S.losing_fight
-- Summary: Retreat when visible enemies within our gun reach outnumber nearby support.
+- Summary: We see more near enemies than near friends, so we refuse the fight.
 - Spec: Set `on = 1` when
-  `fight_foes - friends_near >= 1 AND carrying = 0 AND heart_count > 0`, using
-  fight_foes and friends_near of `K.contacts`, and heart_count of `K.squad_target`.
-  Else set `on = 0`. After computing on, if on = 0 AND carrying = 0 AND
-  heart_count > 0 AND foes_near - friends_near >= 1, increment retreat_range_saved_total.
-  Here foes_near is the original 26m count from `K.contacts`. The cumulative counter
-  starts at zero and persists. It counts rejected retreat eligibility, not damage avoided.
-  Preserve the nearby friendly radius, every other rule and the retreat destination.
+  `foes_near - friends_near >= 1 AND carrying = 0 AND heart_count > 0`, using the outputs of
+  `K.contacts` and `K.squad_target`. Else set `on = 0`.
 - Uses: `K.contacts`, `K.squad_target`
-- Outputs:
-  - retreat_range_saved_total -- retreat eligibility rejected only by the current gun-reach count
 - Checks:
   - Believed: the flag is logged with the decision. Reads: PWD.f
-- Status: specified (2026-10-06)
-- Rationale: Loss replays show distant enemy observations triggering high-priority retreats.
-  This tests staying engaged longer. Enemy snipers and long throws can still threaten us.
+- Status: specified (2026-10-05)
+- Rationale: The heart_count term covers a base.bas case. With no heart, the retreat block finds
+  no heart and keeps the earlier goal.
 
 ### S.supply_worth
 - Summary: A wanted supply is remembered and no close fight stops us from fetching it.
@@ -308,11 +298,16 @@ Reading aid (the compiler receives component fields, not this introduction):
   once, then calls sk_motor__act(gx, gy, 1). Only C.cover_heart calls this helper when it is
   already inside the objective capture ring and our team is capturing there. The forced
   holding flag uses the existing motor ring-preserving footwork. No other motor logic changes.
+  The helper sk_motor__regroup(gx, gy, has_buddy) increments regroup_ticks_total when
+  has_buddy = 1, otherwise local_retreat_ticks_total, then calls sk_motor__act(gx, gy, 0).
+  These cumulative counters start at zero and persist for the match. Only C.fall_back calls it.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
+  - regroup_ticks_total -- fallback ticks steering behind a visible teammate
+  - local_retreat_ticks_total -- fallback ticks steering locally without a teammate anchor
   - root -- the result of the last sk_motor__isqrt call
   - threw -- 1 on a commanded or forced grenade release tick, else 0
   - release_charge -- observed charge on this release decision
@@ -437,29 +432,38 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ### C.fall_back
-- Summary: Head for the heart that is far from the enemies and near us.
-- Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: set
-  `cx = foe_cx` and `cy = foe_cy` of `K.contacts`. Set `away = -1` and
-  `away_score = -2147483647`. For `j = 0` while `j < heartCount() AND j < 64`, set `ex = (controlX(j) - cx) \ 16`,
-  `ey = (controlY(j) - cy) \ 16`, `mx = (controlX(j) - selfX) \ 16`,
-  `my = (controlY(j) - selfY) \ 16`, and `score = ex * ex + ey * ey - (mx * mx + my * my) \ 2`.
-  If `score > away_score`, set `away = j` and `away_score = score`. Step 2: if `away >= 0`, the
-  goal is `(controlX(away), controlY(away))`. Else the goal is our own position. Step 3: call
-  `sk_motor__act(goal_x, goal_y, 0)` of `SK.motor`. Step 4 (quiet approach): call the host command
-  `sneak(1)` when all of these hold. best of `K.contacts` is less than 0. `soundCount() > 0`.
-  objective of `K.squad_target` is 0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
-  (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 5:
-  set status to 0.
-- Uses: `K.contacts`, `K.squad_target`, `SK.motor`
+- Summary: Regroup behind a nearby teammate, or make a short local retreat and reassess.
+- Spec: `__start` does nothing. On every `__tick`, do these steps in order.
+  Step 1: read cx = foe_cx and cy = foe_cy from `K.contacts`. Set buddy = -1 and
+  buddy_cost = 2147483647. For i = 0 to 15, consider only i <> selfId with visible(i)
+  and i MOD 2 = selfTeam. Let dx = playerX(i) - selfX, dy = playerY(i) - selfY and
+  d2 = dx * dx + dy * dy. When d2 > buddy_min_sq AND d2 <= buddy_max_sq AND
+  d2 < buddy_cost, set buddy = i and buddy_cost = d2. Lowest seat wins exact ties.
+  Step 2: when buddy >= 0, set anchor_x = playerX(buddy), anchor_y = playerY(buddy)
+  and has_buddy = 1. Otherwise set anchor_x = selfX, anchor_y = selfY and has_buddy = 0.
+  Set dx = anchor_x - cx and dy = anchor_y - cy. Set scale to the larger of ABS(dx)
+  and ABS(dy). If scale = 0, replace dx with homeX - selfX and dy with homeY - selfY,
+  and recompute scale. When scale > 0, set goal_x = anchor_x + dx * retreat_step \ scale
+  and goal_y = anchor_y + dy * retreat_step \ scale. Otherwise set goal_x = anchor_x
+  and goal_y = anchor_y. This places the goal behind the teammate relative to the visible
+  enemy centroid; without a teammate it retreats at most retreat_step on each axis.
+  Step 3: call sk_motor__regroup(goal_x, goal_y, has_buddy) of `SK.motor`, then set status = 0.
+  The motor still aims, dodges, fires and finishes grenades normally. Do not change retreat
+  eligibility, squad objectives, supply gates or capture behavior. Recompute each tick;
+  do not retain a stale teammate location. No quiet-approach override in this capability.
+- Uses: `K.contacts`, `SK.motor`
 - Params:
-  - quiet_sq = 810000 square cm -- base.bas value, within 9 m of the objective
+  - buddy_min_sq = 90000 square cm -- do not chase a teammate already within 3 m
+  - buddy_max_sq = 6760000 square cm -- seek support within 26 m
+  - retreat_step = 600 cm -- offset behind the anchor, bounded per axis
 - Done when: never
 - Checks:
-  - Acted: the rule selects this capability when we are losing the fight. Reads: PWD.r, PWD.c
-  - Result: we survive the activation. Reads: PWE.e, replay
-- Status: specified (2026-10-05)
-- Rationale: `S.losing_fight` needs a heart, so away is never -1 here. A losing fight also means a
-  visible target, so Step 4 never fires. Both stay for a literal match with base.bas.
+  - Acted: fallback goals follow the visible teammate anchor or local retreat construction. Reads: replay
+  - Result: isolated deaths per minute decrease and owned hearts at 60 seconds increase. Reads: replay
+- Status: specified (2026-10-06)
+- Rationale: Distant-heart retreat destinations can disperse the squad and concede territory.
+  A nearby teammate is not guaranteed safe: joining one can move toward a fight or cluster
+  us under grenades. This structural regrouping hypothesis needs hosted evaluation.
 
 ## Strategy
 
@@ -507,21 +511,20 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy blocked_total, continued_total, forced_total and
-  tracking_updates_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry. Also copy retreat_range_saved_total from `S.losing_fight`
-  into the same-named output.
-- Uses: `K.contacts`, `SK.motor`, `S.losing_fight`, `P.shout`
+  On a send, copy regroup_ticks_total, local_retreat_ticks_total, continued_total, forced_total and
+  tracking_updates_total and cover_capture_ticks_total from `SK.motor` into same-named outputs for periodic telemetry.
+- Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
 - Outputs:
-  - blocked_total -- disarmed start blocks through this status snapshot
+  - regroup_ticks_total -- teammate regroup ticks through this status snapshot
+  - local_retreat_ticks_total -- local retreat ticks through this status snapshot
   - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
   - cover_capture_ticks_total -- cover ticks holding an active capture through this snapshot
-  - retreat_range_saved_total -- distant-enemy retreat rejections through this snapshot
-- Log: blocked_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total, retreat_range_saved_total
+- Log: regroup_ticks_total, local_retreat_ticks_total, continued_total, forced_total, tracking_updates_total, cover_capture_ticks_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

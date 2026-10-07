@@ -137,3 +137,16 @@ queued after i17 admissions. More basic/Rohit guards, no pooling with i14 discov
 Combined v10 discovery+confirmation estimate592 credits. DESIGN-18 owns final criteria.
 First i17 balance interval:18990.73681 to18986.91647, net−3.82034 while admitted previews150;
 this account-level movement is not measured cohort spend.
+
+## Active VERDICT-17 direction
+
+Prefer structural changes predicted to move Richard score by at least+.10; predictions
+are planning hypotheses, not gains inferred from the miner. REPORT-18 ranks regrouping,
+frontier assignment and focus fire. Current source is iteration19 regrouping on v8,
+with original retreat eligibility (v13 remains a separate child). Compile source through
+immutable pipeline; report runtime activation and then hosted200 Richard episodes/arm.
+I18 spray confirmation was resized before admission to584games/292credits, including
+200 Richard games/arm and unchanged other opponents. Old888/444 sizing is superseded.
+Test combinations when two changes have positive hosted point estimates, even when not
+individually significant. V10+v12 is queued as iteration20; not a proven combination.
+League submission remains the orchestrator's action after a supported submission candidate.
