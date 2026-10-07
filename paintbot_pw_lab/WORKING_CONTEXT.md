@@ -30,9 +30,8 @@ updates across22/32 recorded seats. Grenade enemyHP563→814, teammate69→127,s
 in matched24 local games. Fresh240-game A/B is running,192 Richard plus48 xolod;
 Richard alone is primary. Full result: v6 56/96 vs v3 36/96 wins, score delta+.197569
 [+.072426,+.322713]; xolod both24/24, delta−.006563. H1 supported. V6 is now research
-parent; v3 remains the last confirmed submitted version. Candidate seat-status artifacts
-verify16/120 episodes (128 seats), all clean; remaining coverage pending. Recommend
-orchestrator league replacement of v3; optimizer does not submit. Actual previews120 new credits on384 previous; request
+parent; orchestrator confirms v6 submitted as sub_9d9511f9-264c-4ed5-b0f8-026d924377b4; v6 is baseline/parent. Candidate seat-status artifacts
+verify16/120 episodes (128 seats), all clean; remaining coverage pending. V6 submission is orchestrator-confirmed; optimizer did not submit. Actual previews120 new credits on384 previous; request
 manifest are authoritative. REPORT-6.md records evidence and limits.
 See `tmp/collab/optimizer/REPORT-2.md` for current build and qualification evidence. The optimizer never submits,
 posts publicly or pushes Git. The orchestrator owns submission and its separate upstream
@@ -153,10 +152,11 @@ Heartland memberships and the orchestrator's stopgap are outside this optimizer'
 
 ## Current pipeline source
 
-Working source is the parked iteration8 child98c3a918/build98c3a918-1. Its noncritical
-resupply distance gate activates but did not help locally:27/56 vs v7,46/56 upstream versus
-parent53/56. Do not upload. Emergency healing is unchanged. REPORT-8.md records the evidence.
-Original v7 source remains recoverable at7c0a5e01 and v6 at21b9c416. Await the fixed v7/v6
-Richard A/B verdict before the next uploaded candidate; do not stack on this parked child.
-Iteration7 all240 episodes requested for120credits; cumulative committed624. Streaming
-metadata/status collection continues in current_results_queue.py. No league submission.
+Iteration8 resupply child98c3a918-1 is parked:27/56 vs v7,46/56 upstream versus parent53/56.
+Working source now starts from submitted v6/source21b9c416 and adds only a spray-cone
+teammate veto. Rules49 spray is much wider than the original95cm gun corridor. Counter
+spray_hold_total counts otherwise ready trigger opportunities newly withheld. V7 firing
+cadence and iteration8 resupply gate are absent. REPORT-9.md records evidence and limits.
+Compile/screen locally; hold upload until v7 A/B decides. Iteration7 all240 episodes requested
+for120credits; cumulative committed624. Streaming continues in current_results_queue.py.
+V6 is orchestrator-submitted as sub_9d9511f9-264c-4ed5-b0f8-026d924377b4 and is baseline.

@@ -255,14 +255,7 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Spec: Set `on = 1` when `nearest >= 0` of `K.pickups` and
   `(best < 0 OR best_cost > fight_clear_sq OR critical = 1)` with best and best_cost of
   `K.contacts`, and critical of `K.pickups`. Else set `on = 0`.
-  After that original test, if on = 1 AND critical = 0 AND best >= 0, set
-  dx = playerX(best) - selfX and dy = playerY(best) - selfY. If
-  dx * dx + dy * dy <= fight_clear_sq, set on = 0 and increment near_fight_blocked_total.
-  This cumulative counter starts at zero and persists for the match. It counts eligibility
-  rejections, not capability changes. Critical resupply bypasses this added distance check.
 - Uses: `K.pickups`, `K.contacts`
-- Outputs:
-  - near_fight_blocked_total -- original resupply eligibility rejected by actual close-enemy distance
 - Params:
   - fight_clear_sq = 1440000 -- base.bas value, cost above which the target does not hold us
 - Checks:
@@ -301,11 +294,13 @@ Reading aid (the compiler receives component fields, not this introduction):
   charge logic. Never release merely because visibility or eligibility disappeared.
   This is charge continuity with safe target tracking, not a guarantee that teammates cannot
   enter the eventual blast.
-  When the existing target, teammate-line and spray-range checks permit firing, call shootAt
-  every tick. Let the engine enforce gun windup, gun cooldown and spray recovery. Keep the
-  former gun_wait timer only for activation tracing. Increment repeat_trigger_total when
-  firing is requested while that timer is positive. Reset the timer to its original light
-  or heavy value only when it reaches zero; it no longer gates shooting.
+  When a spray can is held, add a spray-cone teammate veto to the original gun-line check.
+  Use the same selected aim and visible observed-teammate loop. Set spray_clear to 1 first.
+  For each teammate, if along > 0 AND along <= 905 AND across <= along * 4 \ 5 + 55,
+  set spray_clear to 0. This is rules49 spray reach850 plus body radius55, with cone slope4/5.
+  When the original spray-range test permits firing and clear = 1 but spray_clear = 0,
+  set clear to 0. Also increment spray_hold_total if gun_wait = 0 on that tick.
+  Keep the original gun corridor, private gun timer, all aim calculations and grenade tracking.
   Count starts, disarmed start blocks, ticks where continuation avoids the original release,
   and forced disarmed releases. Expose the release charge and locked need for each throw.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
@@ -320,7 +315,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- cumulative ticks where continuity prevents the old early release
   - forced_total -- cumulative releases forced by becoming disarmed during a charge
   - tracking_updates_total -- cumulative armed charging ticks with a changed safe aim or charge requirement
-  - repeat_trigger_total -- safe trigger requests made while the former firing timer is positive
+  - spray_hold_total -- otherwise ready spray trigger requests withheld by the added teammate cone
 - Params:
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
   - lead_ticks = 6 ticks -- base.bas value, the gun windup
@@ -329,7 +324,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - gun_wait_heavy = 73 ticks -- base.bas value, cooldown with armor, in a trench, or carrying
   - spray_range_sq = 640000 -- base.bas value, the spray gun shoots only below this target cost
 - Checks:
-  - Acted properly: a shot is ordered only when the teammate line is clear and the spray range condition holds; engine cooldown determines acceptance. Reads: replay
+  - Acted properly: a shot is ordered only when the gun wait is zero, the teammate line is clear, and the spray range condition holds. Reads: replay
   - Acted: committed grenade charge continues until its locked need unless equipment is lost or disarm forces release. Reads: replay
   - Result: grenade teammate and self damage per episode, with enemy damage retained. Reads: replay
   - Result: hit rate per shot at range. Reads: replay
@@ -500,21 +495,20 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy blocked_total, continued_total, forced_total, tracking_updates_total and
-  repeat_trigger_total from `SK.motor` into same-named outputs for periodic telemetry.
-  Also copy near_fight_blocked_total from `S.supply_worth` into its same-named output.
-- Uses: `K.contacts`, `SK.motor`, `S.supply_worth`, `P.shout`
+  On a send, copy starts_total, blocked_total, continued_total, forced_total and
+  tracking_updates_total and spray_hold_total from `SK.motor` into same-named outputs for periodic telemetry.
+- Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
 - Send when: `worldTick MOD 360 = selfId * 21`
 - Outputs:
+  - starts_total -- committed starts through this status snapshot
   - blocked_total -- disarmed start blocks through this status snapshot
   - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - tracking_updates_total -- safe aim/need changes through this status snapshot
-  - repeat_trigger_total -- safe requests during the former firing timer through this snapshot
-  - near_fight_blocked_total -- close-enemy resupply rejections through this status snapshot
-- Log: blocked_total, continued_total, forced_total, tracking_updates_total, repeat_trigger_total, near_fight_blocked_total
+  - spray_hold_total -- additional ready spray requests withheld through this status snapshot
+- Log: starts_total, blocked_total, continued_total, forced_total, tracking_updates_total, spray_hold_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

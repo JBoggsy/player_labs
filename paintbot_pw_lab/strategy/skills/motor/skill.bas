@@ -305,6 +305,7 @@ SUB sk_motor__gun()
     END IF
     ' Hold fire when a visible teammate (by observed slot parity) stands in the line.
     sk_motor__clear = 1
+    sk_motor__spray_clear = 1
     sk_motor__sx = sk_motor__tx - selfX
     sk_motor__sy = sk_motor__ty - selfY
     sk_motor__isqrt(sk_motor__sx * sk_motor__sx + sk_motor__sy * sk_motor__sy)
@@ -323,26 +324,31 @@ SUB sk_motor__gun()
           IF sk_motor__along > 0 AND sk_motor__along < sk_motor__reach AND sk_motor__across < 95 THEN
             sk_motor__clear = 0
           END IF
+          ' Rules 49 spray cone includes the victim body radius and extends beyond the aim point.
+          IF hasSpray AND sk_motor__along > 0 AND sk_motor__along <= 905 THEN
+            IF sk_motor__across <= sk_motor__along * 4 \ 5 + 55 THEN
+              sk_motor__spray_clear = 0
+            END IF
+          END IF
         END IF
         sk_motor__i = sk_motor__i + 1
       WEND
     END IF
     IF hasSpray = 0 OR k_contacts__best_cost < sk_motor__spray_range_sq THEN
-      IF sk_motor__clear THEN
-        ' The engine owns readiness; repeat the safe trigger without delaying cooldown relief.
-        IF sk_motor__gun_wait > 0 THEN
-          sk_motor__repeat_trigger_total = sk_motor__repeat_trigger_total + 1
-        END IF
-        shootAt(sk_motor__tx, sk_motor__ty)
-        ' Keep the former timer only to count requests that it would have suppressed.
+      IF hasSpray AND sk_motor__clear AND sk_motor__spray_clear = 0 THEN
+        sk_motor__clear = 0
         IF sk_motor__gun_wait = 0 THEN
+          sk_motor__spray_hold_total = sk_motor__spray_hold_total + 1
+        END IF
+      END IF
+      IF sk_motor__clear AND sk_motor__gun_wait = 0 THEN
+        shootAt(sk_motor__tx, sk_motor__ty)
+        sk_motor__gun_wait = sk_motor__gun_wait_light
+        IF armorHp > 0 OR trenchId >= 0 OR carrying THEN
+          sk_motor__gun_wait = sk_motor__gun_wait_heavy
+        END IF
+        IF hasSpray THEN
           sk_motor__gun_wait = sk_motor__gun_wait_light
-          IF armorHp > 0 OR trenchId >= 0 OR carrying THEN
-            sk_motor__gun_wait = sk_motor__gun_wait_heavy
-          END IF
-          IF hasSpray THEN
-            sk_motor__gun_wait = sk_motor__gun_wait_light
-          END IF
         END IF
       ELSE
         lookAt(sk_motor__tx, sk_motor__ty)
