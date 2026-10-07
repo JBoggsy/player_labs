@@ -1,15 +1,17 @@
-# Strategy: baseline (M1, a description of reference/base.bas)
+# Strategy: compiled foundation with measured improvements
 
 This file is the source of truth for our Paintbot PW policy. The compiled BASIC is a build
 product. Nobody edits compiled BASIC by hand. To change behavior, change this file or a
 `skill.bas` and recompile (docs/designs/2026-09-30-strategy-file-format.md).
 
-Thesis: this version describes `reference/base.bas` exactly. Its build must play like
-`base.bas`. It does not improve any behavior. All strategy arithmetic is int32. Use Bassy integer division `\`, which truncates
+Thesis: retain the foundation's squad play while closing the measured gap to upstream
+`reference/base-bassy-28030de6.bas`. Each behavior change has its own source commit,
+compiled build and local screen; hosted evaluation decides field strength.
+All strategy arithmetic is integer. Use Bassy integer division `\`, which truncates
 toward zero; never use fixed-point `/`. Boolean outputs specified as 0/1 must remain
 0/1 (use explicit branches, because Bassy comparisons return -1). Legacy scalar host
-observations remain valid on Bassy. Do not change strategy thresholds or behavior. Write every expression in the order given here, because the order of truncation
-changes results.
+observations remain valid on Bassy. Implement exactly the component specifications below.
+Write every expression in the given order, because truncation order changes results.
 
 Reading aid (the compiler receives component fields, not this introduction):
 
@@ -186,8 +188,10 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Status: specified (2026-10-05)
 
 ### K.pickups
-- Summary: Supplies seen in the last ten seconds, and the nearest one we want now.
-- Spec: In `__update`, on every tick, do Steps 1 to 3 in order.
+- Summary: Supplies seen in the last ten seconds, and the nearest one we want at our observed spawn HP.
+- Spec: In `__update`, first set `hp_cap = selfHp` when `selfHp > hp_cap`.
+  Set `critical = 1` when `selfHp > 0 AND selfHp * 3 <= hp_cap`, else 0.
+  Then do Steps 1 to 3 in order.
   Step 1 (refresh). For `i = 0` while `i < pickupCount() AND i < 64`: if `pickupVisible(i)`, set
   `mem_x(i) = pickupX(i)`, `mem_y(i) = pickupY(i)`, `mem_kind(i) = pickupKind(i)` and
   `mem_tick(i) = worldTick + 1`.
@@ -197,23 +201,30 @@ Reading aid (the compiler receives component fields, not this introduction):
   only when `carrying = 0 AND carrier = 0`. Set `nearest_cost = reach_sq`. For `j = 0` while
   `j < pickupCount() AND j < 64`, use j only when
   `mem_tick(j) > 0 AND worldTick - mem_tick(j) < memory_ticks`. Set `kind = mem_kind(j)` and
-  `wanted = (kind = 0 AND hasGrenade = 0) OR (kind = 2 AND selfHp < 3) OR (kind = 3 AND armorHp < 3 AND selfHp = 3)`.
+  `wanted = (kind = 0 AND hasGrenade = 0) OR (kind = 2 AND selfHp < hp_cap) OR (kind = 3 AND armorHp < 3 AND selfHp = hp_cap)`.
+  For activation tracing only, compute `old_wanted` with the same expression but both
+  `hp_cap` references replaced by 3. If the truth of wanted differs from old_wanted,
+  increment `hp_changed_total` once for this remembered pickup observation.
   If wanted: set `dx = mem_x(j) - selfX`, `dy = mem_y(j) - selfY`, and
   `cost = dx * dx + dy * dy`. Then, if
-  `kind = 2 AND selfHp = 1`, set `cost = cost \ 4`. Then, if
+  `kind = 2 AND critical = 1`, set `cost = cost \ 4`. Then, if
   `cost < arrive_sq AND pickupVisible(j) = 0`, set `mem_tick(j) = 0` and do not use j. Else, if
   `cost < nearest_cost`, set `nearest = j` and `nearest_cost = cost`.
   After the loop, if `nearest >= 0`, set `nearest_x = mem_x(nearest)` and
   `nearest_y = mem_y(nearest)`.
 - Sources: `pickupCount`, `pickupVisible`, `pickupX`, `pickupY`, `pickupKind`, `visible`,
   `playerCarrying`, `carrying`, `hasGrenade`, `selfHp`, `armorHp`, `selfX`, `selfY`, `worldTick`
-- Memory: mem_x, mem_y, mem_kind and mem_tick (64 cells each, private arrays) persist for the
+- Memory: hp_cap and hp_changed_total start at 0 and persist for the whole match.
+  mem_x, mem_y, mem_kind and mem_tick (64 cells each, private arrays) persist for the
   whole match and start at 0.
 - Outputs:
   - nearest -- the remembered supply to fetch, or -1
   - nearest_x -- its remembered x, or 0
   - nearest_y -- its remembered y, or 0
-- Log: nearest every 24 ticks
+  - hp_cap -- maximum selfHp observed since initialization
+  - critical -- 1 when alive and at most one third of hp_cap, else 0
+  - hp_changed_total -- cumulative remembered pickup observations whose eligibility changed with spawn-HP thresholds
+- Log: nearest, hp_cap, hp_changed_total every 24 ticks
 - Params:
   - memory_ticks = 240 ticks -- base.bas value, ten seconds
   - reach_sq = 4840000 square cm -- base.bas value, 22 m
@@ -242,8 +253,8 @@ Reading aid (the compiler receives component fields, not this introduction):
 ### S.supply_worth
 - Summary: A wanted supply is remembered and no close fight stops us from fetching it.
 - Spec: Set `on = 1` when `nearest >= 0` of `K.pickups` and
-  `(best < 0 OR best_cost > fight_clear_sq OR selfHp = 1)` with best and best_cost of
-  `K.contacts`. Else set `on = 0`.
+  `(best < 0 OR best_cost > fight_clear_sq OR critical = 1)` with best and best_cost of
+  `K.contacts`, and critical of `K.pickups`. Else set `on = 0`.
 - Uses: `K.pickups`, `K.contacts`
 - Params:
   - fight_clear_sq = 1440000 -- base.bas value, cost above which the target does not hold us
