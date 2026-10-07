@@ -38,18 +38,14 @@ posts publicly or pushes Git. The orchestrator owns submission and its separate 
 starter stopgap; do not replace that entrant or infer its identity from our upload.
 Rank-9 rating archaeology is explicitly dropped by VERDICT-0.
 
-Standing pipeline rule (orchestrator): while a hosted batch runs, diagnose and prepare the
-next single-change candidate locally on the current candidate; compile and screen vs v3,
-the parent candidate and upstream. Hold its upload until the running A/B decides its parent.
-The previous v5 pipeline child is parked after negative local screens. Working source is now
-the v7 candidate on v6: issue safe trigger requests every eligible tick and let engine
-cooldown/windup enforce firing cadence, with repeat_trigger_total activation. The uploaded
-v6 build remains immutable. Build7c0a5e01-1 passes G1–G5, with33/56 local wins vs v6,36/56 vs v3 and53/56
-upstream. Counter16374 across30/32seats,23477 lines without validation failures. Four matched
-local games show637→694 actual shots and152→160 gun enemyHP; not a field claim.
-Parent A/B supported v6. Child uploaded as jb-pw-opt:v7
-(cdb7b8d3-4b79-4690-bafd-7f5ffcfd1636);240 fresh A/B episodes against v6 are being created,
-192Richard/48xolod. REPORT-7.md records evidence and limits.
+Standing pipeline rule (orchestrator): prepare candidates while hosted batches run.
+Independent single-change children of the submitted parent may upload and run separate A/Bs
+in parallel; do not serialize siblings. Combine supported winners afterwards and evaluate
+the combination. V7 cadence and v8 capture completion are both children of submitted v6.
+V7 build7c0a5e01-1 UUIDcdb7b8d3-4b79-4690-bafd-7f5ffcfd1636 has240 A/B episodes
+(192Richard/48xolod); REPORT-7.md owns that decision. V8 build5cee1447-1 UUID
+32f1b591-b444-4210-94a8-35521d7f90f1 has its own fresh240-game A/B vs v6, same opponent
+allocation. REPORT-10.md and DESIGN-10.md own the capture experiment. Do not pool baselines.
 
 The pipeline remains strategy-as-source: edit `strategy/STRATEGY.md` or authored skills,
 commit inputs, then run `pw.py strategy compile`. Compiled builds are immutable. A compiler
@@ -138,7 +134,7 @@ reports to the orchestrator, not to James; see `tmp/collab/optimizer/` for brief
 - allowed_changes: any single attributable change to the strategy source or a skill, including
   targeting/range, grenade use, pickups, movement/routing, thresholds and constants, roles. A
   new win strategy or comms protocol needs an orchestrator PROCEED first.
-- credit_budget: 300 credits per iteration, 1,000 per day (budget 0.5 credits per episode).
+- credit_budget: 300 credits per iteration, 1,400 per day (budget 0.5 credits per episode).
 - max_iterations: 20. Stop rules in the loop skill mean "report to the orchestrator and wait
   for PROCEED", not "stop working".
 
@@ -161,5 +157,5 @@ exit pattern. Counter cover_capture_ticks_total records actual held-cover motor 
 REPORT-10.md contains opening/split/recapture analysis and limits. Build5cee1447-1 passes
 G1–G5; local38/56 vs v6,44/56 vs v3,54/56 upstream. Matched24 replays eliminate263
 cover-post resets; mean owned hearts30s2.625→3.417. Activation1,224 ticks across11/32 seats.
-Local-ready; hold upload until v7 decides. Spray guard51fe35f4-1 and resupply98c3a918-1 are not included.
-V6 remains submitted baseline sub_9d9511f9-264c-4ed5-b0f8-026d924377b4. Campaign624 credits.
+Uploaded as jb-pw-opt:v8; independent A/B against v6 authorized alongside v7. Spray guard51fe35f4-1 and resupply98c3a918-1 are not included.
+V6 remains submitted baseline sub_9d9511f9-264c-4ed5-b0f8-026d924377b4. Campaign744 credits committed; iteration10 actual previews120.

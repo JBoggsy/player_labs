@@ -76,3 +76,7 @@ sessions. Keep it tidy: one bullet per preference, drop ones that are superseded
   the deployed code, verify against source, record the mismatch in the lab's docs, and move on; do
   not raise it with the maintainer unless James asks. (Stated 2026-09-30.)
 
+- **Pipeline independent candidates in parallel.** Single-change siblings of the same submitted
+  parent may each upload and run a separate A/B without waiting for one another. Combine
+  supported winners afterwards and evaluate the combination. Campaign-specific budgets
+  belong in the owning lab context. (Stated 2026-10-06.)
