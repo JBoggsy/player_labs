@@ -23,7 +23,13 @@ Build `725f9cb0-1` passed and uploaded v32, UUID
 `5cf630d1-5cda-4e23-9d56-98fd52560b63`. Its own fresh400Richard+200xolod per arm
 cohort is queued alongside i37 with the same Richard-primary gate.
 I37 dodge is immutable build757ec5d2-1/v31 and its hosted cohort uses v29 controls.
-Guard-only child build `1fe285df-1` passed and uploaded as v30; not submitted.
+Guard-only child build `1fe285df-1` passed and uploaded as v30; not submitted. **Do not submit v30 alone.**
+Standing orchestrator rule: retain the geometry guard in v31/v32 and every future
+candidate, and ship it only with the next real gameplay improvement. The current
+league uses one map; the orchestrator estimates a submission sigma reset costs
+about6MMR, so this guard alone does not justify replacement. The orchestrator owns
+fieldwatch and will fast-track a response if the map/variant changes. Existing
+v31/v32 classifier units were verified to include the same exact geometry guard.
 Its26/26state-hash checks through800ticks match v29 on Heartwick and v10 on all12
 shipped alternate maps, both sides; compiler28-seed Heartwick play is identical.
 Dodge rebase i37 build `757ec5d2-1` passed and uploaded as v31, UUID
