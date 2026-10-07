@@ -291,7 +291,9 @@ Reading aid (the compiler receives component fields, not this introduction):
   and forced disarmed releases. Expose the release charge and locked need for each throw.
   Provide sk_motor__skip_quiet(), which increments persistent quiet_skipped_total by one.
   The counter starts at zero and counts skipped quiet-approach opportunities, not saved time.
-  It never changes motor commands.
+  It never changes motor commands. Also provide sk_motor__skip_resupply_quiet(), which
+  increments persistent resupply_quiet_skipped_total by one, starting from zero, without
+  changing motor commands. Keep these two counters separate.
 - Uses: `P.walkTo`, `P.lookAt`, `P.shootAt`, `P.chargeGrenade`, `K.contacts`, `K.self_motion`
 - Code: skills/motor/skill.bas
 - Outputs:
@@ -304,6 +306,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- cumulative ticks where continuity prevents the old early release
   - forced_total -- cumulative releases forced by becoming disarmed during a charge
   - quiet_skipped_total -- cumulative ticks where a heart capability skips the old slowdown
+  - resupply_quiet_skipped_total -- cumulative ticks where resupply skips its former slowdown
 - Params:
   - wet_cost = 6 -- base.bas value, a wet metre costs this many dry metres in the dry route
   - lead_ticks = 6 ticks -- base.bas value, the gun windup
@@ -398,7 +401,7 @@ Reading aid (the compiler receives component fields, not this introduction):
 - Summary: Walk to the remembered supply.
 - Spec: `__start` does nothing. `__tick` does these steps in order. Step 1: call
   `sk_motor__act(nearest_x, nearest_y, 0)` of `SK.motor`, with nearest_x and nearest_y of
-  `K.pickups`. Step 2 (quiet approach): call the host command `sneak(1)` when all of these
+  `K.pickups`. Step 2 (full-speed resupply): call sk_motor__skip_resupply_quiet() of `SK.motor` when all of these
   hold. best of `K.contacts` is less than 0. `soundCount() > 0`. objective of `K.squad_target` is
   0 or more. `(controlX(objective) - selfX) * (controlX(objective) - selfX) +
   (controlY(objective) - selfY) * (controlY(objective) - selfY) < quiet_sq`. Step 3: set status to 0.
@@ -482,7 +485,7 @@ Reading aid (the compiler receives component fields, not this introduction):
   `K.contacts` is 0 or more, shout "Contact! Cover this lane.". Else, if
   `foes_near - friends_near >= 1` of `K.contacts`, shout "Too many. Falling back.". Else shout
   "Moving with the squad.". Set sent to 1 on a tick with a shout, else 0.
-  On a send, copy blocked_total, continued_total and forced_total from `SK.motor` into same-named outputs for periodic telemetry. Also copy quiet_skipped_total from `SK.motor` into the same-named output.
+  On a send, copy blocked_total, continued_total and forced_total from `SK.motor` into same-named outputs for periodic telemetry. Also copy quiet_skipped_total and resupply_quiet_skipped_total from `SK.motor` into same-named outputs.
 - Uses: `K.contacts`, `SK.motor`, `P.shout`
 - Content: our contact state. No teammate decodes it.
 - Encoding: literal text, `shout(strNew("..."))`, with the three exact strings in Spec.
@@ -492,7 +495,8 @@ Reading aid (the compiler receives component fields, not this introduction):
   - continued_total -- rescued charging ticks through this status snapshot
   - forced_total -- disarmed forced releases through this status snapshot
   - quiet_skipped_total -- cumulative heart-capability ticks where the old quiet approach would activate
-- Log: blocked_total, continued_total, forced_total, quiet_skipped_total
+  - resupply_quiet_skipped_total -- cumulative resupply ticks where its old quiet approach would activate
+- Log: blocked_total, continued_total, forced_total, quiet_skipped_total, resupply_quiet_skipped_total
 - Directions: send
 - Checks:
   - Acted: the shout appears in the replay on the scheduled ticks. Reads: replay

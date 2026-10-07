@@ -446,3 +446,8 @@ END SUB
 SUB sk_motor__skip_quiet()
   sk_motor__quiet_skipped_total = sk_motor__quiet_skipped_total + 1
 END SUB
+
+' Separate attribution for the resupply-only extension of full-speed movement.
+SUB sk_motor__skip_resupply_quiet()
+  sk_motor__resupply_quiet_skipped_total = sk_motor__resupply_quiet_skipped_total + 1
+END SUB

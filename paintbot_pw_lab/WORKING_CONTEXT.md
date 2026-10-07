@@ -28,6 +28,12 @@ posts publicly or pushes Git. The orchestrator owns submission and its separate 
 starter stopgap; do not replace that entrant or infer its identity from our upload.
 Rank-9 rating archaeology is explicitly dropped by VERDICT-0.
 
+Standing pipeline rule (orchestrator): while a hosted batch runs, diagnose and prepare the
+next single-change candidate locally on the current candidate; compile and screen vs v3,
+the parent candidate and upstream. Hold its upload until the running A/B decides its parent.
+Current local child: iteration5 full-speed resupply on v5. The four v5 recordings attribute
+90% of remaining moving-sneak ticks to resupply. Upload held; no iteration5 credits spent.
+
 The pipeline remains strategy-as-source: edit `strategy/STRATEGY.md` or authored skills,
 commit inputs, then run `pw.py strategy compile`. Compiled builds are immutable. A compiler
 infrastructure change may edit runtime templates, generators and contracts; coordinate such
