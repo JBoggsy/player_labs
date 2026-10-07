@@ -263,7 +263,6 @@ Reading aid (the compiler receives component fields, not this introduction):
   It counts rejected resupply eligibility, not selected capabilities. Critical resupply
   bypasses this opening check. Cover seats and all behavior after opening_ticks are unchanged.
 - Uses: `K.pickups`, `K.contacts`, `K.squad_target`
-- Sources: `worldTick`, `controlOwner`
 - Outputs:
   - opening_supply_blocked_total -- noncritical resupply rejections for opening neutral capturers
 - Params:
