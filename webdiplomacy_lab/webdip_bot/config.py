@@ -36,3 +36,12 @@ SEARCH_TIME_BUDGET_S = float(__import__("os").environ.get("WEBDIP_SEARCH_BUDGET_
 SEARCH_SC_WEIGHT = 10.0
 SEARCH_POS_WEIGHT = 1.0
 SEARCH_DISLODGED_WEIGHT = 3.0
+SEARCH_PAIRS = 1  # joint move+support alternatives
+SEARCH_CONVOYS = 1  # joint convoyed-move + convoy alternatives
+# Opponent model: "dumbbot" (always DumbBot samples) or "adaptive" (per-power Bayesian mix of
+# DumbBot vs uniform-random legal orders, learned from each power's past orders).
+OPP_MODEL = "adaptive"
+OPP_PRIOR_LOGODDS = 0.0
+OPP_LOGODDS_CLIP = 8.0
+# Search objective: "sc" (our projected centres) or "share" (projected SC^2 share x34).
+SEARCH_OBJECTIVE = "sc"

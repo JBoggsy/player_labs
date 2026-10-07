@@ -11,6 +11,7 @@ would own if this were an autumn), plus a small positional term from DumbBot's n
 values, minus dislodged units.
 """
 
+import math
 import time
 
 import diplomacy
@@ -20,6 +21,7 @@ from webdip_bot.dipmap import COUNTRY, POWER, DipMap
 from webdip_bot.dumbbot import DumbBot
 
 _MAPS = {}
+_GAME = None
 
 
 def dipmap(variant):
@@ -36,6 +38,52 @@ class SearchBot:
         self.dumb = DumbBot(variant, board, country, phase, turn, rng)
         self.b = self.dumb.b
         self.trace = self.dumb.trace
+        self.api = self.context = None
+        self.memory = {}
+
+    def observe(self, api, context, state):
+        """Called by bot.py each phase; `state` persists across the whole game."""
+        self.api, self.context = api, context
+        self.memory = state.setdefault("search", {"logodds": {}, "pending": None})
+
+    def _update_beliefs(self):
+        """Score each opponent's last movement orders: DumbBot-like vs uniform-random legal.
+
+        `pending` holds last movement phase's DumbBot samples per unit. The log-odds per
+        power accumulate log(P_dumbbot(order) / P_random(order)); the opponent sample mix
+        uses sigmoid(log-odds) as the DumbBot share.
+        """
+        pending = self.memory.get("pending")
+        if not pending or self.api is None:
+            return
+        self.memory["pending"] = None
+        ref = (self.context.get("files") or {}).get("history")
+        if not ref:
+            return
+        history = self.api.file(ref)
+        entry = next((ph for ph in history.get("phases", []) if ph["turn"] == pending["turn"] and ph["phase"] == "Diplomacy"), None)
+        if entry is None:
+            return
+        for o in entry.get("orders") or []:
+            key = str(o["terrID"])
+            unit = pending["units"].get(key)
+            if unit is None or int(o["countryID"]) == self.country:
+                continue
+            sig = (o["type"], o["toTerrID"] or 0, o["fromTerrID"] or 0)
+            samples = unit["samples"]
+            matches = sum(1 for x in samples if tuple(x) == sig)
+            n_legal = max(unit["n_legal"], 1)
+            p_dumb = 0.9 * matches / len(samples) + 0.1 / n_legal
+            p_rand = 1.0 / n_legal
+            c = str(o["countryID"])
+            lo = self.memory["logodds"].get(c, config.OPP_PRIOR_LOGODDS) + math.log(p_dumb / p_rand)
+            self.memory["logodds"][c] = max(-config.OPP_LOGODDS_CLIP, min(config.OPP_LOGODDS_CLIP, lo))
+
+    def _dumb_share(self, c):
+        if config.OPP_MODEL != "adaptive":
+            return 1.0
+        lo = self.memory.get("logodds", {}).get(str(c), config.OPP_PRIOR_LOGODDS)
+        return 1.0 / (1.0 + math.exp(-lo))
 
     def choose(self, slots):
         if self.phase != "Diplomacy" or not slots:
@@ -52,17 +100,43 @@ class SearchBot:
         by_id = {u["id"]: u for u in b.all_units}
         mine = [by_id[s["unitID"]] for s in slots]
 
-        # 1. Opponent samples (each a {power: [order strings]}).
+        # 1. Opponent samples (each a {power: [order strings]}), DumbBot or uniform-random
+        # legal per power according to the adaptive belief.
+        self._update_beliefs()
         opponents = []
         models = {}
+        theirs = {}
         for c in {int(u["countryID"]) for u in b.units} - {self.country}:
             models[c] = DumbBot(self.variant, self.board, c, self.phase, self.turn, self.rng, board_model=b)
+            theirs[c] = [u for u in b.units if int(u["countryID"]) == c]
+        legal = {u["id"]: b.legal.movement(u) for us in theirs.values() for u in us}
+        dumb_samples = {c: [] for c in models}
         for _ in range(config.SEARCH_OPPONENT_SAMPLES):
             sample = {}
             for c, model in models.items():
-                theirs = [{"unitID": u["id"]} for u in b.units if int(u["countryID"]) == c]
-                sample[POWER[c]] = [self._dip(o) for o in model.choose(theirs)]
+                d = model.choose([{"unitID": u["id"]} for u in theirs[c]])
+                dumb_samples[c].append(d)
+                if self.rng.random() < self._dumb_share(c):
+                    chosen = d
+                else:
+                    chosen = [self.rng.choice(legal[u["id"]]) for u in theirs[c]]
+                    self.trace["opp_random_samples"] += 1
+                sample[POWER[c]] = [self._dip(o) for o in chosen]
             opponents.append(sample)
+        self.memory["pending"] = {
+            "turn": self.turn,
+            "units": {
+                str(u["terrID"]): {
+                    "n_legal": len(legal[u["id"]]),
+                    "samples": [[d[k]["type"], d[k]["toTerrID"] or 0, d[k]["fromTerrID"] or 0] for d in dumb_samples[c]],
+                }
+                for c in models
+                for k, u in enumerate(theirs[c])
+            },
+        }
+        shares = [self._dumb_share(c) for c in models]
+        if shares:
+            self.trace["opp_dumb_share_x100"] = round(100 * sum(shares) / len(shares))
         self.opponents = opponents
         self.sims = 0
 
@@ -77,9 +151,7 @@ class SearchBot:
         self.trace["search_seed_score"] = round(best_score, 1)
 
         # 3. Coordinate ascent over each unit's legal orders.
-        alternatives = [
-            [o for o in b.legal.movement(u) if o["type"] != "Convoy" and o.get("viaConvoy") != "Yes"] for u in mine
-        ]
+        joints = self._joint_alternatives(mine)
         improved_any = 0
         for _ in range(config.SEARCH_PASSES):
             changed = False
@@ -89,14 +161,16 @@ class SearchBot:
                 if time.monotonic() - started > config.SEARCH_TIME_BUDGET_S:
                     self.trace["search_budget_hit"] += 1
                     break
-                for alt in alternatives[i]:
-                    if _same(alt, best[i]):
+                for joint in joints[i]:
+                    if all(_same(o, best[k]) for k, o in joint.items()):
                         continue
-                    cand = best[:i] + [alt] + best[i + 1:]
+                    cand = [joint.get(k, o) for k, o in enumerate(best)]
                     s = self._evaluate(cand)
                     if s > best_score + 1e-9:
                         best, best_score, changed = cand, s, True
                         improved_any += 1
+                        if len(joint) > 1:
+                            self.trace["search_joint_improvement"] += 1
             if not changed:
                 break
         self.trace["search_improvements"] += improved_any
@@ -104,6 +178,56 @@ class SearchBot:
         self.trace["search_score"] = round(best_score, 1)
         self.trace["search_ms"] = round((time.monotonic() - started) * 1000)
         return [self.dumb._legal_or_hold(u, o) for u, o in zip(mine, best)]
+
+    def _joint_alternatives(self, mine):
+        """Per primary unit i: list of {unit index: order} changes to try together.
+
+        Singles: every legal non-convoy order of unit i. With SEARCH_PAIRS: unit i's move
+        to X plus a support of that move by another of our units (a supported attack only
+        pays off when both units change together, which single-unit ascent cannot find).
+        With SEARCH_CONVOYS: army i's convoyed move plus the Convoy orders of the fleets on
+        its path, when all of them are ours.
+        """
+        b = self.b
+        legal = [b.legal.movement(u) for u in mine]
+        index_at = {b.province(u["terrID"]): k for k, u in enumerate(mine)}
+        joints = []
+        for i, u in enumerate(mine):
+            here = b.province(u["terrID"])
+            options = [{i: o} for o in legal[i] if o["type"] != "Convoy" and o.get("viaConvoy") != "Yes"]
+            for o in legal[i]:
+                if o["type"] != "Move":
+                    continue
+                target = b.province(o["toTerrID"])
+                if o.get("viaConvoy") == "Yes":
+                    if not config.SEARCH_CONVOYS:
+                        continue
+                    path = o.get("convoyPath") or []
+                    fleets = [index_at.get(t) for t in path[1:]]
+                    if not fleets or None in fleets:
+                        continue
+                    joint = {i: o}
+                    for k in fleets:
+                        convoy = next((c for c in legal[k] if c["type"] == "Convoy" and c["fromTerrID"] == here
+                                       and b.province(c["toTerrID"]) == target), None)
+                        if convoy is None:
+                            break
+                        joint[k] = convoy
+                    else:
+                        options.append(joint)
+                        self.trace["search_convoy_options"] += 1
+                    continue
+                if not config.SEARCH_PAIRS:
+                    continue
+                for k, other in enumerate(legal):
+                    if k == i:
+                        continue
+                    support = next((c for c in other if c["type"] == "Support move" and c["toTerrID"] == target
+                                    and c["fromTerrID"] == here), None)
+                    if support is not None:
+                        options.append({i: o, k: support})
+            joints.append(options)
+        return joints
 
     def _dip(self, o):
         return self.dm.order(o, self.unit_at)
@@ -117,7 +241,10 @@ class SearchBot:
 
     def _adjudicate(self, mine, sample):
         self.sims += 1
-        g = diplomacy.Game()
+        global _GAME
+        if _GAME is None:
+            _GAME = diplomacy.Game()  # reused: set_state fully resets it, and it is ~1/3 cheaper
+        g = _GAME
         g.set_state(self.state)
         g.set_orders(POWER[self.country], mine)
         for power, orders in sample.items():
@@ -138,11 +265,17 @@ class SearchBot:
                 occupied[u[2:5]] = power
                 if power == me:
                     mine.append(u)
-        sc = 0
+        counts = {}
         for t, owner in self.b.owner.items():
             occ = occupied.get(self.dm.loc[t])
-            if occ == me or (occ is None and owner == self.country):
-                sc += 1
+            holder = occ if occ is not None else (POWER[owner] if owner else None)
+            if holder:
+                counts[holder] = counts.get(holder, 0) + 1
+        sc = counts.get(me, 0)
+        if config.SEARCH_OBJECTIVE == "share":
+            # The league's draw score: SC^2 / sum SC^2, scaled to SC units (x34).
+            total = sum(v * v for v in counts.values()) or 1
+            sc = 34.0 * sc * sc / total
         pos = 0.0
         vmax = max(self.dumb.value.values()) or 1.0
         for u in mine:

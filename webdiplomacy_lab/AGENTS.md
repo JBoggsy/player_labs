@@ -39,6 +39,7 @@ Single entry point: `uv run python webdiplomacy_lab/tools/wd.py`.
 | `wd.py metrics DIR... --policy NAME:vN [--json]` | Per-power score/final SCs/survival/solo vs field par, coverage, telemetry (rejections, exceptions, activation counters). Exit 2 = no target seats |
 | `wd.py seats DIR... [--policy NAME:vN]` | One JSON row per seat (SC trajectory by year, adjudicated order stats, our log summary) |
 | `wd.py local --image IMG --episodes N` | Local all-seat episodes (needs `coworld_pkg/` from `coworld download`) |
+| `wd.py arena --candidate POLICY[:K=V,...] [--field dumbbot_v1] --image TAG --episodes N --parallel P --out DIR` | **Local screening**: slot 0 = candidate, slots 1-6 = field, fresh seed per game. Read with `metrics DIR --slot 0`; parity is 1/7 = 0.143. Use a **distinct image tag per experiment**: rebuilding a tag mid-run silently switches later games to the new code |
 | `tools/compare.py BASE CAND --baseline A:vN --candidate B:vM` | `coworld-ab` adapter (groups: all + each power) |
 | `tools/features.py` | `coworld-hypothesis-miner` adapter over `wd.py seats` rows |
 
@@ -47,10 +48,11 @@ bodies and creation responses go under `experiments/<experiment>/` (committed).
 
 ## Player
 
-[`webdip_bot/`](webdip_bot/README.md): DumbBot (David Norman's heuristic bot) ported
-onto webDiplomacy's own map graph. It is the current acceptable baseline, not the
-final design. Build: `docker buildx build --platform linux/amd64 --load -t
-webdip-dumbbot:local webdiplomacy_lab/webdip_bot`. Upload as a player identity (James
+[`webdip_bot/`](webdip_bot/README.md): SearchBot (best response to sampled DumbBot
+opponents, adjudicated with the `diplomacy` package) on top of a DumbBot port. Policy
+lineage name on the platform: `webdip-dumbbot` (v1 = DumbBot, v2+ = SearchBot). Build:
+`docker buildx build --platform linux/amd64 --load -t webdip-bot:<tag>
+webdiplomacy_lab/webdip_bot`. Upload as a player identity (James
 Botts by default) using the isolated-credential recipe below.
 
 ## Identity hygiene

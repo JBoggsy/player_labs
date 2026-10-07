@@ -37,6 +37,10 @@ def policy_class(name):
         from webdip_bot.search import SearchBot
 
         return SearchBot
+    if name == "random":
+        from webdip_bot.field.random_legal import RandomLegal
+
+        return RandomLegal
     if name == "dumbbot_v1":
         from webdip_bot.field.dumbbot_v1 import DumbBot
 
