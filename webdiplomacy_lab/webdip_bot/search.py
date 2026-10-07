@@ -155,7 +155,7 @@ class SearchBot:
                     chosen = d
                     if level1 is not None:
                         chosen = self._improve_for(c, models[c], theirs[c], level1[c][j], j, models, theirs, level1, mine, our_dumb, legal)
-                    elif config.OPP_MODEL_LEVEL >= 1:
+                    elif config.OPP_MODEL_LEVEL >= 1 and self.rng.random() < config.OPP_LEVEL1_SHARE:
                         chosen = self._improve_for(c, models[c], theirs[c], d, j, models, theirs, dumb_samples, mine, our_dumb, legal)
                 else:
                     chosen = [self.rng.choice(legal[u["id"]]) for u in theirs[c]]

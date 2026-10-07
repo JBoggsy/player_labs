@@ -70,3 +70,6 @@ NASH_EVAL_SAMPLES = 24
 # Opponent-belief likelihood: "competent" (sensible orders count as competent) or "dumbbot"
 # (only DumbBot-matching orders do; mislabels strong non-DumbBot players as random).
 OPP_LIKELIHOOD = "competent"
+# With OPP_MODEL_LEVEL=1: probability that a given opponent sample is the improved (level-1)
+# plan rather than the raw DumbBot plan (a mixed opponent model).
+OPP_LEVEL1_SHARE = 1.0
