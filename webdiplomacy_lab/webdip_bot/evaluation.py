@@ -68,6 +68,11 @@ class PositionEvaluator:
         sc = counts.get(me, 0)
         if config.DIPLO and me == bot.country:
             sc += self.diplomacy_adjust(projected, me)
+        if bot.press and me == bot.country:
+            values = bot.press.get("center_values")
+            if values:
+                sc += sum(values.get(bot.b.owner.get(t), 0.0) for t, holder in projected.items()
+                          if holder == me and bot.b.owner.get(t) not in (None, me))
         sc = self.center_value(sc, fu, fo, moved, dislodged, units, orders, projected, me)
         if config.SEARCH_OBJECTIVE == "share":
             total = sum(v * v for v in counts.values()) or 1
