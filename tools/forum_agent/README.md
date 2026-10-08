@@ -21,26 +21,26 @@ lab's brief authorizes that specific post.
 | `<lab>/forum_agent/brief.md` | The lab's brief: forum slug, expected identity, signature, owned threads, embargoes, which document each topic is recorded in, and any authorized new posts. |
 | `<lab>/forum_agent/state.json` | The agent's memory between runs: seen post and comment ids, everything it wrote, open commitments, and an `attention` list for the human. Committed with the lab. |
 
-The first lab using it is Gods of the Arena:
-[`gods_of_the_arena_lab/forum_agent/`](../../gods_of_the_arena_lab/forum_agent/).
+No lab in this repository runs it at present; its first user, the Gods of the Arena
+lab, moved to the separate PlayerADE repository.
 
 ## Running
 
 One pass by hand:
 
 ```sh
-tools/forum_agent/run.sh gods_of_the_arena_lab/forum_agent/brief.md
+tools/forum_agent/run.sh <lab>/forum_agent/brief.md
 ```
 
-On a timer, per lab, with a launchd agent (macOS). The Gods of the Arena one is
-`~/Library/LaunchAgents/com.jamesboggs.forum-agent.gota.plist`, every 30 minutes,
-logging to `~/Library/Logs/forum-agent/gota/`:
+On a timer, per lab, with a launchd agent (macOS), for example
+`~/Library/LaunchAgents/com.jamesboggs.forum-agent.<lab>.plist` every 30 minutes,
+logging to `~/Library/Logs/forum-agent/<lab>/`:
 
 ```sh
-launchctl load ~/Library/LaunchAgents/com.jamesboggs.forum-agent.gota.plist    # install
-launchctl start com.jamesboggs.forum-agent.gota                                 # run now
-launchctl unload ~/Library/LaunchAgents/com.jamesboggs.forum-agent.gota.plist  # stop
-tail -f ~/Library/Logs/forum-agent/gota/stdout.log
+launchctl load ~/Library/LaunchAgents/com.jamesboggs.forum-agent.<lab>.plist    # install
+launchctl start com.jamesboggs.forum-agent.<lab>                                 # run now
+launchctl unload ~/Library/LaunchAgents/com.jamesboggs.forum-agent.<lab>.plist  # stop
+tail -f ~/Library/Logs/forum-agent/<lab>/stdout.log
 ```
 
 To add a lab: write its `forum_agent/brief.md` and an empty-ish `state.json`, copy the
