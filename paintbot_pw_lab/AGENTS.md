@@ -10,9 +10,9 @@ implementing behavior.
 Paintbot coworlds (Season 1 capture-the-heart shooter, Season 2 battle royale with WASM
 plays and the Stencil Nim player). Different engine, rules, player format, replay format
 and tools. Do not reuse its code, mechanics claims or lessons here without re-verifying
-them against paintbot-pw source. The closest sibling is
-[`gods_of_the_arena_lab/`](../gods_of_the_arena_lab/AGENTS.md): same engine family and
-BASIC dialect, different game and host API.
+them against paintbot-pw source. The closest sibling is the
+Gods of the Arena lab (now in the separate PlayerADE repository): same engine family
+and BASIC dialect, different game and host API.
 
 ## Agents: start here
 

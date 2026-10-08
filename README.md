@@ -45,11 +45,9 @@ player_labs/
   paintbot_lab/        sixth game lab — Paintbot, a 2-or-4-team capture-the-heart shooter on procgen maps (README + docs index)
   proxywar_lab/        seventh game lab — Proxy War, an OpenFront-fork RTS territory game with LLM/agent nations (own README)
   emergant_lab/        eighth game lab — Emerg-ant, a 16-agent repeated-food-capture colony shooter
-  gods_of_the_arena_lab/ ninth game lab — Gods of the Arena, a BASIC-scripted 5v5 lane battler (knowledge map in docs/research.md)
   sugarscape_lab/      tenth game lab — Sugarscape, a movement-policy lab over coworld-sugarscape (own README)
   paintbot_pw_lab/     eleventh game lab — Paintbot PW, the Polyworld rebuild of Paintbot: 8v8 heart-territory, BASIC policies (not paintbot_lab's game); agent entry point `paintbot_pw_lab/tools/pw.py`
   webdiplomacy_lab/    twelfth game lab — webDiplomacy, classic 7-power Diplomacy on the real webDiplomacy server; agent entry point `webdiplomacy_lab/tools/wd.py`
-  player_ade/          design for the web-UI agentic development environment on top of the lab (own README)
   pyproject.toml       uv project: coworld[auth] + the pinned players SDK (from git) + deps
 ```
 
@@ -125,6 +123,9 @@ upload → run an experience request → report + diagnose. After that you're in
   when you need implementation evidence. **Do not modify `~/coding/metta`; authorized Metta changes use a separate checkout.**
 
 ## Where to go next
+
+- The Gods of the Arena lab and PlayerADE (the web-UI agentic development
+  environment) moved to their own private repository, `JBoggsy/PlayerADE`.
 
 - [`AGENTS.md`](AGENTS.md) — the operating model and skills index (start here to *work*).
 - [`crewrift_lab/`](crewrift_lab/) — the first game lab (its README + AGENTS).
