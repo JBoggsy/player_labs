@@ -8,8 +8,10 @@ is specific to webDiplomacy.
 
 ## The game in one paragraph
 
-Seven powers, 34 supply centres, simultaneous orders, 18 centres to solo. The league
-plays `classic-gunboat` (no press, 1-minute phases, ends 1910 as a draw). A draw
+Seven powers, 34 supply centres, simultaneous orders, 18 centres to solo. Two leagues:
+`webDiplomacy Gunboat` plays `classic-gunboat` (no press, 1-minute phases, ends 1910 as a
+draw) and `webDiplomacy` plays `classic-press` (public and private press, 4-minute
+movement phases, ends 1908). A draw
 scores SC² / Σ SC² over survivors, so being the **largest** survivor matters
 quadratically. Full rules, player contract, gotchas and evidence formats are in
 [`docs/webdiplomacy-gameplay.md`](docs/webdiplomacy-gameplay.md).
@@ -38,7 +40,10 @@ Single entry point: `uv run python webdiplomacy_lab/tools/wd.py`.
 | --- | --- |
 | `wd.py metrics DIR... --policy NAME:vN [--json]` | Per-power score/final SCs/survival/solo vs field par, coverage, telemetry (rejections, exceptions, activation counters). Exit 2 = no target seats |
 | `wd.py seats DIR... [--policy NAME:vN]` | One JSON row per seat (SC trajectory by year, adjudicated order stats, our log summary) |
-| `wd.py local --image IMG --episodes N` | Local all-seat episodes (needs `coworld_pkg/` from `coworld download`) |
+| `wd.py local --image IMG --episodes N [--variant classic-press-short] [--use-llm]` | Local all-seat episodes (needs `coworld_pkg/` from `coworld download`). `--use-llm` needs `tools/llm_sidecar_local.py` running on the host and `COWORLD_LLM_ENDPOINT=http://host.docker.internal:<port>` (plus optional `COWORLD_LLM_MODEL`) in the host environment |
+| `tools/llm_sidecar_local.py --port P --ledger FILE` | Host stand-in for the hosted LLM sidecar (same routes, stream rejection, stripped fields, spend header). Needs `OPENROUTER_API_KEY` from the token broker (`openrouter.inference`). Run it outside the command sandbox, or inbound connections never arrive |
+| `uv run --with diplomacy==1.1.2 python webdiplomacy_lab/tools/game_viewer.py EPISODE_DIR [--out FILE]` | Post-game slide-show replay (one self-contained HTML file, default `EPISODE_DIR/viewer.html`): per movement phase an Orders slide (press as a chat log, map with adjudicated orders) and a Resolution slide (positions after adjudication and retreats, bounces, dislodgements, centre changes); per winter a Builds and a Resolution slide; a final Results slide with scores and LLM spend. Keys: ←/→, Home/End; `#N` links a slide |
+| `wd.py costs DIR... [--json]` | Press-player LLM spend from seat logs: per seat/game, per movement phase, and projected `classic-press` game cost with 1 or 7 LLM seats |
 | `wd.py arena --candidate POLICY[:K=V,...] [--field dumbbot_v1] --image TAG --episodes N --parallel P --out DIR` | **Local screening**: slot 0 = candidate, slots 1-6 = field, fresh seed per game. Read with `metrics DIR --slot 0`; parity is 1/7 = 0.143. Use a **distinct image tag per experiment**: rebuilding a tag mid-run silently switches later games to the new code. Killing an arena (`pkill -f <out dir>`) leaves its game/player containers running: remove them with `docker ps --format '{{.Names}}' \| grep <run id> \| xargs docker rm -f` |
 | `tools/compare.py BASE CAND --baseline A:vN --candidate B:vM` | `coworld-ab` adapter (groups: all + each power) |
 | `tools/features.py` | `coworld-hypothesis-miner` adapter over `wd.py seats` rows |
