@@ -109,6 +109,27 @@ PERSONALITIES = {
         "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "castlereagh"},
         "motto": "Full press: an LLM statesman who negotiates, records every promise, and lets Kissinger's search pick the orders.",
     },
+    # Frozen press evaluation field (souls differ; each is uploaded with a different model).
+    "bismarck_press": {
+        "base": "press",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "bismarck"},
+        "motto": "Full press field: blunt, honest warmonger who picks a victim early.",
+    },
+    "talleyrand_press": {
+        "base": "press",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "talleyrand"},
+        "motto": "Full press field: charming liar who promises everyone everything.",
+    },
+    "metternich_press": {
+        "base": "press",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "metternich"},
+        "motto": "Full press field: cautious, never breaks a promise, rallies coalitions against the leader.",
+    },
+    "machiavelli_press": {
+        "base": "press",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "machiavelli"},
+        "motto": "Full press field: schemer who allies to kill a third power, then stabs the ally.",
+    },
 }
 
 
