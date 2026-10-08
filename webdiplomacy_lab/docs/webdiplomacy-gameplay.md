@@ -134,7 +134,10 @@ Upload with `--use-llm --llm-model <OpenRouter slug>`. The pod gets
 streaming) and `COWORLD_LLM_MODEL`. The default rate limit is about 30 requests per
 minute per seat; honour 429 `Retry-After`. Experience requests set
 `episode_player_llm_spend_limit_usd` per episode (split over seven seats; 0 disables).
-The press player (`webdip_bot/press/`) uses this channel only; the verified sidecar
+Verified on hosted episodes (`xreq_547d713f`, 2026-10-08): the sidecar works with
+non-streaming OpenAI chat completions and tool calls; its `X-Coworld-Spend-Usd` header ran
+about 6% above the summed `usage.cost` of the response bodies, so budget against the header.
+Seat logs of ~0.4 MB arrived complete. The press player (`webdip_bot/press/`) uses this channel only; the verified sidecar
 contract, local parity setup and log schema are in
 [`designs/press-agent-design.md`](designs/press-agent-design.md).
 

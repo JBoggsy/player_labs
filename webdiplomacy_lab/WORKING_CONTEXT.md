@@ -48,10 +48,32 @@ unattended-loop recipe is [LOOP.md](LOOP.md). Measured lessons are in
 - **Cost:** about $0.70 per full classic-press game with all seven seats on the LLM,
   metered against the league's spend limit.
 
-## Open directions (not started)
+## Next decision: press player strength
+
+The objective is to make `castlereagh_press` stronger. Decide first how to measure it:
+
+1. **Measurement design (blocking, human decision).** Self-play never decides "better",
+   and hosted XP is not spent on self-play (`../user_preferences.md`). The press league has
+   no external entrants, and the only hosted non-own opponents (the bundled random bot,
+   relh's gunboat bot) send no press. Options: wait for press entrants; evaluate a
+   candidate against the current version only as a local mechanism check; or agree with
+   the human a field of diverse press agents (different souls and models) and how its
+   results may be used.
+2. **Make the agent test deals before agreeing.** Game 2: 248 `send_press`, 178
+   `record_commitment`, but 47 `search` and 30 `evaluate` calls. Candidate change: require
+   an `assess_deal`/`search` before accepting or proposing a deal (HARNESS.md and skills),
+   with activation tracing (searches and deal assessments per phase).
+3. **Wake limits.** 20–25% of wakes end on the 60 s limit (local) and 3–5 of 16 hosted.
+   Retune `PRESS_WAKE_SECONDS`, `PRESS_COMMIT_MARGIN_S` and `PRESS_REQUEST_LIMIT` for
+   4-minute `classic-press` phases; check model latency (local p50 4.4 s, p90 15.6 s).
+4. **Filler roster.** The press league's only filler is Castlereagh, so league games are
+   self-play. A diverse roster (other souls, other models, plain Kissinger) needs the
+   human's go-ahead and a check of the league LLM spend limit (all-LLM games cost about
+   $0.75 each).
+5. **Viewer follow-ups** (`tools/game_viewer.py`): order arrows use the renderer's power
+   colours, not the viewer palette; label overlap with units in crowded provinces.
+
+## Other open directions (not started)
 
 - A better position evaluation: the measured bottleneck (see `TENTATIVE_LESSONS.md`).
-- Diplomacy that changes the opponent model, not only centre values.
-- Press player strength: the agents send and record far more than they test plans with
-  `search`/`assess_deal` (game 2: 248 messages vs 47 searches); measure against other press
-  entrants when they exist.
+- Diplomacy that changes the opponent model, not only centre values (gunboat).
