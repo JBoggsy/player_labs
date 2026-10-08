@@ -24,6 +24,9 @@ class SearchBot:
         self.trace = self.dumb.trace
         self.api = self.context = None
         self.memory = {}
+        # Press policy (press/search_service.py): stances, expected orders, constraints and
+        # per-power centre values. None = no-press behaviour, bit-identical to gunboat play.
+        self.press = None
         self.evaluator = evaluator(self)
         self.opponent_model = opponent_model(self)
 
@@ -40,6 +43,11 @@ class SearchBot:
         if self.phase != "Diplomacy" or not slots:
             return self.dumb.choose(slots)
         started = time.monotonic()
+        mine = self.prepare_movement(slots)
+        return search_moves.choose_movement(self, slots, mine, started)
+
+    def prepare_movement(self, slots):
+        """Board state, opponent samples and fast-adjudicator inputs for a movement decision."""
         b = self.b
         dm = dipmap(self.variant)
         self.unit_at = {}
@@ -55,8 +63,12 @@ class SearchBot:
         self.opponents = opponents
         self.sims = 0
         self._prepare_fast(mine, raw_samples)
-
-        return search_moves.choose_movement(self, slots, mine, started)
+        self.pinned = {}
+        if self.press:
+            required = self.press.get("require", {})
+            self.pinned = {i: required[b.province(u["terrID"])] for i, u in enumerate(mine)
+                           if b.province(u["terrID"]) in required}
+        return mine
 
     def _prepare_fast(self, mine, raw_samples):
         """Province-level arrays for fastadj: our units first, then each sample's others."""

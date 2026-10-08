@@ -51,10 +51,31 @@ def seed_plans(bot, slots):
     seeds = []
     for _ in range(config.SEARCH_SEEDS):
         cand = seeder.choose(slots)
+        if bot.press:
+            cand = constrain(bot, cand)
         seeds.append((bot.evaluator.evaluate(cand), cand))
     seeds.sort(key=lambda x: -x[0])
     bot.trace["search_seed_score"] = round(seeds[0][0], 1)
     return seeds
+
+
+def forbidden(bot, o):
+    """A move or supported move into a province the press policy rules out (DMZ, ally centre)."""
+    into = bot.press.get("forbid_into") if bot.press else None
+    return bool(into) and o["type"] in ("Move", "Support move") and bot.b.province(o["toTerrID"]) in into
+
+
+def constrain(bot, cand):
+    """Apply pinned (promised) orders, and turn forbidden orders into holds."""
+    out = []
+    for i, o in enumerate(cand):
+        if i in bot.pinned:
+            o = bot.pinned[i]
+        elif forbidden(bot, o):
+            o = {"type": "Hold", "terrID": o["terrID"], "toTerrID": 0, "fromTerrID": 0, "viaConvoy": "No"}
+            bot.trace["press_forbidden_seed_order"] += 1
+        out.append(o)
+    return out
 
 
 def select_mixed(bot, finals):
@@ -171,5 +192,10 @@ def joint_alternatives(bot, mine):
                         (k1, s1), (k2, s2) = supporters[a], supporters[c2]
                         options.append({i: o, k1: s1, k2: s2})
                         bot.trace["search_triple_options"] += 1
+        if bot.press:
+            kept = [j for j in options
+                    if not any(forbidden(bot, o) or (k in bot.pinned and not _same(o, bot.pinned[k])) for k, o in j.items())]
+            bot.trace["press_pruned_alternatives"] += len(options) - len(kept)
+            options = kept
         joints.append(options)
     return joints

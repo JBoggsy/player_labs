@@ -10,6 +10,7 @@
     uv run python webdiplomacy_lab/tools/wd.py versus ARM_A_DIR ARM_B_DIR     # A/B of arena arms
     uv run python webdiplomacy_lab/tools/wd.py tourney --agents a,b,c --games N --image TAG --out DIR
     uv run python webdiplomacy_lab/tools/wd.py ratings DIR... [--json]        # population leaderboard
+    uv run python webdiplomacy_lab/tools/wd.py costs DIR... [--json]          # press-player LLM spend
 
 `metrics`: per-power results for the target policy's seats next to the FIELD PAR (mean
 of every non-target seat at that power in the same directories), plus coverage and our
@@ -20,6 +21,13 @@ target seats found.
 `seats`: one JSON row per seat (the miner/A-B input).
 
 `local`: run N local episodes of one image in every seat (own-policy self-play only).
+`--use-llm` gives the seats the LLM channel: run tools/llm_sidecar_local.py on the host and
+set COWORLD_LLM_ENDPOINT=http://host.docker.internal:<port> (and optionally
+COWORLD_LLM_MODEL) in the host environment; coworld forwards both into the containers.
+
+`costs`: LLM spend of press-player seats from their logs (`llm_call` events carry the
+provider-billed `usage.cost`): per seat and game, per movement phase, and the projected
+cost of a full `classic-press` game (16 movement phases) with 1 or 7 LLM seats.
 
 `arena`: LOCAL screening. Slot 0 plays `--candidate`, slots 1-6 play `--field` (policy
 names from webdip_bot/bot.py `policy_class`), all inside one image; each episode gets a
@@ -34,7 +42,7 @@ import json
 import statistics
 import subprocess
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import asdict
 from pathlib import Path
 
@@ -164,9 +172,15 @@ def cmd_local(args):
     if manifest is None:
         print("run: uv run coworld download webdiplomacy -o webdiplomacy_lab/coworld_pkg", file=sys.stderr)
         return 2
+    _ensure_images(manifest.parent / "coworld_images.json")
     run = ["/opt/.venv/bin/python", "-m", "players.launcher", "/opt/.venv/bin/python", "-m", args.module]
     cmd = ["uv", "run", "coworld", "run-episode", str(manifest), args.image, "--variant", args.variant,
            "--episodes", str(args.episodes), "--output-dir", args.out, "--timeout-seconds", "6000"]
+    if args.use_llm:
+        if not __import__("os").environ.get("COWORLD_LLM_ENDPOINT"):
+            print("--use-llm needs COWORLD_LLM_ENDPOINT (run tools/llm_sidecar_local.py)", file=sys.stderr)
+            return 2
+        cmd.append("--use-llm")
     for token in run:
         cmd.append(f"--run={token}")
     return subprocess.call(cmd, env={**__import__("os").environ, "DOCKER_DEFAULT_PLATFORM": "linux/amd64"})
@@ -174,6 +188,72 @@ def cmd_local(args):
 
 # Local arena machines are faster than hosted pods; keep per-phase search time short here.
 ARENA_ENV = ["WEBDIP_SEARCH_BUDGET_S=8"]
+
+
+CLASSIC_PRESS_MOVEMENT_PHASES = 16  # Spring and Autumn of 1901-1908
+
+
+def cmd_costs(args):
+    """Per-seat and per-game LLM spend of press seats, from `llm_call` log events."""
+    from webdip_episodes import read_log
+
+    games = []
+    for root in [Path(d) for d in args.dirs]:
+        for results in sorted(root.rglob("results.json")):
+            ep = results.parent
+            seats = []
+            for log in sorted((ep / "logs").glob("policy_agent_*.log")):
+                rows = read_log(log)
+                calls = [r for r in rows if r.get("event") == "llm_call"]
+                if not calls:
+                    continue
+                phases = {r["turn"] for r in rows if r.get("event") == "decision" and r.get("phase") == "Diplomacy"}
+                wakes = [r for r in rows if r.get("event") == "wake"]
+                seats.append({
+                    "slot": int(log.stem.rsplit("_", 1)[1]),
+                    "policy": next((r.get("policy") for r in rows if r.get("policy")), None),
+                    "calls": len(calls),
+                    "failed_calls": sum(1 for c in calls if c.get("status") != 200),
+                    "prompt_tokens": sum(c.get("prompt_tokens", 0) for c in calls),
+                    "completion_tokens": sum(c.get("completion_tokens", 0) for c in calls),
+                    "reasoning_tokens": sum(c.get("reasoning_tokens", 0) for c in calls),
+                    "cost_usd": round(sum(c.get("cost_usd", 0.0) for c in calls), 4),
+                    "movement_phases": len(phases),
+                    "wakes": len(wakes),
+                    "wake_status": dict(sorted(Counter(w.get("status") for w in wakes).items())),
+                })
+            if seats:
+                games.append({"episode": str(ep), "seats": seats,
+                              "cost_usd": round(sum(x["cost_usd"] for x in seats), 4)})
+    if not games:
+        print("no llm_call events found", file=sys.stderr)
+        return 2
+    seat_rows = [x for g in games for x in g["seats"]]
+    per_phase = [x["cost_usd"] / x["movement_phases"] for x in seat_rows if x["movement_phases"]]
+    mean_phase = statistics.mean(per_phase) if per_phase else 0.0
+    summary = {
+        "games": len(games), "llm_seats": len(seat_rows),
+        "total_cost_usd": round(sum(g["cost_usd"] for g in games), 4),
+        "cost_per_seat_movement_phase_usd": round(mean_phase, 5),
+        "projected_classic_press_game_usd": {
+            "1_llm_seat": round(mean_phase * CLASSIC_PRESS_MOVEMENT_PHASES, 4),
+            "7_llm_seats": round(7 * mean_phase * CLASSIC_PRESS_MOVEMENT_PHASES, 4),
+        },
+        "calls_per_seat_movement_phase": round(statistics.mean(
+            x["calls"] / x["movement_phases"] for x in seat_rows if x["movement_phases"]), 1) if per_phase else 0,
+    }
+    if args.json:
+        print(json.dumps({"summary": summary, "games": games}, indent=1))
+        return 0
+    for g in games:
+        print(g["episode"], f"${g['cost_usd']:.4f}")
+        for x in g["seats"]:
+            print(f"  slot {x['slot']} {x['policy']}: ${x['cost_usd']:.4f}, {x['calls']} calls "
+                  f"({x['failed_calls']} failed), {x['movement_phases']} movement phases, "
+                  f"tokens in/out/reasoning {x['prompt_tokens']}/{x['completion_tokens']}/{x['reasoning_tokens']}, "
+                  f"wakes {x['wake_status']}")
+    print(json.dumps(summary, indent=1))
+    return 0
 
 
 def cmd_versus(args):
@@ -411,7 +491,12 @@ def main():
     lo.add_argument("--variant", default="classic-gunboat")
     lo.add_argument("--episodes", type=int, default=1)
     lo.add_argument("--out", default=str(LAB / "local_runs" / "latest"))
+    lo.add_argument("--use-llm", action="store_true", help="LLM channel via the host's COWORLD_LLM_ENDPOINT")
     lo.set_defaults(func=cmd_local)
+    co = sub.add_parser("costs", help="press-player LLM spend from seat logs")
+    co.add_argument("dirs", nargs="+")
+    co.add_argument("--json", action="store_true")
+    co.set_defaults(func=cmd_costs)
     tr = sub.add_parser("tourney", help="mixed-population local self-play")
     tr.add_argument("--agents", required=True, help="comma-separated personality/policy names")
     tr.add_argument("--fixed", help="league-sim: seat these agents (';'-separated) in every game; the rest come from --agents")

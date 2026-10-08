@@ -50,18 +50,22 @@ play after 5910 s.
 - So a draw rewards being **the largest** power, quadratically. 7 SCs among powers of
   4–5 already earns about 0.25–0.30.
 
-## The league
+## The leagues
 
-`webDiplomacy` league (`league_428e91e5-ee25-4f9c-be5e-a4fc4f993f17`):
-platform ladder, **one `classic-gunboat` episode per day** (`round_interval_minutes:
-1440`), balanced rotation, one player per user, ranked by **mean score**
-(`algorithm: score`, `round_scoring_rule: mean`). Empty seats are filled from the league's **filler roster**. The lab curates it through
+Two platform ladders, each with **one episode per day** (`round_interval_minutes: 1440`),
+balanced rotation, one player per user, ranked by **mean score** (`algorithm: score`,
+`round_scoring_rule: mean`):
+
+| League | ID | Variant |
+| --- | --- | --- |
+| `webDiplomacy Gunboat` | `league_428e91e5-ee25-4f9c-be5e-a4fc4f993f17` | `classic-gunboat` (no press) |
+| `webDiplomacy` | `league_1bccc63d-cd0a-47d7-92d7-e762797b5f1c` | `classic-press` (public + private press) |
+
+Empty seats are filled from each league's **filler roster**. The lab curates it through
 `POST /v2/leagues/{id}/filler-policies`; our account passes the owner/commissioner gate,
-and `display_name` hides the uploading player. Since 2026-10-07 the roster is the lab's personality agents
-(`webdip_bot/personalities.py`; current list in `WORKING_CONTEXT.md`). Read the current roster with `GET` on the
-same route. Read the live settings with
-`uv run coworld leagues league_428e91e5-ee25-4f9c-be5e-a4fc4f993f17 --json`
-before relying on these.
+and `display_name` hides the uploading player. Read the current roster with `GET` on the
+same route (current lists in `WORKING_CONTEXT.md`). Read the live settings with
+`uv run coworld leagues <league_id> --json` before relying on these.
 
 ## Player contract
 
@@ -130,7 +134,12 @@ Upload with `--use-llm --llm-model <OpenRouter slug>`. The pod gets
 streaming) and `COWORLD_LLM_MODEL`. The default rate limit is about 30 requests per
 minute per seat; honour 429 `Retry-After`. Experience requests set
 `episode_player_llm_spend_limit_usd` per episode (split over seven seats; 0 disables).
-Not yet exercised by this lab.
+Verified on hosted episodes (`xreq_547d713f`, 2026-10-08): the sidecar works with
+non-streaming OpenAI chat completions and tool calls; its `X-Coworld-Spend-Usd` header ran
+about 6% above the summed `usage.cost` of the response bodies, so budget against the header.
+Seat logs of ~0.4 MB arrived complete. The press player (`webdip_bot/press/`) uses this channel only; the verified sidecar
+contract, local parity setup and log schema are in
+[`designs/press-agent-design.md`](designs/press-agent-design.md).
 
 ## Local runs
 

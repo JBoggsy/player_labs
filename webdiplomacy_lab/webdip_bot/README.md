@@ -30,6 +30,7 @@ are copied into the runtime image.
 | `field/` | Frozen arena opponents: `dumbbot_v1` (Calhamer) and `random_legal` (equivalent to the league filler). |
 | `arena.py` | Local-only dispatcher: picks this seat's policy by slot from argv. |
 | `config.py` | Every weight and switch, with defaults. |
+| `press/` | **Full-press player** (`castlereagh_press`): a pydantic-ai agent that negotiates and steers SearchBot through a press policy. `player.py` phase loop (Kissinger floor, open/negotiate/commit wakes), `agent.py` (model via the Coworld LLM sidecar only, per-call cost logging, tools), `search_service.py` (policy → SearchBot `press` dict; search/evaluate/predict), `journal.py` (press, commitments and kept/broken verdicts; LLM notes), `notation.py` (standard notation, board brief), `HARNESS.md`, `souls/<name>/SOUL.md`, `skills/<name>/SKILL.md`. Design: [`docs/designs/press-agent-design.md`](../docs/designs/press-agent-design.md). |
 
 ## Personalities
 
@@ -51,6 +52,7 @@ are copied into the runtime image.
 | garibaldi | search | level-1 opponents and attack-heavy weights |
 | rasputin | search | level-1 opponents, mixed selection among top plans |
 | castlereagh | search | level-1 opponents and hostility-based centre values |
+| castlereagh_press | press | LLM statesman (`souls/castlereagh`) over Kissinger search; full-press games only, plain Kissinger otherwise |
 
 ## Opponent belief
 
@@ -65,6 +67,20 @@ share to 1 while retaining the same sampling and history machinery.
 public history phase. It calls `update_hostility` first (decay, then count attacks
 and supports into our previous provinces), then `update_type_beliefs`. Hostility
 is tracked even when `DIPLO=0`; the evaluator decides whether to use it.
+
+## Press policy hooks
+
+`SearchBot.press` (default `None`) carries a resolved press policy from
+`press/search_service.py`. With `None`, behaviour is bit-identical to gunboat play
+(golden check). When set:
+- `opponent_model.apply_press`: with probability = trust, a power plays the orders it
+  promised (`expected`), and an ally does not move or support into our provinces. Allies and
+  hostile powers are always sampled as competent.
+- `search_moves.constrain` / `joint_alternatives`: required orders are pinned and forbidden
+  moves (`forbid_into`) are removed from seeds and alternatives.
+- `evaluation.score_fast`: `center_values` adds value per centre taken from a given power.
+Activation counters: `press_expected_order_sampled`, `press_ally_attack_removed`,
+`press_forbidden_seed_order`, `press_pruned_alternatives`.
 
 ## How to tune / extend
 

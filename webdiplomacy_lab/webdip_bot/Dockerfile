@@ -10,6 +10,8 @@ RUN nim c -d:release --app:lib --threads:on --path:/build/nimpy-b07fc2c6f09fadb0
 FROM public.ecr.aws/q5f4m8t9/cogames@sha256:ee04a88a155b95f45b04029fa2dab586fa866bec82853efec673dbfb2f1de4ac
 # Package fallback adjudicator (AGPL-3.0).
 RUN uv pip install --python /opt/.venv/bin/python --no-cache diplomacy==1.1.2
+# Press player's agent harness (talks only to the Coworld LLM sidecar).
+RUN uv pip install --python /opt/.venv/bin/python --no-cache "pydantic-ai-slim[openai]==2.54.0"
 COPY . /opt/webdip_bot/
 COPY --from=native /build/adjudicator_native.so /opt/webdip_bot/adjudicator_native.so
 COPY --from=native /build/nimpy-b07fc2c6f09fadb0ae224ce5bf66361ec3fe12e3/LICENSE /opt/webdip_bot/licenses/nimpy.txt

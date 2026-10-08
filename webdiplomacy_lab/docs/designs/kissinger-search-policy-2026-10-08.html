@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kissinger Search Policy</title>
+<!--
+  Ink & Print design/plan document template (Softmax house style).
+
+  HOW TO USE (renderer subagent):
+  - Replace everything inside <article id="doc"> with the real document content.
+    The placeholder content below doubles as a component style guide — copy the
+    markup patterns (masthead, TOC, section, figure, table, callout, code,
+    citation) and delete what you don't use.
+  - Do NOT modify anything between the DC-COMMENTS BEGIN/END markers. That block
+    is the tested commenting system; copy it verbatim. The one thing you may fill
+    is the CONTENT of <script id="dc-preload" type="application/json">: a
+    dc-comments/1 `comments` array, each comment optionally carrying
+    `replies: [{author, text, created}]`, so the reader sees their comments and
+    the agent's replies together in the sidebar.
+  - Keep the doc self-contained: inline SVG for figures, no JS deps beyond this
+    file. Google Fonts is the only permitted external fetch.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ Ink & Print tokens ============ */
+  :root {
+    --bg: #fffdf4;            /* cream paper */
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;            /* warm near-black — never pure #000 */
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --cta-foreground: #fffdf4;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Merriweather Sans', 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ============ Page grid: reading column + comment rail ============ */
+  .dc-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  article#doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 56px 40px 120px;
+    min-width: 0;
+  }
+
+  /* ============ Typography ============ */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+  }
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 8px 0 10px;
+  }
+  header.masthead .context { color: var(--fg-subtle); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-navy);
+    margin: 48px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; margin: 32px 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--ink-navy); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--cta); }
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 24px; margin: 0 0 14px; }
+  li { margin-bottom: 4px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Key-points opener: every section starts with scannable bullets */
+  .key-points {
+    list-style: none;
+    padding: 0 0 0 2px;
+    margin: 0 0 18px;
+  }
+  .key-points li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .key-points li::before { content: '—'; position: absolute; left: 0; color: var(--ink-gold); font-weight: 700; }
+
+  /* ============ TOC ============ */
+  nav.toc { margin: 28px 0 8px; }
+  nav.toc ol { list-style: none; padding: 0; column-count: 2; column-gap: 40px; margin: 10px 0 0; }
+  nav.toc li { margin-bottom: 5px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  nav.toc .toc-num { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-right: 8px; }
+
+  /* ============ Tables ============ */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+  th {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+    text-align: left;
+    padding: 6px 12px 6px 0;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-feature-settings: 'tnum' 1; }
+
+  /* ============ Figures ============ */
+  figure { margin: 24px 0 28px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+  }
+  figcaption .fig-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10.5px;
+    color: var(--ink-navy);
+    margin-right: 8px;
+  }
+
+  /* ============ Code & citations ============ */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 16px 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .cite {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    background: var(--surface-alt);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  /* Superscript source references — body prose never carries raw file paths.
+     Full citation lives in the title (hover) and in the numbered Sources list. */
+  sup.ref { line-height: 0; }
+  sup.ref a {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-navy);
+    text-decoration: none;
+    padding: 0 1px;
+  }
+  sup.ref a:hover { text-decoration: underline; }
+  ol.sources { margin: 12px 0; padding-left: 30px; }
+  ol.sources li {
+    font-size: 13px;
+    padding: 2px 0;
+  }
+  ol.sources li::marker {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--ink-navy);
+  }
+  ol.sources li:target { background: var(--accent-soft); }
+
+  /* ============ Callouts ============ */
+  .callout { padding: 12px 16px; margin: 18px 0; font-size: 13.5px; border-radius: 3px; }
+  .callout .callout-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .callout-info { background: var(--accent-soft); }
+  .callout-info .callout-label { color: var(--ink-navy); }
+  .callout-warn { background: rgba(179, 110, 78, 0.08); border-left: 3px solid var(--ink-terracotta); }
+  .callout-warn .callout-label { color: var(--ink-terracotta); }
+  .callout-open { background: rgba(212, 168, 83, 0.10); }
+  .callout-open .callout-label { color: #8a6a1f; }
+
+  /* Decision record */
+  .decision { border-top: 1px solid var(--border); padding: 14px 0 4px; margin: 14px 0; }
+  .decision .decision-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sage); }
+  .decision p { margin-top: 6px; }
+
+  @media (max-width: 1100px) {
+    .dc-page { grid-template-columns: 1fr; }
+  }
+  @media print {
+    #dc-sidebar, #dc-fab, #dc-toggle { display: none !important; }
+    .dc-page { grid-template-columns: 1fr; }
+  }
+
+  /* ================================================================
+     DC-COMMENTS BEGIN — styles (copy verbatim; do not modify)
+     ================================================================ */
+  ::highlight(dc-hl) { background: rgba(212, 168, 83, 0.28); }
+  ::highlight(dc-hl-active) { background: rgba(212, 168, 83, 0.6); }
+
+  #dc-fab {
+    position: absolute;
+    z-index: 40;
+    display: none;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cta-foreground);
+    background: var(--cta);
+    border: 1px solid #0a1c42;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  #dc-fab:hover { background: var(--ink-navy); }
+
+  #dc-sidebar {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px 60px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  #dc-sidebar h2.dc-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+    margin: 0 0 4px;
+  }
+  .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .dc-btn {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .dc-btn:hover { background: var(--surface-alt); }
+  .dc-btn:focus-visible, #dc-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dc-empty { color: var(--fg-muted); font-style: italic; }
+  .dc-item { border-top: 1px solid var(--border-subtle); padding: 12px 0; cursor: pointer; }
+  .dc-item.dc-resolved { opacity: 0.5; }
+  .dc-quote {
+    border-left: 2px solid var(--ink-gold);
+    padding-left: 8px;
+    color: var(--fg-subtle);
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+  }
+  .dc-orphan-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-terracotta);
+    background: rgba(179, 110, 78, 0.12);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+  }
+  .dc-text { white-space: pre-wrap; overflow-wrap: break-word; }
+  .dc-item textarea {
+    width: 100%;
+    min-height: 64px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    resize: vertical;
+  }
+  .dc-item textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--fg-muted); }
+  .dc-meta label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dc-meta .dc-del { margin-left: auto; color: var(--ink-terracotta); background: none; border: none; font-size: 11px; cursor: pointer; padding: 0; }
+  .dc-meta .dc-del:hover { text-decoration: underline; }
+  #dc-status { font-size: 11px; color: var(--ink-sage); min-height: 16px; margin-top: 8px; }
+
+  #dc-toggle { display: none; }
+  @media (max-width: 1100px) {
+    #dc-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      max-width: 90vw;
+      transform: translateX(100%);
+      transition: transform 200ms ease-out;
+      z-index: 50;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+    }
+    #dc-sidebar.dc-open { transform: translateX(0); }
+    #dc-toggle {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 51;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cta-foreground);
+      background: var(--cta);
+      border: 1px solid #0a1c42;
+      border-radius: 999px;
+      padding: 9px 15px;
+      cursor: pointer;
+    }
+  }
+  /* ============ DC-COMMENTS END — styles ============ */
+  /* replies rendered under a comment (from the comment's `replies` array) */
+  .dc-replies { margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--border-strong); }
+  .dc-reply-author { font-family: var(--sans); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-navy); }
+  .dc-reply-text { font-size: 12.5px; line-height: 1.5; color: var(--fg); white-space: pre-wrap; margin-top: 2px; }
+  .dc-reply-text a { color: var(--ink-navy); word-break: break-all; }
+  /* Document-specific additions (outside the DC-COMMENTS block) */
+  .equation { font-family: var(--serif); font-size: 17px; text-align: center; margin: 20px 0 22px; color: var(--fg); }
+  .equation var { font-style: italic; }
+  @media (max-width: 640px) { article#doc { padding: 32px 16px 96px; } .equation { font-size: 14px; } nav.toc ol { column-count: 1; } }
+</style>
+</head>
+<body>
+<div class="dc-page">
+<article id="doc">
+  <header class="masthead">
+    <span class="eyebrow">Architecture design doc · 2026-10-08 · Current (v8, deployed)</span>
+    <h1>Kissinger: the webDiplomacy Gunboat Search Policy</h1>
+    <p class="context">How the champion policy for the webDiplomacy Coworld picks its orders: the components, the board evaluation, and the search, as deployed in <code>webdip-dumbbot:v8</code> (submitted 2026-10-07).</p>
+  </header>
+
+  <section id="summary">
+    <h2>Executive Summary</h2>
+    <p>Kissinger plays classic seven-power Diplomacy in its <em>gunboat</em> form: no messages, and every power orders at the same time. It is not a separate program. It is the generic <code>SearchBot</code> with a single config override, <code>OPP_MODEL_LEVEL=1</code><sup class="ref"><a href="#src-1" title="webdip_bot/personalities.py:56-60">1</a></sup>. In every movement phase it samples what each opponent is likely to order, searches over its own orders for the plan with the best average outcome across those samples, and measures each outcome by actually adjudicating the combined orders and scoring the resulting board. Its one-line description is &ldquo;assumes you are clever too: best-responds to opponents who best-respond.&rdquo;</p>
+    <p>The search looks exactly one phase ahead (depth 1) and then applies a static evaluation. Longer-range intent lives inside that evaluation, in the positional term borrowed from DumbBot&rsquo;s value map, not in deeper simulation. Every variant that searched harder or deeper was built, measured in paired games, and lost or tied. The lab&rsquo;s own conclusion is that the evaluation, not the search, is now the bottleneck<sup class="ref"><a href="#src-2" title="TENTATIVE_LESSONS.md">2</a></sup>.</p>
+  </section>
+
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><span class="toc-num">1</span><a href="#what">What Kissinger is</a></li>
+      <li><span class="toc-num">2</span><a href="#architecture">Architecture</a></li>
+      <li><span class="toc-num">3</span><a href="#evaluation">Board-state evaluation</a></li>
+      <li><span class="toc-num">4</span><a href="#search">Search strategy</a></li>
+      <li><span class="toc-num">5</span><a href="#performance">Performance</a></li>
+      <li><span class="toc-num">6</span><a href="#alternatives">Alternatives considered</a></li>
+      <li><span class="toc-num">7</span><a href="#open-questions">Open questions and risks</a></li>
+      <li><span class="toc-num">8</span><a href="#sources">Sources</a></li>
+    </ol>
+  </nav>
+
+  <section id="what">
+    <h2>1 · What Kissinger is</h2>
+    <ul class="key-points">
+      <li>One personality of the generic <code>SearchBot</code>: the base <code>search</code> policy plus <code>OPP_MODEL_LEVEL=1</code>.</li>
+      <li>Strategy: a depth-1 best response against 16 sampled opponent order sets, scored by real adjudication plus a static evaluation.</li>
+      <li>Foresight beyond the current phase comes from the evaluation&rsquo;s positional term, not from searching further ahead.</li>
+    </ul>
+    <p>Every weight and switch in the bot is a flat module-level constant in one config module, and a <em>personality</em> is simply a base policy plus a set of overrides<sup class="ref"><a href="#src-3" title="webdip_bot/README.md">3</a></sup><sup class="ref"><a href="#src-4" title="webdip_bot/config.py:30-87">4</a></sup>. Kissinger is the <code>search</code> policy with one override: opponents are modelled at level 1, meaning each opponent is assumed to play a heuristic plan and then improve it by one round of its own best response<sup class="ref"><a href="#src-1" title="webdip_bot/personalities.py:56-60">1</a></sup>. The same container image hosts every personality, so switching between them is a configuration choice, not a rebuild.</p>
+    <p>The strategy fits in one sentence: for each movement phase, sample what every opponent is likely to order, search over our own orders for the plan with the best average outcome across those samples, and measure each outcome by adjudicating the combination and scoring the board that results. This is a one-phase-deep best-response search with a static evaluation. It is deliberately not a deep game-tree search: deeper lookahead variants exist in the code and are switched off, because they lost or tied in paired tests (§6).</p>
+  </section>
+
+  <section id="architecture">
+    <h2>2 · Architecture</h2>
+    <ul class="key-points">
+      <li>A phase loop polls the server, builds a fresh policy object per phase with a deterministic seed, and saves the chosen orders.</li>
+      <li>Only movement phases are searched. Retreats and builds go straight to DumbBot.</li>
+      <li>DumbBot is reused four ways: it plays retreats and builds, seeds our search, is the base opponent model, and supplies the positional value map.</li>
+    </ul>
+    <p>The phase loop polls the webDiplomacy server, reads the public board and variant files, and constructs a fresh policy object for each phase. That object gets a deterministic random-number generator seeded from the game seed, country, turn and phase. Every random choice in the decision draws from this one generator: DumbBot&rsquo;s tie-breaking, the opponent samples, the competent-or-random draws, and the unit order in the ascent. As a result, a decision is exactly repeatable for a given game seed and phase. The loop calls <code>choose(slots)</code>, saves the orders with Ready set, and then compares the saved orders with the requested ones, because the upstream server silently drops invalid orders. It finishes each phase by printing one JSON <code>decision</code> line with compute time, trace counters and the count of rejected orders. A <code>state</code> dictionary persists for the whole game and carries the opponent beliefs from phase to phase<sup class="ref"><a href="#src-5" title="webdip_bot/bot.py:73-111">5</a></sup>.</p>
+    <p><code>SearchBot</code> owns the decision state and dispatches by phase type<sup class="ref"><a href="#src-6" title="webdip_bot/search.py:35-71">6</a></sup>. A movement phase runs the full pipeline shown in Figure 1: build the board model, draw opponent samples, precompute the inputs for the fast adjudicator, and hand off to the move search.</p>
+
+    <figure>
+      <svg viewBox="0 0 680 370" width="100%" role="img" aria-label="Data flow of one movement phase through Kissinger">
+        <defs>
+          <marker id="f1a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8" fill="none" stroke="#859ebe" stroke-width="1.2"/>
+          </marker>
+        </defs>
+        <g font-family="Merriweather Sans, Helvetica Neue, sans-serif" text-anchor="middle">
+          <!-- Row 1 -->
+          <rect x="10" y="16" width="130" height="56" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="75" y="40" font-size="12" font-weight="600" fill="#111827">webDip server</text>
+          <text x="75" y="57" font-size="10" fill="#555555">board + variant files</text>
+
+          <rect x="175" y="16" width="165" height="56" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="257" y="40" font-size="12" font-weight="600" fill="#111827">Board model</text>
+          <text x="257" y="57" font-size="10" fill="#555555">map graph + current position</text>
+
+          <rect x="380" y="16" width="290" height="56" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+          <text x="525" y="40" font-size="12" font-weight="600" fill="#1a3875">Opponent model (level 1)</text>
+          <text x="525" y="57" font-size="10" fill="#555555">16 joint samples, orders for all 6 rivals</text>
+
+          <line x1="140" y1="44" x2="173" y2="44" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <line x1="340" y1="44" x2="378" y2="44" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+
+          <!-- Row 2 -->
+          <rect x="10" y="128" width="150" height="76" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="85" y="152" font-size="12" font-weight="600" fill="#111827">Seed plans</text>
+          <text x="85" y="169" font-size="10" fill="#555555">12 DumbBot plans</text>
+          <text x="85" y="184" font-size="10" fill="#555555">for us, each evaluated</text>
+
+          <rect x="200" y="128" width="170" height="76" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+          <text x="285" y="152" font-size="12" font-weight="600" fill="#1a3875">Coordinate ascent</text>
+          <text x="285" y="169" font-size="10" fill="#555555">up to 6 passes over</text>
+          <text x="285" y="184" font-size="10" fill="#555555">joint alternatives</text>
+
+          <rect x="410" y="128" width="260" height="76" rx="3" fill="#fffaf0" stroke="#1a3875" stroke-width="1.4"/>
+          <text x="540" y="150" font-size="12" font-weight="600" fill="#1a3875">evaluate(plan)</text>
+          <text x="540" y="167" font-size="10" fill="#555555">for each of the 16 samples:</text>
+          <text x="540" y="181" font-size="10" fill="#555555">convert → adjudicate (Nim) → score_fast</text>
+          <text x="540" y="195" font-size="10" fill="#555555">return the mean</text>
+
+          <!-- board -> seeds -->
+          <polyline points="200,72 200,100 85,100 85,126" fill="none" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <!-- opp model -> evaluate -->
+          <line x1="540" y1="72" x2="540" y2="126" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <text x="548" y="104" font-size="10" fill="#555555" text-anchor="start">samples</text>
+          <!-- seeds -> ascent -->
+          <line x1="160" y1="166" x2="198" y2="166" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <text x="180" y="122" font-size="10" fill="#555555">best seed</text>
+          <line x1="180" y1="126" x2="180" y2="160" stroke="#d4c9b5" stroke-width="1" stroke-dasharray="2 2"/>
+          <!-- ascent <-> evaluate -->
+          <line x1="370" y1="152" x2="408" y2="152" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <line x1="410" y1="182" x2="372" y2="182" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <text x="390" y="145" font-size="9" fill="#555555">plan</text>
+          <text x="390" y="196" font-size="9" fill="#555555">score</text>
+
+          <!-- Row 3 -->
+          <rect x="200" y="256" width="170" height="56" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="285" y="280" font-size="12" font-weight="600" fill="#111827">Legality check</text>
+          <text x="285" y="297" font-size="10" fill="#555555">illegal order → hold</text>
+
+          <rect x="410" y="256" width="260" height="56" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="540" y="280" font-size="12" font-weight="600" fill="#111827">Save orders + Ready</text>
+          <text x="540" y="297" font-size="10" fill="#555555">diff saved vs. requested, log decision</text>
+
+          <rect x="10" y="256" width="150" height="56" rx="3" fill="#f8f6ef" stroke="#d4c9b5" stroke-dasharray="4 3"/>
+          <text x="85" y="280" font-size="12" font-weight="600" fill="#111827">Retreats, builds</text>
+          <text x="85" y="297" font-size="10" fill="#555555">DumbBot only, no search</text>
+
+          <line x1="285" y1="204" x2="285" y2="254" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <text x="293" y="234" font-size="10" fill="#555555" text-anchor="start">best plan</text>
+          <line x1="370" y1="284" x2="408" y2="284" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <polyline points="85,312 85,346 540,346 540,314" fill="none" stroke="#d4c9b5" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#f1a)"/>
+          <text x="312" y="361" font-size="10" fill="#555555">non-movement phases skip the search entirely</text>
+        </g>
+      </svg>
+      <figcaption><span class="fig-label">Figure 1</span>One movement phase. The opponent samples are drawn once and reused for every plan the search scores. <code>evaluate</code> is the inner loop, called once per seed and once per candidate the ascent tries. Retreat and build phases (dashed) bypass the search and use DumbBot directly.</figcaption>
+    </figure>
+
+    <table>
+      <thead><tr><th>Component</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><code>bot.py</code></td><td>Phase loop: poll, build policy, save orders, log one decision line<sup class="ref"><a href="#src-5" title="webdip_bot/bot.py:73-111">5</a></sup></td></tr>
+        <tr><td><code>personalities.py</code>, <code>config.py</code></td><td>Flat knobs; a personality is a base policy plus overrides<sup class="ref"><a href="#src-4" title="webdip_bot/config.py:30-87">4</a></sup></td></tr>
+        <tr><td><code>search.py</code></td><td><code>SearchBot</code>: phase dispatch and fast-path preparation<sup class="ref"><a href="#src-6" title="webdip_bot/search.py:35-71">6</a></sup></td></tr>
+        <tr><td><code>dumbbot.py</code></td><td>David Norman&rsquo;s classic heuristic bot on webDip&rsquo;s map graph; value map, seeds, retreats and builds<sup class="ref"><a href="#src-7" title="webdip_bot/dumbbot.py:94-148">7</a></sup></td></tr>
+        <tr><td><code>opponent_model.py</code></td><td>Competence beliefs, sampling, level-1 improvement<sup class="ref"><a href="#src-8" title="webdip_bot/opponent_model.py:127-195">8</a></sup></td></tr>
+        <tr><td><code>search_moves.py</code></td><td>Seeds, joint alternatives, coordinate ascent<sup class="ref"><a href="#src-9" title="webdip_bot/search_moves.py:10-45">9</a></sup></td></tr>
+        <tr><td><code>evaluation.py</code></td><td>Scores one candidate plan across all opponent samples<sup class="ref"><a href="#src-10" title="webdip_bot/evaluation.py:25-41">10</a></sup></td></tr>
+        <tr><td><code>search_orders.py</code>, <code>fastadj.py</code>, Nim adjudicator</td><td>Compact order conversion and native Hold/Move/Support resolution<sup class="ref"><a href="#src-11" title="webdip_bot/search_orders.py:46-87">11</a></sup><sup class="ref"><a href="#src-12" title="webdip_bot/fastadj.py, webdip_bot/adjudicator_native.nim">12</a></sup></td></tr>
+        <tr><td><code>search_lookahead.py</code>, <code>nash.py</code></td><td>Build search, rollouts, regret matching. Present, but off or unused in Kissinger<sup class="ref"><a href="#src-13" title="webdip_bot/search_lookahead.py">13</a></sup></td></tr>
+      </tbody>
+    </table>
+    <p>DumbBot does a lot of work in this design. It plays every retreat and build phase (build search is off). It generates the 12 seed plans our search starts from. It is the base model of what each opponent will do. And its per-position value map is the positional term of the evaluation. When this document says &ldquo;DumbBot&rdquo;, it means this reimplementation, written against the webDip map graph after the MIT port.</p>
+  </section>
+
+  <section id="evaluation">
+    <h2>3 · Board-state evaluation</h2>
+    <ul class="key-points">
+      <li>A plan&rsquo;s value is the mean, over 16 opponent samples, of the static score of the adjudicated board.</li>
+      <li>The static score is 10 per projected centre, plus a normalized positional term, minus 3 per dislodged unit of ours.</li>
+      <li>The positional term is DumbBot&rsquo;s value map, which spreads centre values outward over the map. All foresight beyond this phase lives here.</li>
+      <li>The lab&rsquo;s measured conclusion: this evaluation is the bottleneck, and more search over it does not help.</li>
+    </ul>
+
+    <h3>The evaluate loop</h3>
+    <p><code>PositionEvaluator.evaluate(ours)</code> converts our plan to compact orders once. Then, for each of the 16 opponent samples, it concatenates our units and orders with that sample&rsquo;s, adjudicates the full set natively, and scores the resulting board with <code>score_fast</code>. The plan&rsquo;s value is the mean over the samples<sup class="ref"><a href="#src-10" title="webdip_bot/evaluation.py:25-41">10</a></sup>. A knob, <code>SEARCH_RISK</code>, can pull the aggregate toward the worst sample. Kissinger sets it to 0, so it uses the pure mean<sup class="ref"><a href="#src-4" title="webdip_bot/config.py:30-87">4</a></sup>.</p>
+
+    <h3>The static score of one outcome</h3>
+    <p><code>score_fast</code> scores one adjudicated board from our side<sup class="ref"><a href="#src-14" title="webdip_bot/evaluation.py:43-76">14</a></sup>:</p>
+    <div class="equation">score = 10 &times; <var>projected_centres</var> + 1 &times; <var>positional</var> &minus; 3 &times; <var>units_dislodged</var></div>
+    <p><strong>Projected centres.</strong> For every supply centre, the holder is the unit standing on it after adjudication if there is one, and otherwise its current owner. We count the centres that would be ours. This answers &ldquo;who would own each centre if this phase were autumn&rdquo;, so even in spring the score rewards standing on centres.</p>
+    <p><strong>Positional.</strong> For each of our surviving units, take DumbBot&rsquo;s value for the node it ends on (a node is a unit type plus a territory), and divide by the largest node value on the board, <code>vmax</code><sup class="ref"><a href="#src-6" title="webdip_bot/search.py:35-71">6</a></sup>. A unit on the best square therefore contributes about 1.0, and the whole term is small next to a single centre, which is worth 10. It works as a tie-breaker between plans that win the same centres, and it is the only carrier of longer-range intent.</p>
+    <p><strong>Dislodged penalty.</strong> Each of our units that is dislodged costs 3. A dislodged unit no longer holds its province and must retreat or be disbanded.</p>
+    <p>The three weights (10, 1 and 3) are config constants<sup class="ref"><a href="#src-4" title="webdip_bot/config.py:30-87">4</a></sup>. A fallback scorer computes the same formula from the <code>diplomacy</code> package&rsquo;s state for the rare orders the fast path cannot handle<sup class="ref"><a href="#src-15" title="webdip_bot/evaluation.py:78-108">15</a></sup>.</p>
+
+    <h3>What &ldquo;positional&rdquo; measures: the DumbBot value map</h3>
+    <p>The value map is computed once per phase for each power<sup class="ref"><a href="#src-7" title="webdip_bot/dumbbot.py:94-148">7</a></sup>. It works in four steps.</p>
+    <p><strong>1. Power sizes.</strong> Each power with <var>n</var> centres gets a size of <var>n</var>&sup2; + 4<var>n</var> + 16. Larger powers are both more threatening and more rewarding to attack.</p>
+    <p><strong>2. Base value of each centre.</strong> A centre we do not own gets an <em>attack value</em> equal to its owner&rsquo;s size. Unowned neutral centres count as one pseudo-power sized by how many neutrals remain. This is a deliberate departure from the MIT port, which gives neutrals 0. One of our own centres gets a <em>defense value</em> equal to the size of the largest enemy adjacent to it. A node&rsquo;s base value is attack times the attack weight plus defense times the defense weight: 700 and 300 in spring, 600 and 400 in fall.</p>
+    <p><strong>3. Proximity diffusion.</strong> Ten rounds of diffusion spread value outward from the centres. In each round, a node&rsquo;s value becomes the best value in its own province plus the sum of the values of the nodes that can reach it, all divided by 5. Each round produces one <em>proximity layer</em>, so layer 0 is &ldquo;value of being here&rdquo; and higher layers are &ldquo;value of being near something valuable&rdquo;, decaying with distance.</p>
+    <p><strong>4. Final node value.</strong> The ten layers are combined with season-specific weights, then adjusted for local force: plus 1000 times our <em>strength</em> (our units adjacent) and minus 1000 times the <em>competition</em> (the largest number of any one enemy&rsquo;s units adjacent). Fall weights emphasize standing <em>on</em> a centre; spring weights emphasize standing one step away, ready to take it in autumn.</p>
+
+    <figure>
+      <svg viewBox="0 0 680 280" width="100%" role="img" aria-label="Value diffusing outward from a supply centre across proximity layers, with spring and fall layer weights">
+        <g font-family="Merriweather Sans, Helvetica Neue, sans-serif">
+          <!-- rings -->
+          <circle cx="150" cy="140" r="125" fill="#d4a853" fill-opacity="0.07" stroke="#d4c9b5"/>
+          <circle cx="150" cy="140" r="92" fill="#d4a853" fill-opacity="0.13" stroke="#d4c9b5"/>
+          <circle cx="150" cy="140" r="60" fill="#d4a853" fill-opacity="0.24" stroke="#d4c9b5"/>
+          <circle cx="150" cy="140" r="28" fill="#d4a853" fill-opacity="0.55" stroke="#b36e4e"/>
+          <text x="150" y="137" font-size="11" font-weight="700" fill="#111827" text-anchor="middle">SC</text>
+          <text x="150" y="151" font-size="9" fill="#111827" text-anchor="middle">layer 0</text>
+          <text x="150" y="98" font-size="10" fill="#111827" text-anchor="middle">layer 1</text>
+          <text x="150" y="66" font-size="10" fill="#555555" text-anchor="middle">layer 2</text>
+          <text x="150" y="33" font-size="10" fill="#555555" text-anchor="middle">layer 3 …</text>
+          <text x="150" y="193" font-size="9" fill="#555555" text-anchor="middle">one step away</text>
+          <text x="150" y="225" font-size="9" fill="#555555" text-anchor="middle">two steps</text>
+          <text x="150" y="258" font-size="9" fill="#999999" text-anchor="middle">each round ÷ 5</text>
+
+          <!-- weights panel -->
+          <text x="310" y="30" font-size="11" font-weight="700" fill="#1a3875" letter-spacing="1">LAYER WEIGHTS</text>
+          <text x="310" y="46" font-size="10" fill="#555555">bar length is proportional to weight</text>
+
+          <text x="310" y="78" font-size="11" font-weight="600" fill="#111827">Spring</text>
+          <text x="360" y="96" font-size="10" fill="#555555" text-anchor="end">layer 0</text>
+          <rect x="368" y="87" width="27" height="12" fill="#859ebe"/>
+          <text x="401" y="97" font-size="10" fill="#111827">100</text>
+          <text x="360" y="114" font-size="10" fill="#555555" text-anchor="end">layer 1</text>
+          <rect x="368" y="105" width="270" height="12" fill="#1a3875"/>
+          <text x="644" y="115" font-size="10" fill="#111827">1000</text>
+          <text x="360" y="132" font-size="10" fill="#555555" text-anchor="end">layer 2</text>
+          <rect x="368" y="123" width="8" height="12" fill="#859ebe"/>
+          <text x="382" y="133" font-size="10" fill="#111827">30</text>
+          <text x="360" y="150" font-size="10" fill="#555555" text-anchor="end">layer 3</text>
+          <rect x="368" y="141" width="3" height="12" fill="#859ebe"/>
+          <text x="377" y="151" font-size="10" fill="#111827">10 …</text>
+
+          <text x="310" y="184" font-size="11" font-weight="600" fill="#111827">Fall</text>
+          <text x="360" y="202" font-size="10" fill="#555555" text-anchor="end">layer 0</text>
+          <rect x="368" y="193" width="270" height="12" fill="#1a3875"/>
+          <text x="644" y="203" font-size="10" fill="#111827">1000</text>
+          <text x="360" y="220" font-size="10" fill="#555555" text-anchor="end">layer 1</text>
+          <rect x="368" y="211" width="27" height="12" fill="#859ebe"/>
+          <text x="401" y="221" font-size="10" fill="#111827">100</text>
+          <text x="360" y="238" font-size="10" fill="#555555" text-anchor="end">layer 2</text>
+          <rect x="368" y="229" width="8" height="12" fill="#859ebe"/>
+          <text x="382" y="239" font-size="10" fill="#111827">30 …</text>
+        </g>
+      </svg>
+      <figcaption><span class="fig-label">Figure 2</span>How a centre&rsquo;s base value (attack or defense) spreads into neighbouring nodes. Each diffusion round adds one proximity layer and divides by 5, so value fades with distance. The season weights then decide which layer matters: spring rewards being one step from a centre (layer 1 at 1000), fall rewards being on it (layer 0 at 1000). The rings are schematic: on the real map, neighbourhoods follow province adjacency, not circles.</figcaption>
+    </figure>
+
+    <p>This is how a depth-1 search still &ldquo;plans&rdquo;. A spring move that ends a unit next to a weak power&rsquo;s centre wins no centres this phase, but it scores higher on the positional term, so the search prefers it, and the autumn search can then take the centre.</p>
+    <p>Other evaluators in the same slot exist but are not used by Kissinger: a <code>share</code> objective (34 &times; SC&sup2; / &Sigma;SC&sup2;, the league&rsquo;s draw score), a diplomacy adjustment that weights centre values by hostility, and a learned ridge-regression evaluator that predicts centres two years ahead (11 features, R&sup2; 0.752 on held-out data, trained on 37,025 rows). The learned evaluator is discussed in §6.</p>
+
+    <div class="callout callout-warn">
+      <span class="callout-label">Known weakness: evaluation is the bottleneck</span>
+      The lab&rsquo;s measured conclusion is that more search over this evaluation does not help and often hurts, most likely because a stronger search finds the evaluation&rsquo;s errors and exploits them: the optimizer&rsquo;s curse<sup class="ref"><a href="#src-2" title="TENTATIVE_LESSONS.md">2</a></sup><sup class="ref"><a href="#src-16" title="best_practices.md">16</a></sup>. Three restarts, triple alternatives, more opponent samples and deeper rollouts all came out null or negative (§6). The next real gain probably needs a better evaluation, for example one trained causally from self-play outcomes.
+    </div>
+  </section>
+
+  <section id="search">
+    <h2>4 · Search strategy</h2>
+    <ul class="key-points">
+      <li>We search against 16 joint opponent samples, each one a set of orders for all six rivals.</li>
+      <li>Opponents are modelled as a competence-weighted mix of &ldquo;DumbBot improved by one best-response pass&rdquo; and uniformly random orders.</li>
+      <li>Our own plan starts from the best of 12 DumbBot seeds and climbs by first-improvement coordinate ascent over single, paired and convoy changes.</li>
+      <li>A fast adjudication path, with a convoy approximation and a native Nim resolver, keeps thousands of evaluations per decision affordable.</li>
+    </ul>
+
+    <h3>4a · The opponent model: what we search against</h3>
+    <p><code>OpponentModel.sample</code> builds a DumbBot for each opponent power, using that power&rsquo;s own value map, and draws 16 joint samples<sup class="ref"><a href="#src-8" title="webdip_bot/opponent_model.py:127-195">8</a></sup>. For each sample and each opponent, it decides whether the opponent is acting competently this time. With probability sigmoid(log-odds) it is, and it gets a model plan. Otherwise it gets uniformly random legal orders. DumbBot itself is randomized, sometimes playing near-tied options<sup class="ref"><a href="#src-17" title="webdip_bot/dumbbot.py:151-163">17</a></sup>, so the 16 samples differ even for opponents believed to be fully competent.</p>
+    <p><strong>Level 1, the Kissinger change.</strong> Each competent opponent&rsquo;s DumbBot plan is improved by one pass of that opponent&rsquo;s own single-unit best response<sup class="ref"><a href="#src-18" title="webdip_bot/opponent_model.py:89-125">18</a></sup>. For each of its units, in random order, the model tries every legal non-convoy order and keeps it if it raises the opponent&rsquo;s score. That score uses the same <code>score_fast</code> formula, but from the opponent&rsquo;s side and with its own value map, averaged over two contexts in which we and the other powers play DumbBot plans. In short, we assume each opponent is one step smarter than a heuristic, and no more. §6 shows that assuming less, assuming more, and mixing the two all lost.</p>
+    <p><strong>Belief update between phases.</strong> <code>update_beliefs</code> reads the public history of the previous movement phase and updates each opponent&rsquo;s competence log-odds, which start at 0 (a 50/50 prior) and are clipped to &plusmn;8<sup class="ref"><a href="#src-19" title="webdip_bot/opponent_model.py:15-80">19</a></sup>. For each order the opponent actually gave:</p>
+    <ul>
+      <li>Likelihood if competent = 0.5 &times; (the fraction of our stored DumbBot samples that matched the order) + (0.5 / the number of sensible orders, if the order is sensible; otherwise 0.02 / the number of legal orders).</li>
+      <li>Likelihood if random = 1 / the number of legal orders.</li>
+      <li>Log-odds increase by the log of the ratio.</li>
+    </ul>
+    <p>An order is <em>sensible</em> if it is a hold, a plain move, or a support or convoy involving the power&rsquo;s own units. Random players give themselves away by supporting or convoying other powers&rsquo; units. The choice of &ldquo;sensible&rdquo; as the test matters. An earlier version scored competence by &ldquo;matches DumbBot&rdquo;, which made every bot treat strong opponents that do not play like DumbBot as random. Fixing it was worth +0.106 score in paired games (z = 2.25)<sup class="ref"><a href="#src-16" title="best_practices.md">16</a></sup>. The same pass also updates a hostility memory, which only the diplomacy variant uses.</p>
+
+    <h3>4b · Our move search</h3>
+    <p><code>choose_movement</code> runs five steps<sup class="ref"><a href="#src-9" title="webdip_bot/search_moves.py:10-45">9</a></sup>.</p>
+    <p><strong>1. Seeds.</strong> Generate 12 DumbBot plans for us, evaluate each across the 16 samples, and sort them<sup class="ref"><a href="#src-20" title="webdip_bot/search_moves.py:48-57">20</a></sup>.</p>
+    <p><strong>2. One restart.</strong> Only the best seed is optimized (<code>SEARCH_RESTARTS=1</code>). Three restarts lost to one in a championship test, another instance of the optimizer&rsquo;s curse<sup class="ref"><a href="#src-4" title="webdip_bot/config.py:30-87">4</a></sup>.</p>
+    <p><strong>3. Joint alternatives.</strong> For each of our units, build the list of changes to try<sup class="ref"><a href="#src-21" title="webdip_bot/search_moves.py:118-175">21</a></sup>:</p>
+    <ul>
+      <li><em>Singles:</em> every legal non-convoy order for that unit alone.</li>
+      <li><em>Pairs:</em> that unit&rsquo;s move to X, plus another of our units supporting that move. A supported attack only pays when both orders change together. Changing one unit at a time can never find it, because the unsupported move or the idle support each scores worse on its own.</li>
+      <li><em>Convoys:</em> an army&rsquo;s convoyed move, plus the convoy orders of our fleets along the path, for the same reason.</li>
+    </ul>
+    <p>Triples (a move plus two supports) are implemented but off.</p>
+    <p><strong>4. Coordinate ascent.</strong> Run up to 6 passes. Each pass visits our units in random order and, for each unit, tries every joint alternative by evaluating the modified plan. Any strict improvement (greater than the best score plus 10<sup>&minus;9</sup>) is accepted immediately. This is first-improvement hill climbing. The ascent stops when a full pass changes nothing, or when the time budget runs out<sup class="ref"><a href="#src-22" title="webdip_bot/search_moves.py:91-115">22</a></sup>.</p>
+    <p><strong>5. Finish.</strong> Return the best plan, with each order passed through DumbBot&rsquo;s legality check, so an illegal order becomes a hold.</p>
+    <p>Two optional extras are off in Kissinger: softmax mixed selection among the top plans (the Rasputin personality) and a spring-to-autumn rollout re-rank (Napoleon).</p>
+
+    <figure>
+      <svg viewBox="0 0 680 300" width="100%" role="img" aria-label="Grid of candidate plans by opponent samples; every cell is one adjudication and static score">
+        <g font-family="Merriweather Sans, Helvetica Neue, sans-serif">
+          <text x="180" y="20" font-size="10" fill="#555555">opponent samples j = 1 … 16 (fixed for the whole decision)</text>
+          <!-- column headers -->
+          <g font-size="8" fill="#999999" text-anchor="middle">
+            <text x="189" y="38">1</text><text x="211" y="38">2</text><text x="233" y="38">3</text><text x="255" y="38">4</text>
+            <text x="277" y="38">5</text><text x="299" y="38">6</text><text x="321" y="38">7</text><text x="343" y="38">8</text>
+            <text x="365" y="38">9</text><text x="387" y="38">10</text><text x="409" y="38">11</text><text x="431" y="38">12</text>
+            <text x="453" y="38">13</text><text x="475" y="38">14</text><text x="497" y="38">15</text><text x="519" y="38">16</text>
+          </g>
+          <!-- row labels -->
+          <g font-size="10" fill="#111827" text-anchor="end">
+            <text x="170" y="60">seed 1</text>
+            <text x="170" y="82">seed 2</text>
+            <text x="170" y="104" fill="#999999">⋮</text>
+            <text x="170" y="126">seed 12</text>
+            <text x="170" y="170">ascent candidate</text>
+            <text x="170" y="192">ascent candidate</text>
+            <text x="170" y="214" fill="#999999">⋮</text>
+            <text x="170" y="236">ascent candidate</text>
+          </g>
+          <text x="10" y="94" font-size="10" font-weight="700" fill="#1a3875">12 seeds</text>
+          <text x="10" y="204" font-size="10" font-weight="700" fill="#1a3875">ascent</text>
+          <text x="10" y="218" font-size="9" fill="#555555">one row per</text>
+          <text x="10" y="230" font-size="9" fill="#555555">alternative tried</text>
+          <!-- grid cells drawn by pattern -->
+          <defs>
+            <pattern id="cells" x="178" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
+              <rect x="1" y="1" width="20" height="18" rx="2" fill="#eef2f7" stroke="#859ebe" stroke-width="0.6"/>
+            </pattern>
+          </defs>
+          <rect x="178" y="44" width="352" height="22" fill="url(#cells)" transform="translate(0,0)"/>
+          <rect x="178" y="66" width="352" height="22" fill="url(#cells)"/>
+          <rect x="178" y="110" width="352" height="22" fill="url(#cells)"/>
+          <rect x="178" y="154" width="352" height="22" fill="url(#cells)"/>
+          <rect x="178" y="176" width="352" height="22" fill="url(#cells)"/>
+          <rect x="178" y="220" width="352" height="22" fill="url(#cells)"/>
+          <!-- mean column -->
+          <text x="565" y="38" font-size="9" fill="#555555" text-anchor="middle">mean</text>
+          <g font-size="10" fill="#1a3875" text-anchor="middle" font-weight="600">
+            <text x="565" y="60">μ</text><text x="565" y="82">μ</text><text x="565" y="126">μ</text>
+            <text x="565" y="170">μ</text><text x="565" y="192">μ</text><text x="565" y="236">μ</text>
+          </g>
+          <!-- highlighted best seed -->
+          <rect x="176" y="43" width="402" height="23" rx="3" fill="none" stroke="#d4a853" stroke-width="1.5"/>
+          <text x="586" y="60" font-size="9" fill="#8a6a1f">best seed:</text>
+          <text x="586" y="72" font-size="9" fill="#8a6a1f">starts ascent</text>
+          <path d="M600,78 C620,110 620,140 588,160" fill="none" stroke="#d4a853" stroke-width="1.2" stroke-dasharray="3 2"/>
+          <!-- legend -->
+          <rect x="178" y="262" width="20" height="18" rx="2" fill="#eef2f7" stroke="#859ebe" stroke-width="0.6"/>
+          <text x="206" y="275" font-size="10" fill="#555555">= our plan + sample j → native adjudication → score_fast (one cell = one “search_sim”)</text>
+        </g>
+      </svg>
+      <figcaption><span class="fig-label">Figure 3</span>The work behind one decision. Every candidate plan, whether a seed or a change the ascent tries, is scored against the same 16 opponent samples, and its value is the row mean. The 12 seeds alone cost 192 adjudications; a typical v8 decision fills about 3,100 cells in total (§5). Because samples are fixed, plans are compared on identical opponent behaviour.</figcaption>
+    </figure>
+
+    <figure>
+      <svg viewBox="0 0 680 210" width="100%" role="img" aria-label="Coordinate ascent loop with first-improvement acceptance and stop rules">
+        <defs>
+          <marker id="f4a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8" fill="none" stroke="#859ebe" stroke-width="1.2"/>
+          </marker>
+        </defs>
+        <g font-family="Merriweather Sans, Helvetica Neue, sans-serif" text-anchor="middle">
+          <rect x="10" y="60" width="120" height="56" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="70" y="84" font-size="11" font-weight="600" fill="#111827">best = best seed</text>
+          <text x="70" y="100" font-size="9.5" fill="#555555">pass = 1</text>
+
+          <rect x="160" y="60" width="140" height="56" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+          <text x="230" y="84" font-size="11" font-weight="600" fill="#1a3875">Next unit</text>
+          <text x="230" y="100" font-size="9.5" fill="#555555">random order per pass</text>
+
+          <rect x="330" y="60" width="150" height="56" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+          <text x="405" y="84" font-size="11" font-weight="600" fill="#1a3875">Try next alternative</text>
+          <text x="405" y="100" font-size="9.5" fill="#555555">single, pair or convoy</text>
+
+          <rect x="510" y="60" width="160" height="56" rx="3" fill="#fffaf0" stroke="#1a3875" stroke-width="1.4"/>
+          <text x="590" y="84" font-size="11" font-weight="600" fill="#1a3875">evaluate(plan′)</text>
+          <text x="590" y="100" font-size="9.5" fill="#555555">&gt; best + 1e-9 → accept now</text>
+
+          <line x1="130" y1="88" x2="158" y2="88" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f4a)"/>
+          <line x1="300" y1="88" x2="328" y2="88" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f4a)"/>
+          <line x1="480" y1="88" x2="508" y2="88" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f4a)"/>
+          <!-- loop back to alternatives -->
+          <path d="M590,60 C590,24 405,24 405,58" fill="none" stroke="#859ebe" stroke-width="1.2" marker-end="url(#f4a)"/>
+          <text x="497" y="22" font-size="9.5" fill="#555555">until this unit&rsquo;s alternatives are exhausted</text>
+          <!-- loop back to units -->
+          <path d="M405,116 C405,146 230,146 230,118" fill="none" stroke="#859ebe" stroke-width="1.2" marker-end="url(#f4a)"/>
+          <text x="317" y="158" font-size="9.5" fill="#555555">then the next unit, until the pass ends</text>
+          <!-- stop rules -->
+          <text x="340" y="186" font-size="10" font-weight="700" fill="#b36e4e">Stop when: a pass changes nothing · 6 passes done · 20 s budget reached</text>
+          <text x="340" y="202" font-size="9.5" fill="#555555">otherwise pass += 1 and revisit every unit</text>
+        </g>
+      </svg>
+      <figcaption><span class="fig-label">Figure 4</span>First-improvement coordinate ascent. A better plan is taken the moment it is found, rather than after scanning all alternatives, and later units are optimized against the already-improved plan. In v8 the 20 s budget was never reached (§5).</figcaption>
+    </figure>
+
+    <h3>4c · The fast path that makes it feasible</h3>
+    <p>The search evaluates thousands of (plan &times; sample) boards per decision, so adjudication has to be cheap. Orders are converted to compact province-level tuples and resolved by a native Nim implementation of Hold, Move and Support, called through Nimpy, which returns for each unit whether it moved and whether it was dislodged<sup class="ref"><a href="#src-11" title="webdip_bot/search_orders.py:46-87">11</a></sup><sup class="ref"><a href="#src-12" title="webdip_bot/fastadj.py, webdip_bot/adjudicator_native.nim">12</a></sup>. A Python reference adjudicator is kept only for verification, and the AGPL <code>diplomacy</code> package is the fallback for orders that cannot be converted.</p>
+    <p>Convoys are approximated. A convoying fleet is treated as holding, and a convoyed army move becomes a plain move if every fleet on its path is ordered to convoy exactly that move. Otherwise it becomes a hold. A fleet being dislodged and so disrupting the convoy is ignored<sup class="ref"><a href="#src-11" title="webdip_bot/search_orders.py:46-87">11</a></sup>. Before this approximation, the package fallback took about 95% of decision time. With it, decisions became about 9&times; faster with no change in strength<sup class="ref"><a href="#src-16" title="best_practices.md">16</a></sup>. The Nim adjudicator in v8 cut a further 27% off the median, with bit-identical behaviour checked against a golden contract of 334 exact decisions<sup class="ref"><a href="#src-23" title="WORKING_CONTEXT.md">23</a></sup>.</p>
+  </section>
+
+  <section id="performance">
+    <h2>5 · Performance</h2>
+    <ul class="key-points">
+      <li>Typical movement decisions take about a second, and the 20 s budget was never reached.</li>
+    </ul>
+    <p>Measured in the v8 hosted check on 2026-10-07: 6 games, 0 exceptions, 0 rejected orders<sup class="ref"><a href="#src-24" title="evidence/v8-final-check">24</a></sup><sup class="ref"><a href="#src-25" title="experiments/ledger.jsonl">25</a></sup>.</p>
+    <table>
+      <thead><tr><th>Measure</th><th class="num">v8 (Nim)</th><th>Context</th></tr></thead>
+      <tbody>
+        <tr><td>Movement decision, median</td><td class="num">0.92 s</td><td>120 decisions, up to 13 units; Python-adjudicator filler: 1.47 s</td></tr>
+        <tr><td>Movement decision, p90</td><td class="num">2.2 s</td><td>11% of the 20 s budget</td></tr>
+        <tr><td>Movement decision, max</td><td class="num">2.85 s</td><td>14% of budget; Python filler max 4.85 s</td></tr>
+        <tr><td>Evaluated outcomes per decision, median</td><td class="num">~3,100</td><td>(plan &times; sample) cells; excludes the opponent model&rsquo;s own level-1 scoring</td></tr>
+        <tr><td>Retreat or build decision, median</td><td class="num">~3 ms</td><td>DumbBot only, no search</td></tr>
+      </tbody>
+    </table>
+    <p>The budget is 20 s of wall-clock time per decision, set by <code>WEBDIP_SEARCH_BUDGET_S</code> and checked inside the ascent<sup class="ref"><a href="#src-4" title="webdip_bot/config.py:30-87">4</a></sup>. A full local gunboat game takes about 45 s.</p>
+  </section>
+
+  <section id="alternatives">
+    <h2>6 · Alternatives considered</h2>
+    <ul class="key-points">
+      <li>Every alternative below was built and measured in paired games against Kissinger, and none beat it.</li>
+      <li>Two patterns: modelling opponents as smarter or dumber than level 1 loses, and optimizing the same evaluation harder is null or negative.</li>
+    </ul>
+    <p>Results are paired score differences relative to Kissinger unless noted<sup class="ref"><a href="#src-16" title="best_practices.md">16</a></sup><sup class="ref"><a href="#src-25" title="experiments/ledger.jsonl">25</a></sup>.</p>
+    <table>
+      <thead><tr><th>Variant</th><th>What it changes</th><th class="num">Paired result</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td>Machiavelli (level 0)</td><td>Opponents are plain DumbBot samples</td><td class="num">&minus;0.135</td><td>Rejected</td></tr>
+        <tr><td>Level 0/1 mix</td><td>50/50 mix of level-0 and level-1 opponents</td><td class="num">&minus;0.10</td><td>Rejected</td></tr>
+        <tr><td>kissinger2 (level 2)</td><td>Opponents best-respond to level-1 plans</td><td class="num">&minus;0.11</td><td>Rejected</td></tr>
+        <tr><td>3 restarts</td><td>Optimize the top 3 seeds, not 1</td><td class="num">null or &minus;</td><td>Lost to 1 restart in a championship test</td></tr>
+        <tr><td>Triples</td><td>Adds move + two supports alternatives</td><td class="num">null or &minus;</td><td>Rejected</td></tr>
+        <tr><td>24 samples</td><td>24 opponent samples instead of 16</td><td class="num">null or &minus;</td><td>Rejected</td></tr>
+        <tr><td>Napoleon</td><td>Spring rollouts judged by a DumbBot autumn</td><td class="num">null or &minus;</td><td>Rejected</td></tr>
+        <tr><td>Kutuzov</td><td>Learned ridge evaluation (R&sup2; 0.75)</td><td class="num">0.64 &rarr; 0.33</td><td>Rejected: arena score halved; exploitable, rewards standing next to targets instead of taking them</td></tr>
+        <tr><td>Risk aversion 0.5</td><td>Aggregate leans toward the worst sample</td><td class="num">&minus;0.055</td><td>No gain (48-game four-way test)</td></tr>
+        <tr><td>Build search</td><td>Searches winter builds</td><td class="num">+0.010</td><td>No gain (same test)</td></tr>
+        <tr><td>Builds + risk + diplomacy</td><td>All three combined</td><td class="num">&minus;0.016</td><td>No gain (same test)</td></tr>
+        <tr><td>Fabius</td><td>Risk 0.8 plus defensive weights</td><td class="num">&minus;0.122</td><td>Rejected (z = &minus;2.6)</td></tr>
+        <tr><td>Castlereagh</td><td>Implicit diplomacy</td><td class="num">null</td><td>Rejected</td></tr>
+        <tr><td>Rasputin</td><td>Softmax mixed strategy over top plans</td><td class="num">+0.08 &rarr; 0</td><td>Initial gain at z &asymp; 1.4 vanished on replication</td></tr>
+        <tr><td>NashBot</td><td>Regret matching (separate policy)</td><td class="num">&mdash;</td><td>Not chosen</td></tr>
+        <tr><td>Config evolution</td><td>53 generations anchored on the champion</td><td class="num">none better</td><td>Its repeated pick (risk &asymp; 0.5) failed the paired test</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-info">
+      <span class="callout-label">Rank depends on the field</span>
+      Kissinger&rsquo;s opponent model is pessimistic against fields of pure DumbBots, where it scored 0.38, but it wins against fields of search bots. A ranking from one field does not carry over to another.
+    </div>
+  </section>
+
+  <section id="open-questions">
+    <h2>7 · Open questions and risks</h2>
+    <ul class="key-points">
+      <li>The main open direction is a better evaluation. The remaining items are known approximations and untested ideas.</li>
+    </ul>
+    <div class="callout callout-open">
+      <span class="callout-label">Open · Better evaluation</span>
+      The evaluation is the measured bottleneck. A position evaluation trained causally from self-play outcomes is the leading candidate. The learned ridge evaluator showed that predicting centres well (R&sup2; 0.75) is not enough if the search can exploit it.
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">Open · Diplomacy in the opponent model</span>
+      Diplomacy so far changes only centre values. Changing the opponent model itself, for example expecting peace from powers that have not been aggressive, is untested.
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">Open · Press variant</span>
+      If the league moves to a press (messaging) variant, an LLM press player becomes relevant.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · Depth-1 horizon</span>
+      Tactics that need two phases, such as setting up a supported attack for next season, rely on the positional heuristic rather than on search.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · Convoy approximation</span>
+      Ignoring convoy disruption is acceptable for scoring hypotheticals, but the evaluation is slightly wrong in convoy-heavy positions.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · Determinism contract</span>
+      All components share one RNG, so the order of random draws affects decisions. Any change that adds, removes or reorders a draw changes behaviour, even if the logic is otherwise identical<sup class="ref"><a href="#src-3" title="webdip_bot/README.md">3</a></sup>.
+    </div>
+  </section>
+
+  <section id="sources">
+    <h2>8 · Sources</h2>
+    <p>Paths are relative to <code>webdiplomacy_lab/</code>, in first-citation order.</p>
+    <ol class="sources">
+      <li id="src-1"><span class="cite">webdip_bot/personalities.py:56-60</span> — Kissinger personality definition: <code>search</code> + <code>OPP_MODEL_LEVEL=1</code>.</li>
+      <li id="src-2"><span class="cite">TENTATIVE_LESSONS.md</span> — The lab conclusion that evaluation is the bottleneck.</li>
+      <li id="src-3"><span class="cite">webdip_bot/README.md</span> — Module map, personalities, and contracts (including determinism).</li>
+      <li id="src-4"><span class="cite">webdip_bot/config.py:30-87</span> — Search knobs and defaults: score weights, <code>SEARCH_RISK</code>, <code>SEARCH_RESTARTS</code>, time budget.</li>
+      <li id="src-5"><span class="cite">webdip_bot/bot.py:73-111</span> — Phase loop: polling, per-phase policy, save, decision logging.</li>
+      <li id="src-6"><span class="cite">webdip_bot/search.py:35-71</span> — <code>SearchBot.choose</code>, phase dispatch, fast-path preparation, <code>vmax</code>.</li>
+      <li id="src-7"><span class="cite">webdip_bot/dumbbot.py:94-148</span> — DumbBot value map: sizes, attack/defense, proximity diffusion, strength/competition.</li>
+      <li id="src-8"><span class="cite">webdip_bot/opponent_model.py:127-195</span> — <code>OpponentModel.sample</code>: competence draw and 16 joint samples.</li>
+      <li id="src-9"><span class="cite">webdip_bot/search_moves.py:10-45</span> — <code>choose_movement</code>.</li>
+      <li id="src-10"><span class="cite">webdip_bot/evaluation.py:25-41</span> — <code>PositionEvaluator.evaluate</code>: mean over samples.</li>
+      <li id="src-11"><span class="cite">webdip_bot/search_orders.py:46-87</span> — <code>fast_orders</code>: compact order conversion and convoy approximation.</li>
+      <li id="src-12"><span class="cite">webdip_bot/fastadj.py, webdip_bot/adjudicator_native.nim</span> — Python reference adjudicator and native Nim adjudicator.</li>
+      <li id="src-13"><span class="cite">webdip_bot/search_lookahead.py</span> — Winter build search and spring-to-autumn rollout; off in Kissinger.</li>
+      <li id="src-14"><span class="cite">webdip_bot/evaluation.py:43-76</span> — <code>score_fast</code>: static score of one adjudicated board.</li>
+      <li id="src-15"><span class="cite">webdip_bot/evaluation.py:78-108</span> — <code>score_package</code>: the same formula over the <code>diplomacy</code> package state.</li>
+      <li id="src-16"><span class="cite">best_practices.md</span> — Measured lessons: optimizer&rsquo;s curse, the &ldquo;sensible&rdquo; likelihood fix, paired results of alternatives.</li>
+      <li id="src-17"><span class="cite">webdip_bot/dumbbot.py:151-163</span> — DumbBot&rsquo;s randomized choice among near-tied options.</li>
+      <li id="src-18"><span class="cite">webdip_bot/opponent_model.py:89-125</span> — <code>improve_for</code>: level-1 single-unit best response for an opponent.</li>
+      <li id="src-19"><span class="cite">webdip_bot/opponent_model.py:15-80</span> — <code>update_beliefs</code>: competence log-odds update from public history.</li>
+      <li id="src-20"><span class="cite">webdip_bot/search_moves.py:48-57</span> — <code>seed_plans</code>: 12 evaluated DumbBot seeds.</li>
+      <li id="src-21"><span class="cite">webdip_bot/search_moves.py:118-175</span> — <code>joint_alternatives</code>: singles, pairs, convoys (triples off).</li>
+      <li id="src-22"><span class="cite">webdip_bot/search_moves.py:91-115</span> — <code>ascend</code>: first-improvement coordinate ascent and stop rules.</li>
+      <li id="src-23"><span class="cite">WORKING_CONTEXT.md</span> — v8 state: convoy approximation speedup, Nim adjudicator speedup, golden contract.</li>
+      <li id="src-24"><span class="cite">evidence/v8-final-check</span> — Hosted timing logs for the v8 check (6 games, 2026-10-07).</li>
+      <li id="src-25"><span class="cite">experiments/ledger.jsonl</span> — Experiment ledger, including the v8-final-check entry.</li>
+    </ol>
+  </section>
+
+</article>
+
+<!-- ================================================================
+     DC-COMMENTS BEGIN — markup + script (copy verbatim; do not modify)
+     ================================================================ -->
+<aside id="dc-sidebar" aria-label="Comments">
+  <h2 class="dc-title">Comments <span id="dc-count"></span></h2>
+  <div class="dc-actions">
+    <button class="dc-btn" id="dc-export">Export JSON</button>
+    <button class="dc-btn" id="dc-copy">Copy JSON</button>
+    <button class="dc-btn" id="dc-import">Import…</button>
+    <input type="file" id="dc-file" accept=".json,application/json" hidden>
+  </div>
+  <div id="dc-status" role="status"></div>
+  <div id="dc-list"><p class="dc-empty">No comments yet. Select text in the document to add one.</p></div>
+</aside>
+<button id="dc-fab" type="button">+ Comment</button>
+<button id="dc-toggle" type="button">Comments</button>
+<!-- Preload slot: a renderer may put a dc-comments/1 `comments` array here (each comment optionally carrying `replies`). Merged by id into the stored comments on load. Leave empty otherwise. -->
+<script id="dc-preload" type="application/json"></script>
+
+<script>
+(() => {
+  'use strict';
+  const FORMAT = 'dc-comments/1';
+  const CTX = 32; // prefix/suffix context length, chars
+  const doc = document.getElementById('doc');
+  const fab = document.getElementById('dc-fab');
+  const listEl = document.getElementById('dc-list');
+  const countEl = document.getElementById('dc-count');
+  const statusEl = document.getElementById('dc-status');
+  const sidebar = document.getElementById('dc-sidebar');
+  const storeKey = 'dc:' + document.title;
+
+  let comments = []; // {id, exact, prefix, suffix, text, created, resolved}
+  let ranges = new Map(); // id -> Range (null if orphaned)
+  let seq = 0;
+
+  // ---- text indexing: one global string over #doc's text nodes ----
+  function docText() {
+    const r = document.createRange();
+    r.selectNodeContents(doc);
+    return r.toString();
+  }
+  function globalOffset(container, offset) {
+    const r = document.createRange();
+    r.setStart(doc, 0);
+    r.setEnd(container, offset);
+    return r.toString().length;
+  }
+  function offsetsToRange(start, end) {
+    const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+    let pos = 0, range = document.createRange(), haveStart = false;
+    while (walker.nextNode()) {
+      const node = walker.currentNode, len = node.data.length;
+      if (!haveStart && pos + len >= start) {
+        range.setStart(node, start - pos);
+        haveStart = true;
+      }
+      if (haveStart && pos + len >= end) {
+        range.setEnd(node, end - pos);
+        return range;
+      }
+      pos += len;
+    }
+    return null;
+  }
+
+  // ---- anchoring: TextQuoteSelector-style exact + prefix/suffix ----
+  function selectorFromRange(range) {
+    const text = docText();
+    const start = globalOffset(range.startContainer, range.startOffset);
+    const end = globalOffset(range.endContainer, range.endOffset);
+    return {
+      exact: text.slice(start, end),
+      prefix: text.slice(Math.max(0, start - CTX), start),
+      suffix: text.slice(end, end + CTX),
+    };
+  }
+  function locate(c) {
+    const text = docText();
+    let i = text.indexOf(c.prefix + c.exact + c.suffix);
+    if (i >= 0) return offsetsToRange(i + c.prefix.length, i + c.prefix.length + c.exact.length);
+    i = text.indexOf(c.exact);
+    if (i >= 0) return offsetsToRange(i, i + c.exact.length);
+    return null;
+  }
+  function reanchorAll() {
+    ranges = new Map(comments.map(c => [c.id, locate(c)]));
+    paint();
+  }
+
+  // ---- painting via CSS Custom Highlight API ----
+  const hl = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  const hlActive = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  if (hl) { CSS.highlights.set('dc-hl', hl); CSS.highlights.set('dc-hl-active', hlActive); }
+  function paint(activeId) {
+    if (!hl) return;
+    hl.clear(); hlActive.clear();
+    for (const [id, r] of ranges) {
+      if (!r) continue;
+      (id === activeId ? hlActive : hl).add(r);
+    }
+  }
+
+  // ---- persistence (best-effort; file:// storage varies by browser) ----
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(comments)); } catch (e) { /* unavailable on some file:// setups */ }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      if (raw) comments = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- sidebar rendering ----
+  function flash(msg) {
+    statusEl.textContent = msg;
+    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 2500);
+  }
+  function sortedComments() {
+    const pos = c => {
+      const r = ranges.get(c.id);
+      return r ? globalOffset(r.startContainer, r.startOffset) : Infinity; // orphans last
+    };
+    return [...comments].sort((a, b) => pos(a) - pos(b));
+  }
+  function render(editingId) {
+    countEl.textContent = comments.length ? '(' + comments.length + ')' : '';
+    listEl.textContent = '';
+    if (!comments.length) {
+      const p = document.createElement('p');
+      p.className = 'dc-empty';
+      p.textContent = 'No comments yet. Select text in the document to add one.';
+      listEl.appendChild(p);
+      return;
+    }
+    for (const c of sortedComments()) {
+      const item = document.createElement('div');
+      item.className = 'dc-item' + (c.resolved ? ' dc-resolved' : '');
+      item.dataset.id = c.id;
+
+      const quote = document.createElement('div');
+      quote.className = 'dc-quote';
+      quote.textContent = c.exact.length > 90 ? c.exact.slice(0, 90) + '…' : c.exact;
+      if (!ranges.get(c.id)) {
+        const tag = document.createElement('span');
+        tag.className = 'dc-orphan-tag';
+        tag.textContent = 'orphaned';
+        quote.appendChild(tag);
+      }
+      item.appendChild(quote);
+
+      if (c.id === editingId) {
+        const ta = document.createElement('textarea');
+        ta.value = c.text;
+        ta.placeholder = 'Write a comment… (⌘/Ctrl+Enter to save, Esc to cancel)';
+        ta.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        });
+        ta.addEventListener('click', e => e.stopPropagation());
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'dc-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginTop = '6px';
+        saveBtn.addEventListener('click', e => { e.stopPropagation(); commit(); });
+        function commit() {
+          c.text = ta.value.trim();
+          if (!c.text) return cancel();
+          save(); render();
+        }
+        function cancel() {
+          if (!c.text) { comments = comments.filter(x => x.id !== c.id); ranges.delete(c.id); paint(); }
+          save(); render();
+        }
+        item.appendChild(ta);
+        item.appendChild(saveBtn);
+        listEl.appendChild(item);
+        requestAnimationFrame(() => ta.focus());
+        continue;
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dc-text';
+      text.textContent = c.text;
+      item.appendChild(text);
+
+      if (Array.isArray(c.replies) && c.replies.length) {
+        const box = document.createElement('div');
+        box.className = 'dc-replies';
+        for (const r of c.replies) {
+          const who = document.createElement('div');
+          who.className = 'dc-reply-author';
+          who.textContent = 'Reply from ' + (r.author || 'agent') + (r.created ? ' · ' + String(r.created).slice(0, 10) : '');
+          const body = document.createElement('div');
+          body.className = 'dc-reply-text';
+          for (const part of String(r.text || '').split(/(https?:\/\/[^\s)]+)/g)) {
+            if (/^https?:\/\//.test(part)) {
+              const a = document.createElement('a');
+              a.href = part; a.target = '_blank'; a.rel = 'noopener';
+              a.textContent = part;
+              a.addEventListener('click', e => e.stopPropagation());
+              body.appendChild(a);
+            } else body.appendChild(document.createTextNode(part));
+          }
+          box.append(who, body);
+        }
+        item.appendChild(box);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'dc-meta';
+      const when = document.createElement('span');
+      when.textContent = c.created.slice(0, 10);
+      const resolved = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!c.resolved;
+      cb.addEventListener('click', e => e.stopPropagation());
+      cb.addEventListener('change', () => { c.resolved = cb.checked; save(); render(); });
+      resolved.append(cb, 'resolved');
+      const del = document.createElement('button');
+      del.className = 'dc-del';
+      del.textContent = 'delete';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        comments = comments.filter(x => x.id !== c.id);
+        ranges.delete(c.id);
+        paint(); save(); render();
+      });
+      meta.append(when, resolved, del);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        const r = ranges.get(c.id);
+        if (!r) return flash('Anchor not found in this version of the document.');
+        const rect = r.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + rect.top - 160, behavior: 'smooth' });
+        paint(c.id);
+        setTimeout(() => paint(), 2000);
+      });
+      // double-click text to edit
+      text.addEventListener('dblclick', e => { e.stopPropagation(); render(c.id); });
+      listEl.appendChild(item);
+    }
+  }
+
+  // ---- selection -> floating Comment button ----
+  document.addEventListener('mouseup', e => {
+    if (fab.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) { fab.style.display = 'none'; return; }
+      const range = sel.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer) || !range.toString().trim()) {
+        fab.style.display = 'none';
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      fab.style.display = 'block';
+      fab.style.left = Math.min(rect.right + 8 + window.scrollX, window.scrollX + document.documentElement.clientWidth - 120) + 'px';
+      fab.style.top = (rect.top + window.scrollY - 4) + 'px';
+      fab.dataset.pending = '1';
+    }, 0);
+  });
+  fab.addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const c = Object.assign({ id: 'c' + Date.now().toString(36) + (seq++), text: '', created: new Date().toISOString(), resolved: false }, selectorFromRange(range));
+    comments.push(c);
+    ranges.set(c.id, range.cloneRange());
+    paint(c.id);
+    sel.removeAllRanges();
+    fab.style.display = 'none';
+    sidebar.classList.add('dc-open');
+    render(c.id);
+  });
+
+  // ---- export / import ----
+  function payload() {
+    return JSON.stringify({
+      format: FORMAT,
+      doc: document.title,
+      exported: new Date().toISOString(),
+      comments: comments,
+    }, null, 2);
+  }
+  document.getElementById('dc-export').addEventListener('click', () => {
+    const blob = new Blob([payload()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'doc') + '.comments.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Downloaded.');
+  });
+  document.getElementById('dc-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(payload()); flash('Copied to clipboard.'); }
+    catch (e) { flash('Clipboard blocked — use Export instead.'); }
+  });
+  document.getElementById('dc-import').addEventListener('click', () => document.getElementById('dc-file').click());
+  document.getElementById('dc-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(raw => {
+      const data = JSON.parse(raw);
+      if (data.format !== FORMAT || !Array.isArray(data.comments)) { flash('Not a dc-comments file.'); return; }
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of data.comments) byId.set(c.id, c);
+      comments = [...byId.values()];
+      reanchorAll(); save(); render();
+      flash('Imported ' + data.comments.length + ' comment(s).');
+    }).catch(() => flash('Could not parse that file.'));
+    e.target.value = '';
+  });
+
+  document.getElementById('dc-toggle').addEventListener('click', () => sidebar.classList.toggle('dc-open'));
+
+  // ---- init ----
+  load();
+  // Merge the renderer's preloaded comments (with replies) by id: a stored
+  // comment keeps its own text/resolved state and takes the preloaded replies.
+  try {
+    const pre = document.getElementById('dc-preload');
+    const preloaded = pre && pre.textContent.trim() ? JSON.parse(pre.textContent) : [];
+    if (Array.isArray(preloaded) && preloaded.length) {
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of preloaded) {
+        const existing = byId.get(c.id);
+        if (existing) { if (c.replies) existing.replies = c.replies; }
+        else byId.set(c.id, c);
+      }
+      comments = [...byId.values()];
+      save();
+    }
+  } catch (e) { /* malformed preload: ignore */ }
+  reanchorAll();
+  render();
+})();
+</script>
+<!-- ============ DC-COMMENTS END ============ -->
+</div>
+</body>
+</html>

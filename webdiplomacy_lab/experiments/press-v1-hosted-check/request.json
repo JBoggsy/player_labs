@@ -1,0 +1,54 @@
+{
+ "private": true,
+ "target": {
+  "league_id": "league_1bccc63d-cd0a-47d7-92d7-e762797b5f1c",
+  "variant_id": "classic-press-short"
+ },
+ "roster": [
+  {
+   "player": {
+    "policy_ref": "16b527ba-9c1e-4259-9e56-d8d900e4adc9"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "272d637a-6628-4040-a28c-8e9fb1ccf96f"
+   },
+   "slot": -1
+  }
+ ],
+ "num_episodes": 2,
+ "episode_player_llm_spend_limit_usd": 2,
+ "notes": "webdip lab: hosted health check of castlereagh_press v1 (LLM sidecar path) vs 6 bundled random bots; not a strength test"
+}

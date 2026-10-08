@@ -79,8 +79,32 @@ class OpponentModel:
             lo = bot.memory["logodds"].get(c, config.OPP_PRIOR_LOGODDS) + math.log(p_dumb / p_rand)
             bot.memory["logodds"][c] = max(-config.OPP_LOGODDS_CLIP, min(config.OPP_LOGODDS_CLIP, lo))
 
+    def apply_press(self, c, units_c, chosen):
+        """Condition one sampled plan of power c on the press policy: with probability = trust,
+        a unit plays the order c promised us, and an ally does not move or support into our
+        provinces."""
+        bot = self.bot
+        b = bot.b
+        stance, trust = bot.press["stance"].get(c, ("neutral", 0.0))
+        expected = bot.press["expected"].get(c, {})
+        ours = bot.press["our_provinces"]
+        out = []
+        for u, o in zip(units_c, chosen):
+            here = b.province(u["terrID"])
+            if here in expected and bot.rng.random() < trust:
+                o = expected[here]
+                bot.trace["press_expected_order_sampled"] += 1
+            elif (stance == "ally" and o["type"] in ("Move", "Support move")
+                  and b.province(o["toTerrID"]) in ours and bot.rng.random() < trust):
+                o = {"type": "Hold", "terrID": u["terrID"], "toTerrID": 0, "fromTerrID": 0, "viaConvoy": "No"}
+                bot.trace["press_ally_attack_removed"] += 1
+            out.append(o)
+        return out
+
     def dumb_share(self, c):
         bot = self.bot
+        if bot.press and bot.press["stance"].get(c, ("neutral",))[0] in ("ally", "hostile"):
+            return 1.0  # a power we negotiate with plays competently, not randomly
         if config.OPP_MODEL != "adaptive":
             return 1.0
         lo = bot.memory.get("logodds", {}).get(str(c), config.OPP_PRIOR_LOGODDS)
@@ -169,6 +193,8 @@ class OpponentModel:
                 else:
                     chosen = [bot.rng.choice(legal[u["id"]]) for u in theirs[c]]
                     bot.trace["opp_random_samples"] += 1
+                if bot.press:
+                    chosen = self.apply_press(c, theirs[c], chosen)
                 sample[POWER[c]] = [bot.dm.order(o, bot.unit_at) for o in chosen]
                 raw.extend(zip(theirs[c], chosen))
             opponents.append(sample)
