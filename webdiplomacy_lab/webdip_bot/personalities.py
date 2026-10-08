@@ -104,6 +104,11 @@ PERSONALITIES = {
         "overrides": {"OPP_MODEL_LEVEL": 1, "DIPLO": 1},
         "motto": "Congress of Vienna: keeps the peace with quiet neighbours, never forgets an attack, stabs on schedule.",
     },
+    "castlereagh_press": {
+        "base": "press",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "castlereagh"},
+        "motto": "Full press: an LLM statesman who negotiates, records every promise, and lets Kissinger's search pick the orders.",
+    },
 }
 
 

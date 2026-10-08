@@ -55,6 +55,10 @@ def policy_class(name):
         from webdip_bot.nash import NashBot
 
         return NashBot
+    if name == "press":
+        from webdip_bot.press.player import PressPlayer
+
+        return PressPlayer
     if name == "random":
         from webdip_bot.field.random_legal import RandomLegal
 
@@ -114,6 +118,10 @@ def play_phase(api, context, seed, policy, cls, state):
 def main(policy=None):
     policy = policy or os.environ.get("WEBDIP_POLICY", POLICY)
     cls = policy_class(policy)
+    if getattr(cls, "PRESS", False):
+        from webdip_bot.press.player import main as press_main
+
+        return press_main(policy)
     api = WebDiplomacy(
         os.environ["WEBDIP_URL"],
         os.environ["WEBDIP_API_KEY"],

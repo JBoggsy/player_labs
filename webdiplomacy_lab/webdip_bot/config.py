@@ -85,3 +85,19 @@ DIPLO_HOSTILE = 1.0    # decayed attacks at/above this = hostile
 DIPLO_GRUDGE = 0.5     # extra centre-value for taking a hostile power's centre
 DIPLO_PEACE = 0.6      # centre-value discount for taking a peaceful power's centre
 DIPLO_STAB_YEAR = 1905 # peace discount applies before this year
+
+# --- Press player (press/): LLM agent steering SearchBot; see press/player.py ---
+PRESS_SOUL = "castlereagh"          # press/souls/<name>/SOUL.md
+PRESS_MODEL = "z-ai/glm-5.3-flash"  # local default; hosted uses COWORLD_LLM_MODEL (fixed per upload)
+PRESS_REASONING = "low"             # OpenRouter reasoning effort ("" = provider default)
+PRESS_TEMPERATURE = 0.4
+PRESS_MAX_TOKENS = 2000             # per model call
+PRESS_CALL_TIMEOUT_S = 45.0         # per model call (the sidecar's upstream timeout is 60 s)
+PRESS_REQUEST_LIMIT = 8             # model calls per wake
+PRESS_WAKE_SECONDS = 60.0           # wall-clock limit per wake
+PRESS_MAX_WAKES = 5                 # per movement phase, including open and commit
+PRESS_WAKE_GAP_S = 20.0             # minimum gap between negotiate wakes
+PRESS_COMMIT_MARGIN_S = 75.0        # commit wake starts this long before the deadline
+PRESS_FINAL_MARGIN_S = 15.0         # orders saved with Ready this long before the deadline
+PRESS_MAX_MESSAGES_PER_PHASE = 8
+PRESS_MAX_MESSAGE_CHARS = 600
