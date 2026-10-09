@@ -112,7 +112,8 @@ PERSONALITIES = {
     # Frozen press evaluation field (souls differ; each is uploaded with a different model).
     # deepseek and qwen reason past 2000 tokens even at effort "low" and were too slow for 60 s
     # wakes (field health checks xreq_8c1ab851, xreq_ed717596), so their reasoning is off.
-    # metternich runs gemini-3.5-flash-lite (minimax-m3 managed ~1 call per wake).
+    # metternich runs gemini-3.5-flash-lite at effort "low" (it rejects reasoning off; minimax-m3
+    # managed ~1 call per wake).
     "bismarck_press": {
         "base": "press",
         "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "bismarck", "PRESS_MAX_TOKENS": 6000, "PRESS_REASONING": "none"},
@@ -125,7 +126,7 @@ PERSONALITIES = {
     },
     "metternich_press": {
         "base": "press",
-        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "metternich", "PRESS_MAX_TOKENS": 6000, "PRESS_REASONING": "none"},
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "metternich", "PRESS_MAX_TOKENS": 6000},
         "motto": "Full press field: cautious, never breaks a promise, rallies coalitions against the leader.",
     },
     "machiavelli_press": {
