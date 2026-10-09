@@ -86,6 +86,11 @@ rejects reasoning off (HTTP 400); minimax-m3 made about one call per wake; qwen3
 - `webdip-castlereagh-press:v5` (`7c4cb5f5`): pin cost. A constrained `commit_orders` is compared
   with the same policy minus `require_orders`/`forbid_moves_into` on the same opponent samples and
   refused once when worse by more than 0.5 expected centres (`accept_cost=true` overrides).
+- `webdip-castlereagh-press:v6` (`f8f16684`): map geometry. The briefing lists legal non-convoy
+  destinations for our units and nearby foreign units (`Notation.geometry`). Without it the LLMs
+  reason about adjacency from memory and often get it wrong (James saw SER/BUL/GRE treated as
+  unconnected; ~660 adjacency claims in field-check reasoning). The frozen field has the same
+  blindness; upgrading it would need a new baseline.
 
 **Other items:** viewer follow-ups (`tools/game_viewer.py`): order arrows use the renderer's power
 colours, not the viewer palette; label overlap with units in crowded provinces.
