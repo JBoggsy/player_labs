@@ -120,6 +120,11 @@ class Toolbox:
         """The current board: centres and units of every power, neutral centres, and your exposed centres."""
         return self._guard("board", {}, lambda: self.p.service.notation.brief(self.p.country))
 
+    def connections(self, province: str) -> str:
+        """Map lookup: which provinces an army or fleet in PROVINCE (e.g. "SER", "BUL") could move to, by unit type and coast. Static adjacency only: says nothing about what anyone will do."""
+        return self._guard("connections", {"province": province},
+                           lambda: self.p.service.notation.connections(province))
+
     def predict(self, power: str) -> str:
         """The most likely orders of one power this phase under your opponent model and your current committed policy, with frequencies."""
         return self._guard("predict", {"power": power}, lambda: self.p.service.predict(power, self.p.policy))
@@ -199,7 +204,7 @@ class Toolbox:
         return self._guard("read_skill", {"name": name}, run)
 
     def all(self):
-        return [self.board, self.predict, self.search, self.evaluate, self.assess_deal, self.commit_orders,
+        return [self.board, self.connections, self.predict, self.search, self.evaluate, self.assess_deal, self.commit_orders,
                 self.send_press, self.conversation, self.record_commitment, self.update_plan, self.note_power,
                 self.read_skill]
 

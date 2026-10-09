@@ -96,4 +96,51 @@ class Notation:
             if enemies:
                 threats.append(f"{self.dm.loc[t]} (reachable by {', '.join(enemies)})")
         lines.append("Your centres within reach of foreign units: " + ("; ".join(threats) or "none"))
+        lines.append(self.geometry(me))
+        return "\n".join(lines)
+
+    def moves(self, unit):
+        """Provinces this unit can move to this phase without a convoy (from the engine's legal orders)."""
+        dests = []
+        for o in self.b.legal.movement(unit):
+            if o["type"] == "Move" and o.get("viaConvoy") != "Yes":
+                dests.append(self.render(o).split(" - ", 1)[1])
+        return sorted(set(dests))
+
+    def connections(self, abbr):
+        """Static map connectivity of one province: where an army or fleet there could move."""
+        prov = self.province_id(abbr)
+        if prov is None:
+            raise ValueError(f"unknown province {abbr!r}")
+        b = self.b
+        kind = b.terr[prov]["type"]
+        parts = []
+        for node in sorted(b.nodes_in.get(prov, ())):
+            dests = sorted({self.dm.loc[t] for _, t in b.moves[node]})
+            where = self.dm.loc[node[1]]
+            parts.append(f"{'army' if node[0] == 'Army' else 'fleet'} at {where} could move to: {' '.join(dests) or '(none)'}")
+        if kind == "Land":
+            parts.append("fleets cannot enter (inland)")
+        elif kind == "Sea":
+            parts.append("armies cannot enter except by convoy (sea)")
+        return f"{self.dm.loc[prov]} ({kind.lower()}): " + "; ".join(parts) + \
+            ". Static adjacency only (no convoys); says nothing about what any unit will do."
+
+    def geometry(self, me):
+        """Possible moves (adjacency) of our units and of foreign units that can reach our area.
+        These are possibilities from the rules engine, not predictions or orders."""
+        b = self.b
+        mine = [u for u in b.units if int(u["countryID"]) == me]
+        area = {b.province(u["terrID"]) for u in mine} | {t for t, o in b.owner.items() if o == me}
+        lines = ["## Map connectivity: where each unit COULD move this phase (rules engine, no convoys). "
+                 "These are possibilities, not predicted or submitted orders; use predict() for likely orders "
+                 "and connections(PROVINCE) for any other province."]
+        for u in sorted(mine, key=self.unit_label):
+            dests = self.moves(u)
+            area |= {self.province_id(d) for d in dests}
+            lines.append(f"{self.unit_label(u)} could move to: {' '.join(dests) or '(nowhere)'}")
+        for u in sorted((u for u in b.units if int(u["countryID"]) != me), key=self.unit_label):
+            dests = self.moves(u)
+            if b.province(u["terrID"]) in area or any(self.province_id(d) in area for d in dests):
+                lines.append(f"{POWER[int(u['countryID'])]} {self.unit_label(u)} could move to: {' '.join(dests) or '(nowhere)'}")
         return "\n".join(lines)

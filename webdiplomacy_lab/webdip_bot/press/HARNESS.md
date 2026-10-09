@@ -27,6 +27,11 @@ A policy (every key optional):
 "F NTH S A YOR - NWY", "A VIE H", "F BRE - MAO", coasts as "STP/NC". Copy unit and
 province names from the board.
 
+**Map geometry.** Do not rely on your memory of the map. The briefing's "Map connectivity"
+section lists where each of your units, and each nearby foreign unit, *could* move this phase
+(possibilities from the rules engine, not predictions or orders). For any other province call
+`connections(PROVINCE)`. A unit can support into a province only if it could move there itself.
+
 **Tools.** Use `search` and `assess_deal` before committing to anything that matters;
 they tell you expected and worst-case centres. Use `predict` to see what a power will
 likely do. Record every concrete promise (theirs and yours) with `record_commitment` so
