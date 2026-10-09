@@ -103,8 +103,13 @@ same search engine without press. Not yet re-measured against the geometry field
 **Hero-seat rotation (James, 2026-10-09), control v7, queued as wave 3 with a same-window v7 batch:**
 `webdip-rot-castlereagh-luna` (`ecf9a8f0`), `-castlereagh-deepseek` (`d0e683df`),
 `-castlereagh-gemini` (`2d9d5e0a`), `-talleyrand-glm` (`f6bac0c6`), `-bismarck-glm` (`e4938fc3`); all
-v7 code. **Trust candidate T** (Codex, in progress): mark a power as a liar at its first clean
-breach or betrayal and never trust it again (trust clamp, ignored expected orders, no ally stance).
+v7 code. **Trust candidate T** = `webdip-castlereagh-press:v8` (`cc9d3bf5`, branch `press-trust`, v7
+code + liar marks), queued as wave 4: a power we held at ally stance or trust >= 0.5 that orders a
+move or support into our units/centres is permanently marked (trust capped at 0.1, its expected
+orders dropped, ally refused, banner in every briefing). Recorded promise breaches are shown only
+as unverified claims: Codex's audit found 10/30 sampled breach verdicts were our own recording
+errors. Measured motivation (100 wave-1 games): after a first breach or trusted attack we went
+back to trusting the power 94 times in 46 relationships; Talleyrand: 62/64 relationships.
 
 **Other items:** viewer follow-ups (`tools/game_viewer.py`): order arrows use the renderer's power
 colours, not the viewer palette; label overlap with units in crowded provinces.
