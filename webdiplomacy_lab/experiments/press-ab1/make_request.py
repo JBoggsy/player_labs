@@ -4,7 +4,7 @@ import sys
 
 FIELD = {  # frozen for the press-ab campaign; do not edit while an A/B is running
     "bismarck_press (deepseek-v4.1-flash)": "dce81640-9329-4bb7-a928-54dedd747690",
-    "talleyrand_press (qwen3.8-flash)": "04c89591-bed5-461e-922d-99dd54834046",
+    "talleyrand_press (gpt-6-luna)": "1e88c946-f668-41f1-9576-238bc0b74bf6",
     "metternich_press (gemini-3.5-flash-lite)": "628e6390-e9af-4993-af63-e84d16d0ef34",
     "machiavelli_press (glm-5.3-flash)": "a600ad8a-49e9-4fba-a506-ea0ac0cc47e5",
     "kissinger-v2 (silent)": "580d73eb-6a20-4762-8529-eef9655bfd83",

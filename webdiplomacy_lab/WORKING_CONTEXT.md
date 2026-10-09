@@ -63,7 +63,7 @@ lineage.
 | Seat | Policy | Model |
 | --- | --- | --- |
 | Bismarck (honest warmonger) | `webdip-bismarck-press:v3` | deepseek-v4.1-flash, reasoning off |
-| Talleyrand (liar) | `webdip-talleyrand-press:v2` | qwen3.8-flash, reasoning off |
+| Talleyrand (liar) | `webdip-talleyrand-press:v3` | gpt-6-luna, reasoning low |
 | Metternich (cautious, never lies) | `webdip-metternich-press:v4` | gemini-3.5-flash-lite, reasoning low |
 | Machiavelli (stabber) | `webdip-machiavelli-press:v1` | glm-5.3-flash |
 | Kissinger (silent) | `webdip-kissinger:v2` | – |
@@ -71,15 +71,21 @@ lineage.
 
 Model gotchas from the health checks: deepseek, qwen and minimax reason past a 2000-token
 `max_tokens` even at effort `low` (the wake dies with `UnexpectedModelBehavior`); gemini-3.5-flash-lite
-rejects reasoning off (HTTP 400); minimax-m3 made about one call per wake; qwen takes frequent
-provider 429s.
+rejects reasoning off (HTTP 400); minimax-m3 made about one call per wake; qwen3.8-flash took about
+40 provider 429s per game.
 
 **Candidates (siblings of v1):**
 - `webdip-castlereagh-press:v2` (`532ce206`): open wake 100 s, 12 calls per wake. v1 hosted open
   wakes hit the 60 s limit 12/32; v2 2/16 in its field check.
 - `webdip-castlereagh-press:v3` (`331786ae`): deal gate (own promises and dependent commits need a
   same-phase `assess_deal`), accept/counter/reject recommendation, power abbreviations. v1 made
-  zero `assess_deal` calls in local game 2.
+  zero `assess_deal` calls in local game 2; v3 made 17 per game in its field check, gate blocked 0-2.
+- `webdip-castlereagh-press:v4` (`afc90a7c`): end-game awareness. Briefings state the end year and
+  phases left; final-year task text; final-autumn search ignores position and lost units. The
+  diagnosis (Codex, field checks) found terminal turns spent on next-year plans (one seat 8 -> 5).
+- `webdip-castlereagh-press:v5` (`7c4cb5f5`): pin cost. A constrained `commit_orders` is compared
+  with the same policy minus `require_orders`/`forbid_moves_into` on the same opponent samples and
+  refused once when worse by more than 0.5 expected centres (`accept_cost=true` overrides).
 
 **Other items:** viewer follow-ups (`tools/game_viewer.py`): order arrows use the renderer's power
 colours, not the viewer palette; label overlap with units in crowded provinces.
