@@ -17,8 +17,8 @@ league's empty seats.
 
 - **League.** `webDiplomacy` (`league_1bccc63d…`) plays `classic-press` once a day:
   4-minute movement phases, 1-minute retreat and build phases, ends 1908. Scoring is
-  the draw share (SC² / ΣSC²), ranked by mean score. Its filler roster is **empty**
-  today. `webDiplomacy Gunboat` (`league_428e91e5…`) is where Kissinger plays.
+  the draw share (SC² / ΣSC²), ranked by mean score. Its filler roster is the frozen
+  press field (`WORKING_CONTEXT.md`). `webDiplomacy Gunboat` (`league_428e91e5…`) is where Kissinger plays.
 - **Press.** `game/sendmessage` sends a message (`toCountryID` 0 = public). Incoming
   messages arrive in `game/playercontext` with `messages=1`. A phase ends early only
   when every seat is Ready.
@@ -133,7 +133,8 @@ counts, and threat maps come from code. The LLM supplies judgment and language.
 
 | Tool | What it does | Built from |
 | --- | --- | --- |
-| `board()` | Text summary: centres and units per power, neutral centres, our centres within reach of foreign units. | `Notation.brief` |
+| `board()` | Text summary: centres and units per power, neutral centres, our centres within reach of foreign units, and a "Map connectivity" list of where our units and nearby foreign units *could* move (rules engine, no convoys; labelled as possibilities, not predictions). Also in every briefing. Without it the LLM reasons about adjacency from memory and gets it wrong. | `Notation.brief`, `Notation.geometry` |
+| `connections(province)` | Static adjacency of any province: where an army or a fleet (per coast) there could move. | `Board.moves` |
 | `predict(power)` | Most likely orders of one power (top 3 per unit with frequencies) under the opponent model and our committed policy. | `OpponentModel` level-1 sampling |
 | `evaluate(orders, policy?)` | Expected, worst and best projected centres and per-order success/dislodge rates of a written order set. | `PositionEvaluator`, native adjudicator |
 | `search(policy)` | Best orders under a policy, with the same statistics. Does not change saved orders. | `choose_movement` |
@@ -216,23 +217,21 @@ movement phase, about 13–14 calls per seat-phase. Projected full `classic-pres
 (16 movement phases): about $0.10 per LLM seat, $0.70 with all seven seats on LLMs.
 Model latency: 4.4 s median, 15.6 s p90.
 
-## Fillers
+## Fillers (built)
 
-The press league's roster is empty, so our agents become the field.
+The press league's filler roster is the frozen press field, also the opponent set for hosted
+A/Bs (current versions and models in `WORKING_CONTEXT.md`, ids in
+`experiments/press-ab1/make_request.py`).
 
-- **Personality = `SOUL.md` + model + default `SearchPolicy`.** This extends
-  `personalities.py`: one image, `POLICY` build arg, one uploaded version per filler.
-- **Diversity matters more than strength.** Honest and deceptive, aggressive and
-  defensive, different models. A field of clones teaches nothing and invites
-  self-play artifacts.
-- **Keep some non-LLM fillers** (Kissinger, DumbBot) as silent, cheap, stable anchors.
-- **Risk: shared spend.** All platform-hosted LLM calls in the league meter against the
-  league's limit. LLM fillers can exhaust it and push our main player into 429s
-  (it then falls back to Kissinger). Confirm the limit and its scope before we fill six
-  seats with LLM agents.
-- **Lab rule check.** Hosted XP credits are not spent on own-policy self-play. Fillers
-  are part of the league field, but evaluation batches against all-our-own fillers need
-  the human's call.
+- **Personality = `SOUL.md` + model + per-model settings.** Each field seat is a `*_press`
+  entry in `personalities.py` (souls bismarck, talleyrand, metternich, machiavelli), one image per
+  `POLICY` build arg, one uploaded version per seat with its `--llm-model`. The model's sidecar
+  constraints decide `PRESS_MAX_TOKENS`, `PRESS_REASONING` and `PRESS_TEMPERATURE` (see the
+  gameplay doc, "LLM players").
+- **Diversity over strength:** an honest warmonger, a liar, a cautious coalition builder and a
+  stabber on four different model families, plus silent Kissinger and Calhamer as cheap anchors.
+- **No castlereagh lineage in the field,** so a candidate never plays a copy of itself.
+- **Spend:** a hosted full classic-press game with five LLM seats drew about 15 XP credits (LLM plus compute; press-ab1 waves 1-2).
 
 ## Risks and open questions
 

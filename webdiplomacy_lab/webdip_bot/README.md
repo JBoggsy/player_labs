@@ -30,7 +30,7 @@ are copied into the runtime image.
 | `field/` | Frozen arena opponents: `dumbbot_v1` (Calhamer) and `random_legal` (equivalent to the league filler). |
 | `arena.py` | Local-only dispatcher: picks this seat's policy by slot from argv. |
 | `config.py` | Every weight and switch, with defaults. |
-| `press/` | **Full-press player** (`castlereagh_press`): a pydantic-ai agent that negotiates and steers SearchBot through a press policy. `player.py` phase loop (Kissinger floor, open/negotiate/commit wakes), `agent.py` (model via the Coworld LLM sidecar only, per-call cost logging, tools), `search_service.py` (policy → SearchBot `press` dict; search/evaluate/predict), `journal.py` (press, commitments and kept/broken verdicts; LLM notes), `notation.py` (standard notation, board brief), `HARNESS.md`, `souls/<name>/SOUL.md`, `skills/<name>/SKILL.md`. Design: [`docs/designs/press-agent-design.md`](../docs/designs/press-agent-design.md). |
+| `press/` | **Full-press player** (`castlereagh_press`): a pydantic-ai agent that negotiates and steers SearchBot through a press policy. `player.py` phase loop (Kissinger floor, open/negotiate/commit wakes), `agent.py` (model via the Coworld LLM sidecar only, per-call cost logging, tools), `search_service.py` (policy → SearchBot `press` dict; search/evaluate/predict), `journal.py` (press, commitments and kept/broken verdicts; LLM notes), `notation.py` (standard notation, board brief, map connectivity and `connections(province)` from the rules engine's legal orders), `HARNESS.md`, `souls/<name>/SOUL.md`, `skills/<name>/SKILL.md`. Design: [`docs/designs/press-agent-design.md`](../docs/designs/press-agent-design.md). |
 
 ## Personalities
 
@@ -53,6 +53,8 @@ are copied into the runtime image.
 | rasputin | search | level-1 opponents, mixed selection among top plans |
 | castlereagh | search | level-1 opponents and hostility-based centre values |
 | castlereagh_press | press | LLM statesman (`souls/castlereagh`) over Kissinger search; full-press games only, plain Kissinger otherwise |
+| bismarck_press, talleyrand_press, metternich_press, machiavelli_press | press | Press evaluation field and league fillers: other souls, each uploaded with a different model and its per-model settings |
+| castlereagh_press_luna/_deepseek/_gemini, talleyrand_press_glm, bismarck_press_glm | press | Hero-seat rotation arms (soul × model experiment) |
 
 ## Opponent belief
 

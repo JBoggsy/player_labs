@@ -137,7 +137,21 @@ minute per seat; honour 429 `Retry-After`. Experience requests set
 Verified on hosted episodes (`xreq_547d713f`, 2026-10-08): the sidecar works with
 non-streaming OpenAI chat completions and tool calls; its `X-Coworld-Spend-Usd` header ran
 about 6% above the summed `usage.cost` of the response bodies, so budget against the header.
-Seat logs of ~0.4 MB arrived complete. The press player (`webdip_bot/press/`) uses this channel only; the verified sidecar
+Seat logs of ~0.4 MB arrived complete.
+
+The sidecar sets `provider.require_parameters=true`, so every parameter the bot sends must be
+supported by some provider of that model, or the call fails (HTTP 404 "No endpoints found").
+Verified on hosted health checks (2026-10-08/09):
+- `openai/gpt-6-luna` and `anthropic/claude-haiku-5.5` reject `temperature`
+  (`PRESS_TEMPERATURE = None` omits it).
+- `google/gemini-3.5-flash-lite` rejects reasoning off (HTTP 400); use effort `low`.
+- `deepseek/deepseek-v4.1-flash`, `qwen/qwen3.8-flash` and `minimax/minimax-m3` reason past a
+  2000-token `max_tokens` even at effort `low`, so the call returns no output; raise the cap
+  (6000) or turn reasoning off (deepseek, qwen).
+- `minimax/minimax-m3` managed about one call per 60 s wake; `qwen/qwen3.8-flash` drew about 40
+  provider 429s per game. Neither is used.
+Run a short hosted health check (one `classic-press-short` episode) after changing a seat's
+model: a failing seat silently falls back to the Kissinger floor. The press player (`webdip_bot/press/`) uses this channel only; the verified sidecar
 contract, local parity setup and log schema are in
 [`designs/press-agent-design.md`](designs/press-agent-design.md).
 

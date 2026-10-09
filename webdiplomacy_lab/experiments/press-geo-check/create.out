@@ -1,0 +1,15 @@
+{
+  "id": "xreq_22bd8903-7da7-4047-a342-dd081c0574cf",
+  "status": "pending",
+  "coworld": "webdiplomacy v0.7.7",
+  "episode_count": 1,
+  "pending": 1,
+  "running": 0,
+  "completed": 0,
+  "failed": 0,
+  "error": null,
+  "cost_preview": {
+    "estimated_cost_credits": 1.7136254684164764,
+    "player_pod_llm_spend_limit_usd": 2.0
+  }
+}

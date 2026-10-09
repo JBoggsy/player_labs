@@ -90,7 +90,7 @@ DIPLO_STAB_YEAR = 1905 # peace discount applies before this year
 PRESS_SOUL = "castlereagh"          # press/souls/<name>/SOUL.md
 PRESS_MODEL = "z-ai/glm-5.3-flash"  # local default; hosted uses COWORLD_LLM_MODEL (fixed per upload)
 PRESS_REASONING = "low"             # OpenRouter reasoning effort ("" = provider default)
-PRESS_TEMPERATURE = 0.4
+PRESS_TEMPERATURE = 0.4             # None omits it (the sidecar requires every sent parameter be supported)
 PRESS_MAX_TOKENS = 2000             # per model call
 PRESS_CALL_TIMEOUT_S = 45.0         # per model call (the sidecar's upstream timeout is 60 s)
 PRESS_REQUEST_LIMIT = 8             # model calls per wake
