@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Castlereagh Press Design</title>
+<!--
+  Ink & Print design/plan document template (Softmax house style).
+
+  HOW TO USE (renderer subagent):
+  - Replace everything inside <article id="doc"> with the real document content.
+    The placeholder content below doubles as a component style guide — copy the
+    markup patterns (masthead, TOC, section, figure, table, callout, code,
+    citation) and delete what you don't use.
+  - Do NOT modify anything between the DC-COMMENTS BEGIN/END markers. That block
+    is the tested commenting system; copy it verbatim. The one thing you may fill
+    is the CONTENT of <script id="dc-preload" type="application/json">: a
+    dc-comments/1 `comments` array, each comment optionally carrying
+    `replies: [{author, text, created}]`, so the reader sees their comments and
+    the agent's replies together in the sidebar.
+  - Keep the doc self-contained: inline SVG for figures, no JS deps beyond this
+    file. Google Fonts is the only permitted external fetch.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Merriweather+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ============ Ink & Print tokens ============ */
+  :root {
+    --bg: #fffdf4;            /* cream paper */
+    --surface: #fffaf0;
+    --surface-alt: #f8f6ef;
+    --fg: #111827;            /* warm near-black — never pure #000 */
+    --fg-subtle: #555555;
+    --fg-muted: #999999;
+    --ink-navy: #1a3875;
+    --ink-sage: #6e8050;
+    --ink-terracotta: #b36e4e;
+    --ink-gold: #d4a853;
+    --accent: #859ebe;
+    --accent-soft: #eef2f7;
+    --cta: #0e2758;
+    --cta-foreground: #fffdf4;
+    --border: #e4dac8;
+    --border-strong: #d4c9b5;
+    --border-subtle: #f0ebe1;
+    --serif: 'Merriweather', Georgia, serif;
+    --sans: 'Merriweather Sans', 'Helvetica Neue', sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ============ Page grid: reading column + comment rail ============ */
+  .dc-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  article#doc {
+    max-width: 72ch;
+    margin: 0 auto;
+    padding: 56px 40px 120px;
+    min-width: 0;
+  }
+
+  /* ============ Typography ============ */
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+  }
+  header.masthead { border-bottom: 2px solid var(--border-strong); padding-bottom: 20px; margin-bottom: 32px; }
+  header.masthead h1 {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: 34px;
+    line-height: 1.2;
+    margin: 8px 0 10px;
+  }
+  header.masthead .context { color: var(--fg-subtle); font-size: 13.5px; margin: 0; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-navy);
+    margin: 48px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 700; font-size: 16.5px; margin: 32px 0 8px; }
+  p { margin: 0 0 14px; }
+  a { color: var(--ink-navy); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  a:hover { color: var(--cta); }
+  strong { font-weight: 700; }
+  ul, ol { padding-left: 24px; margin: 0 0 14px; }
+  li { margin-bottom: 4px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 40px 0; }
+
+  /* Key-points opener: every section starts with scannable bullets */
+  .key-points {
+    list-style: none;
+    padding: 0 0 0 2px;
+    margin: 0 0 18px;
+  }
+  .key-points li { padding-left: 18px; position: relative; margin-bottom: 6px; }
+  .key-points li::before { content: '—'; position: absolute; left: 0; color: var(--ink-gold); font-weight: 700; }
+
+  /* ============ TOC ============ */
+  nav.toc { margin: 28px 0 8px; }
+  nav.toc ol { list-style: none; padding: 0; column-count: 2; column-gap: 40px; margin: 10px 0 0; }
+  nav.toc li { margin-bottom: 5px; break-inside: avoid; }
+  nav.toc a { text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  nav.toc .toc-num { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin-right: 8px; }
+
+  /* ============ Tables ============ */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 18px 0 22px;
+    font-size: 13.5px;
+  }
+  th {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+    text-align: left;
+    padding: 6px 12px 6px 0;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--border-subtle); vertical-align: top; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; font-feature-settings: 'tnum' 1; }
+
+  /* ============ Figures ============ */
+  figure { margin: 24px 0 28px; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--fg-subtle);
+  }
+  figcaption .fig-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10.5px;
+    color: var(--ink-navy);
+    margin-right: 8px;
+  }
+
+  /* ============ Code & citations ============ */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--surface-alt);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--surface-alt);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 16px 0 20px;
+  }
+  pre code { background: none; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .cite {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    background: var(--surface-alt);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  /* Superscript source references — body prose never carries raw file paths.
+     Full citation lives in the title (hover) and in the numbered Sources list. */
+  sup.ref { line-height: 0; }
+  sup.ref a {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--ink-navy);
+    text-decoration: none;
+    padding: 0 1px;
+  }
+  sup.ref a:hover { text-decoration: underline; }
+  ol.sources { margin: 12px 0; padding-left: 30px; }
+  ol.sources li {
+    font-size: 13px;
+    padding: 2px 0;
+  }
+  ol.sources li::marker {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--ink-navy);
+  }
+  ol.sources li:target { background: var(--accent-soft); }
+
+  /* ============ Callouts ============ */
+  .callout { padding: 12px 16px; margin: 18px 0; font-size: 13.5px; border-radius: 3px; }
+  .callout .callout-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .callout-info { background: var(--accent-soft); }
+  .callout-info .callout-label { color: var(--ink-navy); }
+  .callout-warn { background: rgba(179, 110, 78, 0.08); border-left: 3px solid var(--ink-terracotta); }
+  .callout-warn .callout-label { color: var(--ink-terracotta); }
+  .callout-open { background: rgba(212, 168, 83, 0.10); }
+  .callout-open .callout-label { color: #8a6a1f; }
+
+  /* Decision record */
+  .decision { border-top: 1px solid var(--border); padding: 14px 0 4px; margin: 14px 0; }
+  .decision .decision-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-sage); }
+  .decision p { margin-top: 6px; }
+
+  @media (max-width: 1100px) {
+    .dc-page { grid-template-columns: 1fr; }
+  }
+  @media print {
+    #dc-sidebar, #dc-fab, #dc-toggle { display: none !important; }
+    .dc-page { grid-template-columns: 1fr; }
+  }
+
+  /* ================================================================
+     DC-COMMENTS BEGIN — styles (copy verbatim; do not modify)
+     ================================================================ */
+  ::highlight(dc-hl) { background: rgba(212, 168, 83, 0.28); }
+  ::highlight(dc-hl-active) { background: rgba(212, 168, 83, 0.6); }
+
+  #dc-fab {
+    position: absolute;
+    z-index: 40;
+    display: none;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--cta-foreground);
+    background: var(--cta);
+    border: 1px solid #0a1c42;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  #dc-fab:hover { background: var(--ink-navy); }
+
+  #dc-sidebar {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    padding: 24px 20px 60px;
+    font-size: 13px;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+  }
+  #dc-sidebar h2.dc-title {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--fg-subtle);
+    margin: 0 0 4px;
+  }
+  .dc-actions { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 18px; }
+  .dc-btn {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fg);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .dc-btn:hover { background: var(--surface-alt); }
+  .dc-btn:focus-visible, #dc-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .dc-empty { color: var(--fg-muted); font-style: italic; }
+  .dc-item { border-top: 1px solid var(--border-subtle); padding: 12px 0; cursor: pointer; }
+  .dc-item.dc-resolved { opacity: 0.5; }
+  .dc-quote {
+    border-left: 2px solid var(--ink-gold);
+    padding-left: 8px;
+    color: var(--fg-subtle);
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 6px;
+    overflow-wrap: break-word;
+  }
+  .dc-orphan-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-terracotta);
+    background: rgba(179, 110, 78, 0.12);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: 6px;
+  }
+  .dc-text { white-space: pre-wrap; overflow-wrap: break-word; }
+  .dc-item textarea {
+    width: 100%;
+    min-height: 64px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    resize: vertical;
+  }
+  .dc-item textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dc-meta { display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--fg-muted); }
+  .dc-meta label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .dc-meta .dc-del { margin-left: auto; color: var(--ink-terracotta); background: none; border: none; font-size: 11px; cursor: pointer; padding: 0; }
+  .dc-meta .dc-del:hover { text-decoration: underline; }
+  #dc-status { font-size: 11px; color: var(--ink-sage); min-height: 16px; margin-top: 8px; }
+
+  #dc-toggle { display: none; }
+  @media (max-width: 1100px) {
+    #dc-sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: 320px;
+      max-width: 90vw;
+      transform: translateX(100%);
+      transition: transform 200ms ease-out;
+      z-index: 50;
+      box-shadow: -4px 0 16px rgba(0, 0, 0, 0.08);
+    }
+    #dc-sidebar.dc-open { transform: translateX(0); }
+    #dc-toggle {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 51;
+      font-family: var(--sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cta-foreground);
+      background: var(--cta);
+      border: 1px solid #0a1c42;
+      border-radius: 999px;
+      padding: 9px 15px;
+      cursor: pointer;
+    }
+  }
+  /* ============ DC-COMMENTS END — styles ============ */
+  /* replies rendered under a comment (from the comment's `replies` array) */
+  .dc-replies { margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--border-strong); }
+  .dc-reply-author { font-family: var(--sans); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-navy); }
+  .dc-reply-text { font-size: 12.5px; line-height: 1.5; color: var(--fg); white-space: pre-wrap; margin-top: 2px; }
+  .dc-reply-text a { color: var(--ink-navy); word-break: break-all; }
+  /* Document-specific additions (outside the DC-COMMENTS block) */
+  @media (max-width: 640px) { article#doc { padding: 32px 16px 96px; } nav.toc ol { column-count: 1; } }
+  @media (max-width: 640px) { article#doc { width: 100%; box-sizing: border-box; } #doc td code, #doc .cite { overflow-wrap: anywhere; white-space: normal; } #doc table { display: block; overflow-x: auto; } }
+</style>
+</head>
+<body>
+<div class="dc-page">
+<article id="doc">
+  <header class="masthead">
+    <span class="eyebrow">Design document · 2026-10-08 · v1 built, local testing</span>
+    <h1>Castlereagh Press: an LLM Negotiator on Top of Kissinger</h1>
+    <p class="context">This document describes the full-press webDiplomacy player <code>castlereagh_press</code>. An LLM talks, keeps notes and sets strategy. The Kissinger search bot is around the LLM and still selects every order. Status: v1 is complete, and the first local self-play game continues. The player is not uploaded and not submitted. This document is a companion to <a href="kissinger-search-policy-2026-10-08.html">the Kissinger search-policy document</a>.</p>
+  </header>
+
+  <section id="summary">
+    <h2>Executive Summary</h2>
+    <p>The <code>webDiplomacy</code> league plays <code>classic-press</code>. This variant has full negotiation, 4-minute movement phases and a draw-share score. Our champion, Kissinger, plays in the separate gunboat league and cannot talk. <code>castlereagh_press</code> is a full-press player that obeys one principle: <strong>the LLM decides which powers to trust and what to aim for, and search decides which orders get that result.</strong> The LLM never writes orders. It sets a <em>search policy</em> (stances, trust, expected and promised orders, forbidden provinces, centre values per power, risk). Then Kissinger&rsquo;s search changes that policy into legal orders. The harness saves plain Kissinger orders at the start of each movement phase, before the first LLM call. Thus, if the LLM fails, the seat plays the champion&rsquo;s orders and never stays empty.</p>
+    <p>The harness is a thin Python layer on <code>pydantic-ai</code> in the same process as the bot. It copies the style of the Pi agent harness: a small system prompt (soul, harness rules, skill index), 12 typed tools, and &ldquo;files as memory.&rdquo; Each wake is a new agent run. The harness makes its context again each time from two sources: a journal of facts that the harness owns, and a workspace of plans and notes that the LLM owns. The first local self-play game has 7 seats, and 5 movement phases are complete. The loop operates from start to end: 73% of wakes stopped normally, 84% of recorded promises were kept, and the LLM cost was approximately $0.006 per seat in each movement phase. That cost is approximately ten times less than the first estimate. The game gives no data about the strength of the player. The next steps are to tune the wake limits, do a short comparison of models, and upload.</p>
+  </section>
+
+  <nav class="toc">
+    <span class="eyebrow">Contents</span>
+    <ol>
+      <li><span class="toc-num">1</span><a href="#goal">Goal and division of labour</a></li>
+      <li><span class="toc-num">2</span><a href="#floor">Kissinger is the floor</a></li>
+      <li><span class="toc-num">3</span><a href="#harness">Harness structure</a></li>
+      <li><span class="toc-num">4</span><a href="#modules">Modules</a></li>
+      <li><span class="toc-num">5</span><a href="#tools">Tools</a></li>
+      <li><span class="toc-num">6</span><a href="#search">Search integration</a></li>
+      <li><span class="toc-num">7</span><a href="#skills">Skills and soul</a></li>
+      <li><span class="toc-num">8</span><a href="#knowledge">Knowledge structures</a></li>
+      <li><span class="toc-num">9</span><a href="#llm">LLM channel and models</a></li>
+      <li><span class="toc-num">10</span><a href="#measurement">Early measurement</a></li>
+      <li><span class="toc-num">11</span><a href="#fillers">Fillers</a></li>
+      <li><span class="toc-num">12</span><a href="#alternatives">Alternatives considered</a></li>
+      <li><span class="toc-num">13</span><a href="#open-questions">Open questions and risks</a></li>
+      <li><span class="toc-num">14</span><a href="#drift">Doc/code drift</a></li>
+      <li><span class="toc-num">15</span><a href="#next-steps">Next steps</a></li>
+      <li><span class="toc-num">16</span><a href="#sources">Sources</a></li>
+    </ol>
+  </nav>
+
+  <section id="goal">
+    <h2>1 · Goal and division of labour</h2>
+    <ul class="key-points">
+      <li>The press league has full negotiation and 4-minute movement phases. The score is the draw share, and the league ranks players by mean score.</li>
+      <li>Kissinger plays gunboat and cannot talk. The lab must have a player that can negotiate.</li>
+      <li>The split: the LLM decides which powers to trust and what to aim for. Search decides which orders get that result.</li>
+      <li>The same image, with different souls and models, can fill the empty seats in the press league.</li>
+    </ul>
+    <p>The <code>webDiplomacy</code> league plays the <code>classic-press</code> variant. All seven powers can negotiate fully. There is one game each day, with 4-minute movement phases and 1-minute retreat and build phases, and the game stops after 1908. The score of a player is its draw share. The draw share is the square of its supply-centre count, divided by the sum of the squares for all survivors. The league ranks players by mean score<sup class="ref"><a href="#src-1" title="docs/designs/press-agent-design.md">1</a></sup>.</p>
+    <p>Our champion is Kissinger, the <code>SearchBot</code> personality that the companion document describes. Kissinger plays in the separate <code>webDiplomacy Gunboat</code> league, where players cannot send messages. Thus Kissinger has no method to talk. The press league also has no filler roster today, so the agents that we upload will be a large part of the field.</p>
+    <p>The goal is a full-press player. In this player, an LLM negotiates with the other powers, keeps beliefs about each power, and sets strategy. <code>SearchBot</code> does the tactics, and the LLM uses it through tools. One line gives the split: <strong>the LLM decides which powers to trust and what to aim for, and search decides which orders get that result.</strong> An LLM is good at language, intent and judgment. But an LLM is not good at the list of legal Diplomacy orders, or at the result of those orders against sampled opponents. Kissinger already does that work well. The design also lets us use the same image again: with a different soul and model, it becomes a different filler personality (&sect;11).</p>
+  </section>
+
+  <section id="floor">
+    <h2>2 · Kissinger is the floor</h2>
+    <ul class="key-points">
+      <li>The LLM is never in the path that makes legal orders.</li>
+      <li>At the start of each movement phase, before the first LLM call, the harness saves plain Kissinger orders (not Ready).</li>
+      <li>Each decision of the agent replaces those orders through the same search pipeline.</li>
+      <li>If the LLM fails (timeout, HTTP 429, exception or crash), the orders of the champion stay in place.</li>
+    </ul>
+    <p>The main safety rule is this: because of the LLM, the press player can never play worse than &ldquo;Kissinger with a slow start.&rdquo; At the start of each movement phase, the harness does a plain Kissinger search (policy <code>None</code>). Then it saves those orders with Ready = No, before it makes the first LLM call<sup class="ref"><a href="#src-2" title="webdip_bot/press/player.py:178-187">2</a></sup>. Each later decision of the agent replaces those orders through the same search pipeline. The <code>commit_orders</code> tool calls <code>PressPlayer.commit</code>. That function calls <code>SearchService.search</code> and then saves the result with <code>api.orders(..., ready="No")</code><sup class="ref"><a href="#src-3" title="webdip_bot/press/player.py:63-70">3</a></sup>. Thus the LLM changes only the <em>policy</em> of the search. It never changes the orders directly.</p>
+    <p>If a part fails, the player goes back to the floor. The harness catches an exception in a wake and logs it as a <code>wake_error</code> event. The orders that it saved before the failure stay in place<sup class="ref"><a href="#src-4" title="webdip_bot/press/player.py:143-163">4</a></sup>. If <code>COWORLD_LLM_ENDPOINT</code> has no value, the harness makes no agent (<code>agent is None</code>), and the player is plain Kissinger<sup class="ref"><a href="#src-5" title="webdip_bot/press/player.py:55-57; webdip_bot/press/agent.py:29-30">5</a></sup>. At the deadline minus 15 s (<code>PRESS_FINAL_MARGIN_S</code>), the harness saves the last committed orders again with Ready = Yes<sup class="ref"><a href="#src-6" title="webdip_bot/press/player.py:203-212">6</a></sup>.</p>
+    <p>Retreat and build phases use <code>SearchBot</code> and DumbBot as in gunboat play, through <code>other_phase</code> and <code>bot.play_phase</code>. Games without press go through the same path. Thus the press personality plays gunboat games as Kissinger<sup class="ref"><a href="#src-7" title="webdip_bot/press/player.py:214-216, 248-251">7</a></sup>.</p>
+  </section>
+
+  <section id="harness">
+    <h2>3 · Harness structure</h2>
+    <ul class="key-points">
+      <li>A thin Python harness on <code>pydantic-ai</code> (version 2.54.0), in the same process as the bot. It copies the style of Pi: a small system prompt, few tools, files as memory, and skills that load when the agent asks for them.</li>
+      <li><code>bot.py</code> sends press games to <code>PressPlayer</code>. <code>PressPlayer</code> controls the phase loop, the wake schedule and the Kissinger floor.</li>
+      <li>Each wake is a new agent run. No chat history goes from one wake to the next. The harness makes the context again from the journal and the workspace each time.</li>
+      <li>A movement phase has a maximum of 5 wakes. Each wake has a limit of 60 s and 8 model calls.</li>
+    </ul>
+
+    <h3>3.1 Harness choice</h3>
+    <p>The harness is a thin Python layer in the player process. It uses <code>pydantic-ai</code>, which the player image pins as <code>pydantic-ai-slim[openai]==2.54.0</code><sup class="ref"><a href="#src-8" title="webdip_bot/Dockerfile">8</a></sup>. The harness copies the style of the Pi agent harness, but it does not use Pi. The style has four parts: a small system prompt, a small number of tools, files as memory, and skills in markdown that load when the agent asks for them. <code>pydantic-ai</code> gives the necessary functions and not much more. It makes tool schemas from typed Python functions, and it accepts any OpenAI-compatible base URL. It also gives a non-streaming <code>run_sync</code>, request limits through <code>UsageLimits</code>, and a cancellation token. &sect;12 gives the reasons why we did not use the two other harnesses, Pi and Hermes.</p>
+
+    <h3>3.2 Entry and dispatch</h3>
+    <p>The personality <code>castlereagh_press</code> uses the base policy <code>press</code> with two overrides: <code>OPP_MODEL_LEVEL=1</code> (the opponent model of Kissinger) and <code>PRESS_SOUL="castlereagh"</code>. Its motto is &ldquo;Full press: an LLM statesman who negotiates, records every promise, and lets Kissinger&rsquo;s search pick the orders.&rdquo;<sup class="ref"><a href="#src-9" title="webdip_bot/personalities.py">9</a></sup> In <code>bot.py</code>, <code>policy_class("press")</code> gives <code>PressPlayer</code>. When <code>bot.main</code> finds <code>cls.PRESS</code>, it gives control to <code>press.player.main</code>, which has its own outer loop<sup class="ref"><a href="#src-10" title="webdip_bot/bot.py">10</a></sup>.</p>
+    <p>That loop reads <code>api.context()</code> each 0.5 s. At a new Diplomacy phase in a press game, it calls <code>movement_phase</code>. At all other phases, it calls <code>other_phase</code>. When the game gets to <code>Finished</code>, or when the server sends HTTP 404, the loop calls <code>finish()</code>. This function writes a <code>press_summary</code> event. The event contains the total LLM calls, cost and tokens, the last plan, the notes, and each commitment with its verdict<sup class="ref"><a href="#src-11" title="webdip_bot/press/player.py:218-263">11</a></sup>. Figure 1 shows how the parts connect.</p>
+
+    <figure>
+      <svg viewBox="0 0 680 610" width="100%" role="img" aria-label="Architecture of the press player: dispatch, phase loop, per-wake agent, tools, search, memory and LLM path">
+        <defs>
+          <marker id="f1a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8" fill="none" stroke="#859ebe" stroke-width="1.2"/>
+          </marker>
+          <marker id="f1s" markerWidth="8" markerHeight="8" refX="1" refY="4" orient="auto">
+            <path d="M8,0 L0,4 L8,8" fill="none" stroke="#859ebe" stroke-width="1.2"/>
+          </marker>
+          <marker id="f1t" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8" fill="none" stroke="#b36e4e" stroke-width="1.2"/>
+          </marker>
+        </defs>
+        <g font-family="Merriweather Sans, Helvetica Neue, sans-serif" text-anchor="middle">
+          <!-- Row 0 -->
+          <rect x="10" y="10" width="190" height="56" rx="3" fill="#f8f6ef" stroke="#d4c9b5"/>
+          <text x="105" y="34" font-size="12" font-weight="600" fill="#111827">webDiplomacy server</text>
+          <text x="105" y="51" font-size="10" fill="#555555">board · press · order saves</text>
+
+          <rect x="240" y="10" width="200" height="56" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="340" y="34" font-size="12" font-weight="600" fill="#111827">bot.py dispatch</text>
+          <text x="340" y="51" font-size="10" fill="#555555">policy_class("press") → PressPlayer</text>
+
+          <rect x="480" y="10" width="190" height="56" rx="3" fill="#fffaf0" stroke="#6e8050"/>
+          <text x="575" y="34" font-size="12" font-weight="600" fill="#111827">SOUL · HARNESS · skills</text>
+          <text x="575" y="51" font-size="10" fill="#555555">markdown, ships with the version</text>
+
+          <!-- Memory column -->
+          <rect x="10" y="96" width="190" height="52" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="105" y="117" font-size="12" font-weight="600" fill="#111827">Journal</text>
+          <text x="105" y="134" font-size="10" fill="#555555">harness facts · LLM read-only</text>
+
+          <rect x="10" y="160" width="190" height="52" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="105" y="181" font-size="12" font-weight="600" fill="#111827">Workspace</text>
+          <text x="105" y="198" font-size="10" fill="#555555">LLM&#8217;s plan + per-power notes</text>
+
+          <!-- PressPlayer -->
+          <rect x="240" y="96" width="200" height="116" rx="3" fill="#eef2f7" stroke="#1a3875" stroke-width="1.4"/>
+          <text x="340" y="118" font-size="12" font-weight="600" fill="#1a3875">PressPlayer</text>
+          <text x="340" y="136" font-size="10" fill="#555555">phase loop, polls every 0.5 s</text>
+          <text x="340" y="152" font-size="10" fill="#555555">t = 0: Kissinger floor saved</text>
+          <text x="340" y="168" font-size="10" fill="#555555">wakes: open · negotiate · commit</text>
+          <text x="340" y="184" font-size="10" fill="#555555">deadline − 15 s: Ready = Yes</text>
+          <text x="340" y="200" font-size="10" fill="#555555">retreats, builds → SearchBot</text>
+
+          <!-- Briefing -->
+          <rect x="262" y="250" width="178" height="56" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="351" y="274" font-size="12" font-weight="600" fill="#111827">Briefing</text>
+          <text x="351" y="291" font-size="10" fill="#555555">user prompt, rebuilt per wake</text>
+
+          <!-- Agent -->
+          <rect x="480" y="226" width="190" height="104" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+          <text x="575" y="248" font-size="12" font-weight="600" fill="#1a3875">pydantic-ai Agent</text>
+          <text x="575" y="266" font-size="10" fill="#555555">fresh run every wake</text>
+          <text x="575" y="282" font-size="10" fill="#555555">system: SOUL + HARNESS</text>
+          <text x="575" y="298" font-size="10" fill="#555555">+ skill index</text>
+          <text x="575" y="316" font-size="10" fill="#555555">≤ 8 calls · ≤ 60 s</text>
+
+          <!-- Toolbox -->
+          <rect x="262" y="350" width="178" height="72" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="351" y="372" font-size="12" font-weight="600" fill="#111827">Toolbox · 12 tools</text>
+          <text x="351" y="390" font-size="10" fill="#555555">_guard: deadline, ERROR text</text>
+          <text x="351" y="406" font-size="10" fill="#555555">writes plan, notes, promises</text>
+
+          <!-- LLM path -->
+          <rect x="480" y="370" width="190" height="62" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="575" y="392" font-size="12" font-weight="600" fill="#111827">LLM sidecar</text>
+          <text x="575" y="408" font-size="10" fill="#555555">COWORLD_LLM_ENDPOINT</text>
+          <text x="575" y="423" font-size="10" fill="#555555">hosted, or local emulator</text>
+
+          <rect x="480" y="472" width="190" height="52" rx="3" fill="#f8f6ef" stroke="#d4c9b5"/>
+          <text x="575" y="494" font-size="12" font-weight="600" fill="#111827">OpenRouter</text>
+          <text x="575" y="511" font-size="10" fill="#555555">one pinned model per version</text>
+
+          <!-- Search -->
+          <rect x="240" y="462" width="200" height="56" rx="3" fill="#fffaf0" stroke="#d4c9b5"/>
+          <text x="340" y="485" font-size="12" font-weight="600" fill="#111827">SearchService</text>
+          <text x="340" y="502" font-size="10" fill="#555555">resolve · search · evaluate · predict</text>
+
+          <rect x="240" y="552" width="200" height="52" rx="3" fill="#eef2f7" stroke="#1a3875" stroke-width="1.4"/>
+          <text x="340" y="574" font-size="12" font-weight="600" fill="#1a3875">SearchBot (Kissinger)</text>
+          <text x="340" y="591" font-size="10" fill="#555555">press hooks; None = gunboat</text>
+
+          <!-- Arrows -->
+          <line x1="340" y1="66" x2="340" y2="94" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <polyline points="150,66 150,80 262,80 262,94" fill="none" stroke="#859ebe" stroke-width="1.5" marker-start="url(#f1s)" marker-end="url(#f1a)"/>
+          <text x="206" y="76" font-size="9" fill="#555555">poll · press · orders</text>
+          <line x1="202" y1="122" x2="238" y2="122" stroke="#859ebe" stroke-width="1.5" marker-start="url(#f1s)" marker-end="url(#f1a)"/>
+          <line x1="200" y1="186" x2="238" y2="186" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <text x="219" y="180" font-size="9" fill="#555555">read</text>
+          <line x1="351" y1="212" x2="351" y2="248" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <text x="359" y="234" font-size="9" fill="#555555" text-anchor="start">builds</text>
+          <line x1="440" y1="278" x2="478" y2="278" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <text x="459" y="270" font-size="9" fill="#555555">user</text>
+          <line x1="575" y1="66" x2="575" y2="224" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <text x="583" y="150" font-size="9" fill="#555555" text-anchor="start">system prompt;</text>
+          <text x="583" y="162" font-size="9" fill="#555555" text-anchor="start">read_skill on demand</text>
+          <polyline points="480,322 462,322 462,386 442,386" fill="none" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <text x="461" y="350" font-size="9" fill="#555555" transform="rotate(-90 461 350)" dy="-4">tool calls</text>
+          <line x1="575" y1="330" x2="575" y2="368" stroke="#859ebe" stroke-width="1.5" marker-start="url(#f1s)" marker-end="url(#f1a)"/>
+          <text x="583" y="347" font-size="9" fill="#555555" text-anchor="start">chat/completions,</text>
+          <text x="583" y="359" font-size="9" fill="#555555" text-anchor="start">no streaming</text>
+          <line x1="575" y1="432" x2="575" y2="470" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <line x1="351" y1="422" x2="351" y2="460" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <text x="359" y="446" font-size="9" fill="#555555" text-anchor="start">policy</text>
+          <line x1="340" y1="518" x2="340" y2="550" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f1a)"/>
+          <!-- Floor path -->
+          <line x1="250" y1="212" x2="250" y2="460" stroke="#b36e4e" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#f1t)"/>
+          <text x="246" y="336" font-size="9" fill="#b36e4e" transform="rotate(-90 246 336)">floor: policy None</text>
+        </g>
+      </svg>
+      <figcaption><span class="fig-label">Figure 1</span>Harness structure. <code>PressPlayer</code> controls the phase loop. It saves the Kissinger floor directly through search (dashed line). At each wake, it makes a briefing from the journal, the workspace and the board. Then it starts a new agent. The system prompt of the agent is the soul, the harness rules and a skill index. The agent can act only through the toolbox. Search calls go through <code>SearchService</code>, which is the only path to orders. Memory writes go to the workspace and the journal, and <code>send_press</code> sends messages to the server. The LLM can use only one network path: the sidecar of the pod.</figcaption>
+    </figure>
+
+    <h3>3.3 Wake schedule in one movement phase</h3>
+    <p>A <em>wake</em> is one agent run. The config module sets the schedule in a 4-minute movement phase<sup class="ref"><a href="#src-12" title="webdip_bot/config.py:90-103">12</a></sup>. The schedule has these steps (Figure 2):</p>
+    <ol>
+      <li><strong>Floor</strong> (t = 0). The harness saves the orders of Kissinger, not Ready. It also compares the commitments from earlier phases with the adjudicated history (<code>journal.verify</code>)<sup class="ref"><a href="#src-2" title="webdip_bot/press/player.py:178-187">2</a></sup>.</li>
+      <li><strong>Open wake</strong> (t &asymp; 0). The agent reads the board and its notes, sets its aims, and sends press. It tests alternatives with <code>search</code> and <code>assess_deal</code>, and then commits.</li>
+      <li><strong>Negotiate wakes.</strong> The loop reads the server each 3 s. If there is unread press, and 20 s (<code>PRESS_WAKE_GAP_S</code>) or more went by after the last wake, the loop starts a negotiate wake. These wakes stop at the deadline minus 75 s (<code>PRESS_COMMIT_MARGIN_S</code>). They also stop when the phase has 5 wakes (<code>PRESS_MAX_WAKES</code>, which includes the open and commit wakes). If all seats are Ready and the phase ends early, the loop stops immediately<sup class="ref"><a href="#src-13" title="webdip_bot/press/player.py:188-200">13</a></sup>.</li>
+      <li><strong>Commit wake</strong> (deadline minus 75 s). The agent does a last <code>commit_orders</code> and changes its plan.</li>
+      <li><strong>Lock</strong> (deadline minus 15 s). The harness saves the last committed orders with Ready = Yes. Then it writes a <code>decision</code> event. This event contains the search trace counters, the differences between the sent orders and the saved orders, the policy, and the LLM cost of the phase<sup class="ref"><a href="#src-6" title="webdip_bot/press/player.py:203-212">6</a></sup>.</li>
+    </ol>
+
+    <figure>
+      <svg viewBox="0 0 680 230" width="100%" role="img" aria-label="Timeline of one 4-minute movement phase with floor, five wakes and the Ready lock">
+        <defs>
+          <marker id="f2a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8" fill="none" stroke="#555555" stroke-width="1.2"/>
+          </marker>
+        </defs>
+        <g font-family="Merriweather Sans, Helvetica Neue, sans-serif">
+          <!-- negotiation window shading: t=0..165 -> x 40..452.5 -->
+          <rect x="40" y="70" width="412.5" height="60" fill="#f8f6ef"/>
+          <text x="246" y="64" font-size="10" fill="#555555" text-anchor="middle">negotiation window · negotiate wakes on new press, ≥ 20 s apart, polled every 3 s</text>
+          <!-- wake blocks -->
+          <rect x="40" y="82" width="100" height="36" rx="2" fill="#eef2f7" stroke="#859ebe"/>
+          <text x="90" y="104" font-size="10.5" font-weight="600" fill="#1a3875" text-anchor="middle">open</text>
+          <rect x="195" y="82" width="45" height="36" rx="2" fill="#eef2f7" stroke="#859ebe"/>
+          <text x="217.5" y="104" font-size="10" fill="#1a3875" text-anchor="middle">neg 1</text>
+          <rect x="295" y="82" width="45" height="36" rx="2" fill="#eef2f7" stroke="#859ebe"/>
+          <text x="317.5" y="104" font-size="10" fill="#1a3875" text-anchor="middle">neg 2</text>
+          <rect x="390" y="82" width="45" height="36" rx="2" fill="#eef2f7" stroke="#859ebe"/>
+          <text x="412.5" y="104" font-size="10" fill="#1a3875" text-anchor="middle">neg 3</text>
+          <rect x="452.5" y="82" width="87.5" height="36" rx="2" fill="#eef2f7" stroke="#1a3875" stroke-width="1.4"/>
+          <text x="496" y="104" font-size="10.5" font-weight="600" fill="#1a3875" text-anchor="middle">commit</text>
+          <!-- gap markers -->
+          <line x1="140" y1="124" x2="195" y2="124" stroke="#d4c9b5" stroke-width="1"/>
+          <text x="167.5" y="140" font-size="9" fill="#999999" text-anchor="middle">≥ 20 s</text>
+          <line x1="240" y1="124" x2="295" y2="124" stroke="#d4c9b5" stroke-width="1"/>
+          <text x="267.5" y="140" font-size="9" fill="#999999" text-anchor="middle">≥ 20 s</text>
+          <line x1="340" y1="124" x2="390" y2="124" stroke="#d4c9b5" stroke-width="1"/>
+          <text x="365" y="140" font-size="9" fill="#999999" text-anchor="middle">≥ 20 s</text>
+          <!-- floor at t=0 -->
+          <line x1="40" y1="30" x2="40" y2="160" stroke="#b36e4e" stroke-width="2"/>
+          <text x="44" y="24" font-size="10.5" font-weight="600" fill="#b36e4e">floor: Kissinger saved, not Ready</text>
+          <text x="44" y="38" font-size="9.5" fill="#555555">+ verify past commitments</text>
+          <!-- commit margin -->
+          <line x1="452.5" y1="70" x2="452.5" y2="160" stroke="#1a3875" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="448" y="190" font-size="9.5" fill="#1a3875" text-anchor="end">deadline − 75 s: negotiation</text>
+          <text x="448" y="202" font-size="9.5" fill="#1a3875" text-anchor="end">closes, commit wake</text>
+          <!-- lock -->
+          <line x1="602.5" y1="44" x2="602.5" y2="160" stroke="#6e8050" stroke-width="2"/>
+          <text x="598" y="40" font-size="10.5" font-weight="600" fill="#6e8050" text-anchor="end">lock: Ready = Yes</text>
+          <text x="606" y="190" font-size="9.5" fill="#6e8050">deadline − 15 s</text>
+          <!-- deadline -->
+          <line x1="640" y1="60" x2="640" y2="160" stroke="#111827" stroke-width="1.5"/>
+          <text x="640" y="56" font-size="10" font-weight="600" fill="#111827" text-anchor="middle">deadline</text>
+          <!-- axis -->
+          <line x1="40" y1="160" x2="640" y2="160" stroke="#555555" stroke-width="1"/>
+          <g font-size="9.5" fill="#555555" text-anchor="middle">
+            <line x1="40" y1="160" x2="40" y2="165" stroke="#555555"/><text x="40" y="176">0 s</text>
+            <line x1="190" y1="160" x2="190" y2="165" stroke="#555555"/><text x="190" y="176">60 s</text>
+            <line x1="340" y1="160" x2="340" y2="165" stroke="#555555"/><text x="340" y="176">120 s</text>
+            <line x1="490" y1="160" x2="490" y2="165" stroke="#555555"/><text x="490" y="176">180 s</text>
+            <line x1="640" y1="160" x2="640" y2="165" stroke="#555555"/><text x="640" y="176">240 s</text>
+          </g>
+          <text x="40" y="222" font-size="9.5" fill="#999999">Wake widths and spacing are illustrative; this example uses the maximum of 5 wakes (1 open + 3 negotiate + 1 commit).</text>
+        </g>
+      </svg>
+      <figcaption><span class="fig-label">Figure 2</span>One 4-minute movement phase. Legal orders are on the server from t = 0, so each later event can only make them better. A negotiate wake starts only when there is new press and 20 s or more went by after the last wake. Negotiate wakes stop 75 s before the deadline, when the commit wake starts. The harness marks the orders Ready 15 s before the deadline.</figcaption>
+    </figure>
+
+    <p>Each wake has these limits<sup class="ref"><a href="#src-14" title="webdip_bot/press/agent.py:84-91, 170-191">14</a></sup><sup class="ref"><a href="#src-4" title="webdip_bot/press/player.py:143-163">4</a></sup>:</p>
+    <table>
+      <thead><tr><th>Limit</th><th>Config key</th><th class="num">Value</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Wall clock per wake</td><td><code>PRESS_WAKE_SECONDS</code></td><td class="num">60 s</td><td>Made shorter to stop before the final margin. No wake starts with less than 15 s available</td></tr>
+        <tr><td>Model calls per wake</td><td><code>PRESS_REQUEST_LIMIT</code></td><td class="num">8</td><td>Enforced through <code>UsageLimits</code></td></tr>
+        <tr><td>Timeout per call</td><td><code>PRESS_CALL_TIMEOUT_S</code></td><td class="num">45 s</td><td>Below the sidecar&rsquo;s 60 s upstream timeout</td></tr>
+        <tr><td>Output tokens per call</td><td><code>PRESS_MAX_TOKENS</code></td><td class="num">2,000</td><td>Temperature 0.4, reasoning effort &ldquo;low&rdquo;</td></tr>
+        <tr><td>Wakes per movement phase</td><td><code>PRESS_MAX_WAKES</code></td><td class="num">5</td><td>Including the open and commit wakes</td></tr>
+        <tr><td>Gap between wakes</td><td><code>PRESS_WAKE_GAP_S</code></td><td class="num">20 s</td><td>Negotiate wakes only, and only with unread press</td></tr>
+        <tr><td>Commit margin</td><td><code>PRESS_COMMIT_MARGIN_S</code></td><td class="num">75 s</td><td>Before the deadline: commit wake starts</td></tr>
+        <tr><td>Final margin</td><td><code>PRESS_FINAL_MARGIN_S</code></td><td class="num">15 s</td><td>Before the deadline: Ready = Yes</td></tr>
+      </tbody>
+    </table>
+    <p>Each wake also has its own deadline: its wall-clock limit minus 5 s. After that deadline, each tool returns &ldquo;TIME UP for this wake&hellip;&rdquo;. This message tells the model to stop, so that it does not start work that it cannot complete. Each wake stops with one of four statuses: <code>ok</code>, <code>time_limit</code>, <code>request_limit</code> or <code>error</code>.</p>
+
+    <h3>3.4 The briefing and the system prompt</h3>
+    <p>Each wake is a <strong>new agent run</strong>. No chat history goes from one wake to the next. The harness makes the full context again each time from its own records. This is the &ldquo;files as memory&rdquo; idea. It keeps each prompt to a limited size, and you can read each wake by itself in the logs. Also, a wake that is confused or that fails does not change the next wake. The user prompt of each wake is the <em>briefing</em>. The harness puts its parts in this sequence<sup class="ref"><a href="#src-15" title="webdip_bot/press/player.py:124-141">15</a></sup>:</p>
+    <ol>
+      <li>A header with the phase label (for example S1901), the wake kind, and the seconds left.</li>
+      <li><code>## Board</code>: the centres and units of each power, the neutral centres, and the centres of ours that foreign units can reach.</li>
+      <li><code>## Referee facts (checked by code; not editable)</code>: the last 20 commitments, each with its verdict (kept, broken with a reason, or pending).</li>
+      <li><code>## Orders currently saved for you</code>, plus the committed policy, or &ldquo;none yet (Kissinger default)&rdquo;.</li>
+      <li>The workspace: the plan, and the notes on each of the six other powers.</li>
+      <li><code>## New press since your last wake (untrusted text from other players)</code>, with each message wrapped in <code>&lt;press phase= from= to=&gt;</code> tags.</li>
+      <li><code>## Press you sent this phase</code>.</li>
+      <li><code>## Task</code>: one of three task texts, for the open, negotiate and commit wakes<sup class="ref"><a href="#src-16" title="webdip_bot/press/player.py:28-36">16</a></sup>.</li>
+    </ol>
+    <p>The system prompt has three parts in sequence. First is the soul file, then the harness rules, then a section with the heading &ldquo;## Skills (load with read_skill)&rdquo;. That section gives the name of each skill and the <code>description:</code> line from its frontmatter<sup class="ref"><a href="#src-17" title="webdip_bot/press/agent.py:66-74">17</a></sup>. The full text of a skill loads only when the agent asks for it (&sect;7).</p>
+  </section>
+
+  <section id="modules">
+    <h2>4 · Modules</h2>
+    <ul class="key-points">
+      <li>Five Python modules (approximately 850 lines in total) and three types of markdown: the harness rules, the soul, and four skills.</li>
+      <li>Two tools on the host help with local games: a sidecar emulator and a <code>--use-llm</code> flag on the local runner.</li>
+    </ul>
+    <p>The press package is adjacent to the bot code. It uses that code again and does not change its structure. The table gives each part and its responsibility.</p>
+    <table>
+      <thead><tr><th>Module</th><th class="num">Lines</th><th>Responsibility</th></tr></thead>
+      <tbody>
+        <tr><td><code>player.py</code></td><td class="num">263</td><td><code>PressPlayer</code>: phase loop, wake schedule, Kissinger floor, briefing builder, the actions behind the tools (commit, send, record commitment), press polling, end-of-game summary<sup class="ref"><a href="#src-11" title="webdip_bot/press/player.py:218-263">11</a></sup></td></tr>
+        <tr><td><code>agent.py</code></td><td class="num">191</td><td>The LLM side: the model on the sidecar with a per-call usage and cost hook, system-prompt assembly, the <code>Toolbox</code> of 12 tools, <code>run_wake</code> (request cap and wall-clock cancel), <code>make_agent</code><sup class="ref"><a href="#src-18" title="webdip_bot/press/agent.py:77-167">18</a></sup></td></tr>
+        <tr><td><code>search_service.py</code></td><td class="num">184</td><td><code>SearchBot</code> behind a typed API: <code>resolve(policy)</code> turns a policy into <code>SearchBot</code>&rsquo;s <code>press</code> dict (and raises a <code>ValueError</code> naming any bad field); <code>search</code>, <code>evaluate</code>, <code>predict</code>; <code>_outcomes</code> computes expected, worst and best centres and per-order success and dislodge rates<sup class="ref"><a href="#src-19" title="webdip_bot/press/search_service.py:1-17, 53-97">19</a></sup></td></tr>
+        <tr><td><code>journal.py</code></td><td class="num">117</td><td><code>Journal</code> (harness-owned facts: every message, commitments, kept/broken verdicts; every event also printed as one JSON line) and <code>Workspace</code> (the LLM-owned plan and per-power notes)<sup class="ref"><a href="#src-20" title="webdip_bot/press/journal.py">20</a></sup></td></tr>
+        <tr><td><code>notation.py</code></td><td class="num">99</td><td>Standard Diplomacy notation in both directions, and the plain-text board summary. Parsing never guesses: a written order is matched against the unit&rsquo;s legal orders rendered in the same notation, first exactly, then ignoring coasts<sup class="ref"><a href="#src-21" title="webdip_bot/press/notation.py">21</a></sup></td></tr>
+        <tr><td><code>HARNESS.md</code></td><td class="num">41</td><td>Harness rules, shown to the model every wake<sup class="ref"><a href="#src-22" title="webdip_bot/press/HARNESS.md">22</a></sup></td></tr>
+        <tr><td><code>SOUL.md</code> (castlereagh)</td><td class="num">24</td><td>Identity, doctrine and voice<sup class="ref"><a href="#src-23" title="webdip_bot/press/souls/castlereagh/SOUL.md">23</a></sup></td></tr>
+        <tr><td><code>SKILL.md</code> &times; 4</td><td class="num">4 skills</td><td>Procedures loaded on demand<sup class="ref"><a href="#src-24" title="webdip_bot/press/skills/{opening-1901,negotiation,stab-checklist,draw-endgame}/SKILL.md">24</a></sup></td></tr>
+      </tbody>
+    </table>
+    <p>Two tools are outside the image. <code>llm_sidecar_local.py</code> (125 lines) is an emulator of the Coworld LLM sidecar that operates on the host<sup class="ref"><a href="#src-25" title="tools/llm_sidecar_local.py:1-35">25</a></sup>. The other tool is the <code>local --use-llm</code> mode of the lab runner <code>wd.py</code><sup class="ref"><a href="#src-26" title="tools/wd.py">26</a></sup>. &sect;9 describes the two tools.</p>
+  </section>
+
+  <section id="tools">
+    <h2>5 · Tools</h2>
+    <ul class="key-points">
+      <li>There are 12 tools. Three read the game or the skills, five go through search, and four write press or memory.</li>
+      <li>The agent never writes orders. It sets a <code>SearchPolicy</code>, which is a small JSON object. This object is the only control that the agent has on search.</li>
+      <li><code>assess_deal</code> gives the value of a deal in one call. It does three runs: both sides keep the deal, they betray us, and we betray them.</li>
+      <li>A wrapper is around each tool. Bad input comes back as an <code>ERROR: …</code> string that the model can correct, and the wake does not fail.</li>
+    </ul>
+    <p>All tools go through one guard function, <code>_guard</code>. The guard does three things. It compares the time with the wake deadline. It changes a <code>ValueError</code> into an <code>ERROR: …</code> text, so that the model can correct its own mistake and the wake does not fail. And it encodes the result as JSON<sup class="ref"><a href="#src-18" title="webdip_bot/press/agent.py:77-167">18</a></sup>.</p>
+    <table>
+      <thead><tr><th>Tool</th><th>What it does</th><th>Built from</th></tr></thead>
+      <tbody>
+        <tr><td><code>board()</code></td><td>Text board summary: centres and units per power, neutral centres, our exposed centres</td><td><code>Notation.brief</code></td></tr>
+        <tr><td><code>predict(power)</code></td><td>Top 3 likely orders per unit of one power, with sample frequencies, under the opponent model and the currently committed policy</td><td><code>SearchService.predict</code> (level-1 opponent samples)</td></tr>
+        <tr><td><code>search(policy)</code></td><td>Best orders under a policy, with expected, worst and best centres and per-order success and dislodge rates. Does not change the saved orders</td><td><code>SearchService.search</code> → <code>SearchBot.choose</code></td></tr>
+        <tr><td><code>evaluate(orders, policy?)</code></td><td>Scores a specific written order set (units left out hold) against sampled opponents</td><td><code>SearchService.evaluate</code></td></tr>
+        <tr><td><code>assess_deal(power, their_orders, our_orders, our_forbidden?)</code></td><td>Three runs: <code>both_honour</code>, <code>they_betray</code>, <code>we_betray</code> (Figure 3)</td><td>2 &times; search + 1 &times; evaluate</td></tr>
+        <tr><td><code>commit_orders(policy)</code></td><td>Adopts the policy for this phase: searches and saves orders now (not Ready). A later commit replaces it</td><td><code>PressPlayer.commit</code></td></tr>
+        <tr><td><code>send_press(to, text)</code></td><td>To a power name (private) or <code>ALL</code> (public). At most 600 characters per message and 8 messages per phase</td><td><code>game/sendmessage</code></td></tr>
+        <tr><td><code>conversation(power)</code></td><td>The last 12 private messages with one power</td><td><code>Journal.conversation</code></td></tr>
+        <tr><td><code>record_commitment(power, orders?, dmz?, note)</code></td><td>Records a promise made this phase, by a power or by <code>ME</code>. Orders are parsed and checked to belong to that power, then stored as province-level signatures for later verification</td><td><code>Journal.commit</code></td></tr>
+        <tr><td><code>update_plan(text)</code></td><td>Replaces <code>plan.md</code> (up to 3,600 characters stored; the tool asks for fewer than 3,000)</td><td><code>Workspace.set_plan</code></td></tr>
+        <tr><td><code>note_power(power, text)</code></td><td>Replaces the notes on one power (up to 1,800 characters)</td><td><code>Workspace.set_note</code></td></tr>
+        <tr><td><code>read_skill(name)</code></td><td>Loads one skill&rsquo;s full text</td><td>File read</td></tr>
+      </tbody>
+    </table>
+
+    <h3>5.1 SearchPolicy: the control surface over search</h3>
+    <p>The LLM uses one policy object to tell search all that it wants<sup class="ref"><a href="#src-19" title="webdip_bot/press/search_service.py:1-17, 53-97">19</a></sup>:</p>
+<pre style="max-width:100%;overflow-x:auto"><code>{"stances": {"AUSTRIA": "ally" | "neutral" | "hostile"},
+ "trust": {"AUSTRIA": 0.8},                 # default 0.7
+ "expected_orders": ["A BUD - RUM"],        # other powers' promised orders
+ "forbid_moves_into": ["GAL"],              # DMZs, ally centres
+ "require_orders": ["A VIE S A BUD - RUM"], # our promised orders
+ "center_values": {"TURKEY": 0.5},          # extra value per centre taken from that power
+ "risk": 0.0}                               # 0 = average, 1 = worst case</code></pre>
+    <p><code>resolve</code> examines each field: the stance values, which units are ours and which are foreign, and the province names. If a field is bad, it raises a <code>ValueError</code> that gives the name of that field. The guard sends this error back to the model, which can then correct it. The trust value stays in the range [0, 1]. If a power is only in <code>trust</code>, or only in an expected order, its stance is <code>neutral</code>. The harness rules tell the model how large <code>center_values</code> must be. One centre is equal to approximately 10 points of search score. Thus a value from &minus;1 to +1 is a small push, and a value from 2 to 5 is a strong push<sup class="ref"><a href="#src-22" title="webdip_bot/press/HARNESS.md">22</a></sup>.</p>
+    <p>Each tool call makes a new <code>SearchBot</code> with its own seeded random generator (seed <code>seed:country:turn:press:callN</code>). Thus you can repeat a call and get the same result, and one call does not change a different call. The calls share the beliefs about opponents through the game <code>state</code><sup class="ref"><a href="#src-27" title="webdip_bot/press/search_service.py:99-108">27</a></sup>. To apply <code>risk</code>, the code temporarily replaces the global <code>config.SEARCH_RISK</code> and then puts back the old value. <code>spring_value</code> already uses this method. The method is safe only because the tool calls operate one at a time. A change to an explicit argument will come when a concurrent caller exists<sup class="ref"><a href="#src-28" title="webdip_bot/press/search_service.py:30-39, 95-97">28</a></sup>.</p>
+
+    <h3>5.2 assess_deal: pricing a deal in one call</h3>
+    <p>Negotiation depends on one question: is this deal good for us, and what occurs if one side breaks it? <code>assess_deal</code> answers the question with three runs on the same opponent model (Figure 3).</p>
+
+    <figure>
+      <svg viewBox="0 0 680 290" width="100%" role="img" aria-label="assess_deal runs three evaluations: both honour, they betray, we betray">
+        <defs>
+          <marker id="f3a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8" fill="none" stroke="#859ebe" stroke-width="1.2"/>
+          </marker>
+        </defs>
+        <g font-family="Merriweather Sans, Helvetica Neue, sans-serif">
+          <rect x="10" y="100" width="170" height="90" rx="3" fill="#eef2f7" stroke="#1a3875" stroke-width="1.4"/>
+          <text x="95" y="126" font-size="12" font-weight="600" fill="#1a3875" text-anchor="middle">assess_deal</text>
+          <text x="95" y="146" font-size="10" fill="#555555" text-anchor="middle">power, their_orders,</text>
+          <text x="95" y="161" font-size="10" fill="#555555" text-anchor="middle">our_orders,</text>
+          <text x="95" y="176" font-size="10" fill="#555555" text-anchor="middle">our_forbidden?</text>
+
+          <!-- both_honour -->
+          <rect x="230" y="14" width="250" height="78" rx="3" fill="#fffaf0" stroke="#6e8050"/>
+          <text x="244" y="34" font-size="12" font-weight="600" fill="#111827">both_honour · search</text>
+          <text x="244" y="52" font-size="10" fill="#555555">they are ally, trust 1, their orders expected</text>
+          <text x="244" y="67" font-size="10" fill="#555555">our orders required, DMZs forbidden</text>
+          <text x="244" y="82" font-size="10" fill="#555555">→ value of the deal kept</text>
+
+          <!-- they_betray -->
+          <rect x="230" y="106" width="250" height="78" rx="3" fill="#fffaf0" stroke="#b36e4e"/>
+          <text x="244" y="126" font-size="12" font-weight="600" fill="#111827">they_betray · evaluate</text>
+          <text x="244" y="144" font-size="10" fill="#555555">the both_honour orders, scored with</text>
+          <text x="244" y="159" font-size="10" fill="#555555">that power hostile</text>
+          <text x="244" y="174" font-size="10" fill="#555555">→ our exposure if they break it</text>
+
+          <!-- we_betray -->
+          <rect x="230" y="198" width="250" height="78" rx="3" fill="#fffaf0" stroke="#d4a853"/>
+          <text x="244" y="218" font-size="12" font-weight="600" fill="#111827">we_betray · search</text>
+          <text x="244" y="236" font-size="10" fill="#555555">their orders expected,</text>
+          <text x="244" y="251" font-size="10" fill="#555555">none of ours required</text>
+          <text x="244" y="266" font-size="10" fill="#555555">→ what breaking it would gain us</text>
+
+          <polyline points="180,130 205,130 205,53 228,53" fill="none" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f3a)"/>
+          <line x1="180" y1="145" x2="228" y2="145" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f3a)"/>
+          <polyline points="180,160 205,160 205,237 228,237" fill="none" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f3a)"/>
+          <line x1="470" y1="92" x2="470" y2="104" stroke="#859ebe" stroke-width="1.5" stroke-dasharray="3 2" marker-end="url(#f3a)"/>
+
+          <!-- decision rules -->
+          <text x="500" y="40" font-size="10.5" font-weight="600" fill="#6e8050">Offer the deal if</text>
+          <text x="500" y="56" font-size="10" fill="#555555">both_honour beats the</text>
+          <text x="500" y="70" font-size="10" fill="#555555">current plan, and</text>
+          <text x="500" y="84" font-size="10" fill="#555555">they_betray is survivable</text>
+          <text x="500" y="226" font-size="10.5" font-weight="600" fill="#8a6a1f">Stab only if</text>
+          <text x="500" y="242" font-size="10" fill="#555555">we_betray beats both_honour</text>
+          <text x="500" y="256" font-size="10" fill="#555555">by ≥ 2 expected centres,</text>
+          <text x="500" y="270" font-size="10" fill="#555555">plus the stab checklist</text>
+        </g>
+      </svg>
+      <figcaption><span class="fig-label">Figure 3</span><code>assess_deal</code> does two searches and one evaluation. <code>they_betray</code> scores again the same orders that <code>both_honour</code> selected (dotted arrow). Thus it measures the risk to the honest plan. The decision rules on the right are not code. They come from the <code>negotiation</code> and <code>stab-checklist</code> skills and from the doctrine of the soul.</figcaption>
+    </figure>
+  </section>
+
+  <section id="search">
+    <h2>6 · Search integration</h2>
+    <ul class="key-points">
+      <li><code>SearchBot</code> has one new optional field, <code>press</code>, which contains the resolved policy.</li>
+      <li>When <code>press = None</code>, the behaviour is bit-identical to gunboat play. The golden check agrees on 334 of 334 cases.</li>
+      <li>There are three hooks: opponent samples that obey the stance, limits on our own plan, and centre values per power in the score.</li>
+      <li>Not built: a <code>lookahead</code> tool for more than one phase.</li>
+    </ul>
+    <p>The value of <code>SearchBot.press</code> is <code>None</code> by default. When the harness sets it, it contains the resolved policy. With <code>None</code>, the bot is bit-identical to gunboat Kissinger, and the golden check agrees on 334 of 334 cases<sup class="ref"><a href="#src-29" title="webdip_bot/search.py:27-29">29</a></sup>. This is important because, when no policy is set, the press work does not change the gunboat champion that we submitted. The policy gets to search through three hooks.</p>
+    <p><strong>Opponent samples that obey the stance and the expected orders.</strong> <code>OpponentModel.apply_press</code> changes each sampled plan of each power. A unit plays the order that its power promised, with a probability equal to the trust in that power. If an ally moves or supports into our provinces, the hook changes that order into a hold, also with a probability equal to the trust<sup class="ref"><a href="#src-30" title="webdip_bot/opponent_model.py:82-102">30</a></sup>. The model always plays a power with the stance ally or hostile as a competent player (a dumb share of 1.0), not as a partly random player<sup class="ref"><a href="#src-31" title="webdip_bot/opponent_model.py:104-108">31</a></sup>.</p>
+    <p><strong>Limits on our own plan.</strong> <code>search_moves.constrain</code> pins the required (promised) orders. In the seed plans, it changes forbidden moves and supports into holds<sup class="ref"><a href="#src-32" title="webdip_bot/search_moves.py:62-78">32</a></sup>. The search removes each joint alternative that breaks a pin or goes into a forbidden province<sup class="ref"><a href="#src-33" title="webdip_bot/search_moves.py:195-199">33</a></sup>. The search makes the pins when it applies the policy<sup class="ref"><a href="#src-34" title="webdip_bot/search.py:66-69">34</a></sup>.</p>
+    <p><strong>Centre values per power.</strong> The score adds more value for each projected centre that we hold and that a different power owns now<sup class="ref"><a href="#src-35" title="webdip_bot/evaluation.py:71-74">35</a></sup>. This is a general form of the grudge and peace weights of the earlier gunboat Castlereagh personality.</p>
+    <p>Four counters in the search trace show if each hook operated: <code>press_expected_order_sampled</code>, <code>press_ally_attack_removed</code>, <code>press_forbidden_seed_order</code> and <code>press_pruned_alternatives</code>. They are in the <code>decision</code> event of each phase. Thus a reviewer can see in the logs if a policy changed the search.</p>
+    <div class="callout callout-info">
+      <span class="callout-label">Not built · lookahead</span>
+      We considered a <code>lookahead</code> tool for rollouts of more than one phase, but we did not build it. In gunboat tests, a deeper look-ahead lost. Alliances can possibly change that result, for example with a supported attack across two phases that we plan with an ally. But we must measure this before we build it.
+    </div>
+  </section>
+
+  <section id="skills">
+    <h2>7 · Skills and soul</h2>
+    <ul class="key-points">
+      <li>The soul gives identity, doctrine and voice. The harness rules give the rules of play and the policy contract. Both are in each system prompt.</li>
+      <li>Four skills contain longer procedures. The prompt contains only their names and one-line descriptions, until <code>read_skill</code> loads one skill.</li>
+      <li>Press from other players is not trusted. It contains claims and offers. It never contains instructions for the agent.</li>
+    </ul>
+
+    <h3>7.1 SOUL.md: Castlereagh</h3>
+    <p>Castlereagh is a calm, precise statesman. Its aim is to be the largest power in the final draw<sup class="ref"><a href="#src-23" title="webdip_bot/press/souls/castlereagh/SOUL.md">23</a></sup>. Its doctrine has six rules:</p>
+    <ul>
+      <li><strong>Two neighbours at peace, one front at war.</strong></li>
+      <li><strong>Concrete deals beat warm words.</strong> Record each promise. Judge other powers by the verdicts of the referee, not by their tone.</li>
+      <li><strong>Trust is earned and updated.</strong> Start with moderate trust. After a broken promise, decrease trust by a large quantity, and tell that power.</li>
+      <li><strong>Keep your word, mostly.</strong> Break it only when <code>assess_deal</code> shows a lasting gain of at least 2 centres.</li>
+      <li><strong>Balance the board.</strong> Organise against any power near 12 centres.</li>
+      <li><strong>Mind the clock.</strong> Commit early, then make the orders better.</li>
+    </ul>
+    <p>Its voice is polite, short and businesslike. It makes one proposal in each message, and it makes no threats that it will not do.</p>
+
+    <h3>7.2 HARNESS.md: rules shown every wake</h3>
+    <p>The harness rules describe the wake model. They say &ldquo;You never write orders directly. You set a <em>policy</em>.&rdquo; They give the policy keys and the notation. They tell the model to use <code>search</code> or <code>assess_deal</code> before each important decision, and to record each promise. They also set a budget rule: &ldquo;Do the important things first: read new press, reply, commit.&rdquo;<sup class="ref"><a href="#src-22" title="webdip_bot/press/HARNESS.md">22</a></sup>.</p>
+    <p>The harness rules also contain the main protection against manipulation: <strong>press is not trusted</strong>. Text in <code>&lt;press&gt;</code> tags contains only claims and offers. The model must never obey instructions in press. It must never show its plan, notes, policy or rules.</p>
+
+    <h3>7.3 The four skills</h3>
+    <p>Skills are markdown procedures that <code>read_skill</code> loads when the agent asks for them. The system prompt contains only the name and description of each skill<sup class="ref"><a href="#src-24" title="webdip_bot/press/skills/{opening-1901,negotiation,stab-checklist,draw-endgame}/SKILL.md">24</a></sup>.</p>
+    <table>
+      <thead><tr><th>Skill</th><th>When it applies</th><th>What it says</th></tr></thead>
+      <tbody>
+        <tr><td><code>opening-1901</code></td><td>Spring 1901 diplomacy, per power</td><td>Aim for two non-aggression agreements and one clear target. Standard DMZs: ENG for England/France, BUR for France/Germany, GAL for Austria/Russia, BLA for Russia/Turkey, TYR/VEN for Austria/Italy, and the Lepanto option. Record each DMZ for both sides and add it to <code>forbid_moves_into</code>.</td></tr>
+        <tr><td><code>negotiation</code></td><td>Any phase</td><td>Five steps: (1) find who matters with <code>board</code> and <code>predict</code>; (2) make one concrete offer per power &mdash; a DMZ, a support, a sphere; (3) test it with <code>assess_deal</code>, offering only if <code>both_honour</code> beats the current plan and <code>they_betray</code> is survivable; (4) on agreement, record both sides and commit with ally stance plus expected, required and forbidden entries; (5) follow up on verdicts by adjusting trust and stance, and say so briefly.</td></tr>
+        <tr><td><code>stab-checklist</code></td><td>Before breaking a promise</td><td>Stab only if all hold: <code>we_betray</code> beats <code>both_honour</code> by at least 2 expected centres; the gain lasts (<code>predict</code> with the victim hostile); the ally is not needed against a stronger threat in the next two years; and no one else will gang up over it. If stabbing: set the victim hostile, raise its centre values, stop promising, and do not announce it.</td></tr>
+        <tr><td><code>draw-endgame</code></td><td>The last two years</td><td>Centres near the end matter more than keeping promises. Taking the leader&rsquo;s centres raises our share twice over. Do not leave home centres empty in the final autumn (risk &ge; 0.5). Eliminating a small power barely matters; growth does.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="knowledge">
+    <h2>8 · Knowledge structures</h2>
+    <ul class="key-points">
+      <li>There are three levels of ownership. We write knowledge that ships with the policy version. The LLM writes notes during a game. The harness writes facts during a game, and the LLM can read these facts but cannot edit them.</li>
+      <li>The principle: the harness calculates facts, and the LLM interprets them.</li>
+      <li>Code examines each promise after adjudication. Thus the LLM judges trust from the verdicts of the referee, not from its own memory of the messages.</li>
+      <li>Memory across games is not part of v1.</li>
+    </ul>
+    <table>
+      <thead><tr><th>Layer</th><th>Owner</th><th>Lifetime</th><th>Content</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>SOUL.md</td><td>Us, per personality</td><td>Policy version</td><td>Identity, voice, doctrine, honesty policy</td><td>One <code>SOUL.md</code> per soul</td></tr>
+        <tr><td>HARNESS.md</td><td>Us</td><td>Policy version</td><td>Rules of play, policy contract, untrusted-press rule</td><td><code>HARNESS.md</code></td></tr>
+        <tr><td>Skills</td><td>Us</td><td>Policy version</td><td>Procedures loaded on demand</td><td>One <code>SKILL.md</code> per skill</td></tr>
+        <tr><td>plan.md</td><td>LLM</td><td>One game</td><td>Objectives, alliance map, intentions, stab plans</td><td><code>Workspace.plan</code></td></tr>
+        <tr><td>Notes per power</td><td>LLM</td><td>One game</td><td>Disposition, trust, style, goals, promises (up to 1,800 characters each)</td><td><code>Workspace.notes</code></td></tr>
+        <tr><td>Journal</td><td>Harness (LLM cannot edit)</td><td>One game</td><td>Every message in and out; every commitment as province-level order signatures and DMZ provinces; automatic kept/broken verdicts after adjudication; every LLM call&rsquo;s usage and cost</td><td><code>Journal</code></td></tr>
+        <tr><td>Cross-game memory</td><td>&mdash;</td><td>Forever</td><td>Notes on recurring league opponents</td><td>Not built; out of scope for v1</td></tr>
+      </tbody>
+    </table>
+
+    <figure>
+      <svg viewBox="0 0 680 300" width="100%" role="img" aria-label="Three ownership tiers of the press player's knowledge and where each enters the prompt">
+        <defs>
+          <marker id="f4a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8" fill="none" stroke="#859ebe" stroke-width="1.2"/>
+          </marker>
+        </defs>
+        <g font-family="Merriweather Sans, Helvetica Neue, sans-serif">
+          <!-- tier labels -->
+          <text x="10" y="22" font-size="10" font-weight="700" fill="#6e8050" letter-spacing="1">SHIPPED WITH THE VERSION · WRITTEN BY US</text>
+          <rect x="10" y="30" width="140" height="44" rx="3" fill="#fffaf0" stroke="#6e8050"/>
+          <text x="80" y="57" font-size="11.5" font-weight="600" fill="#111827" text-anchor="middle">SOUL.md</text>
+          <rect x="162" y="30" width="140" height="44" rx="3" fill="#fffaf0" stroke="#6e8050"/>
+          <text x="232" y="57" font-size="11.5" font-weight="600" fill="#111827" text-anchor="middle">HARNESS.md</text>
+          <rect x="314" y="30" width="140" height="44" rx="3" fill="#fffaf0" stroke="#6e8050"/>
+          <text x="384" y="50" font-size="11.5" font-weight="600" fill="#111827" text-anchor="middle">4 skills</text>
+          <text x="384" y="65" font-size="9.5" fill="#555555" text-anchor="middle">index only; read_skill</text>
+
+          <text x="10" y="112" font-size="10" font-weight="700" fill="#1a3875" letter-spacing="1">WRITTEN BY THE LLM · ONE GAME</text>
+          <rect x="10" y="120" width="216" height="44" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+          <text x="118" y="140" font-size="11.5" font-weight="600" fill="#1a3875" text-anchor="middle">plan.md</text>
+          <text x="118" y="155" font-size="9.5" fill="#555555" text-anchor="middle">update_plan · ≤ 3,600 chars</text>
+          <rect x="238" y="120" width="216" height="44" rx="3" fill="#eef2f7" stroke="#859ebe"/>
+          <text x="346" y="140" font-size="11.5" font-weight="600" fill="#1a3875" text-anchor="middle">notes × 6 powers</text>
+          <text x="346" y="155" font-size="9.5" fill="#555555" text-anchor="middle">note_power · ≤ 1,800 chars each</text>
+
+          <text x="10" y="202" font-size="10" font-weight="700" fill="#b36e4e" letter-spacing="1">WRITTEN BY THE HARNESS · ONE GAME · LLM READ-ONLY</text>
+          <rect x="10" y="210" width="444" height="54" rx="3" fill="#fffaf0" stroke="#b36e4e"/>
+          <text x="232" y="232" font-size="11.5" font-weight="600" fill="#111827" text-anchor="middle">Journal</text>
+          <text x="232" y="250" font-size="9.5" fill="#555555" text-anchor="middle">messages · commitments · kept/broken verdicts · LLM call ledger</text>
+
+          <rect x="10" y="276" width="444" height="20" rx="3" fill="none" stroke="#d4c9b5" stroke-dasharray="4 3"/>
+          <text x="232" y="290" font-size="9.5" fill="#999999" text-anchor="middle">cross-game memory of league opponents · not built</text>
+
+          <!-- prompt targets -->
+          <rect x="530" y="30" width="140" height="44" rx="3" fill="#f8f6ef" stroke="#d4c9b5"/>
+          <text x="600" y="50" font-size="11.5" font-weight="600" fill="#111827" text-anchor="middle">System prompt</text>
+          <text x="600" y="65" font-size="9.5" fill="#555555" text-anchor="middle">same every wake</text>
+          <rect x="530" y="150" width="140" height="70" rx="3" fill="#f8f6ef" stroke="#d4c9b5"/>
+          <text x="600" y="176" font-size="11.5" font-weight="600" fill="#111827" text-anchor="middle">Briefing</text>
+          <text x="600" y="192" font-size="9.5" fill="#555555" text-anchor="middle">rebuilt every wake</text>
+          <text x="600" y="206" font-size="9.5" fill="#555555" text-anchor="middle">+ board, new press, task</text>
+
+          <line x1="454" y1="52" x2="528" y2="52" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f4a)"/>
+          <polyline points="454,142 490,142 490,170 528,170" fill="none" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f4a)"/>
+          <polyline points="454,237 490,237 490,200 528,200" fill="none" stroke="#859ebe" stroke-width="1.5" marker-end="url(#f4a)"/>
+          <text x="496" y="250" font-size="9" fill="#555555">"Referee facts"</text>
+        </g>
+      </svg>
+      <figcaption><span class="fig-label">Figure 4</span>The owner of each type of knowledge. The shipped files change only with a new policy version, and they are the system prompt. The plan and notes of the LLM, and the journal of the harness, stay for one game. The harness puts them into each briefing. The verdicts of the journal are under a heading that tells the model that code checked them and that it cannot edit them.</figcaption>
+    </figure>
+
+    <p><strong>The harness calculates facts, and the LLM interprets them.</strong> Code calculates the promise checks, the supply-centre counts and the threat maps. The LLM gives judgment and language. Thus the model does not have to remember or calculate again the facts that it frequently gets wrong. Also, the doctrine of the soul (&ldquo;Judge powers by the referee&rsquo;s verdicts, not by their tone&rdquo;) gets concrete data to use.</p>
+    <p><strong>How the harness examines commitments.</strong> When the LLM calls <code>record_commitment</code>, the harness parses the orders and makes sure that they belong to that power. Then it keeps them as signatures at the level of provinces, together with the DMZ provinces<sup class="ref"><a href="#src-18" title="webdip_bot/press/agent.py:77-167">18</a></sup>. At the start of each movement phase, the journal examines each commitment that has no verdict, if the history now has adjudicated orders for its movement phase. A promised order is broken if its signature (type, province, destination, origin) is not in the orders that the power played. A DMZ is broken if that power moved into the province. The verdict is <code>kept</code> or <code>broken: &lt;reasons&gt;</code><sup class="ref"><a href="#src-36" title="webdip_bot/press/journal.py:92-108">36</a></sup><sup class="ref"><a href="#src-2" title="webdip_bot/press/player.py:178-187">2</a></sup>. The verdicts then show in the referee-facts section of the next briefing.</p>
+    <div class="callout callout-info">
+      <span class="callout-label">Note · &ldquo;files as memory&rdquo; without files</span>
+      The workspace is in memory. It is not written as files on a disk. At the end of the game, the harness writes it to the log in the <code>press_summary</code> event. The harness also writes each journal event as one JSON line, so the log of each seat contains the full record of the game<sup class="ref"><a href="#src-20" title="webdip_bot/press/journal.py">20</a></sup>.
+    </div>
+  </section>
+
+  <section id="llm">
+    <h2>9 · LLM channel and models</h2>
+    <ul class="key-points">
+      <li>A player pod can get to an LLM only through the Coworld sidecar of the pod. The sidecar is OpenAI-compatible and does not stream.</li>
+      <li>Each uploaded version has one fixed model, set with <code>--use-llm --llm-model &lt;slug&gt;</code>.</li>
+      <li>A local emulator copies the sidecar contract, so local games use the same code path.</li>
+      <li>Select the model with a short comparison in the real harness, not with leaderboards. Pin dated slugs.</li>
+    </ul>
+
+    <h3>9.1 The sidecar contract</h3>
+    <p>Player pods have no general network access. The only LLM path is the Coworld sidecar of each pod, at <code>COWORLD_LLM_ENDPOINT</code>. The sidecar serves the OpenAI <code>/v1/chat/completions</code> route, and it does not stream. We examined this in the sidecar source at metta <code>8b6042db</code><sup class="ref"><a href="#src-1" title="docs/designs/press-agent-design.md">1</a></sup>. To upload a version, use <code>coworld upload … --use-llm --llm-model &lt;OpenRouter slug&gt;</code>. This command sets the model for that version. The bot reads <code>COWORLD_LLM_MODEL</code>. If that value is not set, it uses <code>config.PRESS_MODEL = "z-ai/glm-5.3-flash"</code>, which is the local default<sup class="ref"><a href="#src-37" title="webdip_bot/press/agent.py:33-34">37</a></sup>.</p>
+    <p>These behaviours of the sidecar are important to the harness<sup class="ref"><a href="#src-1" title="docs/designs/press-agent-design.md">1</a></sup>:</p>
+    <ul>
+      <li>The production model allowlist is <code>null</code>. Thus the sidecar accepts any canonical OpenRouter slug.</li>
+      <li>It forces the configured model and sets <code>provider.require_parameters=true</code>.</li>
+      <li>It strips the caller fields <code>fallbacks</code>, <code>metadata</code>, <code>models</code>, <code>plugins</code>, <code>provider</code>, <code>route</code>, <code>service_tier</code>, <code>session_id</code>, <code>speed</code>, <code>trace</code>, <code>usage</code> and <code>user</code>.</li>
+      <li><code>reasoning</code> goes through without change. This is important because GLM reasons by default, and the harness sets the reasoning effort to &ldquo;low&rdquo;.</li>
+      <li>The response body goes through without change. Thus the OpenRouter <code>usage.cost</code> (in USD) is available. Hosted responses also contain the <code>X-Coworld-Spend-Usd</code> and <code>X-Coworld-Spend-Limit-Usd</code> headers. <code>GET /spend</code> gives the same values.</li>
+      <li>The sidecar ignores the auth header. The bot sends a dummy key, <code>coworld-sidecar</code><sup class="ref"><a href="#src-38" title="webdip_bot/press/agent.py:37-63">38</a></sup>.</li>
+      <li>An HTTP 429 can come from three sources: the league spend limit, the limit of approximately 30 requests per minute for each seat, or the capacity of the provider.</li>
+    </ul>
+    <p>An <code>httpx</code> response hook records each call in the journal as an <code>llm_call</code> event. The event contains the status, the model, the prompt, completion, reasoning and cached tokens, <code>cost_usd</code>, the sidecar spend header, and any error message<sup class="ref"><a href="#src-38" title="webdip_bot/press/agent.py:37-63">38</a></sup>. Because of this ledger of calls, &sect;10 gives measured costs, not estimates.</p>
+
+    <h3>9.2 Local parity</h3>
+    <p><code>coworld run-episode --use-llm</code> has no sidecar. It sends the <code>COWORLD_LLM_ENDPOINT</code> of the host into the containers. The sidecar emulator of the lab fills this gap with a copy of the contract<sup class="ref"><a href="#src-25" title="tools/llm_sidecar_local.py:1-35">25</a></sup>. It has the same routes (also <code>/api/v1/...</code>), and it refuses <code>stream: true</code> with HTTP 400. It removes the same fields, sets <code>require_parameters</code>, sends the spend header, serves <code>GET /spend</code>, and writes a JSONL ledger of all calls. One emulator serves all local seats, so its spend header gives the total for the full game. Each seat logs the cost of its own calls from <code>usage.cost</code>. For a local game, set <code>COWORLD_LLM_ENDPOINT=http://host.docker.internal:&lt;port&gt;</code> and use <code>wd.py local --use-llm</code><sup class="ref"><a href="#src-26" title="tools/wd.py">26</a></sup>. The OpenRouter key comes from the token broker, with the scope <code>openrouter.inference</code>.</p>
+
+    <h3>9.3 Model candidates and cost</h3>
+    <p>The model is an upload flag, so each policy version has one model. Pin slugs to dated versions. A <code>~…-latest</code> alias lets the model change below a version, and then you cannot know which model caused a result. These candidates were on OpenRouter on 2026-10-08<sup class="ref"><a href="#src-1" title="docs/designs/press-agent-design.md">1</a></sup>:</p>
+    <table>
+      <thead><tr><th>Slug</th><th class="num">Input $/M tokens</th><th class="num">Output $/M tokens</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>deepseek/deepseek-v4.1-flash</code></td><td class="num">$0.30</td><td class="num">$1.20</td><td>Recent; 1M context</td></tr>
+        <tr><td><code>z-ai/glm-5.3-flash</code></td><td class="num">$0.15</td><td class="num">$0.50</td><td>Recent; 1M context; current local default</td></tr>
+        <tr><td><code>qwen/qwen3.8-flash</code></td><td class="num">$0.15</td><td class="num">$0.47</td><td>It is possible that this model is API-only and not open weights</td></tr>
+        <tr><td><code>minimax/minimax-m3</code></td><td class="num">$0.30</td><td class="num">$1.20</td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+    <p>Before you select a model, make sure that you know if its weights are open. Select the model with a short comparison in the real harness. Judge each model on three things: how reliably it calls tools with our schemas, its latency in the phase budget, and the quality of its press. Do not use public leaderboards for this decision.</p>
+    <p>The first cost estimate was approximately 30 calls of 8k tokens in each movement phase, for 16 movement phases. That is approximately 4M input tokens, or $0.60 to $1.20 for each seat in each game. We always planned to replace this estimate with measurements. The first measurement (&sect;10) is much lower.</p>
+  </section>
+
+  <section id="measurement">
+    <h2>10 · Early measurement</h2>
+    <ul class="key-points">
+      <li>The first local self-play game: 7 <code>castlereagh_press</code> seats on <code>z-ai/glm-5.3-flash</code>. The data is for the 5 complete movement phases (Spring 1901 to Spring 1903). The game continues.</li>
+      <li>83 of 113 wakes (73%) stopped with <code>ok</code>, and no wake had an error. 30 wakes (27%) got to a time or request limit, which is more than the 14% in 1901 only.</li>
+      <li>69 of 82 verdicts (84%) were <code>kept</code>. 11 of the 13 broken promises are from Spring 1901.</li>
+      <li>The LLM cost was $0.196 for 434 calls, which is approximately $0.0056 for each seat in each movement phase. The first estimate gave $0.04 to $0.075.</li>
+      <li>This game shows only that the harness operates and the scale of the cost. It gives no data about strength against a real field.</li>
+    </ul>
+    <p>The game has seven <code>castlereagh_press</code> seats. All seats use <code>z-ai/glm-5.3-flash</code> through the local sidecar emulator. The data in this section is for the five complete movement phases: Spring 1901, Fall 1901, Spring 1902, Fall 1902 and Spring 1903. That is 35 seat-phases<sup class="ref"><a href="#src-39" title="local_runs/press-v1">39</a></sup>.</p>
+    <table>
+      <thead><tr><th>Wake kind</th><th class="num">ok</th><th class="num">time_limit</th><th class="num">request_limit</th><th class="num">Total</th></tr></thead>
+      <tbody>
+        <tr><td>Open</td><td class="num">23</td><td class="num">12</td><td class="num">0</td><td class="num">35</td></tr>
+        <tr><td>Negotiate</td><td class="num">32</td><td class="num">9</td><td class="num">3</td><td class="num">44</td></tr>
+        <tr><td>Commit</td><td class="num">28</td><td class="num">6</td><td class="num">0</td><td class="num">34</td></tr>
+        <tr><td><strong>All</strong></td><td class="num"><strong>83 (73%)</strong></td><td class="num">27</td><td class="num">3</td><td class="num"><strong>113</strong></td></tr>
+      </tbody>
+    </table>
+    <table>
+      <thead><tr><th>Measure</th><th class="num">Value</th><th>Context</th></tr></thead>
+      <tbody>
+        <tr><td>Press messages</td><td class="num">116 sent / 116 received</td><td>For 7 seats in 5 movement phases</td></tr>
+        <tr><td>Commitments recorded</td><td class="num">82</td><td>Approximately 2.3 for each seat-phase</td></tr>
+        <tr><td><code>commit_orders</code> calls</td><td class="num">95</td><td>2.7 for each seat-phase. Each call replaces the orders of the last call</td></tr>
+        <tr><td>Referee verdicts</td><td class="num">69 kept / 13 broken</td><td>84% of 82 verdicts kept. 11 of the 13 broken are from Spring 1901</td></tr>
+        <tr><td>LLM calls in wakes</td><td class="num">434</td><td>12.4 for each seat-phase. The first estimate assumed approximately 30</td></tr>
+        <tr><td>LLM cost in wakes</td><td class="num">$0.196</td><td>&asymp; $0.0056 for each seat-phase, and $0.037 to $0.042 for each phase with all 7 seats. The first estimate gave $0.04 to $0.075 for each seat-phase</td></tr>
+        <tr><td>Call latency</td><td class="num">4.3 s median, 15.8 s p90</td><td>All 593 calls of the game so far, all HTTP 200. The limits are 45 s for each call and 60 s for each wake</td></tr>
+        <tr><td>Prompt size</td><td class="num">4,222 tokens median, 8,573 max</td><td>All calls of the game so far. The estimate assumed 8,000</td></tr>
+      </tbody>
+    </table>
+    <p>Two wake summaries from Spring 1901 show that the agent makes sensible decisions in the opening. Italy: &ldquo;Committed the Lepanto opening (A VEN - PIE, A ROM - APU, F NAP - ION) and opened talks with Austria&hellip;&rdquo;. Turkey: &ldquo;A CON-BUL, F ANK-BLA, A SMY-CON &mdash; a safe standard opening&hellip;&rdquo;.</p>
+    <p>The cost for each phase stayed between $0.037 and $0.042 in the five phases. If the cost for each seat-phase stays the same for all 16 movement phases, one seat costs approximately $0.09 for each game. This is an extrapolation from the first five phases. Later phases have more history and longer notes, so the cost can increase.</p>
+    <div class="callout callout-warn">
+      <span class="callout-label">Caveat · what this game shows and what it does not show</span>
+      This is self-play with our own policy, in one game that is not complete. It shows that the harness operates from start to end, and it shows the scale of the cost. It gives no data about the strength of the player against a real field. It is also possible that the rate of kept promises in self-play is different against opponents with different doctrines.
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">Open · wakes that get to a limit</span>
+      27% of wakes got to a time or request limit, and the share increased after 1901. Open wakes had the most (12 of 35). When this occurs, the floor or the last commit stays in place, so the seat still plays. But the agent can lose its press or its last plan update. This is the first item to tune.
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">Open · broken promises in Spring 1901</span>
+      11 of the 13 broken promises are from Spring 1901, and only 2 are from later phases. We did not examine the cause. Possible causes are real stabs, confusion in the opening, or an error in the check. An example of an error in the check is a promise for a later phase that the journal compares with the orders of the current phase.
+    </div>
+  </section>
+
+  <section id="fillers">
+    <h2>11 · Fillers</h2>
+    <ul class="key-points">
+      <li>The press league has no roster, so our agents are the field.</li>
+      <li>A filler personality is a soul, a model and a default search policy. There is one image, and one uploaded version for each filler.</li>
+      <li>Diversity is more important than strength. Keep some non-LLM players as silent anchors.</li>
+      <li>Risk: all hosted LLM calls in the league use one spend limit.</li>
+    </ul>
+    <p>Fillers are uploaded versions that the lab registers through <code>POST /v2/leagues/{id}/filler-policies</code>. The lab already does this for gunboat<sup class="ref"><a href="#src-1" title="docs/designs/press-agent-design.md">1</a></sup>. A press filler personality is a SOUL.md, a model and a default <code>SearchPolicy</code>. It is an extension of the personality table: one image, a <code>POLICY</code> build argument, and one uploaded version for each filler<sup class="ref"><a href="#src-9" title="webdip_bot/personalities.py">9</a></sup>.</p>
+    <p>Here, diversity is more important than strength. Use honest souls and deceptive souls, aggressive souls and defensive souls, and different models. A field of copies teaches nothing about how our player operates against real variety. It also causes self-play artefacts, which are strategies that work only against copies of themselves. Keep some non-LLM fillers (Kissinger, DumbBot) in the field as silent, cheap and stable anchors.</p>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · shared league spend</span>
+      The league spend limit meters all hosted LLM calls in that league. LLM fillers can use all of the limit. Then our main player gets HTTP 429 errors and goes back to plain Kissinger. Make sure that you know the limit and its scope before you put LLM agents in six seats.
+    </div>
+    <p>A lab rule also applies: do not use hosted XP credits on self-play with our own policy. Thus James must decide about evaluation batches against a field of only our own fillers.</p>
+  </section>
+
+  <section id="alternatives">
+    <h2>12 · Alternatives considered</h2>
+    <ul class="key-points">
+      <li>We did not use two available agent harnesses, Pi and Hermes. We selected a thin Python layer on <code>pydantic-ai</code>.</li>
+      <li>A <code>lookahead</code> tool waits until measurements show that it is necessary.</li>
+    </ul>
+    <div class="decision">
+      <span class="decision-label">Rejected · Pi runtime</span>
+      <p><strong>Pi is a TypeScript agent harness, and we copied its style.</strong> It was the first alternative that we examined. We did not use it for three concrete reasons. First, the agent core of Pi must have a streaming function, but the Coworld sidecar refuses streaming with HTTP 400. Thus we must make false stream events. Second, Pi is TypeScript, but <code>SearchBot</code> is Python with a native Nim extension. Thus each tool call must go between two processes, and the image must contain Node. Third, each wake makes its context again from our own records, so the session and compaction functions of Pi have no use. Only a tool-call loop stays, and <code>pydantic-ai</code> gives that loop in the same process.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Rejected · Hermes</span>
+      <p><strong>We did not use Hermes for the same reasons as Pi.</strong> Also, Hermes is a large harness for a personal assistant, and we can use only a small part of it.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Chosen · thin harness on pydantic-ai</span>
+      <p><strong>A thin Python harness in the same process, in the style of Pi.</strong> <code>pydantic-ai</code> makes tool schemas from typed functions, and it accepts any OpenAI-compatible base URL. It gives a non-streaming <code>run_sync</code>, request limits through <code>UsageLimits</code>, and a cancellation token. That is all that the wake loop must have, and tool calls into search stay usual Python calls.</p>
+    </div>
+    <div class="decision">
+      <span class="decision-label">Deferred · lookahead tool</span>
+      <p><strong>No tool gives rollouts of more than one phase.</strong> In gunboat tests, a deeper search lost. Attacks across two phases with an ally can possibly change that result. But we must measure this first, and not assume it.</p>
+    </div>
+  </section>
+
+  <section id="open-questions">
+    <h2>13 · Open questions and risks</h2>
+    <ul class="key-points">
+      <li>The largest risks are prompt injection from opponent LLM agents, and the shared league spend.</li>
+      <li>The largest open decisions are the model, the wake limits, and when to mark Ready.</li>
+    </ul>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · Prompt injection</span>
+      Opponents are also LLM agents. Their messages are data that we do not trust, in <code>&lt;press&gt;</code> tags. Message text must never start a tool, and the soul and the harness rules say this. Today, this protection is only in the prompt. The structural protection is in the tools: at worst, the agent can set a search policy, send a maximum of 8 short messages, and edit its own notes. And each order still goes through search.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · Latency budget</span>
+      A limit of approximately 30 requests per minute for each seat, in a 4-minute phase, gives approximately 100 LLM calls in each movement phase. The config sets a lower limit: 5 wakes &times; 8 calls = 40. Search takes approximately 1 s and does not limit the budget. In the local game, 30 of 113 wakes got to a limit.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · Shared league spend</span>
+      LLM fillers use the same league limit as our main player (&sect;11). If they use all of it, the main player gets HTTP 429 errors and goes back to plain Kissinger.
+    </div>
+    <div class="callout callout-warn">
+      <span class="callout-label">Risk · Global config mutation for risk</span>
+      To apply <code>risk</code>, the code replaces <code>config.SEARCH_RISK</code> and then puts back the old value. This is safe only while the tool calls operate one at a time<sup class="ref"><a href="#src-28" title="webdip_bot/press/search_service.py:30-39, 95-97">28</a></sup>.
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">Open · When to mark Ready</span>
+      A phase stops early only when all seven seats are Ready. Today, the player always marks Ready at the deadline minus 15 s. For a press player, the time of Ready is a strategic decision, not a formality.
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">Open · Depth</span>
+      In gunboat, a deeper look-ahead lost. Alliances can possibly change that, for example with a supported attack across two phases with an ally. But we must measure it. There is no <code>lookahead</code> tool now.
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">Open · Model choice</span>
+      We did not select a model. A comparison of two to four slugs in the harness must give the decision (&sect;9.3).
+    </div>
+    <div class="callout callout-open">
+      <span class="callout-label">Open · Cross-game memory</span>
+      Not built. Notes on opponents that play frequently in the league can stay from one game to the next. This is not part of v1.
+    </div>
+  </section>
+
+  <section id="drift">
+    <h2>14 · Doc/code drift</h2>
+    <ul class="key-points">
+      <li>The earlier markdown draft is not current in three places. This document describes the code.</li>
+    </ul>
+    <p>During the work on this document, we found three places where the earlier markdown draft<sup class="ref"><a href="#src-1" title="docs/designs/press-agent-design.md">1</a></sup> does not agree with the code. In each place, the code is correct, and this document describes the code:</p>
+    <ul>
+      <li><strong>Tool names.</strong> The draft gives <code>board_brief</code>, <code>evaluate_orders</code>, <code>note</code> and <code>inbox</code>. The code has <code>board</code>, <code>evaluate</code> and <code>note_power</code>. It has no <code>inbox</code> tool, because the harness puts new press into the briefing<sup class="ref"><a href="#src-18" title="webdip_bot/press/agent.py:77-167">18</a></sup>.</li>
+      <li><strong>Workspace storage.</strong> The draft keeps the plan and the notes on each opponent as markdown files on a disk: one plan file, and one file for each power. The code keeps a <code>Workspace</code> in memory and writes it to the log at the end of the game<sup class="ref"><a href="#src-20" title="webdip_bot/press/journal.py">20</a></sup>.</li>
+      <li><strong>predict.</strong> The draft gives <code>predict(power, stance?)</code>. In the code, <code>predict(power)</code> has no stance argument, and it uses the policy that the agent committed last.</li>
+    </ul>
+    <p>We recommend that you update the markdown draft, or replace it with a link to this document.</p>
+  </section>
+
+  <section id="next-steps">
+    <h2>15 · Next steps</h2>
+    <ul class="key-points">
+      <li>These steps are proposals, not decisions. League submission stays the decision of James.</li>
+    </ul>
+    <ol>
+      <li>Let the local self-play game complete. Read the wakes that got to <code>time_limit</code>, and tune <code>PRESS_WAKE_SECONDS</code> and <code>PRESS_REQUEST_LIMIT</code>.</li>
+      <li>Find the cause of the broken promises in Spring 1901 (a real stab, or an error in the check).</li>
+      <li>Do a comparison of two to four candidate models in the harness.</li>
+      <li>Upload <code>castlereagh_press</code> with <code>--use-llm --llm-model &lt;slug&gt;</code>. An upload is a usual step and puts the player in no league.</li>
+      <li>Make sure that you know the league spend limit and its scope before you add LLM fillers.</li>
+      <li>Decide the filler roster: different souls and models, and Kissinger and DumbBot as anchors.</li>
+      <li>League submission, which James must approve.</li>
+    </ol>
+  </section>
+
+  <section id="sources">
+    <h2>16 · Sources</h2>
+    <p>Paths are relative to <code>webdiplomacy_lab/</code>, in first-citation order.</p>
+    <ol class="sources">
+      <li id="src-1"><span class="cite">docs/designs/press-agent-design.md</span> — Earlier markdown draft. Platform facts (league format, scoring, sidecar contract) verified 2026-10-08 against live docs and the metta <code>8b6042db</code> sidecar source; model candidates and fillers.</li>
+      <li id="src-2"><span class="cite">webdip_bot/press/player.py:178-187</span> — Start of <code>movement_phase</code>: Kissinger floor saved (Ready = No) before any LLM call; <code>journal.verify</code> of earlier commitments.</li>
+      <li id="src-3"><span class="cite">webdip_bot/press/player.py:63-70</span> — <code>PressPlayer.commit</code>: search under the policy and save with <code>ready="No"</code>.</li>
+      <li id="src-4"><span class="cite">webdip_bot/press/player.py:143-163</span> — Running one wake: limits, status, exceptions caught and logged as <code>wake_error</code> (150-156).</li>
+      <li id="src-5"><span class="cite">webdip_bot/press/player.py:55-57; webdip_bot/press/agent.py:29-30</span> — No <code>COWORLD_LLM_ENDPOINT</code> → no agent → plain Kissinger.</li>
+      <li id="src-6"><span class="cite">webdip_bot/press/player.py:203-212</span> — Final save with Ready = Yes at deadline − 15 s; <code>decision</code> event.</li>
+      <li id="src-7"><span class="cite">webdip_bot/press/player.py:214-216, 248-251</span> — <code>other_phase</code> and no-press games routed to <code>bot.play_phase</code>.</li>
+      <li id="src-8"><span class="cite">webdip_bot/Dockerfile</span> — Pins <code>pydantic-ai-slim[openai]==2.54.0</code>.</li>
+      <li id="src-9"><span class="cite">webdip_bot/personalities.py</span> — <code>castlereagh_press</code> personality: base <code>press</code>, <code>OPP_MODEL_LEVEL=1</code>, <code>PRESS_SOUL="castlereagh"</code>, motto.</li>
+      <li id="src-10"><span class="cite">webdip_bot/bot.py</span> — <code>policy_class("press")</code> and the <code>main</code> dispatch to <code>press.player.main</code>.</li>
+      <li id="src-11"><span class="cite">webdip_bot/press/player.py:218-263</span> — <code>finish()</code> and <code>press_summary</code> (218-227); outer loop polling <code>api.context()</code> (230-263).</li>
+      <li id="src-12"><span class="cite">webdip_bot/config.py:90-103</span> — Press knobs: wake schedule, limits, margins, <code>PRESS_MODEL</code>.</li>
+      <li id="src-13"><span class="cite">webdip_bot/press/player.py:188-200</span> — Negotiate-wake loop: 3 s polling, wake gap, commit margin, max wakes, early phase advance.</li>
+      <li id="src-14"><span class="cite">webdip_bot/press/agent.py:84-91, 170-191</span> — <code>_guard</code> with its TIME UP reply (84-91); <code>run_wake</code> with the request limit and the wall-clock cancel (170-184); model settings in <code>make_agent</code> (187-191).</li>
+      <li id="src-15"><span class="cite">webdip_bot/press/player.py:124-141</span> — Briefing builder.</li>
+      <li id="src-16"><span class="cite">webdip_bot/press/player.py:28-36</span> — The three task texts (open, negotiate, commit).</li>
+      <li id="src-17"><span class="cite">webdip_bot/press/agent.py:66-74</span> — System prompt assembly: SOUL + HARNESS + skill index.</li>
+      <li id="src-18"><span class="cite">webdip_bot/press/agent.py:77-167</span> — <code>Toolbox</code>: the 12 tools and <code>_guard</code>.</li>
+      <li id="src-19"><span class="cite">webdip_bot/press/search_service.py:1-17, 53-97</span> — <code>SearchPolicy</code> definition and <code>resolve</code> validation.</li>
+      <li id="src-20"><span class="cite">webdip_bot/press/journal.py</span> — <code>Journal</code> and <code>Workspace</code>; one JSON line per event.</li>
+      <li id="src-21"><span class="cite">webdip_bot/press/notation.py</span> — Order notation both ways, non-guessing parser, board brief.</li>
+      <li id="src-22"><span class="cite">webdip_bot/press/HARNESS.md</span> — Harness rules shown every wake, including <code>center_values</code> calibration and the untrusted-press rule.</li>
+      <li id="src-23"><span class="cite">webdip_bot/press/souls/castlereagh/SOUL.md</span> — Castlereagh identity, doctrine and voice.</li>
+      <li id="src-24"><span class="cite">webdip_bot/press/skills/{opening-1901,negotiation,stab-checklist,draw-endgame}/SKILL.md</span> — The four on-demand skills.</li>
+      <li id="src-25"><span class="cite">tools/llm_sidecar_local.py:1-35</span> — Host-side sidecar emulator: contract and usage.</li>
+      <li id="src-26"><span class="cite">tools/wd.py</span> — <code>local --use-llm</code> mode of the local runner.</li>
+      <li id="src-27"><span class="cite">webdip_bot/press/search_service.py:99-108</span> — Fresh <code>SearchBot</code> per tool call with seed <code>seed:country:turn:press:callN</code>.</li>
+      <li id="src-28"><span class="cite">webdip_bot/press/search_service.py:30-39, 95-97</span> — Save/restore override of <code>config.SEARCH_RISK</code>.</li>
+      <li id="src-29"><span class="cite">webdip_bot/search.py:27-29</span> — <code>SearchBot.press</code>, default <code>None</code> (golden check 334/334).</li>
+      <li id="src-30"><span class="cite">webdip_bot/opponent_model.py:82-102</span> — <code>OpponentModel.apply_press</code>: expected-order injection and ally-attack removal.</li>
+      <li id="src-31"><span class="cite">webdip_bot/opponent_model.py:104-108</span> — Ally and hostile powers modelled as competent.</li>
+      <li id="src-32"><span class="cite">webdip_bot/search_moves.py:62-78</span> — <code>constrain</code>: pins and forbidden provinces in seeds.</li>
+      <li id="src-33"><span class="cite">webdip_bot/search_moves.py:195-199</span> — Pruning of joint alternatives that break pins or forbidden provinces.</li>
+      <li id="src-34"><span class="cite">webdip_bot/search.py:66-69</span> — Pins built from the policy.</li>
+      <li id="src-35"><span class="cite">webdip_bot/evaluation.py:71-74</span> — Per-power centre values in scoring.</li>
+      <li id="src-36"><span class="cite">webdip_bot/press/journal.py:92-108</span> — Commitment verification against adjudicated orders.</li>
+      <li id="src-37"><span class="cite">webdip_bot/press/agent.py:33-34</span> — Model from <code>COWORLD_LLM_MODEL</code>, fallback <code>config.PRESS_MODEL</code>.</li>
+      <li id="src-38"><span class="cite">webdip_bot/press/agent.py:37-63</span> — Sidecar client, dummy key, and the per-call <code>llm_call</code> ledger hook.</li>
+      <li id="src-39"><span class="cite">local_runs/press-v1</span> — First local self-play game: <code>game1/logs/policy_agent_*.log</code> (wake, commitment and verdict events for the five complete movement phases) and <code>llm_ledger.jsonl</code> (all calls so far).</li>
+    </ol>
+  </section>
+
+</article>
+
+<!-- ================================================================
+     DC-COMMENTS BEGIN — markup + script (copy verbatim; do not modify)
+     ================================================================ -->
+<aside id="dc-sidebar" aria-label="Comments">
+  <h2 class="dc-title">Comments <span id="dc-count"></span></h2>
+  <div class="dc-actions">
+    <button class="dc-btn" id="dc-export">Export JSON</button>
+    <button class="dc-btn" id="dc-copy">Copy JSON</button>
+    <button class="dc-btn" id="dc-import">Import…</button>
+    <input type="file" id="dc-file" accept=".json,application/json" hidden>
+  </div>
+  <div id="dc-status" role="status"></div>
+  <div id="dc-list"><p class="dc-empty">No comments yet. Select text in the document to add one.</p></div>
+</aside>
+<button id="dc-fab" type="button">+ Comment</button>
+<button id="dc-toggle" type="button">Comments</button>
+<!-- Preload slot: a renderer may put a dc-comments/1 `comments` array here (each comment optionally carrying `replies`). Merged by id into the stored comments on load. Leave empty otherwise. -->
+<script id="dc-preload" type="application/json"></script>
+
+<script>
+(() => {
+  'use strict';
+  const FORMAT = 'dc-comments/1';
+  const CTX = 32; // prefix/suffix context length, chars
+  const doc = document.getElementById('doc');
+  const fab = document.getElementById('dc-fab');
+  const listEl = document.getElementById('dc-list');
+  const countEl = document.getElementById('dc-count');
+  const statusEl = document.getElementById('dc-status');
+  const sidebar = document.getElementById('dc-sidebar');
+  const storeKey = 'dc:' + document.title;
+
+  let comments = []; // {id, exact, prefix, suffix, text, created, resolved}
+  let ranges = new Map(); // id -> Range (null if orphaned)
+  let seq = 0;
+
+  // ---- text indexing: one global string over #doc's text nodes ----
+  function docText() {
+    const r = document.createRange();
+    r.selectNodeContents(doc);
+    return r.toString();
+  }
+  function globalOffset(container, offset) {
+    const r = document.createRange();
+    r.setStart(doc, 0);
+    r.setEnd(container, offset);
+    return r.toString().length;
+  }
+  function offsetsToRange(start, end) {
+    const walker = document.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+    let pos = 0, range = document.createRange(), haveStart = false;
+    while (walker.nextNode()) {
+      const node = walker.currentNode, len = node.data.length;
+      if (!haveStart && pos + len >= start) {
+        range.setStart(node, start - pos);
+        haveStart = true;
+      }
+      if (haveStart && pos + len >= end) {
+        range.setEnd(node, end - pos);
+        return range;
+      }
+      pos += len;
+    }
+    return null;
+  }
+
+  // ---- anchoring: TextQuoteSelector-style exact + prefix/suffix ----
+  function selectorFromRange(range) {
+    const text = docText();
+    const start = globalOffset(range.startContainer, range.startOffset);
+    const end = globalOffset(range.endContainer, range.endOffset);
+    return {
+      exact: text.slice(start, end),
+      prefix: text.slice(Math.max(0, start - CTX), start),
+      suffix: text.slice(end, end + CTX),
+    };
+  }
+  function locate(c) {
+    const text = docText();
+    let i = text.indexOf(c.prefix + c.exact + c.suffix);
+    if (i >= 0) return offsetsToRange(i + c.prefix.length, i + c.prefix.length + c.exact.length);
+    i = text.indexOf(c.exact);
+    if (i >= 0) return offsetsToRange(i, i + c.exact.length);
+    return null;
+  }
+  function reanchorAll() {
+    ranges = new Map(comments.map(c => [c.id, locate(c)]));
+    paint();
+  }
+
+  // ---- painting via CSS Custom Highlight API ----
+  const hl = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  const hlActive = typeof Highlight !== 'undefined' ? new Highlight() : null;
+  if (hl) { CSS.highlights.set('dc-hl', hl); CSS.highlights.set('dc-hl-active', hlActive); }
+  function paint(activeId) {
+    if (!hl) return;
+    hl.clear(); hlActive.clear();
+    for (const [id, r] of ranges) {
+      if (!r) continue;
+      (id === activeId ? hlActive : hl).add(r);
+    }
+  }
+
+  // ---- persistence (best-effort; file:// storage varies by browser) ----
+  function save() {
+    try { localStorage.setItem(storeKey, JSON.stringify(comments)); } catch (e) { /* unavailable on some file:// setups */ }
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(storeKey);
+      if (raw) comments = JSON.parse(raw);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---- sidebar rendering ----
+  function flash(msg) {
+    statusEl.textContent = msg;
+    setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 2500);
+  }
+  function sortedComments() {
+    const pos = c => {
+      const r = ranges.get(c.id);
+      return r ? globalOffset(r.startContainer, r.startOffset) : Infinity; // orphans last
+    };
+    return [...comments].sort((a, b) => pos(a) - pos(b));
+  }
+  function render(editingId) {
+    countEl.textContent = comments.length ? '(' + comments.length + ')' : '';
+    listEl.textContent = '';
+    if (!comments.length) {
+      const p = document.createElement('p');
+      p.className = 'dc-empty';
+      p.textContent = 'No comments yet. Select text in the document to add one.';
+      listEl.appendChild(p);
+      return;
+    }
+    for (const c of sortedComments()) {
+      const item = document.createElement('div');
+      item.className = 'dc-item' + (c.resolved ? ' dc-resolved' : '');
+      item.dataset.id = c.id;
+
+      const quote = document.createElement('div');
+      quote.className = 'dc-quote';
+      quote.textContent = c.exact.length > 90 ? c.exact.slice(0, 90) + '…' : c.exact;
+      if (!ranges.get(c.id)) {
+        const tag = document.createElement('span');
+        tag.className = 'dc-orphan-tag';
+        tag.textContent = 'orphaned';
+        quote.appendChild(tag);
+      }
+      item.appendChild(quote);
+
+      if (c.id === editingId) {
+        const ta = document.createElement('textarea');
+        ta.value = c.text;
+        ta.placeholder = 'Write a comment… (⌘/Ctrl+Enter to save, Esc to cancel)';
+        ta.addEventListener('keydown', e => {
+          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        });
+        ta.addEventListener('click', e => e.stopPropagation());
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'dc-btn';
+        saveBtn.textContent = 'Save';
+        saveBtn.style.marginTop = '6px';
+        saveBtn.addEventListener('click', e => { e.stopPropagation(); commit(); });
+        function commit() {
+          c.text = ta.value.trim();
+          if (!c.text) return cancel();
+          save(); render();
+        }
+        function cancel() {
+          if (!c.text) { comments = comments.filter(x => x.id !== c.id); ranges.delete(c.id); paint(); }
+          save(); render();
+        }
+        item.appendChild(ta);
+        item.appendChild(saveBtn);
+        listEl.appendChild(item);
+        requestAnimationFrame(() => ta.focus());
+        continue;
+      }
+
+      const text = document.createElement('div');
+      text.className = 'dc-text';
+      text.textContent = c.text;
+      item.appendChild(text);
+
+      if (Array.isArray(c.replies) && c.replies.length) {
+        const box = document.createElement('div');
+        box.className = 'dc-replies';
+        for (const r of c.replies) {
+          const who = document.createElement('div');
+          who.className = 'dc-reply-author';
+          who.textContent = 'Reply from ' + (r.author || 'agent') + (r.created ? ' · ' + String(r.created).slice(0, 10) : '');
+          const body = document.createElement('div');
+          body.className = 'dc-reply-text';
+          for (const part of String(r.text || '').split(/(https?:\/\/[^\s)]+)/g)) {
+            if (/^https?:\/\//.test(part)) {
+              const a = document.createElement('a');
+              a.href = part; a.target = '_blank'; a.rel = 'noopener';
+              a.textContent = part;
+              a.addEventListener('click', e => e.stopPropagation());
+              body.appendChild(a);
+            } else body.appendChild(document.createTextNode(part));
+          }
+          box.append(who, body);
+        }
+        item.appendChild(box);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'dc-meta';
+      const when = document.createElement('span');
+      when.textContent = c.created.slice(0, 10);
+      const resolved = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!c.resolved;
+      cb.addEventListener('click', e => e.stopPropagation());
+      cb.addEventListener('change', () => { c.resolved = cb.checked; save(); render(); });
+      resolved.append(cb, 'resolved');
+      const del = document.createElement('button');
+      del.className = 'dc-del';
+      del.textContent = 'delete';
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        comments = comments.filter(x => x.id !== c.id);
+        ranges.delete(c.id);
+        paint(); save(); render();
+      });
+      meta.append(when, resolved, del);
+      item.appendChild(meta);
+
+      item.addEventListener('click', () => {
+        const r = ranges.get(c.id);
+        if (!r) return flash('Anchor not found in this version of the document.');
+        const rect = r.getBoundingClientRect();
+        window.scrollTo({ top: window.scrollY + rect.top - 160, behavior: 'smooth' });
+        paint(c.id);
+        setTimeout(() => paint(), 2000);
+      });
+      // double-click text to edit
+      text.addEventListener('dblclick', e => { e.stopPropagation(); render(c.id); });
+      listEl.appendChild(item);
+    }
+  }
+
+  // ---- selection -> floating Comment button ----
+  document.addEventListener('mouseup', e => {
+    if (fab.contains(e.target)) return;
+    setTimeout(() => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) { fab.style.display = 'none'; return; }
+      const range = sel.getRangeAt(0);
+      if (!doc.contains(range.commonAncestorContainer) || !range.toString().trim()) {
+        fab.style.display = 'none';
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      fab.style.display = 'block';
+      fab.style.left = Math.min(rect.right + 8 + window.scrollX, window.scrollX + document.documentElement.clientWidth - 120) + 'px';
+      fab.style.top = (rect.top + window.scrollY - 4) + 'px';
+      fab.dataset.pending = '1';
+    }, 0);
+  });
+  fab.addEventListener('click', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const c = Object.assign({ id: 'c' + Date.now().toString(36) + (seq++), text: '', created: new Date().toISOString(), resolved: false }, selectorFromRange(range));
+    comments.push(c);
+    ranges.set(c.id, range.cloneRange());
+    paint(c.id);
+    sel.removeAllRanges();
+    fab.style.display = 'none';
+    sidebar.classList.add('dc-open');
+    render(c.id);
+  });
+
+  // ---- export / import ----
+  function payload() {
+    return JSON.stringify({
+      format: FORMAT,
+      doc: document.title,
+      exported: new Date().toISOString(),
+      comments: comments,
+    }, null, 2);
+  }
+  document.getElementById('dc-export').addEventListener('click', () => {
+    const blob = new Blob([payload()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'doc') + '.comments.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    flash('Downloaded.');
+  });
+  document.getElementById('dc-copy').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(payload()); flash('Copied to clipboard.'); }
+    catch (e) { flash('Clipboard blocked — use Export instead.'); }
+  });
+  document.getElementById('dc-import').addEventListener('click', () => document.getElementById('dc-file').click());
+  document.getElementById('dc-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(raw => {
+      const data = JSON.parse(raw);
+      if (data.format !== FORMAT || !Array.isArray(data.comments)) { flash('Not a dc-comments file.'); return; }
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of data.comments) byId.set(c.id, c);
+      comments = [...byId.values()];
+      reanchorAll(); save(); render();
+      flash('Imported ' + data.comments.length + ' comment(s).');
+    }).catch(() => flash('Could not parse that file.'));
+    e.target.value = '';
+  });
+
+  document.getElementById('dc-toggle').addEventListener('click', () => sidebar.classList.toggle('dc-open'));
+
+  // ---- init ----
+  load();
+  // Merge the renderer's preloaded comments (with replies) by id: a stored
+  // comment keeps its own text/resolved state and takes the preloaded replies.
+  try {
+    const pre = document.getElementById('dc-preload');
+    const preloaded = pre && pre.textContent.trim() ? JSON.parse(pre.textContent) : [];
+    if (Array.isArray(preloaded) && preloaded.length) {
+      const byId = new Map(comments.map(c => [c.id, c]));
+      for (const c of preloaded) {
+        const existing = byId.get(c.id);
+        if (existing) { if (c.replies) existing.replies = c.replies; }
+        else byId.set(c.id, c);
+      }
+      comments = [...byId.values()];
+      save();
+    }
+  } catch (e) { /* malformed preload: ignore */ }
+  reanchorAll();
+  render();
+})();
+</script>
+<!-- ============ DC-COMMENTS END ============ -->
+</div>
+</body>
+</html>
