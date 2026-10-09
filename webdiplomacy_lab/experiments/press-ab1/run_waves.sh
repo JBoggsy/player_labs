@@ -2,7 +2,7 @@
 # press-ab1 wave runner: each wave = one request per arm (same window), stream, wait, repeat.
 # Usage: run_waves.sh WAVES EPISODES_PER_ARM ARM=POLICY_VERSION_ID ...   (run from the repo root)
 # Request bodies/creation output: experiments/press-ab1/wave<N>-<arm>.{json,out}; ids: waves.tsv.
-# Evidence: evidence/press-ab1/<arm>/. Needs HOME pointing at a private ~/.softmax copy.
+# Evidence: evidence/press-ab1/<FIELD_TAG>/<arm>/ (FIELD_TAG in make_request.py). Needs HOME pointing at a private ~/.softmax copy.
 set -u
 waves=$1; episodes=$2; shift 2
 dir=webdiplomacy_lab/experiments/press-ab1
@@ -18,7 +18,7 @@ for wave in $(seq 1 "$waves"); do
     if [ -z "$xreq" ]; then echo "wave $start $name create FAILED"; tail -5 $dir/wave$start-$name.out; continue; fi
     printf '%s\t%s\t%s\t%s\n' "$start" "$name" "$ref" "$xreq" >> $dir/waves.tsv
     uv run python $S/coworld-episode-artifacts/scripts/fetch_artifacts.py --xreq "$xreq" --watch \
-      --out webdiplomacy_lab/evidence/press-ab1/$name > /tmp/claude-501/press-ab1-$xreq.log 2>&1 &
+      --out webdiplomacy_lab/evidence/press-ab1/$(python3 $dir/make_request.py --field-tag)/$name > /tmp/claude-501/press-ab1-$xreq.log 2>&1 &
     pids+=($!)
     echo "wave $start $name $xreq"
   done
