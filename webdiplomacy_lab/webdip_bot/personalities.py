@@ -109,6 +109,33 @@ PERSONALITIES = {
         "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "castlereagh"},
         "motto": "Full press: an LLM statesman who negotiates, records every promise, and lets Kissinger's search pick the orders.",
     },
+    # Hero-seat rotation (press-ab1 wave 2): castlereagh soul on other models, other souls on glm.
+    # Per-model settings match the field's (see the field comment below).
+    "castlereagh_press_luna": {
+        "base": "press",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "castlereagh", "PRESS_MAX_TOKENS": 6000, "PRESS_TEMPERATURE": None},
+        "motto": "Castlereagh on gpt-6-luna (rotation arm).",
+    },
+    "castlereagh_press_deepseek": {
+        "base": "press",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "castlereagh", "PRESS_MAX_TOKENS": 6000, "PRESS_REASONING": "none"},
+        "motto": "Castlereagh on deepseek-v4.1-flash (rotation arm).",
+    },
+    "castlereagh_press_gemini": {
+        "base": "press",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "castlereagh", "PRESS_MAX_TOKENS": 6000},
+        "motto": "Castlereagh on gemini-3.5-flash-lite (rotation arm).",
+    },
+    "talleyrand_press_glm": {
+        "base": "press",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "talleyrand"},
+        "motto": "Talleyrand soul on glm-5.3-flash (rotation arm).",
+    },
+    "bismarck_press_glm": {
+        "base": "press",
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "bismarck"},
+        "motto": "Bismarck soul on glm-5.3-flash (rotation arm).",
+    },
     # Frozen press evaluation field (souls differ; each is uploaded with a different model).
     # deepseek reasons past 2000 tokens even at effort "low" and was too slow for 60 s wakes
     # (field health checks xreq_8c1ab851, xreq_ed717596), so its reasoning is off. talleyrand runs
