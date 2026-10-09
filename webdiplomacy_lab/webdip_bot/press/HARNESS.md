@@ -27,6 +27,11 @@ A policy (every key optional):
 "F NTH S A YOR - NWY", "A VIE H", "F BRE - MAO", coasts as "STP/NC". Copy unit and
 province names from the board.
 
+**Map geometry.** The briefing's "Moves" section lists, from the rules engine, where each of
+your units and each nearby foreign unit can move this phase. Use it instead of your memory of
+the map: a unit can move to, support into, or threaten only the provinces listed for it
+(a fleet supports only into provinces it could enter itself).
+
 **Tools.** Use `search` and `assess_deal` before committing to anything that matters;
 they tell you expected and worst-case centres. Use `predict` to see what a power will
 likely do. Record every concrete promise (theirs and yours) with `record_commitment` so

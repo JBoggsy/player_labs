@@ -133,7 +133,7 @@ counts, and threat maps come from code. The LLM supplies judgment and language.
 
 | Tool | What it does | Built from |
 | --- | --- | --- |
-| `board()` | Text summary: centres and units per power, neutral centres, our centres within reach of foreign units. | `Notation.brief` |
+| `board()` | Text summary: centres and units per power, neutral centres, our centres within reach of foreign units, and a "Moves" list of legal non-convoy destinations for our units and for foreign units that can reach our units, centres or next moves (the LLM otherwise reasons about adjacency from memory and gets it wrong). Also in every briefing. | `Notation.brief`, `Notation.geometry` |
 | `predict(power)` | Most likely orders of one power (top 3 per unit with frequencies) under the opponent model and our committed policy. | `OpponentModel` level-1 sampling |
 | `evaluate(orders, policy?)` | Expected, worst and best projected centres and per-order success/dislodge rates of a written order set. | `PositionEvaluator`, native adjudicator |
 | `search(policy)` | Best orders under a policy, with the same statistics. Does not change saved orders. | `choose_movement` |

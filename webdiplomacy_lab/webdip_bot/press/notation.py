@@ -96,4 +96,30 @@ class Notation:
             if enemies:
                 threats.append(f"{self.dm.loc[t]} (reachable by {', '.join(enemies)})")
         lines.append("Your centres within reach of foreign units: " + ("; ".join(threats) or "none"))
+        lines.append(self.geometry(me))
+        return "\n".join(lines)
+
+    def moves(self, unit):
+        """Provinces this unit can move to this phase without a convoy (from the engine's legal orders)."""
+        dests = []
+        for o in self.b.legal.movement(unit):
+            if o["type"] == "Move" and o.get("viaConvoy") != "Yes":
+                dests.append(self.render(o).split(" - ", 1)[1])
+        return sorted(set(dests))
+
+    def geometry(self, me):
+        """Map adjacency as legal moves: ours, and foreign units that can reach our area.
+        A unit can support into any province it can move to (coasts aside)."""
+        b = self.b
+        mine = [u for u in b.units if int(u["countryID"]) == me]
+        area = {b.province(u["terrID"]) for u in mine} | {t for t, o in b.owner.items() if o == me}
+        lines = ["## Moves (legal destinations from the rules engine; use these, not memory)"]
+        for u in sorted(mine, key=self.unit_label):
+            dests = self.moves(u)
+            area |= {self.province_id(d) for d in dests}
+            lines.append(f"{self.unit_label(u)} -> {' '.join(dests) or '(none)'}")
+        for u in sorted((u for u in b.units if int(u["countryID"]) != me), key=self.unit_label):
+            dests = self.moves(u)
+            if b.province(u["terrID"]) in area or any(self.province_id(d) in area for d in dests):
+                lines.append(f"{POWER[int(u['countryID'])]} {self.unit_label(u)} -> {' '.join(dests) or '(none)'}")
         return "\n".join(lines)
