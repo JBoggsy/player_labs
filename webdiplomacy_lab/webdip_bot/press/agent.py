@@ -222,7 +222,9 @@ def run_wake(agent, prompt, seconds, request_limit):
 
 
 def make_agent(model, soul, toolbox):
-    settings = {"max_tokens": config.PRESS_MAX_TOKENS, "temperature": config.PRESS_TEMPERATURE}
+    settings = {"max_tokens": config.PRESS_MAX_TOKENS}
+    if config.PRESS_TEMPERATURE is not None:  # some models (gpt-6-luna, claude-haiku-5.5) reject it
+        settings["temperature"] = config.PRESS_TEMPERATURE
     if config.PRESS_REASONING:
         settings["extra_body"] = {"reasoning": {"effort": config.PRESS_REASONING}}
     return Agent(model, instructions=system_prompt(soul), tools=toolbox.all(), model_settings=settings, retries=2)

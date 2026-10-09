@@ -112,7 +112,8 @@ PERSONALITIES = {
     # Frozen press evaluation field (souls differ; each is uploaded with a different model).
     # deepseek reasons past 2000 tokens even at effort "low" and was too slow for 60 s wakes
     # (field health checks xreq_8c1ab851, xreq_ed717596), so its reasoning is off. talleyrand runs
-    # gpt-6-luna (qwen3.8-flash took ~39 provider 429s per game and sent 1-6 messages).
+    # gpt-6-luna without temperature (qwen3.8-flash took ~39 provider 429s per game and sent 1-6
+    # messages; gpt-6-luna rejects temperature, and the sidecar requires every sent parameter).
     # metternich runs gemini-3.5-flash-lite at effort "low" (it rejects reasoning off; minimax-m3
     # managed ~1 call per wake).
     "bismarck_press": {
@@ -122,7 +123,7 @@ PERSONALITIES = {
     },
     "talleyrand_press": {
         "base": "press",
-        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "talleyrand", "PRESS_MAX_TOKENS": 6000},
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "talleyrand", "PRESS_MAX_TOKENS": 6000, "PRESS_TEMPERATURE": None},
         "motto": "Full press field: charming liar who promises everyone everything.",
     },
     "metternich_press": {
