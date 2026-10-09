@@ -95,6 +95,17 @@ rejects reasoning off (HTTP 400); minimax-m3 made about one call per wake; qwen3
   unconnected; ~660 adjacency claims in field-check reasoning). The section is labelled as possible moves (not predictions) and a `connections(province)`
   lookup tool is added. The field has the same fix.
 
+**Wave-1 standings (pre-geometry field, 73 games, all castlereagh arms pooled):** Talleyrand
+(liar, gpt-6-luna) 0.208, silent Kissinger 0.174, Bismarck 0.169, Metternich 0.150, castlereagh
+0.126, Machiavelli (glm) 0.101, Calhamer 0.073 (SE about 0.02). Our press layer scored below the
+same search engine without press. Not yet re-measured against the geometry field.
+
+**Hero-seat rotation (James, 2026-10-09), control v7, queued as wave 3 with a same-window v7 batch:**
+`webdip-rot-castlereagh-luna` (`ecf9a8f0`), `-castlereagh-deepseek` (`d0e683df`),
+`-castlereagh-gemini` (`2d9d5e0a`), `-talleyrand-glm` (`f6bac0c6`), `-bismarck-glm` (`e4938fc3`); all
+v7 code. **Trust candidate T** (Codex, in progress): mark a power as a liar at its first clean
+breach or betrayal and never trust it again (trust clamp, ignored expected orders, no ally stance).
+
 **Other items:** viewer follow-ups (`tools/game_viewer.py`): order arrows use the renderer's power
 colours, not the viewer palette; label overlap with units in crowded provinces.
 

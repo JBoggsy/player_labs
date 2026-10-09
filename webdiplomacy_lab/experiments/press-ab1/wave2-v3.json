@@ -1,0 +1,54 @@
+{
+ "private": true,
+ "target": {
+  "league_id": "league_1bccc63d-cd0a-47d7-92d7-e762797b5f1c",
+  "variant_id": "classic-press"
+ },
+ "num_episodes": 16,
+ "episode_player_llm_spend_limit_usd": 14,
+ "roster": [
+  {
+   "player": {
+    "policy_ref": "331786ae-f185-4195-a742-e3b0c76f09c4"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "dd532c32-040e-4ac4-b48a-5e871aa891d9"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "95702e01-2e6a-43e2-802b-228be421b283"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "aed005c0-023d-4cc0-bc8a-43309c6de71a"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "228403f2-3db0-491c-b1e7-06538ca88200"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "580d73eb-6a20-4762-8529-eef9655bfd83"
+   },
+   "slot": -1
+  },
+  {
+   "player": {
+    "policy_ref": "2f27f55a-6b0e-4af5-af2b-58aee9e3c83f"
+   },
+   "slot": -1
+  }
+ ],
+ "notes": "webdip lab press-ab1 arm v3: one candidate seat vs frozen press field (geo)"
+}
