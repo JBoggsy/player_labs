@@ -29,11 +29,11 @@ unattended-loop recipe is [LOOP.md](LOOP.md). Measured lessons are in
 
 ## Press league (`webDiplomacy`, classic-press) — 2026-10-08
 
-- **Champion and only filler:** `webdip-castlereagh-press:v1` (policy version `16b527ba…`,
-  player James Botts), submitted with `--auto-champion always`
-  (`sub_f43cf004…`, membership `lpm_f0cad559…`, qualified and champion). Filler roster:
-  that version, display name "Castlereagh". League games are therefore all-Castlereagh until
-  other entrants arrive.
+- **Champion:** `webdip-castlereagh-press:v1` (policy version `16b527ba…`, player James Botts),
+  submitted with `--auto-champion always` (`sub_f43cf004…`, membership `lpm_f0cad559…`). It is
+  the only member. **Filler roster (2026-10-09):** the frozen press field below (Bismarck,
+  Talleyrand, Metternich, Machiavelli, Kissinger, Calhamer), so league games are v1 against
+  the field.
 - **Policy:** `castlereagh_press` — the LLM press agent (`webdip_bot/press/`) over Kissinger
   search, model `z-ai/glm-5.3-flash` (upload flag), design in
   [`docs/designs/press-agent-design.md`](docs/designs/press-agent-design.md).
@@ -55,7 +55,7 @@ A/Bs. One candidate seat plus six field seats, `classic-press` (full game decide
 `classic-press-short` only for health/activation checks), baseline and candidates in the same
 window, per-power score vs par (`tools/compare.py`). Pre-registered: about 150 episodes per arm
 (per-seat score SD about 0.19); an interim look at about 50 per arm checks health and activation
-only. The field also replaces the press league's filler roster once it is healthy.
+only. The field is also the press league's filler roster.
 
 **Field (frozen; ids in `experiments/press-ab1/make_request.py`):** none of it is the castlereagh
 lineage.

@@ -17,8 +17,8 @@ league's empty seats.
 
 - **League.** `webDiplomacy` (`league_1bccc63d…`) plays `classic-press` once a day:
   4-minute movement phases, 1-minute retreat and build phases, ends 1908. Scoring is
-  the draw share (SC² / ΣSC²), ranked by mean score. Its filler roster is **empty**
-  today. `webDiplomacy Gunboat` (`league_428e91e5…`) is where Kissinger plays.
+  the draw share (SC² / ΣSC²), ranked by mean score. Its filler roster is the frozen
+  press field (`WORKING_CONTEXT.md`). `webDiplomacy Gunboat` (`league_428e91e5…`) is where Kissinger plays.
 - **Press.** `game/sendmessage` sends a message (`toCountryID` 0 = public). Incoming
   messages arrive in `game/playercontext` with `messages=1`. A phase ends early only
   when every seat is Ready.
