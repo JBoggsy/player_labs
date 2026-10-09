@@ -110,11 +110,12 @@ PERSONALITIES = {
         "motto": "Full press: an LLM statesman who negotiates, records every promise, and lets Kissinger's search pick the orders.",
     },
     # Frozen press evaluation field (souls differ; each is uploaded with a different model).
-    # deepseek/minimax/qwen reason past 2000 tokens even at effort "low" (field1 v1 health check),
-    # so their wakes died; qwen also saturates any cap, so its reasoning is off.
+    # deepseek and qwen reason past 2000 tokens even at effort "low" and were too slow for 60 s
+    # wakes (field health checks xreq_8c1ab851, xreq_ed717596), so their reasoning is off.
+    # metternich runs gemini-3.5-flash-lite (minimax-m3 managed ~1 call per wake).
     "bismarck_press": {
         "base": "press",
-        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "bismarck", "PRESS_MAX_TOKENS": 6000},
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "bismarck", "PRESS_MAX_TOKENS": 6000, "PRESS_REASONING": "none"},
         "motto": "Full press field: blunt, honest warmonger who picks a victim early.",
     },
     "talleyrand_press": {
@@ -124,7 +125,7 @@ PERSONALITIES = {
     },
     "metternich_press": {
         "base": "press",
-        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "metternich", "PRESS_MAX_TOKENS": 6000},
+        "overrides": {"OPP_MODEL_LEVEL": 1, "PRESS_SOUL": "metternich", "PRESS_MAX_TOKENS": 6000, "PRESS_REASONING": "none"},
         "motto": "Full press field: cautious, never breaks a promise, rallies coalitions against the leader.",
     },
     "machiavelli_press": {
