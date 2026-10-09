@@ -217,23 +217,21 @@ movement phase, about 13–14 calls per seat-phase. Projected full `classic-pres
 (16 movement phases): about $0.10 per LLM seat, $0.70 with all seven seats on LLMs.
 Model latency: 4.4 s median, 15.6 s p90.
 
-## Fillers
+## Fillers (built)
 
-The press league's roster is empty, so our agents become the field.
+The press league's filler roster is the frozen press field, also the opponent set for hosted
+A/Bs (current versions and models in `WORKING_CONTEXT.md`, ids in
+`experiments/press-ab1/make_request.py`).
 
-- **Personality = `SOUL.md` + model + default `SearchPolicy`.** This extends
-  `personalities.py`: one image, `POLICY` build arg, one uploaded version per filler.
-- **Diversity matters more than strength.** Honest and deceptive, aggressive and
-  defensive, different models. A field of clones teaches nothing and invites
-  self-play artifacts.
-- **Keep some non-LLM fillers** (Kissinger, DumbBot) as silent, cheap, stable anchors.
-- **Risk: shared spend.** All platform-hosted LLM calls in the league meter against the
-  league's limit. LLM fillers can exhaust it and push our main player into 429s
-  (it then falls back to Kissinger). Confirm the limit and its scope before we fill six
-  seats with LLM agents.
-- **Lab rule check.** Hosted XP credits are not spent on own-policy self-play. Fillers
-  are part of the league field, but evaluation batches against all-our-own fillers need
-  the human's call.
+- **Personality = `SOUL.md` + model + per-model settings.** Each field seat is a `*_press`
+  entry in `personalities.py` (souls bismarck, talleyrand, metternich, machiavelli), one image per
+  `POLICY` build arg, one uploaded version per seat with its `--llm-model`. The model's sidecar
+  constraints decide `PRESS_MAX_TOKENS`, `PRESS_REASONING` and `PRESS_TEMPERATURE` (see the
+  gameplay doc, "LLM players").
+- **Diversity over strength:** an honest warmonger, a liar, a cautious coalition builder and a
+  stabber on four different model families, plus silent Kissinger and Calhamer as cheap anchors.
+- **No castlereagh lineage in the field,** so a candidate never plays a copy of itself.
+- **Spend:** a hosted full classic-press game with five LLM seats drew about 15 XP credits (LLM plus compute; press-ab1 waves 1-2).
 
 ## Risks and open questions
 

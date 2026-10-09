@@ -22,9 +22,9 @@ quadratically. Full rules, player contract, gotchas and evidence formats are in
   dominates raw score. Compare against the **same-batch field par** for that power
   (`wd.py metrics` does this).
 - **One copy of our policy per hosted episode** (one `policy_ref` seat, `slot: -1`) plus
-  six opponents. Until other entrants exist, opponents are the league filler
-  (`272d637a-6628-4040-a28c-8e9fb1ccf96f`, the bundled random bot) as explicit refs:
-  `random` would sample the champion pool, which is only us.
+  six opponents as explicit refs (`random` would sample the champion pool, which is only us).
+  Gunboat: the league fillers or the bundled random bot (`272d637a-…`). Press: the frozen press
+  field (`experiments/press-ab1/make_request.py`; it is also the press league's filler roster).
 - **No hosted self-play.** All-our-policy games run locally (`wd.py local`). A local
   gunboat game takes about 45 seconds.
 - **Diff saved orders every phase.** Upstream silently drops invalid orders. Our bot

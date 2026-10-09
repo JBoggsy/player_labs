@@ -37,14 +37,9 @@ unattended-loop recipe is [LOOP.md](LOOP.md). Measured lessons are in
 - **Policy:** `castlereagh_press` — the LLM press agent (`webdip_bot/press/`) over Kissinger
   search, model `z-ai/glm-5.3-flash` (upload flag), design in
   [`docs/designs/press-agent-design.md`](docs/designs/press-agent-design.md).
-- **Evidence so far:** two local all-Castlereagh `classic-press-short` games (0 rejected
-  orders, 0 exceptions; $0.32 and $0.35 per game; viewers under
-  `local_runs/press-v1/game{1,2}/viewer.html`). Hosted health check
-  `xreq_547d713f…` (2 `classic-press-short` episodes vs 6 bundled random bots): the real
-  sidecar path works — 132 calls all HTTP 200, 0 exceptions, 0 rejected orders, $0.03–0.04
-  per seat-game (the sidecar's spend header runs about 6% above summed `usage.cost`; treat
-  the header as the billing number). No strength measurement exists yet: the opponents sent
-  no press, and local runs are self-play.
+- **Health:** the hosted sidecar path works (132/132 calls in `xreq_547d713f`; 0 exceptions or
+  rejected orders in every press-ab1 game inspected). The sidecar's spend header runs about 6%
+  above summed `usage.cost`; budget against the header.
 - **Cost:** about $0.70 per full classic-press game with all seven seats on the LLM,
   metered against the league's spend limit.
 
@@ -72,44 +67,48 @@ Do not pool the two.
 | Kissinger (silent) | `webdip-kissinger:v2` | – |
 | Calhamer (silent) | `webdip-calhamer:v1` | – |
 
-Model gotchas from the health checks: deepseek, qwen and minimax reason past a 2000-token
-`max_tokens` even at effort `low` (the wake dies with `UnexpectedModelBehavior`); gemini-3.5-flash-lite
-rejects reasoning off (HTTP 400); minimax-m3 made about one call per wake; qwen3.8-flash took about
-40 provider 429s per game.
+Per-model sidecar settings and failures: `docs/webdiplomacy-gameplay.md` (LLM players).
 
-**Candidates (siblings of v1):**
-- `webdip-castlereagh-press:v2` (`532ce206`): open wake 100 s, 12 calls per wake. v1 hosted open
-  wakes hit the 60 s limit 12/32; v2 2/16 in its field check.
-- `webdip-castlereagh-press:v3` (`331786ae`): deal gate (own promises and dependent commits need a
-  same-phase `assess_deal`), accept/counter/reject recommendation, power abbreviations. v1 made
-  zero `assess_deal` calls in local game 2; v3 made 17 per game in its field check, gate blocked 0-2.
-- `webdip-castlereagh-press:v4` (`afc90a7c`): end-game awareness. Briefings state the end year and
-  phases left; final-year task text; final-autumn search ignores position and lost units. The
-  diagnosis (Codex, field checks) found terminal turns spent on next-year plans (one seat 8 -> 5).
-- `webdip-castlereagh-press:v5` (`7c4cb5f5`): pin cost. A constrained `commit_orders` is compared
-  with the same policy minus `require_orders`/`forbid_moves_into` on the same opponent samples and
-  refused once when worse by more than 0.5 expected centres (`accept_cost=true` overrides).
-- `webdip-castlereagh-press:v7` (`a631e92c`; v6 `f8f16684` untested): map geometry. The briefing lists legal non-convoy
-  destinations for our units and nearby foreign units (`Notation.geometry`). Without it the LLMs
-  reason about adjacency from memory and often get it wrong (James saw SER/BUL/GRE treated as
-  unconnected; ~660 adjacency claims in field-check reasoning). The section is labelled as possible moves (not predictions) and a `connections(province)`
-  lookup tool is added. The field has the same fix.
+**Candidates.** Each is a sibling of its base so its A/B is attributable. Code lives on local
+branches (not pushed): v2 `press-wakes`, v3 `press-dealcheck`, v4 `press-endgame`, v5
+`press-pinning`, v7 and the rotation arms `webdip-press-strength`, v8 `press-trust`.
 
-**Wave-1 standings (pre-geometry field, 73 games, all castlereagh arms pooled):** Talleyrand
-(liar, gpt-6-luna) 0.208, silent Kissinger 0.174, Bismarck 0.169, Metternich 0.150, castlereagh
-0.126, Machiavelli (glm) 0.101, Calhamer 0.073 (SE about 0.02). Our press layer scored below the
-same search engine without press. Not yet re-measured against the geometry field.
+| Version | Base | Change | Activation (field checks) |
+| --- | --- | --- | --- |
+| v1 `16b527ba` | – | league champion | – |
+| v2 `532ce206` | v1 | open wake 100 s, 12 calls per wake | open time limits 12/32 -> 2/16 |
+| v3 `331786ae` | v1 | deal gate: own promises and dependent commits need a same-phase `assess_deal` | 17 assessments per game (v1: 0) |
+| v4 `afc90a7c` | v1 | end-game awareness: end year and phases left in briefings; final-autumn search counts only owned centres | end year derived, terminal search ran |
+| v5 `7c4cb5f5` | v1 | pin cost: constrained commits compared with the unconstrained plan on the same samples | 18 comparisons, 2 blocks, both overridden |
+| v7 `a631e92c` | v1 | map connectivity in briefings ("could move to") + `connections(province)` tool | adjacency guesses in reasoning about 66 -> 21 per game |
+| v8 `cc9d3bf5` | v7 | liar marks (below) | not yet observed |
+| `webdip-rot-*` | v7 | castlereagh on gpt-6-luna `ecf9a8f0` / deepseek `d0e683df` / gemini-flash-lite `2d9d5e0a`; talleyrand soul on glm `f6bac0c6`; bismarck soul on glm `e4938fc3` | not yet observed |
 
-**Hero-seat rotation (James, 2026-10-09), control v7, queued as wave 3 with a same-window v7 batch:**
-`webdip-rot-castlereagh-luna` (`ecf9a8f0`), `-castlereagh-deepseek` (`d0e683df`),
-`-castlereagh-gemini` (`2d9d5e0a`), `-talleyrand-glm` (`f6bac0c6`), `-bismarck-glm` (`e4938fc3`); all
-v7 code. **Trust candidate T** = `webdip-castlereagh-press:v8` (`cc9d3bf5`, branch `press-trust`, v7
-code + liar marks), queued as wave 4: a power we held at ally stance or trust >= 0.5 that orders a
-move or support into our units/centres is permanently marked (trust capped at 0.1, its expected
-orders dropped, ally refused, banner in every briefing). Recorded promise breaches are shown only
-as unverified claims: Codex's audit found 10/30 sampled breach verdicts were our own recording
-errors. Measured motivation (100 wave-1 games): after a first breach or trusted attack we went
-back to trusting the power 94 times in 46 relationships; Talleyrand: 62/64 relationships.
+v8 marks a power permanently when, while we held it at ally stance or trust >= 0.5, it orders a move
+or support into our units or centres: trust capped at 0.1, its expected orders dropped, ally refused,
+a banner in every briefing. Recorded promise breaches are shown only as unverified claims, because
+Codex's audit found 10 of 30 sampled breach verdicts were our own recording errors.
+
+**Results so far (mean score per seat; parity 0.143; not verdicts).**
+- Wave 1, pre-geometry field, 100 games: Talleyrand 0.208, silent Kissinger 0.174, Bismarck 0.169,
+  Metternich 0.150, castlereagh (all arms) 0.126, Machiavelli 0.101, Calhamer 0.073 (SE about 0.02).
+- Wave 2, geometry field, 16 per arm: v7 0.150, v1 0.124, v3 0.112, v4 0.095, v5 0.090, v2 0.064
+  (SE 0.011-0.030; every stratified comparison with v1 inconclusive). Field seats (92 games):
+  Talleyrand 0.204, Kissinger 0.176, Metternich 0.174, Bismarck 0.171, Machiavelli 0.133, Calhamer 0.038.
+- Pattern in both fields: our press layer scores below the same search engine without press, and
+  the liar on gpt-6-luna leads.
+
+**Running on the platform (2026-10-09 ~07:00 UTC):** wave 3 (rotation arms + v7 control `v7b`, 16
+each) and wave 4 (v8, 16). Request ids: `experiments/press-ab1/waves.tsv` (wave, arm, policy,
+xreq). Credits 9.0k at about 15 per full game. Local pollers were stopped at wrap-up; resume
+artifact collection (it skips episodes already fetched) with, per request:
+`uv run python .claude/skills/coworld-episode-artifacts/scripts/fetch_artifacts.py --xreq XREQ --out webdiplomacy_lab/evidence/press-ab1/geo/ARM`.
+Analyse with `wd.py seats/metrics` and `tools/compare.py BASE_DIR CAND_DIR --baseline ... --candidate ...`.
+New waves: `HOME=<private softmax home> experiments/press-ab1/run_waves.sh WAVES EPISODES ARM=POLICY_VERSION ...`.
+
+**Next decision.** Read waves 3 and 4. Then spend the remaining budget on v1, v7, v8 and the best
+rotation arm toward the pre-registered sample, instead of topping up v2-v5 evenly. Submit only a
+candidate that beats v1 (v7 is the likely floor for anything shipped).
 
 **Other items:** viewer follow-ups (`tools/game_viewer.py`): order arrows use the renderer's power
 colours, not the viewer palette; label overlap with units in crowded provinces.
