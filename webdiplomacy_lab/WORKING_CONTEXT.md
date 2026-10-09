@@ -63,7 +63,7 @@ lineage.
 | Seat | Policy | Model |
 | --- | --- | --- |
 | Bismarck (honest warmonger) | `webdip-bismarck-press:v3` | deepseek-v4.1-flash, reasoning off |
-| Talleyrand (liar) | `webdip-talleyrand-press:v3` | gpt-6-luna, reasoning low |
+| Talleyrand (liar) | `webdip-talleyrand-press:v4` | gpt-6-luna, reasoning low, no temperature |
 | Metternich (cautious, never lies) | `webdip-metternich-press:v4` | gemini-3.5-flash-lite, reasoning low |
 | Machiavelli (stabber) | `webdip-machiavelli-press:v1` | glm-5.3-flash |
 | Kissinger (silent) | `webdip-kissinger:v2` | – |
