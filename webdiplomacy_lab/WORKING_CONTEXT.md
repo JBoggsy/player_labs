@@ -58,14 +58,17 @@ window, per-power score vs par (`tools/compare.py`). Pre-registered: about 150 e
 only. The field is also the press league's filler roster.
 
 **Field (frozen; ids in `experiments/press-ab1/make_request.py`):** none of it is the castlereagh
-lineage.
+lineage. Since 2026-10-09 the LLM seats have the map-connectivity briefing and `connections` tool
+(James: all fillers must understand the geometry). press-ab1 wave 1 played the earlier field
+without it (`evidence/press-ab1/<arm>`); waves 2+ play this one (`evidence/press-ab1/geo/<arm>`).
+Do not pool the two.
 
 | Seat | Policy | Model |
 | --- | --- | --- |
-| Bismarck (honest warmonger) | `webdip-bismarck-press:v3` | deepseek-v4.1-flash, reasoning off |
-| Talleyrand (liar) | `webdip-talleyrand-press:v4` | gpt-6-luna, reasoning low, no temperature |
-| Metternich (cautious, never lies) | `webdip-metternich-press:v4` | gemini-3.5-flash-lite, reasoning low |
-| Machiavelli (stabber) | `webdip-machiavelli-press:v1` | glm-5.3-flash |
+| Bismarck (honest warmonger) | `webdip-bismarck-press:v4` | deepseek-v4.1-flash, reasoning off |
+| Talleyrand (liar) | `webdip-talleyrand-press:v5` | gpt-6-luna, reasoning low, no temperature |
+| Metternich (cautious, never lies) | `webdip-metternich-press:v5` | gemini-3.5-flash-lite, reasoning low |
+| Machiavelli (stabber) | `webdip-machiavelli-press:v2` | glm-5.3-flash |
 | Kissinger (silent) | `webdip-kissinger:v2` | – |
 | Calhamer (silent) | `webdip-calhamer:v1` | – |
 
@@ -86,11 +89,11 @@ rejects reasoning off (HTTP 400); minimax-m3 made about one call per wake; qwen3
 - `webdip-castlereagh-press:v5` (`7c4cb5f5`): pin cost. A constrained `commit_orders` is compared
   with the same policy minus `require_orders`/`forbid_moves_into` on the same opponent samples and
   refused once when worse by more than 0.5 expected centres (`accept_cost=true` overrides).
-- `webdip-castlereagh-press:v6` (`f8f16684`): map geometry. The briefing lists legal non-convoy
+- `webdip-castlereagh-press:v7` (`a631e92c`; v6 `f8f16684` untested): map geometry. The briefing lists legal non-convoy
   destinations for our units and nearby foreign units (`Notation.geometry`). Without it the LLMs
   reason about adjacency from memory and often get it wrong (James saw SER/BUL/GRE treated as
-  unconnected; ~660 adjacency claims in field-check reasoning). The frozen field has the same
-  blindness; upgrading it would need a new baseline.
+  unconnected; ~660 adjacency claims in field-check reasoning). The section is labelled as possible moves (not predictions) and a `connections(province)`
+  lookup tool is added. The field has the same fix.
 
 **Other items:** viewer follow-ups (`tools/game_viewer.py`): order arrows use the renderer's power
 colours, not the viewer palette; label overlap with units in crowded provinces.
