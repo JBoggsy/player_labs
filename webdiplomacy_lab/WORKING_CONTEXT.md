@@ -48,30 +48,41 @@ unattended-loop recipe is [LOOP.md](LOOP.md). Measured lessons are in
 - **Cost:** about $0.70 per full classic-press game with all seven seats on the LLM,
   metered against the league's spend limit.
 
-## Next decision: press player strength
+## Press strength campaign (press-ab1)
 
-The objective is to make `castlereagh_press` stronger. Decide first how to measure it:
+**Measurement (James, 2026-10-08):** a frozen, diverse press field decides "better", in hosted
+A/Bs. One candidate seat plus six field seats, `classic-press` (full game decides;
+`classic-press-short` only for health/activation checks), baseline and candidates in the same
+window, per-power score vs par (`tools/compare.py`). Pre-registered: about 150 episodes per arm
+(per-seat score SD about 0.19); an interim look at about 50 per arm checks health and activation
+only. The field also replaces the press league's filler roster once it is healthy.
 
-1. **Measurement design (blocking, human decision).** Self-play never decides "better",
-   and hosted XP is not spent on self-play (`../user_preferences.md`). The press league has
-   no external entrants, and the only hosted non-own opponents (the bundled random bot,
-   relh's gunboat bot) send no press. Options: wait for press entrants; evaluate a
-   candidate against the current version only as a local mechanism check; or agree with
-   the human a field of diverse press agents (different souls and models) and how its
-   results may be used.
-2. **Make the agent test deals before agreeing.** Game 2: 248 `send_press`, 178
-   `record_commitment`, but 47 `search` and 30 `evaluate` calls. Candidate change: require
-   an `assess_deal`/`search` before accepting or proposing a deal (HARNESS.md and skills),
-   with activation tracing (searches and deal assessments per phase).
-3. **Wake limits.** 20–25% of wakes end on the 60 s limit (local) and 3–5 of 16 hosted.
-   Retune `PRESS_WAKE_SECONDS`, `PRESS_COMMIT_MARGIN_S` and `PRESS_REQUEST_LIMIT` for
-   4-minute `classic-press` phases; check model latency (local p50 4.4 s, p90 15.6 s).
-4. **Filler roster.** The press league's only filler is Castlereagh, so league games are
-   self-play. A diverse roster (other souls, other models, plain Kissinger) needs the
-   human's go-ahead and a check of the league LLM spend limit (all-LLM games cost about
-   $0.75 each).
-5. **Viewer follow-ups** (`tools/game_viewer.py`): order arrows use the renderer's power
-   colours, not the viewer palette; label overlap with units in crowded provinces.
+**Field (frozen; ids in `experiments/press-ab1/make_request.py`):** none of it is the castlereagh
+lineage.
+
+| Seat | Policy | Model |
+| --- | --- | --- |
+| Bismarck (honest warmonger) | `webdip-bismarck-press:v3` | deepseek-v4.1-flash, reasoning off |
+| Talleyrand (liar) | `webdip-talleyrand-press:v2` | qwen3.8-flash, reasoning off |
+| Metternich (cautious, never lies) | `webdip-metternich-press:v4` | gemini-3.5-flash-lite, reasoning low |
+| Machiavelli (stabber) | `webdip-machiavelli-press:v1` | glm-5.3-flash |
+| Kissinger (silent) | `webdip-kissinger:v2` | – |
+| Calhamer (silent) | `webdip-calhamer:v1` | – |
+
+Model gotchas from the health checks: deepseek, qwen and minimax reason past a 2000-token
+`max_tokens` even at effort `low` (the wake dies with `UnexpectedModelBehavior`); gemini-3.5-flash-lite
+rejects reasoning off (HTTP 400); minimax-m3 made about one call per wake; qwen takes frequent
+provider 429s.
+
+**Candidates (siblings of v1):**
+- `webdip-castlereagh-press:v2` (`532ce206`): open wake 100 s, 12 calls per wake. v1 hosted open
+  wakes hit the 60 s limit 12/32; v2 2/16 in its field check.
+- `webdip-castlereagh-press:v3` (`331786ae`): deal gate (own promises and dependent commits need a
+  same-phase `assess_deal`), accept/counter/reject recommendation, power abbreviations. v1 made
+  zero `assess_deal` calls in local game 2.
+
+**Other items:** viewer follow-ups (`tools/game_viewer.py`): order arrows use the renderer's power
+colours, not the viewer palette; label overlap with units in crowded provinces.
 
 ## Other open directions (not started)
 
