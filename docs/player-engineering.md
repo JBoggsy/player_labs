@@ -3,7 +3,7 @@
 Game-agnostic doctrine for **designing** a Coworld player: which architecture to pick,
 how to structure the package so the improvement loop stays cheap, and the techniques
 that make a player robust enough to never lose on *time* instead of *strategy*.
-Adapted from `Metta-AI/optimizer-skills` (`seed-a-new-policy`,
+Adapted from `softmax-universe/optimizer-skills` (`seed-a-new-policy`,
 `scripted-policy-techniques`, `map-navigation`), filtered through this lab's operating
 model. The image/runner contract is [`../player-build.md`](../player-build.md); this
 doc is what goes *inside* the image.

@@ -560,7 +560,7 @@ def doctor_checks(offline: bool) -> list[dict]:
                             pw_release.build_command("libpw.dylib")))
     clone = DEFAULT_CLONE
     checks.append(check("source_clone", (clone / ".git").exists(), str(clone),
-                        f"git clone https://github.com/Metta-AI/paintbot-pw {clone}"))
+                        f"git clone https://github.com/softmax-universe/paintbot-pw {clone}"))
     for script in ("coworld-ab/scripts/ab_stats.py", "coworld-ab/scripts/paired_stats.py",
                    "coworld-hypothesis-miner/scripts/variance_miner.py"):
         path = SKILLS / script

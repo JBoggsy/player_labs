@@ -1,7 +1,7 @@
 """Sprite-v1 protocol constants for the Crewrift ``/player`` stream.
 
 All values verified against the game source on 2026-05-29
-(``src/crewrift/{sim,global}.nim`` in the ``Metta-AI/coworld-crewrift`` repo). These are
+(``src/crewrift/{sim,global}.nim`` in the ``softmax-universe/coworld-crewrift`` repo). These are
 the perception contract — re-check the source if perception misbehaves.
 """
 

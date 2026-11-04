@@ -49,7 +49,7 @@ CACHE_ROOT="$LAB_DIR/.cache/coworld-ctf"
 source "$LAB_DIR/tools/versions.env"
 : "${PAINTBOT_GAME_REF:?versions.env did not define PAINTBOT_GAME_REF}"
 CTF_REF="${CTF_REF:-$PAINTBOT_GAME_REF}"
-GAME_REPO_SLUG="Metta-AI/coworld-ctf"
+GAME_REPO_SLUG="softmax-universe/coworld-ctf"
 
 die() { echo "build_expand_replay.sh: $*" >&2; exit 1; }
 

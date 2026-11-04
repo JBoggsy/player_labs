@@ -27,7 +27,7 @@ not kills.
 For the full game — arena, aim/vision/combat mechanics, flags, exact tuning numbers, the
 wire protocol, the baseline bot, and a strategy treatment — read
 [`docs/ctf-gameplay.md`](docs/ctf-gameplay.md) (the lab's self-contained reference; you
-rarely need to leave the repo). The game source in the `Metta-AI/coworld-ctf` repo
+rarely need to leave the repo). The game source in the `softmax-universe/coworld-ctf` repo
 (server `src/ctf.nim`, rules `docs/RULES.md`, baseline `players/baseline/`) remains the
 ultimate authority.
 

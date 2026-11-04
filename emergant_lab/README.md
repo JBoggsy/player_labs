@@ -22,7 +22,7 @@ colony to 16 active ants wins. Combat is contact-only, and killing a queen colla
 its colony. Agents communicate through public typed, rate-controlled pheromones.
 
 The canonical deployed source is
-`Metta-AI/coworld-emerg-ant@1e0be3f1ecabf2fc70adb8af81818a9947281cc9`
+`softmax-universe/coworld-emerg-ant@1e0be3f1ecabf2fc70adb8af81818a9947281cc9`
 (GameVersion 57). Exact deployment pins live in
 [tools/versions.env](tools/versions.env).
 

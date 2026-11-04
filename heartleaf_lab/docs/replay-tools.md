@@ -11,7 +11,7 @@ replay.json ──expand_replay──▶ expanded.jsonl ──viz_replay──�
 
 ## 1. `expand_replay` — replay → JSONL
 
-A Nim tool that lives in the game repo (`Metta-AI/coworld-heartleaf`,
+A Nim tool that lives in the game repo (`softmax-universe/coworld-heartleaf`,
 `tools/expand_replay.nim`, added in PR #15). It re-simulates the recorded inputs
 through the real game sim and dumps JSONL. Because playback re-simulates, the
 binary must be built from the **same game version that recorded the replay**; a

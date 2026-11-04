@@ -20,10 +20,10 @@ set -euo pipefail
 # The heartleaf source ref to build the tool from. It must contain
 # tools/expand_replay.nim and be the same game version that recorded the
 # replays (re-sim validates a per-tick hash). Currently the replay-expander
-# branch (Metta-AI/coworld-heartleaf#15); bump to the merge commit once it
+# branch (softmax-universe/coworld-heartleaf#15); bump to the merge commit once it
 # lands, and again if the deployed league game advances and hashes mismatch.
 HEARTLEAF_REF="${HEARTLEAF_REF:-23e0cdb}"
-GAME_REPO_SLUG="Metta-AI/coworld-heartleaf"
+GAME_REPO_SLUG="softmax-universe/coworld-heartleaf"
 
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # heartleaf_lab/
 BIN_DIR="$LAB_DIR/tools/bin"

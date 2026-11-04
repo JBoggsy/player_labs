@@ -77,7 +77,7 @@ case "$policy" in
     # broken `players/users/relh/co-gas` submodule fails uv's recursive clone; the Docker
     # tarball install sidesteps submodules entirely.
     if [ "$PLAYERS_SDK_REF" = "main" ]; then
-      remote_sha="$(git ls-remote https://github.com/Metta-AI/coworld-tools.git refs/heads/main | awk '{print $1}' | head -1)"
+      remote_sha="$(git ls-remote https://github.com/softmax-universe/coworld-tools.git refs/heads/main | awk '{print $1}' | head -1)"
       if [ -n "$remote_sha" ]; then
         echo "==> PLAYERS_SDK_REF=main resolved to coworld-tools main $remote_sha"
         PLAYERS_SDK_REF="$remote_sha"

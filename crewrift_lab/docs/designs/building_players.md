@@ -62,7 +62,7 @@ Every Coworld player image obeys the same contract (full details in
 - **Hermetic and pinned.** Heavy deps are fetched at build time, each pinned to a
   ref: the (public) game repo is cloned **at a deliberately-pinned commit**
   (`CREWRIFT_REF`) inside the Nim builds, while the shared SDK is installed from the
-  **public `Metta-AI/players` repo at `PLAYERS_SDK_REF`**
+  **public `softmax-universe/players` repo at `PLAYERS_SDK_REF`**
   ([`tools/versions.env`](../../tools/versions.env)) — which defaults to **`main`,
   resolved by `build_player.sh` to the exact commit `uv.lock` records**, so the image
   runs the same SDK as `uv run` and the Docker layer cache busts exactly when the lock
@@ -162,7 +162,7 @@ crewrift_lab/tools/build_player.sh crewborg
   `crewrift.crewborg` package and imports only `players.player_sdk`. The Dockerfile
   (`crewborg/coworld/Dockerfile`) `pip install`s the SDK straight from the public
   players repo's source tarball at `PLAYERS_SDK_REF`
-  (`players[bedrock] @ https://github.com/Metta-AI/players/archive/<ref>.tar.gz` — no
+  (`players[bedrock] @ https://github.com/softmax-universe/players/archive/<ref>.tar.gz` — no
   git or local checkout needed in the build), then the wrapper-staged fork + the lab
   `crewrift/__init__.py` are copied onto `PYTHONPATH`. It deliberately does **not**
   `pip install` the lab package (that would pull lab tooling like `coworld[auth]`).
@@ -223,7 +223,7 @@ from PyPI and the SDK from the public players repo.
   against that exact source and verify complete expansion before analyzing a batch.
 
 - **Optional local-checkout fast path.** A `--local-game` mode (mount
-  the `Metta-AI/coworld-crewrift` repo instead of cloning) would speed iteration at
+  the `softmax-universe/coworld-crewrift` repo instead of cloning) would speed iteration at
   the cost of hermeticity; not implemented — add it if cold-build time hurts.
 - **Optional shared build-base image (Plan B).** If repeat Nim builds become slow,
   a `crewrift-nim-base` (game-at-ref + nimby-synced, built once) makes each player a

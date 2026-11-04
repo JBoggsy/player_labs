@@ -119,7 +119,7 @@ upload → run an experience request → report + diagnose. After that you're in
 - **Build `--platform=linux/amd64`** — the cluster is amd64; on Apple Silicon images
   build under emulation (the build tools handle this).
 - **Player source and SDK versions have separate ownership.** Vendored players live in their game labs; the shared SDK is imported through [pyproject.toml](pyproject.toml) and locked by `uv.lock`. Per-player images may pin a different SDK in their own build configuration. Inspect both before claiming local/hosted parity; changing a live player's SDK is a separate behavioral validation task.
-- The Coworld runtime contract lives in the `Metta-AI/coworld` repository; Observatory backend behavior lives in `Metta-AI/metta`
+- The Coworld runtime contract lives in the `softmax-universe/coworld` repository; Observatory backend behavior lives in `softmax-universe/softmax`
   when you need implementation evidence. **Do not modify `~/coding/metta`; authorized Metta changes use a separate checkout.**
 
 ## Where to go next

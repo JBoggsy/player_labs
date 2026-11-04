@@ -23,10 +23,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_GAME_REPO = REPO_ROOT.parent.parent / "coworlds" / "coworld-ctf"
 GAME_CACHE = REPO_ROOT / "paintbot_lab" / ".cache" / "coworld-ctf"
 CANONICAL_GAME_REMOTES = {
-    "git@github.com:Metta-AI/coworld-ctf.git",
-    "https://github.com/Metta-AI/coworld-ctf.git",
+    "git@github.com:softmax-universe/coworld-ctf.git",
+    "https://github.com/softmax-universe/coworld-ctf.git",
 }
-CANONICAL_SOURCE_PREFIX = "https://github.com/Metta-AI/coworld-ctf/tree/"
+CANONICAL_SOURCE_PREFIX = "https://github.com/softmax-universe/coworld-ctf/tree/"
 TEAM_NAMES = ("red", "blue", "green", "yellow")
 MAP_SIZES = ("small", "standard", "large", "huge", "giant")
 

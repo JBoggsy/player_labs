@@ -23,7 +23,7 @@ the human, and resolve current participation through the platform.
 
 - Deployed pins: [`tools/versions.env`](tools/versions.env)
 - Game contract: [`docs/emerg-ant-gameplay.md`](docs/emerg-ant-gameplay.md)
-- Ultimate authority: the pinned `Metta-AI/coworld-emerg-ant` source and current
+- Ultimate authority: the pinned `softmax-universe/coworld-emerg-ant` source and current
   Observatory manifest
 - Paintbot code: reusable architecture evidence, never authority for Emerg-ant
   mechanics or constants

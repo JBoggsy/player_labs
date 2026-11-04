@@ -7,7 +7,7 @@
 > details remain scoped to 0.3.89 and require separate requalification before use.
 > `PW_DOCS_SHA` stays `118e1619` because those wider surfaces are not reverified.
 
-Engine paths are relative to `Metta-AI/paintbot-pw`. Host integration is in
+Engine paths are relative to `softmax-universe/paintbot-pw`. Host integration is in
 `examples/paintbot/bots.nim` and `observations.nim`; game rules are in
 [mechanics.md](mechanics.md). Bassy source is resolved by the pinned dependency tool
 under `tmp/coworld/deps/bassy/src/`, including `bassy.nim` and `bassy/numbers.nim`.

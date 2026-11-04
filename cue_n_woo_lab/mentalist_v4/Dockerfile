@@ -5,7 +5,7 @@
 # Unlike v1-v3 (hand-rolled websocket loop), v4 runs on players.player_sdk:
 #   - run_message_bridge  (transport + the exit-0-on-unclean-close rule)
 #   - TraceOutputs        (telemetry -> the episode artifact zip)
-# So the image installs the SDK from the public Metta-AI/players repo (pinned ref),
+# So the image installs the SDK from the public softmax-universe/players repo (pinned ref),
 # mirroring crewborg's image. websockets is an SDK base dep; [bedrock] adds boto3 for
 # the (future, scan-gated) fingerprint/writer LLM path. Nothing secret is baked in;
 # any LLM backend is chosen at runtime from the pod env.
@@ -24,7 +24,7 @@ WORKDIR /app
 # embeddings for fingerprinting + the writer). scikit-learn powers the char-TFIDF
 # fingerprint fallback that runs when Titan/Bedrock is unavailable, so it must ship.
 RUN pip install --upgrade pip \
- && pip install "players[bedrock] @ https://github.com/Metta-AI/players/archive/${PLAYERS_SDK_REF}.tar.gz" \
+ && pip install "players[bedrock] @ https://github.com/softmax-universe/players/archive/${PLAYERS_SDK_REF}.tar.gz" \
                 "anthropic>=0.107.1" "scikit-learn>=1.5"
 
 # Put the player package on the path as `mentalist_v4`.

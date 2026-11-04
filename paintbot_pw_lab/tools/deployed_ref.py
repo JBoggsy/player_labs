@@ -9,7 +9,7 @@ Answers two questions an agent loop must settle before trusting lab output:
      deployed commit. Empty diff = the docs' rule claims still describe the deployed game.
 
 Resolution: league -> game.coworld_id -> that coworld's name and release version -> the
-release tag in Metta-AI/paintbot-pw (`git ls-remote`, annotated tags peeled). The manifest's
+release tag in softmax-universe/paintbot-pw (`git ls-remote`, annotated tags peeled). The manifest's
 `source_url` is the bare repository URL, so the tag is the only link from version to source.
 One repository publishes two coworlds: `paintbot-pw` (tags `coworld-v<version>`, tracked) and
 `heartland` (tags `heartland-v<version>`, printed for reference only).
@@ -41,7 +41,7 @@ LEAGUES = {
     "Heartland (ffa_kin)": ("league_40996eb3-4a80-457d-86d5-866f72882995", False),
 }
 TAG_PREFIX = {"paintbot-pw": "coworld-v", "heartland": "heartland-v"}  # coworld name -> tag prefix
-SOURCE_REPO = "https://github.com/Metta-AI/paintbot-pw"
+SOURCE_REPO = "https://github.com/softmax-universe/paintbot-pw"
 DEFAULT_CLONE = Path(os.environ.get("PW_CLONE", Path.home() / "coding/coworlds/paintbot-pw"))
 # Source files whose changes can change a rule, a host call, the upload surface or a line
 # citation in the lab docs: the rules engine, the BASIC dialect and its perception builtins

@@ -5,7 +5,7 @@ capture-the-flag shooter on the **BitWorld Sprite-v1** protocol. Read this to bu
 a mental model of the game before reasoning about play or setting direction — you
 rarely need to leave the lab.
 
-The **authoritative source** is the game repo `Metta-AI/coworld-ctf` (Nim server
+The **authoritative source** is the game repo `softmax-universe/coworld-ctf` (Nim server
 `src/ctf.nim` + `src/ctf/`, baseline player `players/baseline/`, rules
 `docs/RULES.md`), cloned for reference at **`~/coding/coworlds/coworld-ctf`**. If this
 doc and the repo disagree, the repo wins — treat the mismatch as a finding and
@@ -246,7 +246,7 @@ hold to charge a grenade throw, Enter = shout.
 ## How a policy plugs in — the Sprite-v1 protocol
 
 A CTF policy speaks the shared **BitWorld Sprite v1** protocol. Authoritative spec:
-`https://github.com/Metta-AI/bitworld/blob/master/docs/sprite_v1.md` (also on this
+`https://github.com/softmax-universe/bitworld/blob/master/docs/sprite_v1.md` (also on this
 machine at `~/coding/bitworld/docs/sprite_v1.md`). The runner starts every policy with
 a **`COWORLD_PLAYER_WS_URL`** environment variable; the policy connects to that
 websocket, plays until the game ends, and exits when the runner stops it. A slot's URL
@@ -281,7 +281,7 @@ out as a chat packet (`0x81`), e.g. the `(mask, "text")` return from `decide`.
 
 ### The Player SDK (Python) — the recommended build path
 
-The shared **`players.player_sdk`** package (imported from the `Metta-AI/coworld-tools`
+The shared **`players.player_sdk`** package (imported from the `softmax-universe/coworld-tools`
 monorepo; see the root README and `pyproject.toml`) provides a **SpriteV1 bridge** that
 is the cleanest way to write a new Python policy:
 

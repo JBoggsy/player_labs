@@ -1,7 +1,7 @@
 # Sugarscape policy lab
 
 This lab compares population movement policies for
-[`coworld-sugarscape`](https://github.com/Metta-AI/coworld-sugarscape). The game
+[`coworld-sugarscape`](https://github.com/softmax-universe/coworld-sugarscape). The game
 owns the simulation and delegates only each agent's destination choice. A policy
 receives the current agent, its legal candidate cells, resource amounts,
 pollution, occupancy, and the game's candidate welfare value.

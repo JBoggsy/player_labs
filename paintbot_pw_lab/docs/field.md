@@ -24,7 +24,7 @@ uv run python paintbot_pw_lab/tools/pw.py doctor --json         # release pin, b
 Evidence labels:
 
 - **documented**: stated in the game guide (`coworld/paintbot/guide.md`) or `DEPLOYMENT.md`.
-- **source-verified**: read in `Metta-AI/paintbot-pw` at `118e1619` (tag `coworld-v0.3.89`) unless a
+- **source-verified**: read in `softmax-universe/paintbot-pw` at `118e1619` (tag `coworld-v0.3.89`) unless a
   row names another commit, or in `~/coding/metta` at `29b22cc4d9` (pulled 2026-09-29). Line
   numbers are at those commits.
 - **live**: read from the Observatory API or a public replay on 2026-09-29.

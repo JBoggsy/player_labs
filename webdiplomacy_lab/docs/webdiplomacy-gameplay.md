@@ -2,9 +2,9 @@
 
 Self-contained reference for building and evaluating webDiplomacy players. Verified
 against **webdiplomacy 0.7.7** (deployed source commit
-[`e867197`](https://github.com/Metta-AI/coworld-webdiplomacy/tree/e8671977f3f259aa965033719e151dec3d0b9549),
+[`e867197`](https://github.com/softmax-universe/coworld-webdiplomacy/tree/e8671977f3f259aa965033719e151dec3d0b9549),
 recorded in the downloaded manifest's `source_url`) on 2026-10-06. The source repo
-[Metta-AI/coworld-webdiplomacy](https://github.com/Metta-AI/coworld-webdiplomacy)
+[softmax-universe/coworld-webdiplomacy](https://github.com/softmax-universe/coworld-webdiplomacy)
 (AGPL-3.0) is the authority: `README.md`, `docs/write-a-policy.md`,
 `docs/protocol.md`, `docs/players.md`, `docs/replay.md`, and `players/`.
 

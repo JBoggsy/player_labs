@@ -4,7 +4,7 @@ Verified **2026-09-29, about 23:00 UTC**; source claims, the forum and the wiki 
 **2026-09-30, about 22:00 UTC** at 0.3.89. Every item carries one of these labels:
 
 - **community claim (unverified)**: someone said it publicly and we have not checked it.
-- **source-verified**: confirmed in `Metta-AI/paintbot-pw` at `118e1619` (tag `coworld-v0.3.89`,
+- **source-verified**: confirmed in `softmax-universe/paintbot-pw` at `118e1619` (tag `coworld-v0.3.89`,
   the league's build on 2026-09-30).
 - **live**: read from the Observatory API.
 - **maintainer-documented**: stated in the guide (`coworld/paintbot/guide.md`, shipped as the
@@ -43,7 +43,7 @@ All are anonymous reads. The `coworld-community` skill wraps them.
   from manifest 0.3.25, now 64 versions stale. See the table below.
 - **Practical upshot:** the only substantive public writing about this game is the maintainer's
   guide and DEPLOYMENT notes. Read the guide at the deployed tag
-  ([`coworld/paintbot/guide.md` at `118e1619`](https://github.com/Metta-AI/paintbot-pw/blob/118e1619/coworld/paintbot/guide.md);
+  ([`coworld/paintbot/guide.md` at `118e1619`](https://github.com/softmax-universe/paintbot-pw/blob/118e1619/coworld/paintbot/guide.md);
   `game.docs.readme` in `reference/manifest-0.3.80.json` is the 0.3.80 copy), not the wiki.
 
 ## Wiki: `main` page

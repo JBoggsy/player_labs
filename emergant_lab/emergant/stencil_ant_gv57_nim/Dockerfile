@@ -26,7 +26,7 @@ WORKDIR /workspace/stencil
 
 RUN test -n "${EMERG_ANT_GAME_REF}" \
  && curl -fsSL -o nimby.lock \
-      "https://raw.githubusercontent.com/Metta-AI/coworld-emerg-ant/${EMERG_ANT_GAME_REF}/nimby.lock" \
+      "https://raw.githubusercontent.com/softmax-universe/coworld-emerg-ant/${EMERG_ANT_GAME_REF}/nimby.lock" \
  && nimby sync -g nimby.lock
 
 COPY . .
