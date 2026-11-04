@@ -4,7 +4,7 @@ The self-contained game reference for the Heartleaf lab: rules, the day cycle, t
 dinner/scoring mechanics, the wire protocol, the bundled behavior framework, and a
 strategy treatment. **Read this to understand Heartleaf without leaving the repo.**
 
-The authoritative source is the **`Metta-AI/coworld-heartleaf`** repo (Nim game server
+The authoritative source is the **`softmax-universe/coworld-heartleaf`** repo (Nim game server
 `src/heartleaf.nim`, protocol helpers `src/heartleaf/`, bundled players `players/`). This
 doc distills that plus the game's own docs (`docs/rules.md`, `docs/game_rules.md`,
 `docs/play_heartleaf.md`) and the `coworld_manifest.json`.
@@ -171,7 +171,7 @@ Heartleaf player:
    mask each tick — movement + an "A" interact). All game actions (collect from a garden,
    enter/exit a house, stand somewhere) are **emergent from moving the gnome and pressing
    A** — there is no high-level action message. Protocol spec:
-   `https://github.com/Metta-AI/bitworld/blob/master/docs/sprite_v1.md`. (This is the same
+   `https://github.com/softmax-universe/bitworld/blob/master/docs/sprite_v1.md`. (This is the same
    protocol family as Crewrift — see `crewrift_lab/docs/crewrift-protocol.md` for the
    sibling treatment.)
 
@@ -250,7 +250,7 @@ apply Crewrift's "drop score ≤ 0 / −100" ops-filter here** — it would disc
 and read a *completed-episode* score of 0 as "played but never hosted" (a gameplay signal).
 
 **Deployed vs public source:** the live league runs **heartleaf 0.1.10**, but the public
-`Metta-AI/coworld-heartleaf` repo master is only **0.1.0** (no 0.1.10 tag/branch — it's a
+`softmax-universe/coworld-heartleaf` repo master is only **0.1.0** (no 0.1.10 tag/branch — it's a
 deployment-only build). `coworld download heartleaf` fetches the deployed **package**
 (manifest + image refs, not Nim source). The 0.1.10 manifest matches 0.1.0 on scoring/
 protocol; its only roster change is an added base `villager` player.

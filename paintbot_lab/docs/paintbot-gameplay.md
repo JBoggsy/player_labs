@@ -1,7 +1,7 @@
 # Paintbot game reference
 
-The public game source is [Metta-AI/coworld-ctf](https://github.com/Metta-AI/coworld-ctf).
-Its [Paintbot manifest](https://github.com/Metta-AI/coworld-ctf/blob/main/coworld_manifest_paintbot.json)
+The public game source is [softmax-universe/coworld-ctf](https://github.com/softmax-universe/coworld-ctf).
+Its [Paintbot manifest](https://github.com/softmax-universe/coworld-ctf/blob/main/coworld_manifest_paintbot.json)
 defines the published `battle-royale-s2` configuration: sixteen solo seats using
 the play-calling shell and WebAssembly playbooks. It has a lobby, one life per seat,
 a closing zone and pact-based cooperation. Winning and Glory are separate outputs.

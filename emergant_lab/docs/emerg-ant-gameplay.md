@@ -2,7 +2,7 @@
 
 Self-contained reference for canonical **Emerg-ant 0.9.1 / GameVersion 57**,
 Source:
-`Metta-AI/coworld-emerg-ant@1e0be3f1ecabf2fc70adb8af81818a9947281cc9`.
+`softmax-universe/coworld-emerg-ant@1e0be3f1ecabf2fc70adb8af81818a9947281cc9`.
 Re-resolve live state before operations.
 
 ## Match shape

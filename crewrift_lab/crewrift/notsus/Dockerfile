@@ -31,7 +31,7 @@ WORKDIR /workspace/crewrift
 # coworld-crewrift and its bitworld dep are public, so the clone + nimby sync need no
 # credentials. (Pinning to CREWRIFT_REF — not the default branch — keeps the build
 # matched to the game version the league runs; see docs/crewrift-replays.md §B.)
-RUN git clone https://github.com/Metta-AI/coworld-crewrift.git . \
+RUN git clone https://github.com/softmax-universe/coworld-crewrift.git . \
  && git checkout "$CREWRIFT_REF" \
  && nimby --global sync nimby.lock
 

@@ -21,7 +21,7 @@ table to your house by 6pm — layered on **efficient gathering**, across ~9 day
 For the full game — rules, day cycle, dinner/scoring math, the wire protocol, the bundled
 behavior framework, and strategy — read [`docs/heartleaf-gameplay.md`](docs/heartleaf-gameplay.md)
 (the lab's self-contained reference; you rarely need to leave the repo). The game source in
-the `Metta-AI/coworld-heartleaf` repo (server `src/heartleaf.nim`, protocol `src/heartleaf/`,
+the `softmax-universe/coworld-heartleaf` repo (server `src/heartleaf.nim`, protocol `src/heartleaf/`,
 bundled players `players/`) remains the ultimate authority.
 
 **The one architectural fact that shapes everything here:** Heartleaf ships a substantial

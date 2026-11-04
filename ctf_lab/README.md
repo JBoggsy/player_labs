@@ -21,7 +21,7 @@ purely **team victory before the clock**, not kills.
 **Full game reference — rules, arena, aim/vision/combat mechanics, the wire protocol,
 exact tuning numbers, the baseline bot, and strategy — is
 [`docs/ctf-gameplay.md`](docs/ctf-gameplay.md).** Read that to understand the game
-without leaving the repo. The authoritative source is the **`Metta-AI/coworld-ctf`**
+without leaving the repo. The authoritative source is the **`softmax-universe/coworld-ctf`**
 repo (Nim server `src/ctf.nim`, rules `docs/RULES.md`, baseline `players/baseline/`).
 
 ## Layout

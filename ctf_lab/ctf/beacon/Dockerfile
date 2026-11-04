@@ -18,7 +18,7 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 RUN pip install --upgrade pip \
- && pip install "players[bedrock] @ https://github.com/Metta-AI/coworld-tools/archive/${PLAYERS_SDK_REF}.tar.gz#subdirectory=players"
+ && pip install "players[bedrock] @ https://github.com/softmax-universe/coworld-tools/archive/${PLAYERS_SDK_REF}.tar.gz#subdirectory=players"
 
 COPY ctf_init.py /app/ctf/__init__.py
 COPY beacon /app/ctf/beacon

@@ -20,7 +20,7 @@ set -euo pipefail
 LAB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # crewrift_lab/
 BIN_DIR="$LAB_DIR/tools/bin"
 CACHE_ROOT="$LAB_DIR/.cache/crewrift-src"
-GAME_REPO_SLUG="Metta-AI/coworld-crewrift"
+GAME_REPO_SLUG="softmax-universe/coworld-crewrift"
 
 # shellcheck source=/dev/null
 source "$LAB_DIR/tools/versions.env"

@@ -29,7 +29,7 @@ CLONE="${PW_CLONE:-$HOME/coding/coworlds/paintbot-pw}"
 TREE="${PW_CACHE_DIR:-$LAB/tools/.cache}/$TAG"   # PW_CACHE_DIR: see pw_release.cache_root
 OUT="$LAB/tools/bin/$TAG"
 
-[[ -d "$CLONE/.git" ]] || git clone --filter=blob:none https://github.com/Metta-AI/paintbot-pw.git "$CLONE"
+[[ -d "$CLONE/.git" ]] || git clone --filter=blob:none https://github.com/softmax-universe/paintbot-pw.git "$CLONE"
 git -C "$CLONE" fetch --quiet --tags origin
 git -C "$CLONE" worktree prune
 [[ -d "$TREE" ]] || git -C "$CLONE" worktree add --detach "$TREE" "$TAG"

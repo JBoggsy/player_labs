@@ -7,7 +7,7 @@
 #
 # Unlike upstream, this fork is the top-level `crewrift.crewborg` package and
 # imports only `players.player_sdk` from the SDK. So we install the SDK straight
-# from the public Metta-AI/players repo (pinned via PLAYERS_SDK_REF) and put the
+# from the public softmax-universe/players repo (pinned via PLAYERS_SDK_REF) and put the
 # fork on PYTHONPATH — we deliberately do NOT install the lab package itself (that
 # would drag in lab tooling deps like coworld[auth]), and we bake NO
 # behavior/experiment env (e.g. CREWBORG_BE_DUMB) — those are set at upload time so
@@ -32,7 +32,7 @@ WORKDIR /app
 # `[bedrock]` adds boto3 so the meeting LLM can route through AWS Bedrock when the
 # policy is uploaded with `--use-bedrock`; inert otherwise.
 RUN pip install --upgrade pip \
- && pip install "players[bedrock] @ https://github.com/Metta-AI/coworld-tools/archive/${PLAYERS_SDK_REF}.tar.gz#subdirectory=players"
+ && pip install "players[bedrock] @ https://github.com/softmax-universe/coworld-tools/archive/${PLAYERS_SDK_REF}.tar.gz#subdirectory=players"
 
 # Meeting chat NLP (imposter bandwagon, design §10.5): spaCy dependency-parse negation
 # scope over opponents' chat. Loaded lazily in a background thread and gated by

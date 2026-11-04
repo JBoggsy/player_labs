@@ -2297,14 +2297,14 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.0.0" },
     { name = "pandas", specifier = ">=3.0.3" },
     { name = "pillow", specifier = ">=12.3.0" },
-    { name = "players", extras = ["bedrock"], url = "https://github.com/Metta-AI/coworld-tools/archive/4dd923d1adf4d805efb3efe55f1351aeae9c9075.tar.gz", subdirectory = "players" },
+    { name = "players", extras = ["bedrock"], url = "https://github.com/softmax-universe/coworld-tools/archive/4dd923d1adf4d805efb3efe55f1351aeae9c9075.tar.gz", subdirectory = "players" },
     { name = "pyarrow", specifier = ">=24.0.0" },
     { name = "pydantic", specifier = ">=2.12.2" },
     { name = "scikit-learn", specifier = ">=1.9.0" },
     { name = "scipy", specifier = ">=1.17.1" },
     { name = "spacy", specifier = ">=3.8.0,<3.9.0" },
     { name = "tokenizers", specifier = ">=0.22,<0.24" },
-    { name = "vanilla-wow-coworld", git = "https://github.com/Metta-AI/coworld-vanilla-wow.git?rev=b92f4961c97cc918b7e46e2c39db778f01df2487" },
+    { name = "vanilla-wow-coworld", git = "https://github.com/softmax-universe/coworld-vanilla-wow.git?rev=b92f4961c97cc918b7e46e2c39db778f01df2487" },
     { name = "websockets", specifier = ">=16.0" },
 ]
 
@@ -2328,7 +2328,7 @@ rl = [
 [[package]]
 name = "players"
 version = "0.1.0"
-source = { url = "https://github.com/Metta-AI/coworld-tools/archive/4dd923d1adf4d805efb3efe55f1351aeae9c9075.tar.gz", subdirectory = "players" }
+source = { url = "https://github.com/softmax-universe/coworld-tools/archive/4dd923d1adf4d805efb3efe55f1351aeae9c9075.tar.gz", subdirectory = "players" }
 dependencies = [
     { name = "anthropic" },
     { name = "cramjam" },
@@ -3718,7 +3718,7 @@ wheels = [
 [[package]]
 name = "vanilla-wow-coworld"
 version = "0.1.4"
-source = { git = "https://github.com/Metta-AI/coworld-vanilla-wow.git?rev=b92f4961c97cc918b7e46e2c39db778f01df2487#b92f4961c97cc918b7e46e2c39db778f01df2487" }
+source = { git = "https://github.com/softmax-universe/coworld-vanilla-wow.git?rev=b92f4961c97cc918b7e46e2c39db778f01df2487#b92f4961c97cc918b7e46e2c39db778f01df2487" }
 dependencies = [
     { name = "boto3" },
     { name = "fastapi" },

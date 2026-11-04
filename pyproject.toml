@@ -6,11 +6,11 @@ dependencies = [
     "coworld[auth]>=0.1.35",
     # Python semantic-player contract for local tests, kept in step with the
     # canonical vanilla-wow 0.1.208 image pinned in vanilla_wow_lab/tools/versions.env.
-    "vanilla-wow-coworld @ git+https://github.com/Metta-AI/coworld-vanilla-wow.git@b92f4961c97cc918b7e46e2c39db778f01df2487",
+    "vanilla-wow-coworld @ git+https://github.com/softmax-universe/coworld-vanilla-wow.git@b92f4961c97cc918b7e46e2c39db778f01df2487",
     "httpx>=0.28.1",
     # The shared player SDK that vendored players import as `players.player_sdk`,
     # plus its base deps (anthropic, boto3 for Bedrock, etc.). The `players` repo moved
-    # into the Metta-AI/coworld-tools monorepo as the `players/` subdirectory, so we
+    # into the softmax-universe/coworld-tools monorepo as the `players/` subdirectory, so we
     # install it from coworld-tools' GitHub source TARBALL (see [tool.uv.sources]).
     # Tarball (not a git source) on purpose: a GitHub archive excludes submodules, which
     # sidesteps coworld-tools' broken `players/users/relh/co-gas` submodule that fails
@@ -18,7 +18,7 @@ dependencies = [
     # SDK pins can differ; inspect each Dockerfile and tools/versions.env before
     # claiming parity. To adopt a
     # newer SDK, bump the tarball SHA below to coworld-tools' current `main`
-    # (`git ls-remote https://github.com/Metta-AI/coworld-tools main`) and `uv lock`.
+    # (`git ls-remote https://github.com/softmax-universe/coworld-tools main`) and `uv lock`.
     # `[bedrock]` pulls boto3 to match the hosted image's `players[bedrock]` install — the
     # SDK lazy-imports boto3 only when use_bedrock=True, so it's inert locally (no sidecar).
     "players[bedrock]",
@@ -51,7 +51,7 @@ dependencies = [
 # (avoids the broken co-gas submodule that breaks uv's recursive clone). SHA = coworld-tools
 # `main` as of 2026-08-06. This revision preserves all eight Sprite-v1 input
 # bits; older revisions clamped masks to 0x7f and silently dropped Button C.
-players = { url = "https://github.com/Metta-AI/coworld-tools/archive/4dd923d1adf4d805efb3efe55f1351aeae9c9075.tar.gz", subdirectory = "players" }
+players = { url = "https://github.com/softmax-universe/coworld-tools/archive/4dd923d1adf4d805efb3efe55f1351aeae9c9075.tar.gz", subdirectory = "players" }
 torch = [
     { index = "pytorch-cu128", marker = "sys_platform == 'linux'" },
 ]

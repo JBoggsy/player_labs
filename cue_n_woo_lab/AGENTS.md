@@ -26,7 +26,7 @@ WebSocket**; there is no map, no perception, no movement.
 For the full game — rules, protocol, scoring math, and strategy — read
 [`docs/cue-n-woo-gameplay.md`](docs/cue-n-woo-gameplay.md) (the lab's self-contained
 game reference; you rarely need to leave the repo). The game source in the
-`Metta-AI/cue-n-woo` repo (referee `v2/coworld/game.py`, baseline player
+`softmax-universe/cue-n-woo` repo (referee `v2/coworld/game.py`, baseline player
 `v2/coworld/players/baseline.py`, protocol docs `v2/coworld/docs/`) remains the
 ultimate authority. The policy we build and optimize is in the
 [Player policies](#player-policies) index below.

@@ -16,7 +16,7 @@ across ~9 cumulative days.
 **Full game reference — rules, day cycle, scoring math, the wire protocol, the bundled
 behavior framework, and strategy — is [`docs/heartleaf-gameplay.md`](docs/heartleaf-gameplay.md).**
 Read that to understand the game without leaving the repo. The authoritative source is the
-**`Metta-AI/coworld-heartleaf`** repo (Nim server `src/heartleaf.nim`, bundled players
+**`softmax-universe/coworld-heartleaf`** repo (Nim server `src/heartleaf.nim`, bundled players
 `players/`).
 
 ## The opportunity, in brief

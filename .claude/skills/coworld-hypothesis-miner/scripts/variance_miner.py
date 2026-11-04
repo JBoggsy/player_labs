@@ -1,6 +1,6 @@
 """Variance miner engine: turn a corpus of scored episodes into RANKED, testable hypotheses.
 
-Adapted from Metta-AI/optimizer-skills `harness/tools/variance_miner.py` (the
+Adapted from softmax-universe/optimizer-skills `harness/tools/variance_miner.py` (the
 executable form of a hand-done strategy reconstruction). Its central, hard-won
 insight: the behaviors that *separate a policy's wins from its losses* are NOT
 the behaviors the policy does in every game (its invariant engine), but the

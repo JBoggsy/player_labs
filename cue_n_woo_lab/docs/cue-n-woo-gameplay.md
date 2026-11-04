@@ -2,7 +2,7 @@
 
 The self-contained game reference for the **Cue-n-Woo** Coworld lab. Read this to
 understand the game — rules, protocol, scoring, and strategy — without leaving the
-repo. The authoritative source is the **`Metta-AI/cue-n-woo`** repo (game referee:
+repo. The authoritative source is the **`softmax-universe/cue-n-woo`** repo (game referee:
 `v2/coworld/game.py`; player harness: `v2/coworld/players/baseline.py`; protocol docs:
 `v2/coworld/docs/`). Resolve the selected league’s exact manifest and configuration before using
 constants from this reference. The [axis-combination reference](axis-combo-system.md)

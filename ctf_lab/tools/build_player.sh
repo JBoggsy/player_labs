@@ -49,7 +49,7 @@ case "$policy" in
     # Docker layer-cache trap: the pip layer caches on the unchanged tarball URL, so a
     # moved main keeps the stale SDK). Pinning the SHA busts the cache when main moves.
     if [ "$PLAYERS_SDK_REF" = "main" ]; then
-      remote_sha="$(git ls-remote https://github.com/Metta-AI/coworld-tools.git refs/heads/main | awk '{print $1}' | head -1)"
+      remote_sha="$(git ls-remote https://github.com/softmax-universe/coworld-tools.git refs/heads/main | awk '{print $1}' | head -1)"
       if [ -n "$remote_sha" ]; then
         echo "==> PLAYERS_SDK_REF=main resolved to coworld-tools main $remote_sha"
         PLAYERS_SDK_REF="$remote_sha"

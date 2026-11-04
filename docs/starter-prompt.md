@@ -34,12 +34,12 @@ Then walk me through it:
   1. Set me up with my own copy of the repo, so my work stays mine and never touches
      the canonical repo. If I have a GitHub account (recommended — it lets me save and
      back up my work), fork it to my account and clone that:
-         gh repo fork Metta-AI/player_labs --clone     # forks, clones, sets `upstream`
+         gh repo fork softmax-universe/player_labs --clone     # forks, clones, sets `upstream`
      No `gh` CLI? Have me fork it on github.com first, then clone my fork:
          git clone https://github.com/<my-username>/player_labs
      If I just want to try the lab without an account, clone it directly instead and
      keep my changes local — don't push to the canonical repo:
-         git clone https://github.com/Metta-AI/player_labs
+         git clone https://github.com/softmax-universe/player_labs
      Either way, then: cd player_labs
   2. Open docs/getting-started.md and read it — it's a step-by-step onboarding script
      written for you, the coding agent.

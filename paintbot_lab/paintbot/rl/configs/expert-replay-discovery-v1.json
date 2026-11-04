@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "coworld_names": ["ctf", "paintbot"],
-  "source_repository": "https://github.com/Metta-AI/coworld-ctf.git",
+  "source_repository": "https://github.com/softmax-universe/coworld-ctf.git",
   "discovery_not_before": "2026-06-30T00:00:00Z",
   "discovery_window_hours": 24,
   "experts": [

@@ -10,7 +10,7 @@ behaviors that explain the policy's **own score variance** — what its winning 
 losing games don't. Use it at the *diagnose* step when nothing specific is suspected yet: it
 replaces eyeballing replays and guessing, and hands its top candidate to `coworld-experiment`.
 
-Adapted from `Metta-AI/optimizer-skills`' replay-variance-miner, whose validated core insight is:
+Adapted from `softmax-universe/optimizer-skills`' replay-variance-miner, whose validated core insight is:
 
 > **The behaviors a policy performs in *every* game — its invariant engine — explain how it beats
 > *other* policies, but are useless for explaining its own variance,** because they're identical in

@@ -114,7 +114,7 @@ wrong: read the diff. At 0.3.79 the BASIC teams game is unchanged (bots/sim line
 ## How it resolves
 
 league → `game.coworld_id` → that coworld's `name` and `version` (Observatory API, needs the
-`softmax` login) → release tag → commit (`git ls-remote --tags` on `Metta-AI/paintbot-pw`,
+`softmax` login) → release tag → commit (`git ls-remote --tags` on `softmax-universe/paintbot-pw`,
 annotated tags peeled). The manifest's `source_url` carries no commit, so the tag is the only
 link. The coworld id changes with every release (0.3.78 was `cow_12867c2e-…`).
 

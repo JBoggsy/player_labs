@@ -4,8 +4,8 @@ Notsus is an example bot that can do a lot of the tasks, can be an imposter, and
 
 If docs, commands, runtime behavior, logs, or replays disagree while you use
 this bot as a starting point, preserve the evidence and file a GitHub issue at
-<https://github.com/Metta-AI/coworld-crewrift/issues>. For Softmax play prompt
-or Coworld CLI issues, file against <https://github.com/Metta-AI/coworld/issues>.
+<https://github.com/softmax-universe/coworld-crewrift/issues>. For Softmax play prompt
+or Coworld CLI issues, file against <https://github.com/softmax-universe/coworld/issues>.
 Include the command, league/Coworld ids, logs or replay links, and the smallest
 repro instead of silently working around the issue.
 
@@ -48,7 +48,7 @@ Notsus can be broadly divided into several categories:
 
 ## Parsing the sprite protocol
 
-You can find the sprite protocol in the [sprite_v1.md](https://github.com/Metta-AI/bitworld/blob/master/docs/sprite_v1.md) file.
+You can find the sprite protocol in the [sprite_v1.md](https://github.com/softmax-universe/bitworld/blob/master/docs/sprite_v1.md) file.
 
 Originally, we had just sent the whole view of the screen and then had the AI parse the pixels and figure out what we called sprite decomposition, but that actually turned out to be pretty slow. It was using almost all of the CPU budget just to parse and generate the screen, so we switched to something that is a sprite protocol, which basically shows you the sprites that are on that screen and that's it. The protocol here, specifically and very importantly, to show very similar to what the human sees, is very important to us. To have very good "what you see is what you get" is very important to us.
 

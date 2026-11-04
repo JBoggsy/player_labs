@@ -26,7 +26,7 @@ WORKDIR /workspace/stencil
 
 RUN test -n "${PAINTBOT_GAME_REF}" \
  && curl -fsSL -o nimby.lock \
-      "https://raw.githubusercontent.com/Metta-AI/coworld-ctf/${PAINTBOT_GAME_REF}/nimby.lock" \
+      "https://raw.githubusercontent.com/softmax-universe/coworld-ctf/${PAINTBOT_GAME_REF}/nimby.lock" \
  && nimby sync -g nimby.lock
 
 COPY . .

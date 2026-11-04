@@ -23,7 +23,7 @@ Use ordinary non-elevated access. A public result does not expose every seat's l
 | --- | --- | --- |
 | XP credits | Compute/model allowance, shared per owning user; not a monetary bill | [Credits](xp-credits.md); live account meter |
 | HTTP requests and complexity | API traffic, shared across identities owned by the same user | [Official rate-limit guide](https://docs.softmax.com/guides/rate-limits); live headers |
-| Episode admission/concurrency | Queued and outstanding jobs; parallel execution is not unlimited | [Current source](https://github.com/Metta-AI/metta/blob/main/app_backend/src/metta/app_backend/job_capacity.py) |
+| Episode admission/concurrency | Queued and outstanding jobs; parallel execution is not unlimited | [Current source](https://github.com/softmax-universe/softmax/blob/main/app_backend/src/metta/app_backend/job_capacity.py) |
 
 Live authenticated user headers (2026-10-06) showed request capacities **1,500/minute, 12,500/hour**, complexity capacities **15,000/minute, 125,000/hour**, and `X-RateLimit-Mode: enforced`; unauthenticated calls get **300/minute, 3,000/hour**. These are continuously refilling bucket capacities, not fixed-window totals, and they change: read the `x-ratelimit-*` response headers rather than trusting these numbers. The hour budget is the binding one — ~3.5 requests/second sustained across **every** process on the account. Long-running pollers (`--watch` fetchers, XP dashboards) left running after their requests finish drain it continuously; stop them when done and coordinate all workers using the account.
 
@@ -40,13 +40,13 @@ Honor `Retry-After` on 429 with bounded backoff. A 402 credit denial differs fro
 - `private` defaults to false. A private request can exclude opponents whose policy consent only allows requests visible to their owner. Explicit disallowed selection returns `409 policy_selection_not_allowed`; sampled pools are filtered. Do not silently publish an experiment to get around that rejection. Policy owners can read their own `/v2/policies/{policy_id}/selection-access`.
 - `state` exposes `head`/`snapshot` and `player`/`world` selectors. The API forwards it through `coworld_state` game configuration; it does not establish that every game supports arbitrary saved-state exploration. Read the game's schema and persistence contract.
 
-These details were checked in [XP implementation](https://github.com/Metta-AI/metta/blob/main/app_backend/src/metta/app_backend/v2/experience_requests.py), [creation route](https://github.com/Metta-AI/metta/blob/main/app_backend/src/metta/app_backend/v2/routes/experience_requests.py), and [policy selection](https://github.com/Metta-AI/metta/blob/main/app_backend/src/metta/app_backend/v2/policy_selection.py).
+These details were checked in [XP implementation](https://github.com/softmax-universe/softmax/blob/main/app_backend/src/metta/app_backend/v2/experience_requests.py), [creation route](https://github.com/softmax-universe/softmax/blob/main/app_backend/src/metta/app_backend/v2/routes/experience_requests.py), and [policy selection](https://github.com/softmax-universe/softmax/blob/main/app_backend/src/metta/app_backend/v2/policy_selection.py).
 
 ## Creation, completion and evidence
 
 `POST /v2/experience-requests` returns before execution finishes. Save its response: `cost_preview` is creation-only and is not reconstructed by later GETs. There is no public pre-create cost-preview endpoint in the checked schema. Our `create --check-schema` checks top-level keys and resolvable game overrides; it is **not full request validation, a cost quote, or admission approval**.
 
-Credit admission subtracts estimates held for active requests from the current balance. Estimates are not spending caps; actual usage can overrun. The account meter's `recent_requests` records **compute only**, not complete per-request model spend. See [credit source](https://github.com/Metta-AI/metta/blob/main/app_backend/src/metta/app_backend/user_credits.py).
+Credit admission subtracts estimates held for active requests from the current balance. Estimates are not spending caps; actual usage can overrun. The account meter's `recent_requests` records **compute only**, not complete per-request model spend. See [credit source](https://github.com/softmax-universe/softmax/blob/main/app_backend/src/metta/app_backend/user_credits.py).
 
 A parent can roll up to `failed` as soon as a child fails. **Wait for every child to be terminal**, not just for the parent label. Cancellation is a separate write: the server checks authority, stops dispatch, and cancels child work; cancellation is not instantaneous proof of completed artifact collection. Inspect `can_cancel` rather than deriving authority from visibility.
 
@@ -67,9 +67,9 @@ Uploading registers a policy version and enters no league. Identical uploads **m
 
 Submission requests placement. The current CLI supports `--player`, repeatable `--preference`, and `--auto-champion always|never|lineage`; it does not accept a division flag. Read the league's rules and participation guide. Qualification may use a container commissioner or a platform ladder/Temporal workflow, or may not be configured. There is no universal ten-minute qualifier cadence or universal score threshold.
 
-`competing` and `is_champion` are separate fields. `always` does not let an older upload automatically displace a newer champion; `lineage` requires a prior lower version of the same policy under that player. These are source-verified rules, not a promise that every submission becomes champion. [Promotion source](https://github.com/Metta-AI/metta/blob/main/app_backend/src/metta/app_backend/v2/policy_membership_events.py).
+`competing` and `is_champion` are separate fields. `always` does not let an older upload automatically displace a newer champion; `lineage` requires a prior lower version of the same policy under that player. These are source-verified rules, not a promise that every submission becomes champion. [Promotion source](https://github.com/softmax-universe/softmax/blob/main/app_backend/src/metta/app_backend/v2/policy_membership_events.py).
 
-Placed memberships can be retired; this does not erase earlier rounds or public history. **Submission is consequential and explicitly gated here, not literally unmodifiable.** Likewise, platform-managed qualification may create its own self-play XP; the lab's no-hosted-self-play preference governs experiments we choose, not platform internals. See [qualification placement](https://github.com/Metta-AI/metta/blob/main/app_backend/src/metta/app_backend/v2/league_policy_memberships.py).
+Placed memberships can be retired; this does not erase earlier rounds or public history. **Submission is consequential and explicitly gated here, not literally unmodifiable.** Likewise, platform-managed qualification may create its own self-play XP; the lab's no-hosted-self-play preference governs experiments we choose, not platform internals. See [qualification placement](https://github.com/softmax-universe/softmax/blob/main/app_backend/src/metta/app_backend/v2/league_policy_memberships.py).
 
 ## Community and local evidence
 

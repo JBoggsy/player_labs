@@ -23,7 +23,7 @@ scene and act with a d-pad + A/B, with **no semantic action API**.
 For the full game — rules, roles, win conditions, scoring, flow, and strategy from a
 **gameplay** perspective — read [`docs/crewrift-gameplay.md`](docs/crewrift-gameplay.md)
 (the lab's self-contained game reference; you rarely need to leave the repo). The game
-source in the `Metta-AI/coworld-crewrift` repo remains the ultimate authority on rules
+source in the `softmax-universe/coworld-crewrift` repo remains the ultimate authority on rules
 and the scene vocabulary. The policies we build and optimize are listed in the
 [Player policies](#player-policies) index below.
 
@@ -168,7 +168,7 @@ pinned `CREWRIFT_REF` and compiles). All repos are public, so **every build is
 Docker-only with no credentials**.
 
 - **crewborg** *(Python)* — at [`crewrift/crewborg/`](crewrift/crewborg/) (package
-  `crewrift.crewborg`), a drifting fork of upstream `Metta-AI/players`
+  `crewrift.crewborg`), a drifting fork of upstream `softmax-universe/players`
   (`players/crewrift/crewborg`). A full Python player: `perception/`
   (Sprite-v1 → scene decoder), `strategy/`, `modes/`, `action.py`, `coworld/`
   (the bridge). Imports the shared `players.player_sdk` from the **pinned public
@@ -178,7 +178,7 @@ Docker-only with no credentials**.
   primary policy under optimization.**
 - **notsus** *(Nim)* — at [`crewrift/notsus/`](crewrift/notsus/), the **reference
   baseline** (upstream lives in the game repo,
-  `Metta-AI/coworld-crewrift`: `players/notsus/`; public image
+  `softmax-universe/coworld-crewrift`: `players/notsus/`; public image
   `…/players/notsus:latest`). The minimal Sprite-v1 implementation
   (`notsus.nim` + `notsus/{votereader,protocols}.nim`), with its Dockerfile and
   `coplayer_manifest.json`. Useful as a comparison opponent and a from-scratch
@@ -191,7 +191,7 @@ Docker-only with no credentials**.
   (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) and stay below 1,800
   quota-weighted tokens per policy episode, cumulative across all calls
   (input + cache-write + 5 × output tokens).
-  Upstream: `Metta-AI/players` (`players/crewrift/suspectra`). Builds in-lab via
+  Upstream: `softmax-universe/players` (`players/crewrift/suspectra`). Builds in-lab via
   `tools/build_player.sh suspectra` (same Nim path as notsus).
 </content>
 
